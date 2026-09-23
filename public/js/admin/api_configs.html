@@ -1,0 +1,77 @@
+<div class="flex-between mb-20">
+    <h2>接口配置</h2>
+    <button class="btn btn-primary" onclick="admin_apis_new()">添加接口</button>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead><tr><th>名称</th><th>类型</th><th>地址</th><th>鉴权</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="api-table-body"></tbody>
+    </table>
+</div>
+
+<script>
+async function admin_api_configs_init() {
+    document.getElementById('main-app').style.display = 'block';
+    const sidebar = await fetch('/js/shared/sidebar_admin.html').then(r => r.text());
+    document.getElementById('sidebar').innerHTML = sidebar;
+    loadApis();
+}
+
+async function loadApis() {
+    const result = await AjaxLoader.api('admin/api-config-list', {silent:true});
+    const tbody = document.getElementById('api-table-body');
+    tbody.innerHTML = '';
+    (result.data || []).forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${Format.escape(a.name)}</td>
+            <td>${Format.escape(a.api_type)}</td>
+            <td>${Format.escape(a.base_url||'')}</td>
+            <td>${Format.escape(a.auth_type)}</td>
+            <td>${a.is_active ? '启用' : '禁用'}</td>
+            <td><button class="btn btn-small" onclick="admin_apis_edit(${a.id})">编辑</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function admin_apis_new() { showApiForm({}); }
+async function admin_apis_edit(id) {
+    const result = await AjaxLoader.api('admin/api-config-list', {silent:true});
+    const api = result.data.find(a => a.id == id);
+    if (api) showApiForm(api);
+}
+
+function showApiForm(api) {
+    const content = `
+        <form id="api-form">
+            ${Dom.formField({name:'name',label:'接口名称',type:'text'}, api.name||'')}
+            ${Dom.formField({name:'api_type',label:'接口类型',type:'select',options:[
+                {label:'门诊 EMR',value:'outpatient_emr'},
+                {label:'其他',value:'other'}
+            ]}, api.api_type||'')}
+            ${Dom.formField({name:'base_url',label:'地址',type:'text'}, api.base_url||'')}
+            ${Dom.formField({name:'auth_type',label:'鉴权',type:'select',options:[
+                {label:'无',value:'none'},
+                {label:'Bearer',value:'bearer'},
+                {label:'Header',value:'header'}
+            ]}, api.auth_type||'none')}
+            ${Dom.formField({name:'auth_config',label:'鉴权配置',type:'textarea'}, api.auth_config||'')}
+            ${Dom.formField({name:'is_active',label:'状态',type:'select',options:[{label:'启用',value:'1'},{label:'禁用',value:'0'}]}, api.is_active ? '1' : '0')}
+            <input type="hidden" name="id" value="${api.id||''}">
+        </form>
+    `;
+    Dom.modal('接口信息', content, [
+        {text:'保存',type:'primary',onclick:async function(){
+            const form = document.getElementById('api-form');
+            const data = {};
+            new FormData(form).forEach((v,k)=>data[k]=v);
+            await AjaxLoader.api('admin/api-config-save', {method:'POST',data});
+            loadApis();
+        }},
+        {text:'取消',type:'default'}
+    ]);
+}
+function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
+</script>

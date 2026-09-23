@@ -57,6 +57,51 @@ $routes = [
     'emr/template-get' => ['emr/template_get.php', ['admin', 'doctor']],
     'emr/template-save' => ['emr/template_save.php', ['admin', 'doctor']],
     'emr/template-use' => ['emr/template_use.php', ['admin', 'doctor']],
+    'emr/template-delete' => ['emr/template_delete.php', ['admin', 'doctor']],
+
+    // 药房
+    'pharmacy/medication-list' => ['pharmacy/medication_list.php', ['admin', 'pharmacist']],
+    'pharmacy/medication-save' => ['pharmacy/medication_save.php', ['admin', 'pharmacist']],
+    'pharmacy/pending-queue' => ['pharmacy/pending_queue.php', ['admin', 'pharmacist']],
+    'pharmacy/dispensing-save' => ['pharmacy/dispensing_save.php', ['admin', 'pharmacist']],
+    'pharmacy/dispensing-list' => ['pharmacy/dispensing_list.php', ['admin', 'pharmacist']],
+
+    // 护士
+    'nurse/patient-list' => ['nurse/patient_list.php', ['admin', 'nurse']],
+    'nurse/order-list' => ['nurse/order_list.php', ['admin', 'nurse']],
+    'nurse/nursing-action' => ['nurse/nursing_action.php', ['admin', 'nurse']],
+    'nurse/vitals-save' => ['nurse/vitals_save.php', ['admin', 'nurse']],
+    'nurse/vitals-list' => ['nurse/vitals_list.php', ['admin', 'nurse']],
+
+    // 流程
+    'orders/save' => ['orders/order_save.php', ['admin', 'doctor']],
+    'orders/list' => ['orders/order_list.php', ['admin', 'doctor', 'nurse']],
+    'orders/verify' => ['orders/order_verify.php', ['admin', 'doctor']],
+    'orders/status' => ['orders/order_status.php', ['admin', 'doctor', 'nurse']],
+
+    // 检验
+    'lab/save' => ['lab/lab_save.php', ['admin', 'doctor']],
+    'lab/list' => ['lab/lab_list.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
+    'lab/detail' => ['lab/lab_detail.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
+    'lab/collect' => ['lab/lab_collect.php', ['admin', 'nurse']],
+    'lab/result' => ['lab/lab_result.php', ['admin', 'lab_tech']],
+
+    // 检查
+    'exam/save' => ['exam/exam_save.php', ['admin', 'doctor']],
+    'exam/list' => ['exam/exam_list.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
+    'exam/detail' => ['exam/exam_detail.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
+    'exam/report' => ['exam/exam_report.php', ['admin', 'lab_tech']],
+
+    // 病案首页
+    'case/get' => ['case_front_page/get.php', ['admin', 'doctor']],
+    'case/save' => ['case_front_page/save.php', ['admin', 'doctor']],
+    'case/autofill' => ['case_front_page/autofill.php', ['admin', 'doctor']],
+    'case/surgery-save' => ['case_front_page/surgery_save.php', ['admin', 'doctor']],
+    'case/surgery-list' => ['case_front_page/surgery_list.php', ['admin', 'doctor']],
+
+    // 门诊病历查询
+    'outpatient/search' => ['outpatient/outpatient_search.php', ['admin', 'doctor']],
+    'outpatient/mock-data' => ['outpatient/outpatient_mock_data.php', []],
 ];
 
 $handler = $routes[$path] ?? null;

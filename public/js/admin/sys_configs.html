@@ -1,0 +1,58 @@
+<div class="flex-between mb-20">
+    <h2>系统设置</h2>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead><tr><th>键</th><th>值</th><th>分组</th><th>描述</th><th>操作</th></tr></thead>
+        <tbody id="config-table-body"></tbody>
+    </table>
+</div>
+
+<script>
+async function admin_sys_configs_init() {
+    document.getElementById('main-app').style.display = 'block';
+    const sidebar = await fetch('/js/shared/sidebar_admin.html').then(r => r.text());
+    document.getElementById('sidebar').innerHTML = sidebar;
+    loadConfigs();
+}
+
+async function loadConfigs() {
+    const result = await AjaxLoader.api('admin/sys-config-list', {silent:true});
+    const tbody = document.getElementById('config-table-body');
+    tbody.innerHTML = '';
+    (result.data || []).forEach(c => {
+        // 跳过 setup_completed
+        if (c.config_key === 'setup_completed') return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${Format.escape(c.config_key)}</td>
+            <td>${Format.escape(c.config_value||'')}</td>
+            <td>${Format.escape(c.config_group||'')}</td>
+            <td>${Format.escape(c.description||'')}</td>
+            <td><button class="btn btn-small" onclick="admin_sys_configs_edit('${Format.escape(c.config_key)}', '${Format.escape(c.config_value||'')}')">编辑</button></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function admin_sys_configs_edit(key, value) {
+    const content = `
+        <form id="config-form">
+            <div class="form-group"><label class="form-label">键</label><input type="text" name="config_key" class="form-control" value="${key}" readonly></div>
+            <div class="form-group"><label class="form-label">值</label><input type="text" name="config_value" class="form-control" value="${value}"></div>
+        </form>
+    `;
+    Dom.modal('编辑配置', content, [
+        {text:'保存',type:'primary',onclick:async function(){
+            const form = document.getElementById('config-form');
+            const data = {};
+            new FormData(form).forEach((v,k)=>data[k]=v);
+            await AjaxLoader.api('admin/sys-config-save', {method:'POST',data});
+            loadConfigs();
+        }},
+        {text:'取消',type:'default'}
+    ]);
+}
+function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
+</script>

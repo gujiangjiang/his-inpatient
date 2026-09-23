@@ -1,0 +1,68 @@
+<div class="flex-between mb-20">
+    <h2>护士站总览</h2>
+</div>
+
+<div class="card">
+    <div class="card-header">在院患者</div>
+    <div id="nurse-patients"></div>
+</div>
+
+<script>
+async function nurse_station_init() {
+    document.getElementById('main-app').style.display = 'block';
+    const sidebar = await fetch('/js/shared/sidebar_nurse.html').then(r => r.text());
+    document.getElementById('sidebar').innerHTML = sidebar;
+    const result = await AjaxLoader.api('nurse/patient-list', {silent:true});
+    const container = document.getElementById('nurse-patients');
+    container.innerHTML = '';
+    (result.data || []).forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'patient-card';
+        div.innerHTML = `
+            <div class="patient-name">${Format.escape(p.name)}</div>
+            <div class="patient-info">床号: ${Format.escape(p.bed_no || '-')} | 病区: ${Format.escape(p.ward_name || '-')} | 诊断: ${Format.escape(p.admission_diagnosis || '-')}</div>
+            <div class="patient-info">
+                <span class="badge badge-pending">待核查医嘱</span>
+                <span class="badge badge-warning">未发药</span>
+            </div>
+        `;
+        div.onclick = () => showPatientDetail(p.id);
+        container.appendChild(div);
+    });
+}
+
+async function showPatientDetail(patientId) {
+    const orders = await AjaxLoader.api('nurse/order-list?patient_id=' + patientId, {silent:true});
+    const content = `
+        <h3>患者 ${patientId} 详情</h3>
+        <table class="table">
+            <thead><tr><th>医嘱</th><th>类型</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+        ${orders.data.map(o => `
+            <tr>
+                <td>${Format.escape(o.content)}</td>
+                <td>${Format.escape(o.category)}</td>
+                <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
+                <td>${o.category === 'medication' 
+                    ? '<button class="btn btn-small btn-success" onclick="executeOrder(' + o.id + ')">执行</button>' 
+                    : '<button class="btn btn-small btn-success" onclick="executeOrder(' + o.id + ')">执行</button>'}
+                </td>
+            </tr>
+        `).join('')}
+        </tbody></table>
+    `;
+    Dom.modal('患者详情', content);
+}
+
+async function executeOrder(orderId) {
+    const result = await AjaxLoader.api('nurse/nursing-action', {
+        method: 'POST',
+        data: { order_id: orderId, action: 'execute' }
+    });
+    if (result.status === 'success') {
+        Dom.toast('执行成功', 'success');
+    }
+}
+
+function navigateTo(m, p) { AjaxLoader.loadPage(m, p); }
+</script>
