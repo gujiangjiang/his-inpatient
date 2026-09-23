@@ -1,6 +1,6 @@
 // public/js/core/app.js
 const App = {
-    version: '0.11.1',
+    version: '0.11.2',
     roleRoutes: {
         admin: { module: 'admin', page: 'departments' },
         doctor: { module: 'patients', page: 'patient_list' },
@@ -20,6 +20,11 @@ const App = {
     navigateTo(module, page) {
         AjaxLoader.loadPage(module, page);
     }
+};
+
+// 全局 navigateTo: 供 sidebar onclick 使用, 始终可用
+window.navigateTo = function(module, page) {
+    AjaxLoader.loadPage(module, page);
 };
 
 App.init();
