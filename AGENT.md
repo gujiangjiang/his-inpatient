@@ -15,8 +15,14 @@
 - 单文件 ≤200 行，职责单一
 - 类名 PascalCase，文件名 snake_case
 - 公共字典统一维护（前端 `Format`、后端 helpers）
-- 数据库分散迁移
+- 数据库迁移使用 PHP Migration 类 (`api/migrations/php/0xx_*.php`)
 - 接口与页面分离
+
+## 本地开发
+- 使用 FrankenPHP (`~/.local/bin/frankenphp`) 作为本地开发服务器
+- `npm run dev` 启动: `frankenphp php-server --root public/ --listen 0.0.0.0:9090`
+- `npm run lint` 使用 frankenphp 内置 PHP 检查语法 (无需系统 PHP)
+- `PORT` 环境变量可覆盖默认端口
 
 ## 数据库迁移规范
 - 使用 `api/migrations/php/` 中的 PHP 迁移文件 (001_core.php, 002_department.php, ...)
@@ -26,6 +32,6 @@
 - 旧的 SQL 文件已弃用, 仅作参考
 
 ## 新接口约定
-1. 在 `api/index.php` 路由表注册 →
+1. 在 `api/routes.php` 路由表注册 (getRoutes 数组) →
 2. 实现文件放 `api/modules/{module}/` →
 3. 前端页放 `public/js/{module}/{page}.html` 并在对应 sidebar 加入入口

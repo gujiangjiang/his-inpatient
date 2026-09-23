@@ -87,10 +87,10 @@ class Migration {
             }
         }
 
-        // 外键约束
+        // 外键约束 (兼容 SQLite/MySQL/PostgreSQL)
         foreach ($foreignKeys as $fk) {
-            $parts[] = $this->quoteId($fk['column']) . ' ' .
-                'FOREIGN KEY REFERENCES ' . $fk['references'] . '(' . $fk['on'] . ')';
+            $parts[] = 'FOREIGN KEY (' . $this->quoteId($fk['column']) . ') REFERENCES ' .
+                $this->quoteId($fk['references']) . '(' . $this->quoteId($fk['on']) . ')';
         }
 
         $keyword = $ifNotExists ? 'IF NOT EXISTS ' : '';

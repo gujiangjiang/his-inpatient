@@ -15,10 +15,11 @@ class Auth {
             }
         } elseif (!$hasCookie && $sessionIdHeader) {
             // 令牌回退方式
-            session_id($sessionIdHeader);
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
+            if (session_status() !== PHP_SESSION_NONE) {
+                session_write_close();
             }
+            session_id($sessionIdHeader);
+            session_start();
         } else {
             // 两种都没有
             if (session_status() === PHP_SESSION_NONE) {

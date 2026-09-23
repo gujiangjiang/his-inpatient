@@ -4,6 +4,25 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.10.0] - 2026-09-23
+
+### 新增
+- FrankenPHP 本地开发支持: `public/index.php` 路由入口 (Caddy try_files fallback)
+- `npm run lint` 语法检查工具 (tokenizer, 无需系统 PHP)
+- `docs/nginx.conf.example` 生产环境 Nginx 配置参考
+- `public/worker.php` FrankenPHP Worker 模式入口 (生产高性能)
+
+### 修复
+- 修复 config.php DATA_DIR 重复定义
+- 修复 CLI 模式下 session 配置警告
+- 修复 Migration 外键 SQL 语法 (兼容 SQLite)
+- 修复 auth.php 令牌回退 session 冲突 (session_write_close 后切换)
+- 修复 seed_demo_patients.php 未选字段 + 非幂等问题 (幂等化)
+
+### 变更
+- start.sh 支持 FrankenPHP / 系统 PHP 双模式
+- 版本号 0.9.0 -> 0.10.0
+
 ## [0.9.0] - 2026-09-23
 
 ### 新增

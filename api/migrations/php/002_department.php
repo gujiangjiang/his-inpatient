@@ -44,8 +44,7 @@ return [
                 'status' => ['type' => 'VARCHAR', 'length' => '20', 'default' => 'free'],
                 'patient_id' => ['type' => 'INTEGER'],
             ], ['if_not_exists' => true, 'foreign_keys' => [
-                ['column' => 'ward_id', 'references' => 'wards', 'on' => 'id'],
-                ['column' => 'patient_id', 'references' => 'patients', 'on' => 'id']
+                ['column' => 'ward_id', 'references' => 'wards', 'on' => 'id']
             ]]);
         }
     }

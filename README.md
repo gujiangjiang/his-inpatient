@@ -2,7 +2,7 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.9.0-blue)
+![version](https://img.shields.io/badge/version-0.10.0-blue)
 
 ## 技术栈
 
@@ -28,17 +28,30 @@ npm run download-libs   # 下载 Quill.js + html2pdf.js 到 public/lib/
 
 ```bash
 npm run init            # 下载 libs + 初始化数据库 + 导入 ICD-10 + 生成演示数据
-npm start               # 启动开发服务器 (http://127.0.0.1:8080)
+npm run start           # 启动开发服务器 (http://127.0.0.1:8000)
+```
+
+**本地开发 (FrankenPHP)** (推荐用于本地测试):
+
+```bash
+npm run dev             # 启动 FrankenPHP 服务器 (http://0.0.0.0:9090)
+# 或指定端口: PORT=8888 npm run dev
 ```
 
 **手动初始化**:
 
 ```bash
-npm run download-libs   # (可选) 下载前端依赖库到本地
+npm run download-libs   # (可选) 下载前端依赖库到本地用于内网部署
 npm run setup           # 初始化数据库
 npm run import-icd10    # 导入 ICD-10 编码
 npm run seed            # 生成演示数据
-npm run start           # 启动服务器
+npm start               # 启动服务器
+```
+
+**语法检查** (无需系统 PHP):
+
+```bash
+npm run lint            # 或: ~/.local/bin/frankenphp php-cli tools/lint/php-lint.php
 ```
 
 ## 目录结构
