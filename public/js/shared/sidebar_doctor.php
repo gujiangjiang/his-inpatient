@@ -1,14 +1,13 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
-<div class="menu-group">病历</div>
-<div class="menu-item" onclick="navigateTo('doctor','emr_admission')">入院记录</div>
-<div class="menu-item" onclick="navigateTo('doctor','emr_progress')">病程记录</div>
-<div class="menu-item" onclick="navigateTo('doctor','emr_consent')">告知记录</div>
-<div class="menu-item" onclick="navigateTo('doctor','emr_discharge')">出院记录</div>
-<div class="menu-item" onclick="navigateTo('doctor','emr_surgery')">手术记录</div>
-<div class="menu-item" onclick="navigateTo('doctor','templates')">模板库</div>
-<div class="menu-group">医嘱</div>
-<div class="menu-item" onclick="navigateTo('orders','order_list')">医嘱管理</div>
-<div class="menu-item" onclick="navigateTo('patients','patient_list')">患者管理</div>
-<div class="menu-group">其他</div>
-<div class="menu-item" onclick="navigateTo('outpatient','search')">门诊病历查询</div>
-<div class="menu-item" onclick="navigateTo('case_front_page','main')">病案首页</div>
+<div class="menu-group">临床工作</div>
+<div class="menu-item" onclick="navigateTo('orders','order_list')">医嘱</div>
+<div class="menu-item" onclick="navigateTo('emr','diagnosis')">诊断</div>
+<div class="menu-item" onclick="navigateTo('emr','station')">病历</div>
+<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="检验">检验</div>
+<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="检查">检查</div>
+<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="处方">处方</div>
+<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="手术">手术</div>
+<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="护理">护理</div>
+<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="会诊">会诊</div>
+<div class="menu-item" onclick="navigateTo('case_front_page','main')">首页</div>
+<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="提交/质控">提交/质控</div>

@@ -4,6 +4,22 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.12.0] - 2026-09-23
+
+### 新增 (医生工作站 + 结构化病历引擎)
+- **Step1 后端**: 迁移 011 (emr_categories / emr_documents / patient_assignments / doctor_department_permissions + emr_templates 扩展 schema_json/category_id)
+- **Step1 API**: category-list/save, document-list/get/save/sign/delete, patients/incoming|assign|assignment|my-patients, doctors/departments|doctor-list
+- **签名锁定**: document_save/delete 服务端强制拦截 signed 状态写入/删除 (403)
+- **签名校验**: document_sign 需密码二次校验身份, 签名后只读
+- **Step2 布局**: 顶部栏(医院名+患者切换器) + 患者上下文锁定 (PatientContext) + 侧边栏显隐 + 未选患者占位图
+- **Step3 病历树**: 分类树 + 每分类 + 新建模板 + 右键菜单(未签名:打开/编辑/删除; 已签名:仅打开)
+- **Step4 编辑器**: 工具条(编辑切换/保存/签名/撤销重做/打印PDF) + 结构化段落 + 右下角签名栏 + 只读锁定
+- **Step5 种子**: 常规入院记录结构化模板 (10 段落, 仿宋A4排版) + 病历分类 + 医师指派/科室授权 + 待入科患者
+- 诊断页(患者上下文) / 占位页 / emr.css
+
+### 修复
+- 修复 template_list 变量名拼写错误
+
 ## [0.11.0] - 2026-09-23
 
 ### 变更

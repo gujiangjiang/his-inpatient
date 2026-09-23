@@ -1,6 +1,6 @@
 // public/js/core/app.js
 const App = {
-    version: '0.11.4',
+    version: '0.12.0',
     roleRoutes: {
         admin: { module: 'admin', page: 'departments' },
         doctor: { module: 'patients', page: 'patient_list' },

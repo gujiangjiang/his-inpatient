@@ -1,0 +1,193 @@
+/* ===== 病历工作站 (EMR Station) ===== */
+.emr-station {
+    display: flex;
+    height: calc(100vh - 52px - 40px);
+    min-height: 500px;
+    border: 1px solid #e4e7ed;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* 二级左栏: 病历分类树 */
+.emr-tree {
+    width: 240px;
+    background: #f8f9fb;
+    border-right: 1px solid #e4e7ed;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+.emr-tree-header {
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    color: #303133;
+    border-bottom: 1px solid #e4e7ed;
+    background: #fff;
+    position: sticky;
+    top: 0;
+}
+.emr-cat-group { margin-bottom: 4px; }
+.emr-cat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #303133;
+}
+.emr-cat-header:hover { background: #eef1f6; }
+.emr-cat-name { flex: 1; }
+.emr-cat-count { color: #909399; font-size: 12px; }
+.emr-cat-add {
+    width: 18px;
+    height: 18px;
+    line-height: 16px;
+    text-align: center;
+    border-radius: 50%;
+    background: #409eff;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+}
+.emr-cat-add:hover { background: #3385ff; }
+.emr-doc-list { padding: 0 8px 6px 20px; }
+.emr-doc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 13px;
+    color: #606266;
+    cursor: pointer;
+}
+.emr-doc-item:hover { background: #e9eef7; }
+.emr-doc-item.signed { color: #909399; }
+.emr-doc-title-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emr-doc-status-tag { font-size: 11px; padding: 1px 6px; border-radius: 8px; }
+.emr-doc-status-tag.draft { background: #e6a23c22; color: #e6a23c; }
+.emr-doc-status-tag.signed { background: #67c23a22; color: #67c23a; }
+
+/* 二级主视图: 编辑区 */
+.emr-editor-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    overflow: hidden;
+}
+.emr-editor-empty {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #909399;
+    font-size: 14px;
+}
+.emr-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* 顶部工具条 */
+.emr-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e4e7ed;
+    background: #fafafa;
+    flex-wrap: wrap;
+}
+.emr-doc-status { margin-left: auto; font-size: 12px; font-weight: 600; }
+.emr-doc-status.draft { color: #e6a23c; }
+.emr-doc-status.signed { color: #67c23a; }
+
+/* 文书标题 */
+.emr-doc-header { padding: 12px 14px 4px; }
+.emr-doc-title-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #dcdfe0;
+    font-size: 18px;
+    font-weight: 600;
+    padding: 6px 2px;
+    outline: none;
+    color: #303133;
+}
+
+/* 结构化段落 (A4 仿真排版) */
+.emr-doc-sections {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    background: #f3f4f6;
+}
+.emr-section {
+    background: #fff;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    font-family: 仿宋_GB2312, SimSun, serif;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.emr-section-title {
+    font-weight: 700;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #303133;
+}
+.required-mark { color: #f56c6c; }
+.emr-section-input {
+    width: 100%;
+    border: 1px dashed #dcdfe0;
+    border-radius: 4px;
+    padding: 8px;
+    font-family: 仿宋_GB2312, SimSun, serif;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+}
+.emr-section-input:focus { border-color: #409eff; border-style: solid; }
+.emr-section-render {
+    min-height: 30px;
+    padding: 4px 2px;
+    text-indent: 2em;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.emr-section-empty { color: #909399; text-align: center; padding: 40px 0; background: #fff; border-radius: 6px; }
+
+/* 签名栏 */
+.emr-signature-footer {
+    text-align: right;
+    padding: 10px 24px 20px;
+    font-size: 14px;
+    color: #303133;
+    font-family: 仿宋_GB2312, SimSun, serif;
+}
+
+/* 右键上下文菜单 */
+.emr-context-menu {
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    padding: 4px 0;
+    min-width: 120px;
+}
+.emr-context-menu .ctx-item {
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+}
+.emr-context-menu .ctx-item:hover { background: #f0f7ff; }
+.emr-context-menu .ctx-item.danger { color: #f56c6c; }

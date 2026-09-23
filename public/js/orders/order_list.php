@@ -52,6 +52,19 @@ async function orders_order_list_init() {
     const user = Auth.user;
     const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
+
+    // 工作站模式下优先使用全局患者上下文
+    const ctx = PatientContext.current();
+    if (ctx) {
+        const sel = document.getElementById('orders-patient');
+        const card = sel.closest('.card');
+        if (card) card.style.display = 'none';
+        _currentPatientId = ctx.id;
+        _currentPatient = ctx;
+        loadOrders(ctx.id);
+        return;
+    }
+
     const result = await AjaxLoader.api('patients/list', {silent:true});
     const sel = document.getElementById('orders-patient');
     sel.innerHTML = '<option value="">请选择患者</option>';

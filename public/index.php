@@ -28,6 +28,7 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
     <link rel="stylesheet" href="/css/core/layout.css">
     <link rel="stylesheet" href="/css/login/login.css">
     <link rel="stylesheet" href="/css/doctor/doctor.css">
+    <link rel="stylesheet" href="/css/emr/emr.css">
 </head>
 <body>
 <div id="app">
@@ -70,19 +71,45 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
     </div>
 
     <div id="main-app" style="display:none">
-        <nav class="main-nav">
-            <div class="nav-left">
-                <span class="hospital-name">住院一体化系统</span>
-                <span id="breadcrumb"></span>
+        <!-- 顶部全局导航栏 -->
+        <div class="topbar">
+            <div class="topbar-left">
+                <span id="hospital-name" class="hospital-name">开源通用医院信息系统</span>
+                <!-- 患者上下文切换浮动面板 -->
+                <div id="patient-switcher" class="patient-switcher" style="display:none">
+                    <div id="patient-switcher-trigger" class="patient-switcher-trigger">
+                        <span id="current-patient-summary">请选择患者</span>
+                        <span class="switcher-arrow">▾</span>
+                    </div>
+                    <div id="patient-switcher-panel" class="patient-switcher-panel" style="display:none">
+                        <div class="switcher-tabs">
+                            <button type="button" class="switcher-tab active" data-tab="incoming">添加</button>
+                            <button type="button" class="switcher-tab" data-tab="mine">本人</button>
+                            <button type="button" class="switcher-tab" data-tab="dept">科室</button>
+                        </div>
+                        <div id="switcher-tab-content" class="switcher-tab-content"></div>
+                    </div>
+                </div>
             </div>
-            <div class="nav-right">
+            <div class="topbar-right">
                 <span id="user-info"></span>
                 <button class="btn btn-small" onclick="Auth.logout()">退出</button>
             </div>
-        </nav>
+        </div>
+
         <div class="main-container">
-            <div id="sidebar" class="sidebar"></div>
-            <main class="main-content" id="app-content"></main>
+            <!-- 左侧主功能导航栏 (患者选定后激活) -->
+            <div id="sidebar" class="sidebar" style="display:none"></div>
+            <!-- 未选患者占位 -->
+            <div id="patient-placeholder" class="patient-placeholder">
+                <div class="placeholder-inner">
+                    <div class="placeholder-icon">🏥</div>
+                    <p class="placeholder-title">请先选择患者</p>
+                    <p class="placeholder-hint">点击左上角「请选择患者」，从 添加/本人/科室 三个维度选择患者进入工作站</p>
+                </div>
+            </div>
+            <!-- 主视图区 -->
+            <main class="main-content" id="app-content" style="display:none"></main>
         </div>
     </div>
 </div>
@@ -99,6 +126,8 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 <script src="/js/core/icd_search.js"></script>
 <script src="/js/core/pdf_generator.js"></script>
 <script src="/js/core/print_helper.js"></script>
+<script src="/js/core/patient_context.js"></script>
+<script src="/js/core/patient_switcher.js"></script>
 <script src="/js/login/login.js"></script>
 </body>
 </html>

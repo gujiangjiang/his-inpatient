@@ -92,7 +92,14 @@ async function case_front_page_main_init() {
     document.getElementById('main-app').style.display = 'block';
     const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
-    
+
+    // 工作站模式下优先使用全局患者上下文
+    const ctx = PatientContext.current();
+    if (ctx && ctx.admission_no) {
+        await loadCaseFrontPage(ctx.admission_no);
+        return;
+    }
+
     // 获取当前患者
     const hash = window.location.hash.replace('#', '');
     const hashParts = hash.split('/');

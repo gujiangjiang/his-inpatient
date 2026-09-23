@@ -1,16 +1,16 @@
 {
   "name": "his-inpatient",
-  "version": "0.11.4",
+  "version": "0.12.0",
   "description": "Hospital Inpatient Information System",
   "scripts": {
     "setup": "php api/scripts/setup.php",
     "import-icd10": "php api/scripts/import_icd10.php",
-    "seed": "php api/scripts/seed_demo.php && php api/scripts/seed_demo_patients.php",
+    "seed": "php api/scripts/seed_demo.php && php api/scripts/seed_demo_patients.php && php api/scripts/seed_emr_templates.php",
     "migrate": "php api/scripts/migrate.php",
     "download-libs": "php api/scripts/download_libs.php",
     "lint": "~/.local/bin/frankenphp php-cli tools/lint/php-lint.php",
     "start": "php -S 127.0.0.1:8080 router.php",
     "dev": "~/.local/bin/frankenphp php-server --root public/ --listen 0.0.0.0:9090",
-    "init": "php api/scripts/download_libs.php && php api/scripts/setup.php && php api/scripts/import_icd10.php && php api/scripts/seed_demo.php && php api/scripts/seed_demo_patients.php"
+    "init": "php api/scripts/download_libs.php && php api/scripts/setup.php && php api/scripts/import_icd10.php && php api/scripts/seed_demo.php && php api/scripts/seed_demo_patients.php && php api/scripts/seed_emr_templates.php"
   }
 }

@@ -64,6 +64,25 @@ function getRoutes() {
         'orders/invalidate' => ['orders/order_invalidate.php', ['admin', 'doctor']],
         'orders/batch-delete' => ['orders/order_batch_delete.php', ['admin', 'doctor']],
 
+        // 病历 (结构化)
+        'emr/category-list' => ['emr/category_list.php', ['admin', 'doctor']],
+        'emr/category-save' => ['emr/category_save.php', ['admin']],
+        'emr/document-list' => ['emr/document_list.php', ['admin', 'doctor']],
+        'emr/document-get' => ['emr/document_get.php', ['admin', 'doctor']],
+        'emr/document-save' => ['emr/document_save.php', ['admin', 'doctor']],
+        'emr/document-sign' => ['emr/document_sign.php', ['admin', 'doctor']],
+        'emr/document-delete' => ['emr/document_delete.php', ['admin', 'doctor']],
+
+        // 患者上下文
+        'patients/incoming' => ['patients/incoming_queue.php', ['admin', 'doctor']],
+        'patients/assign' => ['patients/patient_assign.php', ['admin', 'doctor']],
+        'patients/assignment' => ['patients/assignment_get.php', ['admin', 'doctor']],
+        'patients/my-patients' => ['patients/my_patients.php', ['admin', 'doctor']],
+
+        // 医生科室授权
+        'doctors/departments' => ['doctors/doctor_departments.php', ['admin', 'doctor']],
+        'doctors/doctor-list' => ['doctors/doctor_list.php', ['admin', 'doctor']],
+
         // 检验
         'lab/save' => ['lab/lab_save.php', ['admin', 'doctor']],
         'lab/list' => ['lab/lab_list.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
