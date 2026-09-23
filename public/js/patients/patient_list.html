@@ -68,7 +68,7 @@ function patients_discharge(id) {
     Dom.modal('确认出院', '<p>确认患者出院吗？</p>', [
         {text:'确认',type:'danger',onclick:async function(){
             await AjaxLoader.api('patients/discharge', {method:'POST',data:{id}});
-            patient_list_init();
+            patients_patient_list_init();
         }},
         {text:'取消',type:'default'}
     ]);
@@ -109,7 +109,7 @@ function showPatientForm(p) {
             const result = await AjaxLoader.api('patients/save', {method:'POST',data});
             if (result.status === 'success') {
                 Dom.toast('保存成功','success');
-                patient_list_init();
+                patients_patient_list_init();
             }
         }},
         {text:'取消',type:'default'}

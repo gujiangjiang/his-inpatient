@@ -93,8 +93,9 @@ async function case_front_page_main_init() {
     document.getElementById('sidebar').innerHTML = sidebar;
     
     // 获取当前患者
-    const params = new URLSearchParams(window.location.hash.replace('#', '').split('/').slice(-1)[0] || '');
-    const admissionNo = params.get('admission_no') || '';
+    const hash = window.location.hash.replace('#', '');
+    const hashParts = hash.split('/');
+    const admissionNo = hashParts.length >= 3 ? hashParts[2] : '';
     if (admissionNo) {
         await loadCaseFrontPage(admissionNo);
     } else {
