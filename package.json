@@ -1,0 +1,12 @@
+{
+  "name": "his-inpatient",
+  "version": "0.1.0",
+  "description": "Hospital Inpatient Information System",
+  "scripts": {
+    "setup": "php api/scripts/setup.php",
+    "import-icd10": "php api/scripts/import_icd10.php",
+    "seed": "php api/scripts/seed_demo.php && php api/scripts/seed_demo_patients.php",
+    "migrate": "php api/scripts/migrate.php",
+    "start": "php -S 127.0.0.1:8080 router.php"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+data/hospital.sqlite
+data/icd10.sqlite
+data/*.sqlite
+*.sqlite
+public/uploads/
+.vly-run/
+.env
+*.sql~
+*.log
