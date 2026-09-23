@@ -8,3 +8,4 @@ public/uploads/
 .env
 *.sql~
 *.log
+.DS_Store
