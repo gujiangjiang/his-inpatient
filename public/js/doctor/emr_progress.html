@@ -1,0 +1,56 @@
+<div class="flex-between mb-20">
+    <h2>病程记录</h2>
+    <select id="patient-select" class="form-control" style="width:200px" onchange="loadPatientForProgress(this.value)">
+        <option value="">选择患者</option>
+    </select>
+    <button class="btn btn-success" onclick="doctor_emr_progress_save()">保存病程记录</button>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        病程记录
+        <button class="btn btn-small btn-success" style="float:right" onclick="TemplatePicker.select('progress', function(template) { if(template) { const e = RichEditor.create('editor-container', template.content_delta); } })">从模板插入</button>
+    </div>
+    <div style="padding:15px">
+        <div id="editor-container"></div>
+    </div>
+</div>
+
+<script>
+let _currentProgressPatient = null;
+let _patientsCache = [];
+
+async function doctor_emr_progress_init() {
+    document.getElementById('main-app').style.display = 'block';
+    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    document.getElementById('sidebar').innerHTML = sidebar;
+    const result = await AjaxLoader.api('patients/list', {silent:true});
+    _patientsCache = result.data || [];
+    const sel = document.getElementById('patient-select');
+    _patientsCache.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name + ' (' + p.admission_no + ')';
+        sel.appendChild(opt);
+    });
+}
+
+async function loadPatientForProgress(id) {
+    _currentProgressPatient = _patientsCache.find(p => p.id == id);
+}
+
+async function doctor_emr_progress_save() {
+    if (!_currentProgressPatient) { Dom.toast('请选择患者','error'); return; }
+    const editor = RichEditor.create('editor-container');
+    const delta = editor.getDelta();
+    if (!delta || delta === '{}') { Dom.toast('请输入内容','error'); return; }
+    await AjaxLoader.api('emr/save', {method:'POST',data:{
+        patient_id: _currentProgressPatient.id,
+        record_type: 'progress',
+        content_delta: delta,
+        content_html: editor.getHTML()
+    }});
+    Dom.toast('保存成功','success');
+}
+function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
+</script>

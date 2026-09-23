@@ -1,0 +1,82 @@
+<div class="flex-between mb-20">
+    <h2>模板库</h2>
+    <button class="btn btn-primary" onclick="doctor_templates_new()">新建模板</button>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead>
+            <tr><th>名称</th><th>类型</th><th>使用次数</th><th>创建时间</th><th>操作</th></tr>
+        </thead>
+        <tbody id="template-table-body"></tbody>
+    </table>
+</div>
+
+<script>
+async function doctor_templates_init() {
+    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('login-container').style.display = 'none';
+    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    document.getElementById('sidebar').innerHTML = sidebar;
+    loadTemplates();
+}
+
+async function loadTemplates() {
+    const result = await AjaxLoader.api('emr/template-list?record_type=admission', { silent: true });
+    const tbody = document.getElementById('template-table-body');
+    tbody.innerHTML = '';
+    (result.data || []).forEach(t => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${Format.escape(t.name)}</td><td>${Format.escape(t.record_type)}</td><td>${t.usage_count}</td>
+            <td>${Format.datetime(t.created_at)}</td>
+            <td>
+                <button class="btn btn-small" onclick="doctor_templates_edit(${t.id})">编辑</button>
+                <button class="btn btn-small btn-danger" onclick="doctor_templates_delete(${t.id})">删除</button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+function doctor_templates_new() {
+    showTemplateForm({});
+}
+function doctor_templates_edit(id) {
+    AjaxLoader.api('emr/template-get?id=' + id, {silent:true}).then(r => {
+        showTemplateForm(r.data);
+    });
+}
+function doctor_templates_delete(id) {
+    Dom.modal('确认删除', '<p>确认删除此模板吗？</p>', [
+        {text:'删除',type:'danger',onclick:async function(){
+            await AjaxLoader.api('emr/template-delete?id=' + id, {method:'DELETE'});
+            loadTemplates();
+        }},
+        {text:'取消',type:'default'}
+    ]);
+}
+function showTemplateForm(template) {
+    const content = `
+        <div class="form-group"><input type="text" name="name" class="form-control" placeholder="模板名称" value="${Format.escape(template.name || '')}"></div>
+        <div class="form-group"><input type="text" name="record_type" class="form-control" placeholder="病历类型" value="${Format.escape(template.record_type || 'admission')}"></div>
+        <div class="form-group"><div id="tpl-editor"></div></div>
+        <input type="hidden" name="id" value="${template.id || ''}">
+    `;
+    Dom.modal('模板编辑', content, [
+        {text:'保存',type:'primary',onclick:async function(){
+            const editor = RichEditor.create('tpl-editor', template.content_delta || '');
+            const delta = editor.getDelta();
+            const html = editor.getHTML();
+            const name = document.querySelector('[name="name"]').value;
+            const rt = document.querySelector('[name="record_type"]').value;
+            const id = document.querySelector('[name="id"]').value;
+            await AjaxLoader.api('emr/template-save', {method:'POST',data:{id:id,name,record_type:rt,content_delta:delta,content_html:html}});
+            loadTemplates();
+        }},
+        {text:'取消',type:'default'}
+    ]);
+    if (template.id) {
+        setTimeout(() => { const e = RichEditor.create('tpl-editor', template.content_delta || ''); }, 100);
+    }
+}
+function navigateTo(module, page) { AjaxLoader.loadPage(module, page); }
+</script>

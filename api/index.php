@@ -47,6 +47,16 @@ $routes = [
     'patients/save' => ['patients/patient_save.php', ['admin', 'doctor']],
     'patients/discharge' => ['patients/patient_discharge.php', ['admin', 'doctor']],
     'patients/beds' => ['patients/bed_list.php', ['admin', 'doctor']],
+
+    // 病历
+    'emr/save' => ['emr/save.php', ['admin', 'doctor']],
+    'emr/list' => ['emr/list.php', ['admin', 'doctor', 'nurse']],
+    'emr/get' => ['emr/get.php', ['admin', 'doctor', 'nurse']],
+    'emr/icd-search' => ['emr/icd_search.php', ['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']],
+    'emr/template-list' => ['emr/template_list.php', ['admin', 'doctor']],
+    'emr/template-get' => ['emr/template_get.php', ['admin', 'doctor']],
+    'emr/template-save' => ['emr/template_save.php', ['admin', 'doctor']],
+    'emr/template-use' => ['emr/template_use.php', ['admin', 'doctor']],
 ];
 
 $handler = $routes[$path] ?? null;

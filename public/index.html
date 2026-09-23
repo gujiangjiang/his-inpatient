@@ -4,16 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIS 住院一体化系统</title>
+    <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
     <link rel="stylesheet" href="/css/core/reset.css">
+    <link rel="stylesheet" href="/css/core/layout.css">
     <link rel="stylesheet" href="/css/login/login.css">
 </head>
 <body>
 <div id="app">
-    <div id="login-container" class="login-container">
+    <div id="login-container" class="login-container" style="display:none">
         <div class="login-form-wrapper">
             <h1 class="login-title">住院一体化系统</h1>
             <div id="login-box">
-                <div class="login-warm-tips" style="display:none"></div>
                 <form id="login-form">
                     <div class="form-group">
                         <input type="text" name="username" placeholder="用户名" required>
@@ -22,7 +23,7 @@
                         <input type="password" name="password" placeholder="密码" required>
                     </div>
                     <button type="submit" class="login-btn">登录</button>
-                </form>
+                </div>
             </div>
             <div id="setup-wizard" style="display:none">
                 <h2>系统初始化</h2>
@@ -47,23 +48,40 @@
             </div>
         </div>
     </div>
+
+    <div id="main-app" style="display:none">
+        <nav class="main-nav">
+            <div class="nav-left">
+                <span class="hospital-name">住院一体化系统</span>
+                <span id="breadcrumb"></span>
+            </div>
+            <div class="nav-right">
+                <span id="user-info"></span>
+                <button class="btn btn-small" onclick="Auth.logout()">退出</button>
+            </div>
+        </nav>
+        <div class="main-container">
+            <div id="sidebar" class="sidebar"></div>
+            <main class="main-content" id="app-content"></main>
+        </div>
+    </div>
 </div>
-    <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
-    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2pdf@0.10.1/dist/html2pdf.bundle.min.js"></script>
-    <script src="/js/core/app.js">
+<script src="https://cdn.jsdelivr.net/npm/html2pdf@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script src="/js/core/app.js"></script>
 <script src="/js/core/format.js"></script>
 <script src="/js/core/ajax.js"></script>
 <script src="/js/core/auth.js"></script>
-<script>
-    if (typeof Quill === 'undefined') {
-        console.warn('Quill CDN unavailable, RichEditor will degrade to textarea');
-    }
-    if (typeof html2pdf === 'undefined') {
-        console.warn('html2pdf CDN unavailable, PrintHelper will use window.print()');
-    }
-</script>
 <script src="/js/core/dom.js"></script>
+<script src="/js/core/components.js"></script>
+<script src="/js/core/rich_editor.js"></script>
+<script src="/js/core/template_picker.js"></script>
+<script src="/js/core/icd_search.js"></script>
+<script src="/js/core/pdf_generator.js"></script>
+<script src="/js/core/print_helper.js"></script>
+<script>
+if (typeof Quill === 'undefined') console.warn('Quill CDN unavailable');
+if (typeof html2pdf === 'undefined') console.warn('html2pdf CDN unavailable');
+</script>
 <script src="/js/login/login.js"></script>
 </body>
 </html>

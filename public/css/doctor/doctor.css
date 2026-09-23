@@ -1,0 +1,60 @@
+.main-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2e3642;
+    color: #fff;
+    padding: 0 20px;
+    height: 50px;
+}
+.nav-left { display: flex; align-items: center; gap: 20px; }
+.hospital-name { font-weight: 600; font-size: 14px; }
+#breadcrumb { font-size: 12px; color: #888; }
+.nav-right { display: flex; align-items: center; gap: 15px; }
+#user-info { font-size: 13px; }
+
+.main-container {
+    display: flex;
+    height: calc(100vh - 50px);
+}
+.sidebar {
+    width: 220px;
+    background: #f5f7fa;
+    border-right: 1px solid #e4e7ed;
+    padding-top: 15px;
+    overflow-y: auto;
+}
+.sidebar .menu-item {
+    display: block;
+    padding: 10px 20px;
+    color: #606266;
+    text-decoration: none;
+    font-size: 13px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+}
+.sidebar .menu-item:hover { background: #e9eef7; }
+.sidebar .menu-item.active { background: #e9eef7; border-left-color: #409eff; color: #409eff; font-weight: 600; }
+.sidebar .menu-group {
+    font-size: 12px;
+    color: #909399;
+    padding: 10px 20px 5px;
+    text-transform: uppercase;
+}
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    background: #fff;
+    padding: 20px;
+}
+
+.patient-card {
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+.patient-card:hover { background: #f0f7ff; }
+.patient-card .patient-name { font-weight: 600; font-size: 14px; }
+.patient-card .patient-info { font-size: 12px; color: #909399; margin-top: 4px; }
