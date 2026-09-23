@@ -1,4 +1,4 @@
--- SQLite 迁移文件
+-- SQLite 迁移文件 (已弃用，由 php/ 目录基于 Migration 类生成的代码替代)
 -- 结构同构 MySQL/PostgreSQL
 
 -- 系统配置

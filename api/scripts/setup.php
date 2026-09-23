@@ -1,33 +1,32 @@
 <?php
-// api/scripts/setup.php - 主库初始化
+// api/scripts/setup.php - 主库初始化 (使用新迁移系统)
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/db.php';
+require_once __DIR__ . '/../core/migration.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 
 $pdo = DB::getPDO();
+$migration = new Migration();
+$migration->enableForeignKeys();
 
-// 读取迁移文件
-$sql = file_get_contents(__DIR__ . '/../migrations/sqlite.sql');
-$pdo->exec($sql);
+// 按顺序执行迁移
+$migrationDir = __DIR__ . '/../migrations/php';
+$migrationFiles = glob($migrationDir . '/*.php');
+sort($migrationFiles);
 
-// 标记未初始化（setup_completed=0）
-$configExists = $pdo->query("SELECT COUNT(*) as c FROM system_config WHERE config_key = 'setup_completed'")->fetch()['c'];
-if (!$configExists) {
-    $stmt = $pdo->prepare("INSERT INTO system_config (config_key, config_value, config_group, description) VALUES (?, ?, ?, ?)");
-    $stmt->execute(['setup_completed', '0', 'system', '系统是否已初始化']);
-}
-
-// 基础配置项
-$defaults = [
-    ['hospital_name', '', 'system', '医院名称'],
-    ['hospital_code', '', 'system', '组织机构代码'],
-];
-foreach ($defaults as $d) {
-    $check = $pdo->query("SELECT COUNT(*) as c FROM system_config WHERE config_key = '{$d[0]}'")->fetch()['c'];
-    if (!$check) {
-        $stmt = $pdo->prepare("INSERT INTO system_config (config_key, config_value, config_group, description) VALUES (?, ?, ?, ?)");
-        $stmt->execute($d);
+foreach ($migrationFiles as $file) {
+    $migrationFn = require $file;
+    if (!is_array($migrationFn) || !isset($migrationFn['version']) || !isset($migrationFn['up'])) {
+        continue;
     }
+    $version = $migrationFn['version'];
+    if ($migration->isMigrated($version)) {
+        echo "迁移 {$version} 已跳过: " . $migrationFn['description'] . "\n";
+        continue;
+    }
+    $migrationFn['up']($migration);
+    $migration->recordMigration($version);
+    echo "迁移 {$version} 完成: " . $migrationFn['description'] . "\n";
 }
 
-echo "初始化完成。数据库已创建，系统未初始化（需通过初始化向导创建管理员）。\n";
+echo "数据库初始化完成。\n";

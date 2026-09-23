@@ -18,6 +18,13 @@
 - 数据库分散迁移
 - 接口与页面分离
 
+## 数据库迁移规范
+- 使用 `api/migrations/php/` 中的 PHP 迁移文件 (001_core.php, 002_department.php, ...)
+- 每个迁移文件返回数组: `version`, `description`, `up` (回调函数)
+- 使用 `Migration` 类抽象 SQLite/MySQL/PostgreSQL 差异
+- `setup.php` 执行所有迁移, `migrate.php` 执行未完成的迁移
+- 旧的 SQL 文件已弃用, 仅作参考
+
 ## 新接口约定
 1. 在 `api/index.php` 路由表注册 →
 2. 实现文件放 `api/modules/{module}/` →

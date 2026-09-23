@@ -4,6 +4,19 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.9.0] - 2026-09-23
+
+### 新增
+- **数据库迁移重构**: 统一 PHP 迁移系统 (Migration 类), 支持 SQLite/MySQL/PostgreSQL 自动翻译
+- 迁移文件按功能拆分: 001_core, 002_department, 003_user, 004_patient, 005_orders, 006_emr, 007_nursing, 008_pharmacy, 009_lab_exam, 010_case_surgery
+- `npm run init` 一键初始化 (下载 libs + 数据库 + ICD-10 + 演示数据)
+- Migration 类自动处理: 表创建/列检查/索引创建/外键/MIGRATIONS 记录
+
+### 变更
+- setup.php 和 migrate.php 现在使用 PHP 迁移系统自动执行
+- 旧 SQL 迁移文件标记为已弃用
+- 版本号 0.8.0 -> 0.9.0
+
 ## [0.8.0] - 2026-09-23
 
 ### 新增

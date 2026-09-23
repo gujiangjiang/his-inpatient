@@ -1,14 +1,14 @@
 {
   "name": "his-inpatient",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "Hospital Inpatient Information System",
   "scripts": {
     "setup": "php api/scripts/setup.php",
     "import-icd10": "php api/scripts/import_icd10.php",
     "seed": "php api/scripts/seed_demo.php && php api/scripts/seed_demo_patients.php",
     "migrate": "php api/scripts/migrate.php",
-    "start": "php -S 127.0.0.1:8080 router.php",
     "download-libs": "php api/scripts/download_libs.php",
+    "start": "php -S 127.0.0.1:8080 router.php",
     "init": "php api/scripts/download_libs.php && php api/scripts/setup.php && php api/scripts/import_icd10.php && php api/scripts/seed_demo.php && php api/scripts/seed_demo_patients.php"
   }
 }
