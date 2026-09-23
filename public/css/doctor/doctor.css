@@ -148,3 +148,38 @@
 
 /* 指派弹窗 */
 .assign-dialog { min-width: 320px; }
+
+/* ===== 患者信息栏 (选择患者后显示) ===== */
+.patient-info-bar {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    padding: 8px 20px;
+    background: #f0f7ff;
+    border-bottom: 1px solid #d9e9ff;
+    flex-wrap: wrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+.pib-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #303133; }
+.pib-item b { color: #909399; font-weight: 400; }
+.pib-item i { font-style: normal; font-weight: 600; }
+.pib-diagnosis { max-width: 340px; }
+.pib-diagnosis i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== 科室折叠列表 (患者切换器) ===== */
+.dept-group { margin-bottom: 2px; }
+.dept-group-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 6px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.dept-group-head:hover { background: #f0f7ff; }
+.dept-caret { font-size: 11px; color: #909399; width: 12px; }
+.dept-name { font-weight: 600; color: #303133; }
+.dept-count { margin-left: auto; color: #909399; font-size: 12px; }
+.dept-group-body { padding: 2px 0 6px 18px; }

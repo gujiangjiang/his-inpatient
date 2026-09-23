@@ -83,8 +83,8 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
                     </div>
                     <div id="patient-switcher-panel" class="patient-switcher-panel" style="display:none">
                         <div class="switcher-tabs">
-                            <button type="button" class="switcher-tab active" data-tab="incoming">添加</button>
-                            <button type="button" class="switcher-tab" data-tab="mine">本人</button>
+                            <button type="button" class="switcher-tab" data-tab="incoming">添加</button>
+                            <button type="button" class="switcher-tab active" data-tab="mine">本人</button>
                             <button type="button" class="switcher-tab" data-tab="dept">科室</button>
                         </div>
                         <div id="switcher-tab-content" class="switcher-tab-content"></div>
@@ -98,6 +98,18 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
         </div>
 
         <div class="main-container">
+            <!-- 患者信息栏 (选择患者后显示) -->
+            <div id="patient-info-bar" class="patient-info-bar" style="display:none">
+                <span class="pib-item"><b>姓名</b><i id="pib-name">-</i></span>
+                <span class="pib-item"><b>性别</b><i id="pib-gender">-</i></span>
+                <span class="pib-item"><b>年龄</b><i id="pib-age">-</i></span>
+                <span class="pib-item"><b>科室</b><i id="pib-dept">-</i></span>
+                <span class="pib-item"><b>病区</b><i id="pib-ward">-</i></span>
+                <span class="pib-item pib-diagnosis"><b>主诊断</b><i id="pib-diagnosis">-</i></span>
+                <span class="pib-item"><b>总费用</b><i id="pib-fee">¥ --</i></span>
+                <button type="button" class="btn btn-small" onclick="PatientContext.clear()">切换患者</button>
+            </div>
+
             <!-- 左侧主功能导航栏 (患者选定后激活) -->
             <div id="sidebar" class="sidebar" style="display:none"></div>
             <!-- 未选患者占位 -->

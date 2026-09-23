@@ -41,7 +41,7 @@ function getRoutes() {
         'emr/template-delete' => ['emr/template_delete.php', ['admin', 'doctor']],
 
         // 药房
-        'pharmacy/medication-list' => ['pharmacy/medication_list.php', ['admin', 'pharmacist']],
+        'pharmacy/medication-list' => ['pharmacy/medication_list.php', ['admin', 'pharmacist', 'doctor']],
         'pharmacy/medication-save' => ['pharmacy/medication_save.php', ['admin', 'pharmacist']],
         'pharmacy/pending-queue' => ['pharmacy/pending_queue.php', ['admin', 'pharmacist']],
         'pharmacy/dispensing-save' => ['pharmacy/dispensing_save.php', ['admin', 'pharmacist']],
@@ -78,6 +78,7 @@ function getRoutes() {
         'patients/assign' => ['patients/patient_assign.php', ['admin', 'doctor']],
         'patients/assignment' => ['patients/assignment_get.php', ['admin', 'doctor']],
         'patients/my-patients' => ['patients/my_patients.php', ['admin', 'doctor']],
+        'patients/by-department' => ['patients/by_department.php', ['admin', 'doctor']],
 
         // 医生科室授权
         'doctors/departments' => ['doctors/doctor_departments.php', ['admin', 'doctor']],

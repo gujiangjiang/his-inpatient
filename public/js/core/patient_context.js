@@ -55,21 +55,22 @@ const PatientContext = {
 
 /**
  * 全局: 根据患者上下文刷新工作站布局
- * 未选患者: 隐藏侧边栏, 显示占位图; 已选患者: 反之, 并按需加载侧边栏
+ * 未选患者: 隐藏侧边栏/信息栏, 显示占位图; 已选患者: 反之, 并按需加载侧边栏
  */
 window.refreshWorkstationLayout = async function() {
     const isWorkstation = window.WorkstationMode === true;
     const sidebar = document.getElementById('sidebar');
     const placeholder = document.getElementById('patient-placeholder');
     const content = document.getElementById('app-content');
+    const infoBar = document.getElementById('patient-info-bar');
 
     if (!sidebar || !placeholder || !content) return;
 
     if (!isWorkstation) {
-        // 非工作站角色: 侧边栏常显, 占位隐藏
         sidebar.style.display = 'block';
         placeholder.style.display = 'none';
         content.style.display = 'block';
+        if (infoBar) infoBar.style.display = 'none';
         return;
     }
 
@@ -78,7 +79,10 @@ window.refreshWorkstationLayout = async function() {
         sidebar.style.display = 'block';
         placeholder.style.display = 'none';
         content.style.display = 'block';
-        // 侧边栏尚未加载时按需拉取 (医生工作站)
+        if (infoBar) {
+            infoBar.style.display = 'flex';
+            PatientContext.fillInfoBar(ctx);
+        }
         if (sidebar.children.length === 0 && Auth.user) {
             try {
                 const html = await fetch('/js/shared/sidebar_' + Auth.user.role + '.php').then(r => r.text());
@@ -89,5 +93,25 @@ window.refreshWorkstationLayout = async function() {
         sidebar.style.display = 'none';
         placeholder.style.display = 'flex';
         content.style.display = 'none';
+        if (infoBar) infoBar.style.display = 'none';
     }
+};
+
+/**
+ * 填充患者信息栏 (姓名/性别/年龄/科室/病区/主诊断/总费用)
+ */
+PatientContext.fillInfoBar = function(p) {
+    if (!p) return;
+    const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+    const set = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = v;
+    };
+    set('pib-name', p.name || '-');
+    set('pib-gender', Format.gender(p.gender));
+    set('pib-age', age || '-');
+    set('pib-dept', p.department_name || (p.department_id ? '科室' + p.department_id : '-'));
+    set('pib-ward', p.ward_name || (p.ward_id ? '病区' + p.ward_id : '-'));
+    set('pib-diagnosis', p.admission_diagnosis || '-');
+    set('pib-fee', '¥ ' + (p.total_fee || '--'));
 };
