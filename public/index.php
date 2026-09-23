@@ -1,12 +1,20 @@
 <?php
 // public/index.php - 唯一入口 (SPA 壳 + API 路由)
 // FrankenPHP/Caddy php_server: / 与不存在的路径都会执行本文件
-// /api/* → 交由 API 处理; 其他 → 输出 SPA 页面
+// /api/* → 交由 API 处理; 静态资源缺失 → 404; 其他 → 输出 SPA 页面
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 if (strpos($uri, '/api/') === 0) {
     require __DIR__ . '/../api/index.php';
+    return;
+}
+
+// 静态资源 (.js/.css/.png/...) 缺失时返回 404, 避免 SPA 页面对脚本报 "Unexpected token '<'"
+if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo '404 Not Found';
     return;
 }
 ?><!DOCTYPE html>

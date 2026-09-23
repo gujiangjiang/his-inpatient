@@ -85,6 +85,13 @@ const AjaxLoader = {
                 const app = document.getElementById('app-content') || document.getElementById('app');
                 if (app) {
                     app.innerHTML = html;
+                    // innerHTML 不会自动执行 <script>, 手动提取并按序执行
+                    const scripts = app.querySelectorAll('script');
+                    scripts.forEach(s => {
+                        const ns = document.createElement('script');
+                        ns.textContent = s.textContent;
+                        s.parentNode.replaceChild(ns, s);
+                    });
                 }
                 // 执行页面初始化函数
                 const initFn = window[module + '_' + page + '_init'];
