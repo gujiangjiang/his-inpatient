@@ -1,7 +1,7 @@
 <div class="flex-between mb-20">
     <h2>医嘱管理</h2>
-    <button class="btn btn-primary" onclick="doctor_orders_new()">开嘱</button>
-    <button class="btn" onclick="doctor_orders_refresh()">刷新</button>
+    <button class="btn btn-primary" onclick="orders_order_list_new()">开嘱</button>
+    <button class="btn" onclick="orders_order_list_refresh()">刷新</button>
 </div>
 
 <div class="card">
@@ -16,9 +16,10 @@
 <script>
 let _ordersPatientCache = [];
 
-async function doctor_orders_init() {
+async function orders_order_list_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    const user = Auth.user();
+    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.html').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const result = await AjaxLoader.api('patients/list', {silent:true});
     _ordersPatientCache = result.data || [];
@@ -40,12 +41,11 @@ async function loadOrders() {
             <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
             <td>${Format.datetime(o.start_date)}</td>
             <td>
-                ${o.status === 'pending' ? `<button class="btn btn-small btn-success" onclick="doctor_orders_verify(${o.id})">核对</button>` : ''}
-                ${o.status === 'verified' || o.status === 'executing' ? `<button class="btn btn-small" onclick="doctor_orders_complete(${o.id})">完成</button>` : ''}
+                ${o.status === 'pending' ? `<button class="btn btn-small btn-success" onclick="orders_verify(${o.id})">核对</button>` : ''}
+                ${o.status === 'verified' || o.status === 'executing' ? `<button class="btn btn-small" onclick="orders_complete(${o.id})">完成</button>` : ''}
             </td>
         `;
         tbody.appendChild(tr);
-        // 添加子医嘱
         if (o.sub_orders && o.sub_orders.length) {
             o.sub_orders.forEach(sub => {
                 const subTr = document.createElement('tr');
@@ -63,7 +63,7 @@ async function loadOrders() {
     });
 }
 
-function doctor_orders_new() {
+function orders_order_list_new() {
     const content = `
         <div class="form-group">
             <label class="form-label">患者</label>
@@ -95,24 +95,25 @@ function doctor_orders_new() {
             const category = document.getElementById('order-category').value;
             let subOrders = [];
             try { subOrders = JSON.parse(document.getElementById('sub-orders').value || '[]'); } catch(e) {}
-            await AjaxLoader.api('orders/save', {method:'POST',data:{
-                patient_id: patientId, content: contentVal, category: category || null,
-                order_type: 'general', sub_orders: subOrders.length ? subOrders : undefined
-            }});
+            await AjaxLoader.api('orders/save', {
+                method:'POST',
+                data:{ patient_id: patientId, content: contentVal, category: category || null,
+                order_type: 'general', sub_orders: subOrders.length ? subOrders : undefined }
+            });
             loadOrders();
         }},
         {text:'取消',type:'default'}
     ]);
 }
 
-function doctor_orders_verify(id) {
+function orders_verify(id) {
     AjaxLoader.api('orders/verify', {method:'POST',data:{id, status:'verified'}}).then(() => loadOrders());
 }
 
-function doctor_orders_complete(id) {
+function orders_complete(id) {
     AjaxLoader.api('orders/status', {method:'POST',data:{id, status:'completed'}}).then(() => loadOrders());
 }
 
-function doctor_orders_refresh() { loadOrders(); }
+function orders_order_list_refresh() { loadOrders(); }
 function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>
