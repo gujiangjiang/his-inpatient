@@ -2,7 +2,7 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.10.0-blue)
+![version](https://img.shields.io/badge/version-0.11.0-blue)
 
 ## 技术栈
 
@@ -70,11 +70,15 @@ npm run lint            # 或: ~/.local/bin/frankenphp php-cli tools/lint/php-li
 │   ├── migrations/         # 三方言迁移 (sqlite/mysql/postgresql)
 │   ├── modules/            # 接口实现 (9 个模块)
 │   └── scripts/            # CLI 脚本 (setup, import_icd10, seed, migrate, download_libs)
-└── public/                 # 前端
-    ├── index.html          # 唯一入口 (SPA shell)
+└── public/                 # 前端 (Web 根目录)
+    ├── index.php           # 唯一入口 (SPA 壳 + /api/ 路由)
     ├── lib/                # 第三方库 (Quill.js, html2pdf.js) - 由 download-libs 生成
     ├── css/                # 样式 (core, login, doctor)
-    └── js/                 # JS (core 单例 + 各工作站页面 + shared sidebar)
+    ├── js/                 # JS + PHP 页面片段
+    │   ├── core/           # 公共单例 (Format/AjaxLoader/Auth/Dom/...)
+    │   ├── login/          # 登录逻辑
+    │   ├── shared/         # 各角色 sidebar (PHP)
+    │   └── {module}/       # 各工作站页面片段 (PHP)
 ```
 
 ## 角色

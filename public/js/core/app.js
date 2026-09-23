@@ -1,9 +1,9 @@
 // public/js/core/app.js
 const App = {
-    version: '0.9.0',
+    version: '0.11.0',
     roleRoutes: {
         admin: { module: 'admin', page: 'departments' },
-        doctor: { module: 'doctor', page: 'patient_list' },
+        doctor: { module: 'patients', page: 'patient_list' },
         nurse: { module: 'nurse', page: 'station' },
         pharmacist: { module: 'pharmacy', page: 'inventory' },
         lab_tech: { module: 'lab', page: 'lab_exam' }

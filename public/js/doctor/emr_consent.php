@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>告知记录</h2>
     <select id="patient-select" class="form-control" style="width:200px" onchange="loadPatientForConsent(this.value)">
@@ -20,7 +21,7 @@
 let _consentPatient = null, _patientsCache2 = [];
 async function doctor_emr_consent_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const result = await AjaxLoader.api('patients/list', {silent:true});
     _patientsCache2 = result.data || [];

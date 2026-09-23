@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="menu-group">药房</div>
 <div class="menu-item" onclick="navigateTo('pharmacy','inventory')">药品库存</div>
 <div class="menu-item" onclick="navigateTo('pharmacy','dispensing')">发药管理</div>

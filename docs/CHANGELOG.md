@@ -4,6 +4,19 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.11.0] - 2026-09-23
+
+### 变更
+- **入口统一**: 删除 `public/index.html`，SPA 壳并入 `public/index.php` 单一入口
+- **页面统一为 PHP**: `public/js/**/*.html` 全部转为 `.php` (含 shared/sidebar_*)，前端 fetch 相应更新
+- 登录表单补 `class="login-form"` 修复样式错位 (CSS 选择器原为 `.login-form`)
+
+### 新增
+- seed_demo.php 增加 `admin` 演示账号 (密码 123456，共 7 个账号)
+
+### 修复
+- doctor 默认路由 `doctor/patient_list` → `patients/patient_list` (原指向不存在的页面)
+
 ## [0.10.0] - 2026-09-23
 
 ### 新增

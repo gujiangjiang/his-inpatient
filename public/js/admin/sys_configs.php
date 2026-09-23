@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>系统设置</h2>
 </div>
@@ -12,7 +13,7 @@
 <script>
 async function admin_sys_configs_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_admin.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     loadConfigs();
 }

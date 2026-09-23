@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="menu-group">病历</div>
 <div class="menu-item" onclick="navigateTo('doctor','emr_admission')">入院记录</div>
 <div class="menu-item" onclick="navigateTo('doctor','emr_progress')">病程记录</div>

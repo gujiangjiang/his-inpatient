@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>病程记录</h2>
     <select id="patient-select" class="form-control" style="width:200px" onchange="loadPatientForProgress(this.value)">
@@ -22,7 +23,7 @@ let _patientsCache = [];
 
 async function doctor_emr_progress_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const result = await AjaxLoader.api('patients/list', {silent:true});
     _patientsCache = result.data || [];

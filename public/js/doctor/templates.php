@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>模板库</h2>
     <button class="btn btn-primary" onclick="doctor_templates_new()">新建模板</button>
@@ -16,7 +17,7 @@
 async function doctor_templates_init() {
     document.getElementById('main-app').style.display = 'block';
     document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     loadTemplates();
 }

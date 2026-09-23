@@ -1,16 +1,96 @@
 <?php
-// public/index.php - FrankenPHP php-server 路由入口
-// Caddy php_server 的 try_files fallback: 不存在的路径会回退到这里
-// 因此: /api/* → 交由 API 处理; 其他 → SPA index.html
+// public/index.php - 唯一入口 (SPA 壳 + API 路由)
+// FrankenPHP/Caddy php_server: / 与不存在的路径都会执行本文件
+// /api/* → 交由 API 处理; 其他 → 输出 SPA 页面
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-// API 路由
 if (strpos($uri, '/api/') === 0) {
     require __DIR__ . '/../api/index.php';
     return;
 }
+?><!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIS 住院一体化系统</title>
+    <link rel="stylesheet" href="/lib/quill/quill.snow.css">
+    <link rel="stylesheet" href="/css/core/reset.css">
+    <link rel="stylesheet" href="/css/core/layout.css">
+    <link rel="stylesheet" href="/css/login/login.css">
+    <link rel="stylesheet" href="/css/doctor/doctor.css">
+</head>
+<body>
+<div id="app">
+    <div id="login-container" class="login-container" style="display:none">
+        <div class="login-form-wrapper">
+            <h1 class="login-title">住院一体化系统</h1>
+            <div id="login-box">
+                <form id="login-form" class="login-form">
+                    <div class="form-group">
+                        <input type="text" name="username" placeholder="用户名" autocomplete="username" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" placeholder="密码" autocomplete="current-password" required>
+                    </div>
+                    <button type="submit" class="login-btn">登录</button>
+                </form>
+            </div>
+            <div id="setup-wizard" style="display:none">
+                <h2>系统初始化</h2>
+                <div class="setup-form">
+                    <div class="form-group">
+                        <input type="text" name="hospital_name" placeholder="医院名称" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="hospital_code" placeholder="组织机构代码" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" name="username" placeholder="管理员用户名" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" placeholder="管理员密码" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password2" placeholder="重复密码" required>
+                    </div>
+                    <button type="button" id="setup-btn" class="login-btn">完成初始化</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-// SPA fallback
-header('Content-Type: text/html; charset=utf-8');
-readfile(__DIR__ . '/index.html');
+    <div id="main-app" style="display:none">
+        <nav class="main-nav">
+            <div class="nav-left">
+                <span class="hospital-name">住院一体化系统</span>
+                <span id="breadcrumb"></span>
+            </div>
+            <div class="nav-right">
+                <span id="user-info"></span>
+                <button class="btn btn-small" onclick="Auth.logout()">退出</button>
+            </div>
+        </nav>
+        <div class="main-container">
+            <div id="sidebar" class="sidebar"></div>
+            <main class="main-content" id="app-content"></main>
+        </div>
+    </div>
+</div>
+<script src="/lib/quill/quill.min.js"></script>
+<script src="/lib/html2pdf/html2pdf.bundle.min.js"></script>
+<script src="/js/core/app.js"></script>
+<script src="/js/core/format.js"></script>
+<script src="/js/core/ajax.js"></script>
+<script src="/js/core/auth.js"></script>
+<script src="/js/core/dom.js"></script>
+<script src="/js/core/components.js"></script>
+<script src="/js/core/rich_editor.js"></script>
+<script src="/js/core/template_picker.js"></script>
+<script src="/js/core/icd_search.js"></script>
+<script src="/js/core/pdf_generator.js"></script>
+<script src="/js/core/print_helper.js"></script>
+<script src="/js/login/login.js"></script>
+</body>
+</html>

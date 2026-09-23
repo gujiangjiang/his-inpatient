@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>发药管理</h2>
     <button class="btn btn-success" onclick="pharmacy_dispensing_refresh()">刷新</button>
@@ -26,7 +27,7 @@
 <script>
 async function pharmacy_dispensing_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_pharmacy.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_pharmacy.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     await loadQueue();
     await loadRecords();

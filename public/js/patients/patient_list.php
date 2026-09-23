@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>患者管理</h2>
     <button class="btn btn-primary" onclick="patients_new()">入院登记</button>
@@ -19,7 +20,7 @@ async function patients_patient_list_init() {
     document.getElementById('main-app').style.display = 'block';
     document.getElementById('login-container').style.display = 'none';
     const user = Auth.user();
-    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
 
     const [patientsRes, deptsRes, wardsRes] = await Promise.all([

@@ -34,4 +34,11 @@
 ## 新接口约定
 1. 在 `api/routes.php` 路由表注册 (getRoutes 数组) →
 2. 实现文件放 `api/modules/{module}/` →
-3. 前端页放 `public/js/{module}/{page}.html` 并在对应 sidebar 加入入口
+3. 前端页放 `public/js/{module}/{page}.php` 并在对应 sidebar 加入入口
+   (页面片段统一使用 `.php` 扩展名, 首行 `<?php header("Content-Type: text/html; charset=utf-8"); ?>`)
+
+## 前端页面约定
+- 唯一入口: `public/index.php` (SPA 壳 + /api/ 路由)
+- 页面片段: `public/js/{module}/{page}.php`, 通过 `AjaxLoader.loadPage()` 动态加载
+- 侧边栏: `public/js/shared/sidebar_{role}.php`
+- 无独立 HTML 文件, 全部统一为 PHP

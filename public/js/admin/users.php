@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>人员管理</h2>
     <button class="btn btn-primary" onclick="admin_users_new()">添加人员</button>
@@ -15,7 +16,7 @@ let _deptOptions = [], _wardOptions = [];
 
 async function admin_users_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_admin.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const [depts, wards] = await Promise.all([
         AjaxLoader.api('admin/department-list', {silent:true}),

@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>核查清单</h2>
     <button class="btn btn-success" onclick="nurse_checklist_refresh()">刷新</button>
@@ -15,7 +16,7 @@
 <script>
 async function nurse_checklist_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_nurse.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_nurse.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     await loadChecklist();
 }

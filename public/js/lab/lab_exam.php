@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>检验/检查管理</h2>
     <button class="btn" onclick="lab_lab_exam_refresh()">刷新</button>
@@ -26,7 +27,7 @@
 <script>
 async function lab_lab_exam_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_lab.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_lab.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     await loadLabs();
     await loadExams();

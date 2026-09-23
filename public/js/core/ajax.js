@@ -73,7 +73,7 @@ const AjaxLoader = {
     },
 
     loadPage(module, page) {
-        const url = '/js/' + module + '/' + page + '.html';
+        const url = '/js/' + module + '/' + page + '.php';
         this.initLoading();
         return fetch(url)
             .then(resp => {

@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>床位管理</h2>
 </div>
@@ -14,7 +15,7 @@ async function patients_beds_init() {
     document.getElementById('main-app').style.display = 'block';
     document.getElementById('login-container').style.display = 'none';
     const user = Auth.user();
-    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const result = await AjaxLoader.api('patients/beds', {silent:true});
     const tbody = document.getElementById('bed-table-body');

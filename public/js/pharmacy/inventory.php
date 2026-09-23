@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>药品库存</h2>
     <button class="btn btn-primary" onclick="pharmacy_inventory_new()">添加药品</button>
@@ -15,7 +16,7 @@
 <script>
 async function pharmacy_inventory_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_pharmacy.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_pharmacy.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     loadInventory();
 }

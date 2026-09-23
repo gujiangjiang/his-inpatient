@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="menu-item" onclick="navigateTo('nurse','station')">护士站总览</div>
 <div class="menu-item" onclick="navigateTo('nurse','checklist')">核查清单</div>
 <div class="menu-item" onclick="navigateTo('nurse','vitals')">生命体征</div>

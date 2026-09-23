@@ -53,8 +53,9 @@ foreach ($wardIds as $w) {
     }
 }
 
-// === 6 个演示账号 ===
+// === 7 个演示账号 (密码统一 123456) ===
 $users = [
+    ['username' => 'admin', 'name' => '系统管理员', 'role' => 'admin', 'password' => password_hash('123456', PASSWORD_DEFAULT)],
     ['username' => 'doctor1', 'name' => '王医生', 'role' => 'doctor', 'department_id' => 1, 'password' => password_hash('123456', PASSWORD_DEFAULT)],
     ['username' => 'doctor2', 'name' => '李医生', 'role' => 'doctor', 'department_id' => 2, 'password' => password_hash('123456', PASSWORD_DEFAULT)],
     ['username' => 'nurse1', 'name' => '张护士', 'role' => 'nurse', 'ward_id' => 1, 'password' => password_hash('123456', PASSWORD_DEFAULT)],
@@ -130,4 +131,4 @@ DB::execute("INSERT OR REPLACE INTO system_config (config_key, config_value, con
 
 $pdo->commit();
 echo "演示数据导入完成。\n";
-echo "账号：doctor1/nurse1/pharma1/labtech1，密码：123456\n";
+echo "账号：admin/doctor1/doctor2/nurse1/nurse2/pharma1/labtech1，密码：123456\n";

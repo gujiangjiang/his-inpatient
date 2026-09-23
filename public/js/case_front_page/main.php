@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>住院病案首页</h2>
     <button class="btn btn-success" onclick="case_front_page_pdf()">导出 PDF</button>
@@ -89,7 +90,7 @@ let _cfpPatient = null, _cfpAdmissionNo = null, _cfpSurgeries = [];
 
 async function case_front_page_main_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     
     // 获取当前患者

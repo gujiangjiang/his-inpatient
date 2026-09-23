@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <h2>生命体征</h2>
     <button class="btn btn-primary" onclick="nurse_vitals_new()">录入</button>
@@ -22,7 +23,7 @@
 let _vitalsPatients = [];
 async function nurse_vitals_init() {
     document.getElementById('main-app').style.display = 'block';
-    const sidebar = await fetch('/js/shared/sidebar_nurse.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_nurse.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const result = await AjaxLoader.api('nurse/patient-list', {silent:true});
     _vitalsPatients = result.data || [];

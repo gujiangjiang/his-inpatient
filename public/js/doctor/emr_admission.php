@@ -1,3 +1,4 @@
+<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
     <div>
         <h2>入院记录</h2>
@@ -91,7 +92,7 @@ async function doctor_emr_admission_init() {
     document.getElementById('login-container').style.display = 'none';
 
     // 加载sidebar
-    const sidebar = await fetch('/js/shared/sidebar_doctor.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
 
     // 加载患者列表

@@ -27,7 +27,7 @@ async function handleHashChange() {
     updateUserInfo();
 
     // 加载 sidebar
-    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.html').then(r => r.text());
+    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
 
     // 加载页面
