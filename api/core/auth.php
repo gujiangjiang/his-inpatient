@@ -4,24 +4,30 @@ class Auth {
     private static $currentUser = null;
 
     public static function init() {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        // 令牌回退：仅当请求无会话 Cookie 时按 X-Session-Id 头恢复会话
-        if (isset($_SESSION['user_id'])) {
-            self::$currentUser = self::getUserById($_SESSION['user_id']);
-        } elseif (!isset($_COOKIE[session_name()]) && self::checkSessionIdHeader()) {
-            $sessionId = $_SERVER['HTTP_X_SESSION_ID'];
-            if (StringHelper::checkSessionId($sessionId)) {
-                // 恢复会话
-                $savePath = session_get_cookie_params();
-                session_write_close();
-                session_id($sessionId);
+        // 检测是否已有会话ID通过 Cookie
+        $hasCookie = isset($_COOKIE[session_name()]) || isset($_COOKIE['HIS_SESSION']);
+        $sessionIdHeader = self::checkSessionIdHeader() ? $_SERVER['HTTP_X_SESSION_ID'] : null;
+
+        if ($hasCookie && !$sessionIdHeader) {
+            // 标准 Cookie 方式
+            if (session_status() === PHP_SESSION_NONE) {
                 session_start();
-                if (isset($_SESSION['user_id'])) {
-                    self::$currentUser = self::getUserById($_SESSION['user_id']);
-                }
             }
+        } elseif (!$hasCookie && $sessionIdHeader) {
+            // 令牌回退方式
+            session_id($sessionIdHeader);
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+        } else {
+            // 两种都没有
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+        }
+
+        if (isset($_SESSION['user_id']) && $_SESSION['user_id']) {
+            self::$currentUser = self::getUserById($_SESSION['user_id']);
         }
     }
 

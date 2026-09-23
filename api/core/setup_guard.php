@@ -7,8 +7,12 @@ class SetupGuard {
     public static function check() {
         if (self::$checked) return self::$isSetup;
         self::$checked = true;
-        $config = DB::selectOne('SELECT config_value FROM system_config WHERE config_key = ?', ['setup_completed']);
-        self::$isSetup = $config ? ($config['config_value'] === '1') : false;
+        try {
+            $config = DB::selectOne('SELECT config_value FROM system_config WHERE config_key = ?', ['setup_completed']);
+            self::$isSetup = $config ? ($config['config_value'] === '1') : false;
+        } catch (PDOException $e) {
+            self::$isSetup = false;
+        }
         return self::$isSetup;
     }
 
@@ -27,7 +31,15 @@ class SetupGuard {
                 }
             }
             if (!$isAllowed) {
-                Response::error('系统未初始化', 503, 'SETUP_REQUIRED');
+                http_response_code(503);
+                header('Content-Type: application/json; charset=utf-8');
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => '系统未初始化',
+                    'data' => null,
+                    'code' => 'SETUP_REQUIRED'
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
             }
         }
     }
