@@ -26,10 +26,19 @@
 - admin/doctor/nurse/pharmacy/lab 各工作站页面
 
 ### 修复
-- 修复 lab_result 表单字段命名 (使用 data 属性替代 bracket 语法)
-- 修复 patient_list ward 选项 d.id → w.id
+- 修复 lab_result 查询器 (data 属性替代 bracket 语法)
+- 修复 patient_list ward 选项 d.id -> w.id
 - 修复 seed 脚本 fetchColumn 用法
 - 修复 patient_save patient_no 生成
+- 修复前端 init 函数命名不匹配 (patients_patient_list_init, patients_beds_init, orders_order_list_init)
+- 修复 AjaxLoader silent 模式不应弹出 toast
+
+### 安全
+- RichEditor 封装 Quill.js (禁止直接 new Quill) + textarea 降级
+- Format.escape HTML 转义 (121 处调用) 防 XSS
+- 所有动态文本经 Format.escape 后写入 innerHTML
+- Session dual-channel: X-Session-Id header 回退 (防 iframe/Cookie 拦截)
+- ICD-10 搜索接口必须认证
 
 ## [0.1.0] - 2026-09-23
 

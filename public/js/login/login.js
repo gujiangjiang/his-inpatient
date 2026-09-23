@@ -68,6 +68,8 @@ Auth.check({ silent: true }).then(loggedIn => {
             } else {
                 showLogin();
             }
+        }).catch(() => {
+            showLogin();
         });
     }
 });

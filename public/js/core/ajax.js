@@ -64,8 +64,10 @@ const AjaxLoader = {
             })
             .catch(err => {
                 if (!silent) this.removeLoading();
-                // 错误 toast 只弹一次
-                Dom.toast(err.message, 'error');
+                // silent 模式不弹 toast (防登录页重复toast)
+                if (!silent) {
+                    Dom.toast(err.message, 'error');
+                }
                 throw err;
             });
     },
