@@ -175,21 +175,7 @@ const PatientSwitcher = {
                 return;
             }
             let cards = '';
-            patients.forEach(p => {
-                const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
-                cards += `
-                    <div class="patient-card" onclick="PatientSwitcher.onSelectCard(${p.id}, 'incoming')">
-                        <div class="patient-card-head">
-                            <span class="card-bed">床 ${Format.escape(p.bed_no || '-')}</span>
-                            <span class="card-name">${Format.escape(p.name)}</span>
-                            <span class="card-gender-age">${Format.gender(p.gender)} / ${age}</span>
-                        </div>
-                        <div class="patient-card-info">住院号: ${Format.escape(p.admission_no || '')}</div>
-                        <div class="patient-card-info">诊断: ${Format.escape(p.admission_diagnosis || '')}</div>
-                        <div class="patient-card-foot"><span class="card-nursing">待入科</span><span class="card-doctor">未指派</span></div>
-                    </div>
-                `;
-            });
+            patients.forEach(p => { cards += this.renderCardHtml(p, 'incoming'); });
             body.innerHTML = cards;
         } catch (e) {
             const body = overlay.querySelector('.modal-body');
@@ -198,7 +184,27 @@ const PatientSwitcher = {
     },
 
     /**
-     * 渲染患者卡片列表
+     * 生成患者文字方块 HTML (顶部切换器统一使用)
+     */
+    renderCardHtml(p, tab) {
+        const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+        const gender = Format.gender(p.gender);
+        const attending = p.attending_name || p.doctor_name || '';
+        return `
+            <div class="switcher-patient-block" onclick="PatientSwitcher.onSelectCard(${p.id}, '${tab}')">
+                <div class="spb-line1">
+                    <span class="spb-name">${Format.escape(p.name)}</span>
+                    <span class="spb-gender">${gender}/${age}</span>
+                    <span class="spb-bed">床 ${Format.escape(p.bed_no || '-')}</span>
+                </div>
+                <div class="spb-line2">住院号 ${Format.escape(p.admission_no || '')}　主治 ${Format.escape(attending || '未指派')}</div>
+                <div class="spb-line3">诊断 ${Format.escape(p.admission_diagnosis || '-')}</div>
+            </div>
+        `;
+    },
+
+    /**
+     * 渲染患者列表 (文字方块)
      */
     renderCards(container, patients, tab) {
         if (!patients || patients.length === 0) {
@@ -206,27 +212,7 @@ const PatientSwitcher = {
             return;
         }
         let html = '';
-        patients.forEach(p => {
-            const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
-            const gender = Format.gender(p.gender);
-            const nursing = p.nursing_level || '二级护理';
-            const attending = p.attending_name || p.doctor_name || '';
-            html += `
-                <div class="patient-card" data-id="${p.id}" onclick="PatientSwitcher.onSelectCard(${p.id}, '${tab}')">
-                    <div class="patient-card-head">
-                        <span class="card-bed">床 ${Format.escape(p.bed_no || '-')}</span>
-                        <span class="card-name">${Format.escape(p.name)}</span>
-                        <span class="card-gender-age">${gender} / ${age}</span>
-                    </div>
-                    <div class="patient-card-info">住院号: ${Format.escape(p.admission_no || '')}</div>
-                    <div class="patient-card-info">诊断: ${Format.escape(p.admission_diagnosis || '')}</div>
-                    <div class="patient-card-foot">
-                        <span class="card-nursing">${Format.escape(nursing)}</span>
-                        <span class="card-doctor">${Format.escape(attending || '未指派')}</span>
-                    </div>
-                </div>
-            `;
-        });
+        patients.forEach(p => { html += this.renderCardHtml(p, tab); });
         container.innerHTML = html;
     },
 

@@ -94,7 +94,8 @@
 /* ===== 主容器 ===== */
 .main-container {
     display: flex;
-    height: calc(100vh - 52px);
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 .sidebar {
@@ -149,16 +150,16 @@
 /* 指派弹窗 */
 .assign-dialog { min-width: 320px; }
 
-/* ===== 患者信息栏 (选择患者后显示) ===== */
+/* ===== 患者信息栏 (选择患者后显示, 顶部栏下横向条) ===== */
 .patient-info-bar {
     display: flex;
     align-items: center;
     gap: 22px;
-    padding: 8px 20px;
+    padding: 7px 20px;
     background: #f0f7ff;
     border-bottom: 1px solid #d9e9ff;
     flex-wrap: wrap;
-    width: 100%;
+    flex-shrink: 0;
     box-sizing: border-box;
 }
 .pib-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #303133; }
@@ -167,7 +168,25 @@
 .pib-diagnosis { max-width: 340px; }
 .pib-diagnosis i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* ===== 科室折叠列表 (患者切换器) ===== */
+/* ===== 患者文字方块 (顶部切换器) ===== */
+.switcher-patient-block {
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    padding: 9px 12px;
+    margin-bottom: 7px;
+    cursor: pointer;
+    transition: background .15s;
+    background: #fff;
+}
+.switcher-patient-block:hover { background: #f0f7ff; border-color: #c6e2ff; }
+.spb-line1 { display: flex; align-items: center; gap: 10px; margin-bottom: 3px; }
+.spb-name { font-weight: 600; font-size: 14px; color: #303133; }
+.spb-gender { font-size: 12px; color: #606266; }
+.spb-bed { font-size: 12px; color: #409eff; margin-left: auto; }
+.spb-line2 { font-size: 12px; color: #909399; margin-bottom: 2px; }
+.spb-line3 { font-size: 12px; color: #606266; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 科室折叠列表 (患者切换器) */
 .dept-group { margin-bottom: 2px; }
 .dept-group-head {
     display: flex;

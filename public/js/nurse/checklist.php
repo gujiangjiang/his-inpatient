@@ -15,7 +15,7 @@
 
 <script>
 async function nurse_checklist_init() {
-    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('main-app').style.display = 'flex';
     const sidebar = await fetch('/js/shared/sidebar_nurse.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     await loadChecklist();

@@ -22,7 +22,7 @@ async function handleHashChange() {
 
     // 认证通过，显示主界面
     document.getElementById('login-container').style.display = 'none';
-    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('main-app').style.display = 'flex';
     updateUserInfo();
 
     // 工作站模式 (医生) 下, 患者上下文未锁定时停留在占位图
@@ -93,7 +93,7 @@ Auth.check({ silent: true }).then(loggedIn => {
         // 医生工作站: 无患者上下文时进占位图, 不导航
         if (window.WorkstationMode === true && !PatientContext.isActive()) {
             document.getElementById('login-container').style.display = 'none';
-            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('main-app').style.display = 'flex';
             updateUserInfo();
             window.refreshWorkstationLayout();
             return;

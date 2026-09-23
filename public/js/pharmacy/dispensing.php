@@ -26,7 +26,7 @@
 
 <script>
 async function pharmacy_dispensing_init() {
-    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('main-app').style.display = 'flex';
     const sidebar = await fetch('/js/shared/sidebar_pharmacy.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     await loadQueue();

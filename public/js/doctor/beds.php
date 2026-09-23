@@ -12,7 +12,7 @@
 
 <script>
 async function doctor_beds_init() {
-    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('main-app').style.display = 'flex';
     const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const result = await AjaxLoader.api('patients/beds', {silent:true});

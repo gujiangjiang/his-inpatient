@@ -88,7 +88,7 @@ var currentPatientId = null;
 
 async function doctor_emr_admission_init() {
     // 显示工作站
-    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('main-app').style.display = 'flex';
     document.getElementById('login-container').style.display = 'none';
 
     // 加载sidebar

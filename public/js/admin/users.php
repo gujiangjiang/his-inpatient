@@ -15,7 +15,7 @@
 var _deptOptions = [], _wardOptions = [];
 
 async function admin_users_init() {
-    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('main-app').style.display = 'flex';
     const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const [depts, wards] = await Promise.all([
