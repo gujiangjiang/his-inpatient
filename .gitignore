@@ -9,3 +9,4 @@ public/uploads/
 *.sql~
 *.log
 .DS_Store
+public/lib/

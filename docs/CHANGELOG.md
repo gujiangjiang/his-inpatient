@@ -4,6 +4,18 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.7.0] - 2026-09-23
+
+### 新增
+- `npm run download-libs` 下载 Quill.js + html2pdf.js 到本地 `public/lib/`，支持离线内网部署
+- `npm run init` 一键初始化 (下载 libs + 初始化数据库 + 导入 ICD-10 + 生成演示数据)
+- `public/index.html` 优先加载本地库文件，RichEditor/PdfGenerator 自动降级 (textarea/window.print)
+- README 更新部署说明
+
+### 变更
+- `.gitignore` 忽略 `public/lib/` (由 download-libs 生成)
+- 版本号 0.6.0 -> 0.7.0
+
 ## [0.6.0] - 2026-09-23
 
 ### 新增
