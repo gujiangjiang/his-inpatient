@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS orders (
     content TEXT,
     category VARCHAR(50),
     status VARCHAR(20) DEFAULT 'draft',
+    is_auto_generated TINYINT DEFAULT 0,
     dosage VARCHAR(100),
     frequency VARCHAR(50),
     duration VARCHAR(100),

@@ -1,6 +1,6 @@
 <?php
 // api/config.php
-define('APP_VERSION', '0.7.0');
+define('APP_VERSION', '0.8.0');
 define('BASE_DIR', dirname(__DIR__));
 define('DATA_DIR', BASE_DIR . '/data');
 define('DATA_DIR', BASE_DIR . '/data');

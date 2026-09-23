@@ -4,6 +4,30 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.8.0] - 2026-09-23
+
+### 新增
+- **M7**: 开医嘱页面重写
+  - 工具栏: 药品+ / 非药品+ / 提交全部草稿 / 批量删除
+  - 实时保存草稿 (status=draft), 提交后才进入 pending 状态
+  - Tab 切换: 草稿 / 待核对 / 已核对执行
+  - 多选删除草稿 (选中后显示删除按钮)
+  - 作废/复制悬浮窗 (点击已提交医嘱)
+- **order_submit.php**: 批量提交草稿为待核对
+- **order_copy.php**: 复制医嘱 (仅手动开具, 检查药品库存可用性)
+- **order_invalidate.php**: 作废医嘱 (需已核对后)
+- **order_batch_delete.php**: 批量删除草稿
+- `is_auto_generated` 字段 (区分自动生成 vs 手动开具)
+- migrate.php 增量添加 `is_auto_generated` 字段
+
+### 变更
+- 状态机新增 `invalid` (作废) 状态
+- order_list 支持按 status 过滤
+- `order_save.php` 草稿默认为 `draft` 而非 `pending`
+
+### 修复
+- 修复 order_verify 状态机 (draft 只能到 pending)
+
 ## [0.7.0] - 2026-09-23
 
 ### 新增

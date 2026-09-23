@@ -4,6 +4,7 @@ $roles = ['admin', 'doctor', 'nurse'];
 Auth::requireRole($roles);
 $data = Validator::all();
 $patientId = Validator::get('patient_id');
+$status = Validator::get('status'); // 可选: 按状态过滤 (draft/pending/verified/executing/completed/invalid)
 $page = (int)Validator::get('page', 1);
 $perPage = (int)Validator::get('per_page', 50);
 
@@ -14,6 +15,11 @@ $params = [];
 if ($patientId) {
     $sql .= " AND patient_id = ?";
     $params[] = $patientId;
+}
+
+if ($status) {
+    $sql .= " AND status = ?";
+    $params[] = $status;
 }
 
 // 按角色过滤

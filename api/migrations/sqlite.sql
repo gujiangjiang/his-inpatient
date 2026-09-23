@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS orders (
     content TEXT,
     category TEXT,
     status TEXT DEFAULT 'draft',
+    is_auto_generated INTEGER DEFAULT 0,
     dosage TEXT,
     frequency TEXT,
     duration TEXT,

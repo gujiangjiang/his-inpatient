@@ -13,14 +13,15 @@ $pdo = DB::getPDO();
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
 
-// 状态校验
-$validTransition = [
-    'draft' => ['pending', 'verified'],
-    'pending' => ['verified'],
-    'verified' => ['executing', 'completed'],
-    'executing' => ['completed'],
-    'completed' => []
-];
+    // 状态校验: 医嘱核对状态机
+    $validTransition = [
+        'draft' => ['pending'],           // 草稿只能提交为 pending
+        'pending' => ['verified'],        // 待核对 -> 核对
+        'verified' => ['executing', 'completed'],
+        'executing' => ['completed'],
+        'completed' => [],
+        'invalid' => []
+    ];
 if (!in_array($status, $validTransition[$order['status']] ?? [])) {
     Response::error('非法状态跳转：' . $order['status'] . ' → ' . $status);
 }

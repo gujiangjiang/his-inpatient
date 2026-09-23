@@ -16,9 +16,10 @@ if (!$order) Response::error('医嘱不存在');
 $validTransition = [
     'draft' => ['pending'],
     'pending' => ['verified', 'draft'],
-    'verified' => ['executing', 'completed'],
+    'verified' => ['executing', 'completed', 'invalid'],
     'executing' => ['completed'],
-    'completed' => []
+    'completed' => [],
+    'invalid' => []
 ];
 if (!in_array($status, $validTransition[$order['status']] ?? [])) {
     Response::error('非法状态跳转：' . $order['status'] . ' → ' . $status);

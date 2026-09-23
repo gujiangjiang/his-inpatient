@@ -73,11 +73,15 @@ $routes = [
     'nurse/vitals-save' => ['nurse/vitals_save.php', ['admin', 'nurse']],
     'nurse/vitals-list' => ['nurse/vitals_list.php', ['admin', 'nurse']],
 
-    // 流程
+    // 医嘱
     'orders/save' => ['orders/order_save.php', ['admin', 'doctor']],
     'orders/list' => ['orders/order_list.php', ['admin', 'doctor', 'nurse']],
     'orders/verify' => ['orders/order_verify.php', ['admin', 'doctor']],
     'orders/status' => ['orders/order_status.php', ['admin', 'doctor', 'nurse']],
+    'orders/submit' => ['orders/order_submit.php', ['admin', 'doctor']],
+    'orders/copy' => ['orders/order_copy.php', ['admin', 'doctor']],
+    'orders/invalidate' => ['orders/order_invalidate.php', ['admin', 'doctor']],
+    'orders/batch-delete' => ['orders/order_batch_delete.php', ['admin', 'doctor']],
 
     // 检验
     'lab/save' => ['lab/lab_save.php', ['admin', 'doctor']],

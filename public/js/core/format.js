@@ -32,7 +32,8 @@ const Format = {
             pending: '待核对',
             verified: '已核对',
             executing: '执行中',
-            completed: '已完成'
+            completed: '已完成',
+            invalid: '作废'
         };
         return map[status] || status || '未知';
     },

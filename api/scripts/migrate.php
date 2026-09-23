@@ -15,6 +15,12 @@ if (!in_array('parent_id', $colNames)) {
     echo "orders 表已更新 (parent_id, is_group_main)\n";
 }
 
+// 添加 is_auto_generated 字段 (M7 升级)
+if (!in_array('is_auto_generated', $colNames)) {
+    $pdo->exec("ALTER TABLE orders ADD COLUMN is_auto_generated INTEGER DEFAULT 0");
+    echo "orders 表已更新 (is_auto_generated)\n";
+}
+
 if (!in_array('content_delta', $colNames)) {
     // 检查 emr_records 表
     $emrCols = $pdo->query("PRAGMA table_info(emr_records)")->fetchAll(PDO::FETCH_ASSOC);
