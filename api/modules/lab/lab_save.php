@@ -3,7 +3,7 @@
 Auth::requireRole(['admin', 'doctor']);
 $data = Validator::all();
 $pdo = DB::getPDO();
-$reportNo = 'LAB' . date('Ymd') . str_pad($pdo->query("SELECT COUNT(*)+1 FROM lab_reports")->fetchColumn(), 4, '0', STR_PAD_LEFT);
+$reportNo = 'LAB' . date('Ymd') . str_pad(DB::selectOne("SELECT COUNT(*) as c FROM lab_reports")['c'] + 1, 4, '0', STR_PAD_LEFT);
 $examName = Validator::get('exam_name', '检验申请');
 
 $stmt = $pdo->prepare("INSERT INTO lab_reports (patient_id, admission_no, report_no, exam_name, specimen_type, status, created_by, created_at) VALUES (?,?,?,?,?, 'pending', ?, ?)");

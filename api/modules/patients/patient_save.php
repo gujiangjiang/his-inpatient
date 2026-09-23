@@ -30,8 +30,8 @@ if ($id) {
     ]);
     Response::success(['id' => $id]);
 } else {
-    $patientNo = 'P' . date('Ymd') . str_pad($pdo->query("SELECT COUNT(*)+1 FROM patients")->fetchColumn(), 4, '0', STR_PAD_LEFT);
-    $admissionNo = 'A' . date('Ymd') . str_pad($pdo->query("SELECT COUNT(*)+1 FROM patients")->fetchColumn(), 4, '0', STR_PAD_LEFT);
+    $patientNo = 'P' . date('Ymd') . str_pad(DB::selectOne("SELECT COUNT(*) as c FROM patients")['c'] + 1, 4, '0', STR_PAD_LEFT);
+    $admissionNo = 'A' . date('Ymd') . str_pad(DB::selectOne("SELECT COUNT(*) as c FROM patients")['c'] + 1, 4, '0', STR_PAD_LEFT);
 
     if (!empty($data['bed_no'])) {
         $bedStmt = $pdo->prepare("SELECT * FROM beds WHERE ward_id = ? AND bed_no = ? AND status = 'occupied'");

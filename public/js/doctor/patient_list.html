@@ -68,7 +68,7 @@ async function doctor_patient_new() {
     let deptHtml = '<option value="">请选择</option>';
     _deptList.forEach(d => { deptHtml += '<option value="' + d.id + '">' + Format.escape(d.name) + '</option>'; });
     let wardHtml = '<option value="">请选择</option>';
-    _wardList.forEach(w => { wardHtml += '<option value="' + d.id + '">' + Format.escape(w.name) + '</option>'; });
+    _wardList.forEach(w => { wardHtml += '<option value="' + w.id + '">' + Format.escape(w.name) + '</option>'; });
 
     const content = `
         <form id="patient-form" style="max-height:60vh;overflow-y:auto">

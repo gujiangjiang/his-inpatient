@@ -95,9 +95,10 @@ foreach ($patients as $idx => $p) {
     $status = ($idx < 6) ? 'reported' : 'collected';
     $isCritical = ($idx == 0 || $idx == 4) ? 1 : 0;
     
+    $labCount = DB::selectOne("SELECT COUNT(*) as c FROM lab_reports")['c'] + $idx + 1;
     $pdo->prepare("INSERT INTO lab_reports (patient_id, admission_no, report_no, exam_name, specimen_type, status, is_critical, reported_by, reported_at, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
         ->execute([
-            $p['id'], $p['admission_no'], 'LAB' . date('Ymd') . str_pad($idx + 1, 4, '0', STR_PAD_LEFT),
+            $p['id'], $p['admission_no'], 'LAB' . date('Ymd') . str_pad($labCount, 4, '0', STR_PAD_LEFT),
             '血常规 + 生化',
             '静脉血', $status, $isCritical, $labtech['id'], DateHelper::now(), $labtech['id'], DateHelper::now()
         ]);
@@ -117,9 +118,10 @@ $examItems = [
 ];
 
 foreach (array_slice($patients, 0, 3) as $idx => $p) {
+    $examCount = DB::selectOne("SELECT COUNT(*) as c FROM exam_reports")['c'] + $idx + 1;
     $pdo->prepare("INSERT INTO exam_reports (patient_id, admission_no, report_no, exam_type, body_part, status, findings, conclusion, impression, reported_by, reported_at, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
         ->execute([
-            $p['id'], $p['admission_no'], 'EXAM' . date('Ymd') . str_pad($idx + 1, 4, '0', STR_PAD_LEFT),
+            $p['id'], $p['admission_no'], 'EXAM' . date('Ymd') . str_pad($examCount, 4, '0', STR_PAD_LEFT),
             'X光透视检查', $examItems[$idx][0], 'reported',
             $examItems[$idx][1], $examItems[$idx][2], $examItems[$idx][3],
             $labtech['id'], DateHelper::now(), $labtech['id'], DateHelper::now()

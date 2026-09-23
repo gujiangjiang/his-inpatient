@@ -1,0 +1,34 @@
+<div class="flex-between mb-20">
+    <h2>床位管理</h2>
+</div>
+
+<div class="card">
+    <table class="table">
+        <thead><tr><th>病区</th><th>床号</th><th>状态</th><th>患者</th></tr></thead>
+        <tbody id="bed-table-body"></tbody>
+    </table>
+</div>
+
+<script>
+async function beds_init() {
+    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('login-container').style.display = 'none';
+    const user = Auth.user();
+    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.html').then(r => r.text());
+    document.getElementById('sidebar').innerHTML = sidebar;
+    const result = await AjaxLoader.api('patients/beds', {silent:true});
+    const tbody = document.getElementById('bed-table-body');
+    tbody.innerHTML = '';
+    (result.data || []).forEach(b => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${Format.escape(b.ward_name||'')}</td>
+            <td>${Format.escape(b.bed_no)}</td>
+            <td>${b.status === 'occupied' ? '<span class="badge badge-danger">占用</span>' : '<span class="badge badge-success">空闲</span>'}</td>
+            <td>${Format.escape(b.patient_name||'')}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
+</script>

@@ -102,13 +102,13 @@ async function lab_result(id) {
                 <thead><tr><th>项目</th><th>结果</th><th>单位</th><th>参考范围</th><th>标记</th></tr></thead>
                 <tbody id="lab-result-items">
         ${detail.data.items.map(item => `
-            <tr>
+            <tr data-id="${item.id}">
                 <td>${Format.escape(item.item_name)}</td>
-                <td><input type="text" name="items[${item.id}][result]" class="form-control" value="${Format.escape(item.result||'')}"></td>
-                <td><input type="text" name="items[${item.id}][unit]" class="form-control" value="${Format.escape(item.unit||'')}"></td>
-                <td><input type="text" name="items[${item.id}][reference_range]" class="form-control" value="${Format.escape(item.reference_range||'')}"></td>
+                <td><input type="text" class="result-input" data-item="${item.id}" value="${Format.escape(item.result||'')}"></td>
+                <td><input type="text" class="unit-input" data-item="${item.id}" value="${Format.escape(item.unit||'')}"></td>
+                <td><input type="text" class="ref-input" data-item="${item.id}" value="${Format.escape(item.reference_range||'')}"></td>
                 <td>
-                    <select name="items[${item.id}][flag]" class="form-control">
+                    <select class="flag-input" data-item="${item.id}">
                         <option value="">正常</option>
                         <option value="H" ${item.flag==='H'?'selected':''}>高</option>
                         <option value="L" ${item.flag==='L'?'selected':''}>低</option>
@@ -127,15 +127,14 @@ async function lab_result(id) {
     Dom.modal('录入检验结果', content, [
         {text:'保存',type:'primary',onclick:async function(){
             const form = document.getElementById('lab-result-form');
-            // 收集明细
             const items = [];
             detail.data.items.forEach(item => {
                 items.push({
                     id: item.id,
-                    result: form.querySelector('[name="items\\[' + item.id + '\\]\\[result\\]"]').value,
-                    unit: form.querySelector('[name="items\\[' + item.id + '\\]\\[unit\\]"]').value,
-                    reference_range: form.querySelector('[name="items\\[' + item.id + '\\]\\[reference_range\\]"]').value,
-                    flag: form.querySelector('[name="items\\[' + item.id + '\\]\\[flag\\]"]').value
+                    result: form.querySelector('.result-input[data-item="' + item.id + '"]').value,
+                    unit: form.querySelector('.unit-input[data-item="' + item.id + '"]').value,
+                    reference_range: form.querySelector('.ref-input[data-item="' + item.id + '"]').value,
+                    flag: form.querySelector('.flag-input[data-item="' + item.id + '"]').value
                 });
             });
             const isCritical = form.querySelector('[name="is_critical"]').checked ? 1 : 0;
