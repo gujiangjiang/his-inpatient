@@ -14,7 +14,7 @@ async function handleHashChange() {
     const route = getHashRoute();
     if (!route) return;
 
-    const user = Auth.user();
+    const user = Auth.user;
     if (!user) {
         // 未登录，显示登录页
         showLogin();
@@ -40,7 +40,7 @@ function showLogin() {
 }
 
 function updateUserInfo() {
-    const user = Auth.user();
+    const user = Auth.user;
     if (user) {
         document.getElementById('user-info').textContent = user.name + ' (' + Format.role(user.role) + ')';
     }

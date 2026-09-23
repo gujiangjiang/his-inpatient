@@ -14,7 +14,7 @@
 async function patients_beds_init() {
     document.getElementById('main-app').style.display = 'block';
     document.getElementById('login-container').style.display = 'none';
-    const user = Auth.user();
+    const user = Auth.user;
     const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const result = await AjaxLoader.api('patients/beds', {silent:true});

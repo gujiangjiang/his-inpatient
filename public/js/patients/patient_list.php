@@ -19,7 +19,7 @@ let _patientsData = [], _deptList = [], _wardList = [];
 async function patients_patient_list_init() {
     document.getElementById('main-app').style.display = 'block';
     document.getElementById('login-container').style.display = 'none';
-    const user = Auth.user();
+    const user = Auth.user;
     const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
 
