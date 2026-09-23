@@ -18,7 +18,7 @@
 </div>
 
 <script>
-let _consentPatient = null, _patientsCache2 = [];
+var _consentPatient = null, _patientsCache2 = [];
 async function doctor_emr_consent_init() {
     document.getElementById('main-app').style.display = 'block';
     const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());

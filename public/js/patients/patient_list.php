@@ -14,7 +14,7 @@
 </div>
 
 <script>
-let _patientsData = [], _deptList = [], _wardList = [];
+var _patientsData = [], _deptList = [], _wardList = [];
 
 async function patients_patient_list_init() {
     document.getElementById('main-app').style.display = 'block';

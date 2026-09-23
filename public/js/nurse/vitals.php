@@ -20,7 +20,7 @@
 </div>
 
 <script>
-let _vitalsPatients = [];
+var _vitalsPatients = [];
 async function nurse_vitals_init() {
     document.getElementById('main-app').style.display = 'block';
     const sidebar = await fetch('/js/shared/sidebar_nurse.php').then(r => r.text());

@@ -12,7 +12,7 @@
 </div>
 
 <script>
-let _deptOptions = [], _wardOptions = [];
+var _deptOptions = [], _wardOptions = [];
 
 async function admin_users_init() {
     document.getElementById('main-app').style.display = 'block';

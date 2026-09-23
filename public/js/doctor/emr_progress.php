@@ -18,8 +18,8 @@
 </div>
 
 <script>
-let _currentProgressPatient = null;
-let _patientsCache = [];
+var _currentProgressPatient = null;
+var _patientsCache = [];
 
 async function doctor_emr_progress_init() {
     document.getElementById('main-app').style.display = 'block';

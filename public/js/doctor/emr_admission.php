@@ -83,8 +83,8 @@
 </div>
 
 <script>
-let currentEditor = null;
-let currentPatientId = null;
+var currentEditor = null;
+var currentPatientId = null;
 
 async function doctor_emr_admission_init() {
     // 显示工作站

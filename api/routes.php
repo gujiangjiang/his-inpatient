@@ -11,9 +11,9 @@ function getRoutes() {
         'auth/setup' => ['auth/setup.php', []],
 
         // 后台管理
-        'admin/department-list' => ['admin/department_list.php', ['admin']],
+        'admin/department-list' => ['admin/department_list.php', ['admin', 'doctor', 'nurse']],
         'admin/department-save' => ['admin/department_save.php', ['admin']],
-        'admin/ward-list' => ['admin/ward_list.php', ['admin']],
+        'admin/ward-list' => ['admin/ward_list.php', ['admin', 'doctor', 'nurse']],
         'admin/ward-save' => ['admin/ward_save.php', ['admin']],
         'admin/user-list' => ['admin/user_list.php', ['admin']],
         'admin/user-save' => ['admin/user_save.php', ['admin']],

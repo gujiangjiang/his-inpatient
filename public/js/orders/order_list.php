@@ -40,11 +40,11 @@
 </div>
 
 <script>
-let _currentPatientId = null;
-let _currentPatient = null;
-let _allOrders = { draft: [], pending: [], other: [] };
-let _selectedOrders = new Set();
-let _currentTab = 'draft';
+var _currentPatientId = null;
+var _currentPatient = null;
+var _allOrders = { draft: [], pending: [], other: [] };
+var _selectedOrders = new Set();
+var _currentTab = 'draft';
 
 async function orders_order_list_init() {
     document.getElementById('main-app').style.display = 'block';

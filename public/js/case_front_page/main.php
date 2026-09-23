@@ -86,7 +86,7 @@
 </div>
 
 <script>
-let _cfpPatient = null, _cfpAdmissionNo = null, _cfpSurgeries = [];
+var _cfpPatient = null, _cfpAdmissionNo = null, _cfpSurgeries = [];
 
 async function case_front_page_main_init() {
     document.getElementById('main-app').style.display = 'block';

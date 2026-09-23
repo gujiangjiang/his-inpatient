@@ -18,7 +18,7 @@
 </div>
 
 <script>
-let _dischargePatient = null, _patientsCache3 = [];
+var _dischargePatient = null, _patientsCache3 = [];
 async function doctor_emr_discharge_init() {
     document.getElementById('main-app').style.display = 'block';
     const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
