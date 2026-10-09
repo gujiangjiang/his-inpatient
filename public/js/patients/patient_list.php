@@ -3,9 +3,11 @@
     <div class="wall-scroll">
         <div class="flex-between mb-10">
             <div style="display:flex;align-items:center;gap:10px">
-                <select id="wall-dept" class="form-control" style="width:180px;padding:5px 10px" onchange="patients_wall_load()">
+                <select id="wall-dept" class="form-control" style="width:170px;padding:5px 10px" onchange="patients_wall_dept_change()">
                     <option value="">全部科室</option>
                 </select>
+                <span id="wall-title" class="wall-title"></span>
+                <button type="button" class="wall-clear" id="wall-clear" style="display:none" onclick="patients_wall_clear_filter()">✕ 返回全部</button>
                 <label style="font-size:13px;color:#606266;display:flex;align-items:center;gap:4px;cursor:pointer">
                     <input type="checkbox" id="wall-compact" onchange="patients_wall_toggle()"> 小卡
                 </label>
@@ -19,7 +21,7 @@
         <div class="wall-grid" id="wall-grid"></div>
     </div>
     <div class="wall-footer">
-        <span>主管患者 <b id="wall-total">0</b></span>
+        <span id="wall-footer-label">在院患者 <b id="wall-total">0</b></span>
         <span style="opacity:.75">点击卡片进入医嘱工作站</span>
         <span class="wall-legend">
             <span><i class="dot dot-special"></i>特级护理</span>
@@ -32,6 +34,7 @@
 
 <script>
 var _wallPatients = [], _wallDeptList = [], _wallWardList = [];
+var _wallFilter = { type: 'active' };
 
 var _wallNursingText = { 'special': '特级护理', '1': '一级护理', '2': '二级护理', '3': '三级护理' };
 var _wallNursingRoman = { 'special': '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' };
@@ -54,19 +57,80 @@ async function patients_patient_list_init() {
         opt.textContent = d.name;
         sel.appendChild(opt);
     });
+
+    // 读取来自患者列表下拉的筛选 (主管/科室/出院)
+    try {
+        var saved = JSON.parse(sessionStorage.getItem('his_wall_filter') || 'null');
+        if (saved && saved.type) _wallFilter = saved;
+    } catch (e) { /* ignore */ }
+    sessionStorage.removeItem('his_wall_filter');
+    if (_wallFilter.type === 'dept' && _wallFilter.dept_id) sel.value = _wallFilter.dept_id;
+
+    patients_wall_apply_compact();
+    patients_wall_update_title();
     await patients_wall_load();
 }
 
+function patients_wall_dept_change() {
+    var sel = document.getElementById('wall-dept');
+    var deptId = sel.value;
+    _wallFilter = deptId
+        ? { type: 'dept', dept_id: deptId, department_name: sel.options[sel.selectedIndex].textContent }
+        : { type: 'active' };
+    patients_wall_update_title();
+    patients_wall_load();
+}
+
+function patients_wall_clear_filter() {
+    _wallFilter = { type: 'active' };
+    document.getElementById('wall-dept').value = '';
+    patients_wall_update_title();
+    patients_wall_load();
+}
+
+function patients_wall_update_title() {
+    var title = document.getElementById('wall-title');
+    var footer = document.getElementById('wall-footer-label');
+    var clear = document.getElementById('wall-clear');
+    var t = '在院患者', f = '在院患者';
+    if (_wallFilter.type === 'mine') { t = '主管患者'; f = '主管患者'; }
+    else if (_wallFilter.type === 'discharged') { t = '出院患者'; f = '出院患者'; }
+    else if (_wallFilter.type === 'dept') { t = (_wallFilter.department_name || '科室') + ' 在院患者'; f = t; }
+    title.textContent = t;
+    footer.innerHTML = f + ' <b id="wall-total">0</b>';
+    clear.style.display = _wallFilter.type === 'active' ? 'none' : 'inline-block';
+}
+
+function patients_wall_apply_compact() {
+    var on = sessionStorage.getItem('his_wall_compact') === '1';
+    var cb = document.getElementById('wall-compact');
+    if (cb) cb.checked = on;
+    var grid = document.getElementById('wall-grid');
+    if (grid) grid.classList.toggle('compact', on);
+}
+window.patients_wall_apply_compact = patients_wall_apply_compact;
+
 async function patients_wall_load() {
-    var deptId = document.getElementById('wall-dept').value;
-    var qs = deptId ? '?department_id=' + deptId : '';
-    var r = await AjaxLoader.api('patients/list' + qs, { silent: true });
-    _wallPatients = r.data || [];
-    patients_wall_render();
+    try {
+        if (_wallFilter.type === 'mine') {
+            var mineRes = await AjaxLoader.api('patients/my-patients', { silent: true });
+            _wallPatients = mineRes.data || [];
+        } else {
+            var qs = new URLSearchParams();
+            qs.set('status', _wallFilter.type === 'discharged' ? 'discharged' : 'active');
+            if (_wallFilter.dept_id) qs.set('department_id', _wallFilter.dept_id);
+            var r = await AjaxLoader.api('patients/list?' + qs.toString(), { silent: true });
+            _wallPatients = r.data || [];
+        }
+        patients_wall_render();
+    } catch (e) {
+        Dom.toast('患者列表加载失败', 'error');
+    }
 }
 
 function patients_wall_toggle() {
-    document.getElementById('wall-grid').classList.toggle('compact', document.getElementById('wall-compact').checked);
+    sessionStorage.setItem('his_wall_compact', document.getElementById('wall-compact').checked ? '1' : '0');
+    patients_wall_apply_compact();
 }
 
 function patients_wall_days(p) {
@@ -94,7 +158,7 @@ function patients_wall_render() {
     document.getElementById('wall-count').textContent = _wallPatients.length + ' 人';
     document.getElementById('wall-total').textContent = _wallPatients.length;
     if (_wallPatients.length === 0) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#909399;padding:60px 0">本科室暂无在院患者</div>';
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#909399;padding:60px 0">暂无患者</div>';
         return;
     }
     grid.innerHTML = _wallPatients.map(function(p) {
@@ -106,7 +170,7 @@ function patients_wall_render() {
         var age = patients_wall_age(p);
         var ward = [p.department_name, p.ward_name].filter(Boolean).join('-');
         var vte = patients_wall_vte('Caprini', p.vte_caprini) + ' ' + patients_wall_vte('出血', p.vte_bleeding);
-        var cls = 'pw-card' + (p.is_critical == 1 ? ' critical' : '') + (p.allergy_history ? ' allergy' : '');
+        var cls = 'pw-card' + (p.is_critical == 1 ? ' critical' : '') + (p.allergy_history ? ' allergy' : '') + (p.status === 'discharged' ? ' discharged' : '');
         var admDate = p.admission_date ? String(p.admission_date).slice(0, 10) : '';
         return '<div class="' + cls + '" onclick="patients_wall_enter(' + p.id + ')" title="进入医嘱工作站">' +
             '<div class="pw-head">' +

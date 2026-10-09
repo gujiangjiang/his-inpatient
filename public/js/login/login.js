@@ -41,7 +41,7 @@ async function handleHashChange() {
 }
 
 function showLogin() {
-    document.getElementById('login-container').style.display = 'block';
+    document.getElementById('login-container').style.display = 'flex';
     document.getElementById('main-app').style.display = 'none';
 }
 
@@ -53,13 +53,18 @@ function updateUserInfo() {
 }
 
 /**
- * 设置医院名称 (来自 sys_config)
+ * 设置医院名称 (来自 sys_config) - 同时更新登录页标题
  */
 function setupHospitalName() {
     AjaxLoader.api('auth/setup-status', { silent: true }).then(r => {
+        const name = r.data && r.data.hospital_name ? r.data.hospital_name : '';
         const el = document.getElementById('hospital-name');
-        if (el && r.data && r.data.hospital_name) {
-            el.textContent = r.data.hospital_name;
+        if (el && name) {
+            el.textContent = name;
+        }
+        const loginTitle = document.getElementById('login-title');
+        if (loginTitle && name) {
+            loginTitle.textContent = name;
         }
     }).catch(() => {});
 }

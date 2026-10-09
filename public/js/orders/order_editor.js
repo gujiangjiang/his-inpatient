@@ -115,6 +115,7 @@ const OrderEditor = {
 
     renderItems() {
         const tbody = document.getElementById('oe-tbody');
+        if (!tbody) return; // 编辑器已关闭
         const isMed = this.category === 'medication';
         const freqOpts = f => this.FREQS.map(o => `<option value="${o[0]}" ${o[0] === f ? 'selected' : ''}>${o[1]}</option>`).join('');
         tbody.innerHTML = this.items.map((it, i) => {

@@ -35,21 +35,30 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 <body>
 <div id="app">
     <div id="login-container" class="login-container" style="display:none">
+        <div class="login-deco login-deco-1"></div>
+        <div class="login-deco login-deco-2"></div>
+        <div class="login-deco login-deco-3"></div>
         <div class="login-form-wrapper">
-            <h1 class="login-title">住院一体化系统</h1>
+            <div class="login-brand">
+                <div class="login-logo">医</div>
+                <h1 class="login-title" id="login-title">住院一体化系统</h1>
+                <p class="login-subtitle">HOSPITAL INPATIENT INFORMATION SYSTEM</p>
+            </div>
             <div id="login-box">
                 <form id="login-form" class="login-form">
                     <div class="form-group">
-                        <input type="text" name="username" placeholder="用户名" autocomplete="username" required>
+                        <label class="login-label">用户名</label>
+                        <input type="text" name="username" placeholder="请输入用户名" autocomplete="username" required>
                     </div>
                     <div class="form-group">
-                        <input type="password" name="password" placeholder="密码" autocomplete="current-password" required>
+                        <label class="login-label">密码</label>
+                        <input type="password" name="password" placeholder="请输入密码" autocomplete="current-password" required>
                     </div>
-                    <button type="submit" class="login-btn">登录</button>
+                    <button type="submit" class="login-btn">登 录</button>
                 </form>
             </div>
             <div id="setup-wizard" style="display:none">
-                <h2>系统初始化</h2>
+                <h2 class="login-setup-title">系统初始化</h2>
                 <div class="setup-form">
                     <div class="form-group">
                         <input type="text" name="hospital_name" placeholder="医院名称" required>
@@ -69,6 +78,7 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
                     <button type="button" id="setup-btn" class="login-btn">完成初始化</button>
                 </div>
             </div>
+            <div class="login-foot">仅限授权医疗机构内部使用</div>
         </div>
     </div>
 

@@ -1,6 +1,6 @@
 // public/js/core/app.js
 const App = {
-    version: '0.13.1',
+    version: '0.13.2',
     roleRoutes: {
         admin: { module: 'admin', page: 'departments' },
         doctor: { module: 'patients', page: 'patient_list' },
@@ -22,9 +22,14 @@ const App = {
     }
 };
 
-// 全局 navigateTo: 供 sidebar onclick 使用, 始终可用
+// 全局 navigateTo: 供 sidebar onclick 使用, 始终可用; 同步 hash 路由 (#module/page)
 window.navigateTo = function(module, page) {
-    AjaxLoader.loadPage(module, page);
+    const target = '#' + module + '/' + page;
+    if (window.location.hash === target) {
+        AjaxLoader.loadPage(module, page);
+    } else {
+        window.location.hash = target;
+    }
 };
 
 App.init();

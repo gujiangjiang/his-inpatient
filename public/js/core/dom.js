@@ -28,12 +28,11 @@ const Dom = {
     },
 
     modal(title, content, buttons = []) {
-        // 移除已有 modal
-        const existing = document.querySelector('.modal-overlay');
-        if (existing) document.body.removeChild(existing);
-
+        // 支持弹窗叠加 (如开嘱编辑器上再打开药品检索): 不清除已有弹窗, 层级递增
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
+        const stack = document.querySelectorAll('.modal-overlay').length;
+        if (stack > 0) overlay.style.zIndex = 1000 + stack * 10;
 
         const modal = document.createElement('div');
         modal.className = 'modal';

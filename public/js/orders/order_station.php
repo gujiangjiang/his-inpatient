@@ -6,7 +6,7 @@
         <span class="os-sep"></span>
         <button type="button" class="os-tool os-tool-success" onclick="OrderStation.submitSelected()">提交<span class="key">F2</span></button>
         <button type="button" class="os-tool os-tool-danger" onclick="OrderStation.stopAllLong()">长期全停<span class="key">F4</span></button>
-        <button type="button" class="os-tool" onclick="OrderStation.refresh()">刷新<span class="key">F5</span></button>
+        <button type="button" class="os-tool" onclick="OrderStation.refresh(true)">刷新<span class="key">F5</span></button>
         <span class="os-sep"></span>
         <button type="button" class="os-tool" onclick="OrderStation.openSetPicker()">路径/组套</button>
         <button type="button" class="os-tool" onclick="OrderStation.toggleAssist()">辅助决策</button>
@@ -149,7 +149,7 @@ var OrderStation = {
         this.refresh();
     },
 
-    async refresh() {
+    async refresh(feedback) {
         if (!this.patientId) return;
         const qs = new URLSearchParams({ patient_id: this.patientId, per_page: 500 });
         if (this.filters.period) qs.set('order_period', this.filters.period);
@@ -161,6 +161,7 @@ var OrderStation = {
             this.groups = r.data || [];
             this.selected.clear();
             this.render();
+            if (feedback) Dom.toast('已刷新 ' + Format.shortTime(new Date()) + ' · 共 ' + this.groups.length + ' 组医嘱', 'success');
         } catch (e) { /* 已提示 */ }
     },
 

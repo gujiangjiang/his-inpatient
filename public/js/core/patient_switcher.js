@@ -1,9 +1,7 @@
 // public/js/core/patient_switcher.js
-// 患者上下文切换浮动面板 (菜单: 添加/主管/科室患者+/大小卡/出院)
+// 患者列表下拉: 仅展示分类/科室, 点击后进入患者卡片墙 (#patients/patient_list)
 const PatientSwitcher = {
-    activeTab: 'mine',
-    deptPatientsCache: {},   // department_id => {active:[], discharged:[]}
-    lastAction: null,
+    depts: [],
 
     /**
      * 初始化: 绑定触发按钮 + 菜单点击 + 外部点击关闭
@@ -15,9 +13,7 @@ const PatientSwitcher = {
 
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isOpen = panel.style.display === 'block';
-            panel.style.display = isOpen ? 'none' : 'block';
-            if (!isOpen && !this.lastAction) this.handleAction('mine');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         });
 
         panel.querySelectorAll('.switcher-menu-item').forEach(item => {
@@ -27,173 +23,85 @@ const PatientSwitcher = {
             });
         });
 
-        if (sessionStorage.getItem('his_switcher_compact') === '1') {
-            panel.classList.add('switcher-card-small');
-        }
-
         document.addEventListener('click', (e) => {
             const switcher = document.getElementById('patient-switcher');
-            if (switcher && !switcher.contains(e.target)) {
-                panel.style.display = 'none';
-            }
+            if (switcher && !switcher.contains(e.target)) panel.style.display = 'none';
         });
     },
 
+    closePanel() {
+        const panel = document.getElementById('patient-switcher-panel');
+        if (panel) panel.style.display = 'none';
+    },
+
     /**
-     * 菜单动作分发
+     * 菜单动作: 添加患者(弹窗) / 主管患者 / 科室患者+ / 大小卡切换 / 出院患者
+     * 主管/科室/出院 → 写入筛选并跳转卡片墙
      */
     handleAction(action) {
-        const panel = document.getElementById('patient-switcher-panel');
         const content = document.getElementById('switcher-tab-content');
-
         if (action === 'incoming') {
-            panel.style.display = 'none';
+            this.closePanel();
             this.showIncomingModal();
-            return;
-        }
-        if (action === 'toggle-size') {
-            panel.classList.toggle('switcher-card-small');
-            sessionStorage.setItem('his_switcher_compact', panel.classList.contains('switcher-card-small') ? '1' : '0');
-            return;
-        }
-        if (action === 'mine' || action === 'dept' || action === 'discharged') {
-            this.lastAction = action;
-            content.style.display = 'block';
-            this.loadTab(action);
+        } else if (action === 'mine') {
+            this.closePanel();
+            this.goWall({ type: 'mine' });
+        } else if (action === 'discharged') {
+            this.closePanel();
+            this.goWall({ type: 'discharged' });
+        } else if (action === 'dept') {
+            const show = content.style.display !== 'block';
+            content.style.display = show ? 'block' : 'none';
+            if (show) this.renderDeptList(content);
+        } else if (action === 'toggle-size') {
+            const compact = sessionStorage.getItem('his_wall_compact') === '1';
+            sessionStorage.setItem('his_wall_compact', compact ? '0' : '1');
+            if (typeof window.patients_wall_apply_compact === 'function') window.patients_wall_apply_compact();
+            Dom.toast(compact ? '已切换为大卡' : '已切换为小卡', 'info');
         }
     },
 
     /**
-     * 加载内联列表 (主管/科室/出院)
+     * 跳转患者卡片墙 (筛选: active 默认 | mine 主管 | dept 科室 | discharged 出院)
      */
-    async loadTab(tab) {
-        const content = document.getElementById('switcher-tab-content');
-        if (!content) return;
+    goWall(filter) {
+        sessionStorage.setItem('his_wall_filter', JSON.stringify(filter));
+        window.navigateTo('patients', 'patient_list');
+    },
+
+    /**
+     * 科室患者+: 仅渲染授权科室列表 (不显示患者)
+     */
+    async renderDeptList(content) {
         content.innerHTML = '<div class="switcher-loading">加载中...</div>';
-
-        if (tab === 'mine') {
-            try {
-                const r = await AjaxLoader.api('patients/my-patients', { silent: true });
-                this.renderCards(content, r.data || [], 'mine');
-            } catch (e) {
-                content.innerHTML = '<div class="switcher-empty">加载失败</div>';
-            }
-        } else if (tab === 'discharged') {
-            this.renderDischargedTab(content);
-        } else {
-            this.renderDepartmentTab(content);
-        }
-    },
-
-    /**
-     * 出院患者 (菜单直达, 面板内联)
-     */
-    async renderDischargedTab(content) {
-        try {
-            const depts = (await AjaxLoader.api('doctors/departments', { silent: true })).data.departments || [];
-            let all = [];
-            for (const d of depts) {
-                const r = await AjaxLoader.api('patients/by-department?department_id=' + d.id + '&status=discharged', { silent: true });
-                all = all.concat(r.data || []);
-            }
-            this.renderCards(content, all, 'discharged');
-        } catch (e) {
-            content.innerHTML = '<div class="switcher-empty">加载失败</div>';
-        }
-    },
-
-    /**
-     * 科室 Tab: 权限科室折叠列表 + 出院患者
-     */
-    async renderDepartmentTab(content) {
         try {
             const r = await AjaxLoader.api('doctors/departments', { silent: true });
-            const departments = r.data.departments || [];
-            let html = '';
-            departments.forEach(d => {
-                html += `
-                    <div class="dept-group">
-                        <div class="dept-group-head" onclick="PatientSwitcher.toggleDept(${d.id})">
-                            <span class="dept-caret">▸</span>
-                            <span class="dept-name">${Format.escape(d.name)}</span>
-                            <span class="dept-count" id="dept-count-${d.id}"></span>
-                        </div>
-                        <div class="dept-group-body" id="dept-body-${d.id}" style="display:none"></div>
-                    </div>
-                `;
+            this.depts = r.data.departments || [];
+            if (this.depts.length === 0) {
+                content.innerHTML = '<div class="switcher-empty">暂无授权科室</div>';
+                return;
+            }
+            let html = '<div class="switcher-menu-group-title">选择科室, 卡片墙查看患者</div>';
+            this.depts.forEach(d => {
+                html += `<div class="switcher-menu-item" onclick="PatientSwitcher.goDept(${d.id})"><span class="dept-caret">▸</span>${Format.escape(d.name)}</div>`;
             });
-            // 出院患者折叠组
-            html += `
-                <div class="dept-group">
-                    <div class="dept-group-head" onclick="PatientSwitcher.toggleDischarged()">
-                        <span class="dept-caret" id="discharged-caret">▸</span>
-                        <span class="dept-name">出院患者</span>
-                        <span class="dept-count" id="discharged-count"></span>
-                    </div>
-                    <div class="dept-group-body" id="discharged-body" style="display:none"></div>
-                </div>
-            `;
             content.innerHTML = html;
         } catch (e) {
             content.innerHTML = '<div class="switcher-empty">加载失败</div>';
         }
     },
 
-    /**
-     * 展开/折叠某科室的患者列表
-     */
-    async toggleDept(deptId) {
-        const body = document.getElementById('dept-body-' + deptId);
-        if (!body) return;
-        if (body.style.display === 'block') {
-            body.style.display = 'none';
-            const caret = body.previousElementSibling.querySelector('.dept-caret');
-            if (caret) caret.textContent = '▸';
-            return;
-        }
-        // 缓存
-        if (!this.deptPatientsCache[deptId]) {
-            const r = await AjaxLoader.api('patients/by-department?department_id=' + deptId + '&status=active', { silent: true });
-            this.deptPatientsCache[deptId] = r.data || [];
-        }
-        const patients = this.deptPatientsCache[deptId];
-        document.getElementById('dept-count-' + deptId).textContent = patients.length;
-        this.renderCards(body, patients, 'dept');
-        body.style.display = 'block';
-        const caret = body.previousElementSibling.querySelector('.dept-caret');
-        if (caret) caret.textContent = '▾';
+    goDept(deptId) {
+        const dept = this.depts.find(d => d.id == deptId);
+        this.closePanel();
+        this.goWall({ type: 'dept', dept_id: deptId, department_name: dept ? dept.name : '' });
     },
 
     /**
-     * 展开/折叠出院患者
-     */
-    async toggleDischarged() {
-        const body = document.getElementById('discharged-body');
-        if (!body) return;
-        if (body.style.display === 'block') {
-            body.style.display = 'none';
-            document.getElementById('discharged-caret').textContent = '▸';
-            return;
-        }
-        // 拉取所有权限科室的出院患者
-        const depts = (await AjaxLoader.api('doctors/departments', { silent: true })).data.departments || [];
-        let all = [];
-        for (const d of depts) {
-            const r = await AjaxLoader.api('patients/by-department?department_id=' + d.id + '&status=discharged', { silent: true });
-            all = all.concat(r.data || []);
-        }
-        document.getElementById('discharged-count').textContent = all.length;
-        this.renderCards(body, all, 'discharged');
-        body.style.display = 'block';
-        document.getElementById('discharged-caret').textContent = '▾';
-    },
-
-    /**
-     * 添加 Tab: 悬浮列表弹窗 (待入科患者)
+     * 添加患者: 悬浮待入科列表弹窗
      */
     async showIncomingModal() {
-        let html = '<div class="switcher-loading">加载中...</div>';
-        const overlay = Dom.modal('待入科/接收患者', html, [
+        const overlay = Dom.modal('待入科/接收患者', '<div class="switcher-loading">加载中...</div>', [
             { text: '关闭', type: 'default' }
         ]);
         try {
@@ -214,7 +122,7 @@ const PatientSwitcher = {
     },
 
     /**
-     * 生成患者文字方块 HTML (顶部切换器统一使用)
+     * 生成患者文字方块 HTML
      */
     renderCardHtml(p, tab) {
         const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
@@ -237,24 +145,10 @@ const PatientSwitcher = {
     },
 
     /**
-     * 渲染患者列表 (文字方块)
-     */
-    renderCards(container, patients, tab) {
-        if (!patients || patients.length === 0) {
-            container.innerHTML = '<div class="switcher-empty">暂无患者</div>';
-            return;
-        }
-        let html = '';
-        patients.forEach(p => { html += this.renderCardHtml(p, tab); });
-        container.innerHTML = html;
-    },
-
-    /**
-     * 患者卡片选中回调
+     * 患者卡片点击: 待入科 → 指派医师; 其他 → 进入医嘱工作站
      */
     async onSelectCard(patientId, tab) {
-        const panel = document.getElementById('patient-switcher-panel');
-        if (panel) panel.style.display = 'none';
+        this.closePanel();
         const overlay = document.querySelector('.modal-overlay');
         if (overlay) document.body.removeChild(overlay);
 

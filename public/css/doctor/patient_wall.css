@@ -57,6 +57,20 @@
 }
 .pw-card:hover { border-color: #7fd4d4; box-shadow: 0 3px 12px rgba(26,163,163,0.18); }
 .pw-card.critical { border-color: #f56c6c; box-shadow: inset 0 0 0 1px #fbc4c4; }
+.pw-card.discharged { opacity: .68; background: #fafafa; }
+
+/* 卡片墙标题/清除筛选 */
+.wall-title { font-size: 15px; font-weight: 700; color: #1f2d3d; }
+.wall-clear {
+    border: 1px solid #14a8a8;
+    color: #14a8a8;
+    background: #fff;
+    border-radius: 4px;
+    font-size: 12px;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+.wall-clear:hover { background: #e9f8f8; }
 .pw-card.allergy::after {
     content: '过敏';
     position: absolute;
