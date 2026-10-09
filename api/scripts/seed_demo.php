@@ -75,31 +75,41 @@ foreach ($users as $u) {
     }
 }
 
-// === 医药品库存 ===
+// === 医药品库存 (含剂型/厂家/药房/基药等级/默认用法) ===
 $meds = [
-    ['code' => 'MED001', 'name' => '5%葡萄糖 250ml', 'specification' => '250ml', 'unit' => '袋', 'price' => 5.00, 'stock_quantity' => 50],
-    ['code' => 'MED002', 'name' => '头孢呋辛 1.5g', 'specification' => '1.5g/管', 'unit' => '管', 'price' => 15.00, 'stock_quantity' => 30],
-    ['code' => 'MED003', 'name' => '阿司匹林 100mg', 'specification' => '100mg/片', 'unit' => '片', 'price' => 0.50, 'stock_quantity' => 200],
+    ['MED001', '0.9%氯化钠注射液100ml(双管软袋)', '100ml', '袋', 3.50, 49780, '注射液', '安徽丰原', '中心药房', '基', 'ljh', '', '静脉输液', '100ml', 0],
+    ['MED002', '0.9%氯化钠注射液250ml(双管软袋)', '250ml', '袋', 4.20, 19926, '注射液', '安徽丰原', '中心药房', '基', 'ljh', '', '静脉输液', '250ml', 0],
+    ['MED003', '美索巴莫注射液', '1g', '支', 28.00, 135, '注射液', '江苏吴中', '中心药房', '国', 'msbm', 'qd', '静脉输液', '1g', 0],
+    ['MED004', '地佐辛注射液', '5mg', '支', 96.00, 303, '粉针', '扬子药业', '中心药房', '', 'dzx', 'q8h', '静脉输液', '5mg', 0],
+    ['MED005', '注射用头孢拉定', '0.5g', '支', 3.60, 1046, '粉针', '福抗药业', '中心药房', '省', 'zszbld', 'bid', '静脉输液', '1g', 1],
+    ['MED006', '注射用艾普拉唑', '10mg', '瓶', 88.00, 705, '粉针', '丽珠集团', '中心药房', '谈', 'aplz', 'qd', '静脉输液', '10mg', 0],
+    ['MED007', '注射用盐酸丙帕他莫', '1g', '支', 32.00, 678, '注射液', '山东瑞阳', '中心药房', '', 'zybbtm', 'bid', '静脉输液', '2g', 0],
+    ['MED008', '注射用鹿瓜多肽', '16mg', '支', 45.00, 260, '粉针', '江世药业', '中心药房', '', 'zysgdt', 'qd', '静脉输液', '16mg', 0],
+    ['MED009', '乳酸钠林格注射液', '500ml', '袋', 6.80, 320, '注射液', '安徽双鹤', '中心药房', '基', 'rsnlg', '', '静脉输液', '500ml', 0],
+    ['MED010', '艾瑞昔布片', '0.1g', '片', 4.20, 800, '片剂', '江苏恒瑞', '中心药房', '国', 'arxb', 'bid', '口服', '0.1g', 0],
+    ['MED011', '云南白药胶囊', '0.5g', '粒', 1.60, 1200, '胶囊', '云南白药', '中心药房', '基', 'ynbyjn', 'tid', '口服', '0.5g', 0],
+    ['MED012', '地奥司明片', '0.45g', '片', 2.80, 600, '片剂', '南京正大', '中心药房', '省', 'dasmp', 'bid', '口服', '0.45g', 0],
+    ['MED013', '弹力袜', '均码', '双', 180.00, 40, '耗材', '', '中心药房', '', 'tlw', '', '外用', '1双', 0],
 ];
 foreach ($meds as $m) {
     $check = $pdo->prepare("SELECT id FROM medications WHERE code = ?");
-    $check->execute([$m['code']]);
+    $check->execute([$m[0]]);
     if (!$check->fetch()) {
-        $stmt = $pdo->prepare("INSERT INTO medications (code, name, specification, unit, price, stock_quantity, created_at) VALUES (?,?,?,?,?,?,?)");
-        $stmt->execute([$m['code'], $m['name'], $m['specification'], $m['unit'], $m['price'], $m['stock_quantity'], DateHelper::now()]);
+        $stmt = $pdo->prepare("INSERT INTO medications (code, name, specification, unit, price, stock_quantity, dosage_form, manufacturer, pharmacy, drug_class, pinyin_code, default_freq, default_route, default_dosage, is_antibiotic, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->execute(array_merge($m, [DateHelper::now()]));
     }
 }
 
-// === 8 名患者 ===
+// === 8 名患者 (含护理等级/费别/过敏/VTE/费用) ===
 $patients = [
-    ['name' => '张明', 'gender' => 'male', 'birth_date' => '1965-08-15', 'id_card' => '110101196508151234', 'department_id' => 1, 'ward_id' => 1, 'bed_no' => '1', 'admission_diagnosis' => '2型糖尿病伴高血压', 'admission_icd_code' => 'E11.9'],
-    ['name' => '王芳', 'gender' => 'female', 'birth_date' => '1972-03-22', 'id_card' => '110101197203225678', 'department_id' => 2, 'ward_id' => 1, 'bed_no' => '2', 'admission_diagnosis' => '股骨颈骨折', 'admission_icd_code' => 'S72.0'],
-    ['name' => '李强', 'gender' => 'male', 'birth_date' => '1985-11-30', 'id_card' => '110101198511309012', 'department_id' => 2, 'ward_id' => 2, 'bed_no' => '10', 'admission_diagnosis' => '阑尾炎', 'admission_icd_code' => 'K53.9'],
-    ['name' => '赵敏', 'gender' => 'female', 'birth_date' => '1990-06-10', 'id_card' => '110101199006103456', 'department_id' => 4, 'ward_id' => 2, 'bed_no' => '11', 'admission_diagnosis' => '急性阑尾炎', 'admission_icd_code' => 'K53.9'],
-    ['name' => '陈医生', 'gender' => 'male', 'birth_date' => '1955-01-05', 'id_card' => '110101195501057890', 'department_id' => 1, 'ward_id' => 3, 'bed_no' => '21', 'admission_diagnosis' => '慢性支气管炎', 'admission_icd_code' => 'J42'],
-    ['name' => '刘伟', 'gender' => 'male', 'birth_date' => '1988-09-18', 'id_card' => '110101198809181234', 'department_id' => 3, 'ward_id' => 3, 'bed_no' => '22', 'admission_diagnosis' => '胫髓髎骨折', 'admission_icd_code' => 'S82.0'],
-    ['name' => '林丽', 'gender' => 'female', 'birth_date' => '1978-04-25', 'id_card' => '110101197804255678', 'department_id' => 4, 'ward_id' => 3, 'bed_no' => '23', 'admission_diagnosis' => '妊娠期高血压', 'admission_icd_code' => 'O14.9'],
-    ['name' => '孙强', 'gender' => 'male', 'birth_date' => '2015-12-12', 'id_card' => '110101201512121234', 'department_id' => 5, 'ward_id' => 3, 'bed_no' => '24', 'admission_diagnosis' => '上呼吸道感染', 'admission_icd_code' => 'J00'],
+    ['name' => '张明', 'gender' => 'male', 'birth_date' => '1965-08-15', 'id_card' => '110101196508151234', 'department_id' => 1, 'ward_id' => 1, 'bed_no' => '1', 'admission_diagnosis' => '2型糖尿病伴高血压', 'admission_icd_code' => 'E11.9', 'nursing_level' => '1', 'fee_type' => '居民医保', 'vte_caprini' => '中危', 'vte_bleeding' => '低危', 'total_fee' => 8642.15],
+    ['name' => '王芳', 'gender' => 'female', 'birth_date' => '1972-03-22', 'id_card' => '110101197203225678', 'department_id' => 2, 'ward_id' => 1, 'bed_no' => '2', 'admission_diagnosis' => '股骨颈骨折', 'admission_icd_code' => 'S72.0', 'nursing_level' => '1', 'fee_type' => '职工医保', 'vte_caprini' => '高危', 'vte_bleeding' => '中危', 'total_fee' => 24380.50, 'is_critical' => 1],
+    ['name' => '李强', 'gender' => 'male', 'birth_date' => '1985-11-30', 'id_card' => '110101198511309012', 'department_id' => 2, 'ward_id' => 2, 'bed_no' => '10', 'admission_diagnosis' => '阑尾炎', 'admission_icd_code' => 'K53.9', 'nursing_level' => '2', 'fee_type' => '自费', 'vte_caprini' => '低危', 'vte_bleeding' => '低危', 'total_fee' => 5120.00],
+    ['name' => '赵敏', 'gender' => 'female', 'birth_date' => '1990-06-10', 'id_card' => '110101199006103456', 'department_id' => 4, 'ward_id' => 2, 'bed_no' => '11', 'admission_diagnosis' => '急性阑尾炎', 'admission_icd_code' => 'K53.9', 'nursing_level' => '2', 'fee_type' => '居民医保', 'vte_caprini' => '低危', 'vte_bleeding' => '低危', 'total_fee' => 4360.80],
+    ['name' => '陈医生', 'gender' => 'male', 'birth_date' => '1955-01-05', 'id_card' => '110101195501057890', 'department_id' => 1, 'ward_id' => 3, 'bed_no' => '21', 'admission_diagnosis' => '慢性支气管炎', 'admission_icd_code' => 'J42', 'nursing_level' => '3', 'fee_type' => '职工医保', 'vte_caprini' => '中危', 'vte_bleeding' => '低危', 'total_fee' => 3210.40],
+    ['name' => '刘伟', 'gender' => 'male', 'birth_date' => '1988-09-18', 'id_card' => '110101198809181234', 'department_id' => 3, 'ward_id' => 3, 'bed_no' => '22', 'admission_diagnosis' => '胫腓骨骨折', 'admission_icd_code' => 'S82.0', 'nursing_level' => '1', 'fee_type' => '居民医保', 'allergy_history' => '青霉素过敏', 'vte_caprini' => '中危', 'vte_bleeding' => '低危', 'total_fee' => 11642.66],
+    ['name' => '林丽', 'gender' => 'female', 'birth_date' => '1978-04-25', 'id_card' => '110101197804255678', 'department_id' => 4, 'ward_id' => 3, 'bed_no' => '23', 'admission_diagnosis' => '妊娠期高血压', 'admission_icd_code' => 'O14.9', 'nursing_level' => '2', 'fee_type' => '居民医保', 'vte_caprini' => '高危', 'vte_bleeding' => '中危', 'total_fee' => 6890.30],
+    ['name' => '孙强', 'gender' => 'male', 'birth_date' => '2015-12-12', 'id_card' => '110101201512121234', 'department_id' => 5, 'ward_id' => 3, 'bed_no' => '24', 'admission_diagnosis' => '上呼吸道感染', 'admission_icd_code' => 'J00', 'nursing_level' => '3', 'fee_type' => '自费', 'vte_caprini' => '低危', 'vte_bleeding' => '低危', 'total_fee' => 1580.20],
 ];
 
 $i = 1;
@@ -109,12 +119,14 @@ foreach ($patients as $p) {
     $check = $pdo->prepare("SELECT id FROM patients WHERE admission_no = ?");
     $check->execute([$admissionNo]);
     if (!$check->fetch()) {
-        $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, nursing_level, fee_type, allergy_history, is_critical, vte_caprini, vte_bleeding, total_fee, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         $stmt->execute([
             $patientNo, $p['name'], $p['gender'], $p['birth_date'], $p['id_card'],
             $admissionNo, $p['department_id'], $p['ward_id'], $p['bed_no'],
             DateHelper::now(), $p['admission_diagnosis'], $p['admission_icd_code'],
-            'active', DateHelper::now()
+            $p['nursing_level'] ?? '3', $p['fee_type'] ?? '', $p['allergy_history'] ?? '',
+            $p['is_critical'] ?? 0, $p['vte_caprini'] ?? '', $p['vte_bleeding'] ?? '',
+            $p['total_fee'] ?? 0, 'active', DateHelper::now()
         ]);
         $pid = $pdo->lastInsertId();
 

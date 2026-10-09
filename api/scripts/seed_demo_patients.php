@@ -29,36 +29,7 @@ foreach (array_slice($patients, 0, count($progressContents)) as $idx => $p) {
         ->execute([$p['id'], $p['admission_no'], 'progress', $pc, $html, $doctor1['id'], DateHelper::now()]);
 }
 
-// === 医嘱 (幂等) ===
-if (DB::selectOne("SELECT COUNT(*) as c FROM orders")['c'] === 0) {
-    // 第一个患者成组药品医嘱 (主医嘱 + 2 子医嘱)
-    if (isset($patients[0])) {
-        $p0 = $patients[0];
-        $pdo->prepare("INSERT INTO orders (patient_id, admission_no, order_type, content, category, status, start_date, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)")
-            ->execute([$p0['id'], $p0['admission_no'], 'medication', '5%葡萄糖 250ml + 头孢呋辛 1.5g', 'medication', 'verified', DateHelper::now(), $doctor1['id'], DateHelper::now(), DateHelper::now()]);
-        $parentId = $pdo->lastInsertId();
-        $pdo->prepare("INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, content, category, status, start_date, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
-            ->execute([$p0['id'], $p0['admission_no'], $parentId, 0, 'medication', '5%葡萄糖 250ml', 'medication', 'verified', DateHelper::now(), $doctor1['id'], DateHelper::now(), DateHelper::now()]);
-        $pdo->prepare("INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, content, category, status, start_date, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
-            ->execute([$p0['id'], $p0['admission_no'], $parentId, 0, 'medication', '头孢呋辛 1.5g', 'medication', 'verified', DateHelper::now(), $doctor1['id'], DateHelper::now(), DateHelper::now()]);
-    }
-
-    // 其他患者医嘱
-    $orderContents = [
-        ['阿司匹林 100mg qd', 'medication', 'pending'],
-        ['体温监测 bid', 'general', 'verified'],
-        ['饮食指导', 'general', 'pending'],
-        ['换药处理', 'general', 'verified'],
-        ['血常规复查', 'general', 'executing'],
-        ['胸片检查', 'general', 'executing'],
-    ];
-    foreach ($patients as $idx => $p) {
-        $oc = $orderContents[$idx % count($orderContents)];
-        $docId = ($idx % 2 == 0) ? $doctor1['id'] : $doctor2['id'];
-        $pdo->prepare("INSERT INTO orders (patient_id, admission_no, order_type, content, category, status, start_date, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)")
-            ->execute([$p['id'], $p['admission_no'], 'general', $oc[0], $oc[1], $oc[2], DateHelper::now(), $docId, DateHelper::now(), DateHelper::now()]);
-    }
-}
+// === 医嘱 (见 seed_demo_orders.php, 幂等) ===
 
 // === 24 条生命体征 (幂等) ===
 if (DB::selectOne("SELECT COUNT(*) as c FROM vital_signs")['c'] === 0) {
