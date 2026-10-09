@@ -39,6 +39,39 @@ foreach ($sets as $s) {
     }
 }
 
+// === 非药品医嘱目录 (幂等, 按内容) ===
+$catalog = [
+    ['特级护理', '护理', '', '', '', 'long'],
+    ['一级护理', '护理', '', '', '', 'long'],
+    ['二级护理', '护理', '', '', '', 'long'],
+    ['三级护理', '护理', '', '', '', 'long'],
+    ['普食饮食', '饮食', '', '6小时后', '', 'long'],
+    ['糖尿病饮食', '饮食', '', '', '', 'long'],
+    ['低盐低脂饮食', '饮食', '', '', '', 'long'],
+    ['测血压', '测量', 'bid', '6-14', '', 'long'],
+    ['测血氧饱和度', '测量', 'q2h', '', '不计价', 'long'],
+    ['心电监护', '监护', '', '', '', 'long'],
+    ['吸氧 2L/min', '给氧', '', '', '', 'long'],
+    ['陪客一人', '陪护', '', '', '不计价,径外', 'long'],
+    ['记24小时出入量', '护理', '', '', '', 'long'],
+    ['血糖监测', '测量', 'qid', '7-11-17-21', '', 'long'],
+    ['健康宣教', '宣教', '', '', '', 'long'],
+    ['留置针护理', '护理', '', '', '', 'long'],
+    ['会阴护理', '护理', 'bid', '', '', 'long'],
+    ['压疮护理', '护理', 'q2h', '', '', 'long'],
+    ['雾化吸入', '雾化吸入', 'bid', '8-16', '', 'long'],
+    ['弹力袜', '外用', '', '', '径外', 'temp'],
+    ['三角巾悬吊', '护理', '', '', '', 'temp'],
+    ['换药处理', '换药', '', '', '', 'temp'],
+    ['心电图检查', '检查', '', '', '', 'temp'],
+    ['胸片检查', '检查', '', '', '', 'temp'],
+];
+foreach ($catalog as $i => $c) {
+    if (DB::selectOne("SELECT id FROM order_catalog WHERE content = ?", [$c[0]])) continue;
+    $pdo->prepare("INSERT INTO order_catalog (content, category, usage_name, freq_code, freq_detail, billing_flags, order_period, sort_no, is_active, created_at) VALUES (?,?,?,?,?,?,?,?,?,?)")
+        ->execute([$c[0], 'general', $c[1], $c[2], $c[3], $c[4], $c[5], $i, 1, DateHelper::now()]);
+}
+
 if (DB::selectOne("SELECT COUNT(*) as c FROM orders")['c'] > 0) {
     echo "医嘱数据已存在，跳过。\n";
     exit;

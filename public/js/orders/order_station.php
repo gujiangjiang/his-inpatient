@@ -1,8 +1,8 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="order-station">
     <div class="os-toolbar">
-        <button type="button" class="os-tool" onclick="OrderStation.openMedication()">＋ 药品<span class="key">F9</span></button>
-        <button type="button" class="os-tool" onclick="OrderStation.openNonmedication()">＋ 非药品<span class="key">F8</span></button>
+        <button type="button" class="os-tool" onclick="OrderStation.openMedication(event)">＋ 药品<span class="key">F9</span></button>
+        <button type="button" class="os-tool" onclick="OrderStation.openNonmedication(event)">＋ 非药品<span class="key">F8</span></button>
         <span class="os-sep"></span>
         <button type="button" class="os-tool os-tool-success" onclick="OrderStation.submitSelected()">提交<span class="key">F2</span></button>
         <button type="button" class="os-tool os-tool-danger" onclick="OrderStation.stopAllLong()">长期全停<span class="key">F4</span></button>
@@ -79,6 +79,7 @@ var OrderStation = {
     filters: { period: '', status: '', date_from: '', date_to: '' },
     groups: [],
     selected: new Set(),
+    editing: null,
     keyHandler: null,
 
     init() {
@@ -160,6 +161,7 @@ var OrderStation = {
             const r = await AjaxLoader.api('orders/list?' + qs.toString(), { silent: true });
             this.groups = r.data || [];
             this.selected.clear();
+            this.editing = null;
             this.render();
             if (feedback) Dom.toast('已刷新 ' + Format.shortTime(new Date()) + ' · 共 ' + this.groups.length + ' 组医嘱', 'success');
         } catch (e) { /* 已提示 */ }
@@ -171,6 +173,18 @@ var OrderStation = {
         if (!tbody) return;
         empty.style.display = this.groups.length === 0 ? 'block' : 'none';
         tbody.innerHTML = this.groups.map(g => this.renderGroup(g)).join('');
+        const form = tbody.querySelector('.os-edit-form');
+        if (form) {
+            form.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !['BUTTON', 'SELECT'].includes(e.target.tagName)) {
+                    e.preventDefault();
+                    this.saveEditRow();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.cancelEdit();
+                }
+            });
+        }
         this.updateSelectedHint();
     },
 
@@ -178,18 +192,20 @@ var OrderStation = {
         const rows = [root].concat(root.sub_orders || []);
         const size = rows.length;
         const dim = ['invalid', 'stopped'].includes(root.status) ? ' os-row-dim' : '';
+        const editable = root.status === 'draft';
         let html = '';
         rows.forEach((o, i) => {
             const first = i === 0;
             const span = first ? ` rowspan="${size}"` : '';
-            html += `<tr class="${first ? 'os-group-start' : ''}${dim}">`;
+            const clickable = editable ? ` onclick="OrderStation.toggleEditRow(${o.id}, ${root.id}, event)"` : '';
+            html += `<tr class="${first ? 'os-group-start' : ''}${dim}${editable ? ' os-row-editable' : ''}">`;
             if (first) {
                 html += `<td class="os-col-check"${span}><input type="checkbox" ${this.selected.has(root.id) ? 'checked' : ''} onchange="OrderStation.toggleSelect(${root.id}, this.checked)"></td>`;
                 html += `<td class="os-col-period"${span}>${this.periodBadge(root.order_period)}</td>`;
                 html += `<td>${this.timeText(root)}</td>`;
             }
-            html += `<td>${this.statusChip(o)}${Format.escape(o.content)}${this.tags(o.billing_flags)}</td>`;
-            html += `<td class="os-col-dosage">${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
+            html += `<td${clickable} title="${editable ? '点击修改' : ''}">${this.statusChip(o)}${Format.escape(o.content)}${this.tags(o.billing_flags)}</td>`;
+            html += `<td class="os-col-dosage"${clickable}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
                 html += `<td class="os-col-usage ${usageCls}"${span}>${this.usageText(root, o)}</td>`;
@@ -197,8 +213,77 @@ var OrderStation = {
                 html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">⋯</button></td>`;
             }
             html += '</tr>';
+            if (this.editing && this.editing.orderId === o.id) {
+                html += this.editRowHtml(o);
+            }
         });
         return html;
+    },
+
+    editRowHtml(o) {
+        const freqOpts = (typeof OrderEditor !== 'undefined' ? OrderEditor.FREQS : [['', '无']])
+            .map(f => `<option value="${f[0]}" ${f[0] === (o.freq_code || o.frequency || '') ? 'selected' : ''}>${f[1]}</option>`).join('');
+        const usages = ['静脉输液', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护'];
+        const usageOpts = usages.map(u => `<option value="${u}" ${u === o.usage_name ? 'selected' : ''}>${u}</option>`).join('');
+        const flags = (o.billing_flags || '').split(',');
+        const flagBox = (v) => `<label><input type="checkbox" class="os-edit-flag" value="${v}" ${flags.includes(v) ? 'checked' : ''}>${v}</label>`;
+        return `<tr class="os-edit-tr"><td colspan="8">
+            <div class="os-edit-form" data-id="${o.id}">
+                <label>内容 <input class="os-edit-content" value="${Format.escape(o.content)}"></label>
+                <label>剂量 <input class="os-edit-w os-edit-dosage" value="${Format.escape(o.dosage || '')}"></label>
+                <label>单位 <input class="os-edit-w os-edit-unit" value="${Format.escape(o.dosage_unit || '')}"></label>
+                <label>用法 <select class="os-edit-usage"><option value="">-</option>${usageOpts}</select></label>
+                <label>滴速 <input class="os-edit-w os-edit-rate" value="${Format.escape(o.usage_rate || '')}"></label>
+                <label>频次 <select class="os-edit-freq">${freqOpts}</select></label>
+                <label>时间 <input class="os-edit-w os-edit-detail" value="${Format.escape(o.freq_detail || '')}"></label>
+                <label>期间 <select class="os-edit-period">
+                    <option value="long" ${o.order_period !== 'temp' ? 'selected' : ''}>长期</option>
+                    <option value="temp" ${o.order_period === 'temp' ? 'selected' : ''}>临时</option>
+                </select></label>
+                <span class="os-edit-flags">${flagBox('径外')}${flagBox('自费')}${flagBox('不计价')}${flagBox('预防')}</span>
+                <button type="button" class="btn btn-small btn-primary" onclick="OrderStation.saveEditRow()">保存</button>
+                <button type="button" class="btn btn-small" onclick="OrderStation.cancelEdit()">取消</button>
+            </div>
+        </td></tr>`;
+    },
+
+    toggleEditRow(orderId, rootId, event) {
+        if (event) event.stopPropagation();
+        if (this.editing && this.editing.orderId === orderId) {
+            this.editing = null;
+        } else {
+            this.editing = { orderId: orderId, rootId: rootId };
+        }
+        this.render();
+    },
+
+    async saveEditRow() {
+        const form = document.querySelector('.os-edit-form');
+        if (!form) return;
+        const data = {
+            id: parseInt(form.dataset.id, 10),
+            content: form.querySelector('.os-edit-content').value.trim(),
+            dosage: form.querySelector('.os-edit-dosage').value.trim(),
+            dosage_unit: form.querySelector('.os-edit-unit').value.trim(),
+            usage_name: form.querySelector('.os-edit-usage').value,
+            usage_rate: form.querySelector('.os-edit-rate').value.trim(),
+            freq_code: form.querySelector('.os-edit-freq').value,
+            freq_detail: form.querySelector('.os-edit-detail').value.trim(),
+            billing_flags: Array.from(form.querySelectorAll('.os-edit-flag:checked')).map(c => c.value).join(','),
+            order_period: form.querySelector('.os-edit-period').value
+        };
+        if (!data.content) { Dom.toast('医嘱内容不能为空', 'error'); return; }
+        try {
+            await AjaxLoader.api('orders/update', { method: 'POST', data: data });
+            this.editing = null;
+            Dom.toast('已保存', 'success');
+            this.refresh();
+        } catch (e) { /* 已提示 */ }
+    },
+
+    cancelEdit() {
+        this.editing = null;
+        this.render();
     },
 
     periodBadge(period) {
@@ -257,8 +342,8 @@ var OrderStation = {
         return this.groups.filter(g => this.selected.has(g.id));
     },
 
-    openMedication() { if (this.patientId) OrderEditor.open('medication', this.patientId); },
-    openNonmedication() { if (this.patientId) OrderEditor.open('nonmedication', this.patientId); },
+    openMedication(event) { if (this.patientId) OrderQuickAdd.open('medication', event); },
+    openNonmedication(event) { if (this.patientId) OrderQuickAdd.open('nonmedication', event); },
     submitSelected() { OrderActions.submitSelected(); },
     batchDelete() { OrderActions.batchDelete(); },
     stopAllLong() { OrderActions.stopAllLong(); },

@@ -58,6 +58,8 @@ function getRoutes() {
         // 医嘱
         'orders/save' => ['orders/order_save.php', ['admin', 'doctor']],
         'orders/list' => ['orders/order_list.php', ['admin', 'doctor', 'nurse']],
+        'orders/update' => ['orders/order_update.php', ['admin', 'doctor']],
+        'orders/quick-search' => ['orders/quick_search.php', ['admin', 'doctor']],
         'orders/verify' => ['orders/order_verify.php', ['admin', 'doctor']],
         'orders/status' => ['orders/order_status.php', ['admin', 'doctor', 'nurse']],
         'orders/submit' => ['orders/order_submit.php', ['admin', 'doctor']],

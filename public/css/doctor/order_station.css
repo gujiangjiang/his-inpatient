@@ -321,6 +321,125 @@
 .os-assist-line b { color: #909399; font-weight: 400; margin-right: 6px; }
 .os-assist-tip { color: #909399; margin-top: 6px; }
 
+/* ===== 鼠标旁悬浮快速开嘱 ===== */
+.os-qa {
+    position: fixed;
+    width: 480px;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.24);
+    z-index: 1800;
+    overflow: hidden;
+    animation: osQaIn .12s ease-out;
+}
+@keyframes osQaIn {
+    from { opacity: 0; transform: scale(.98); }
+    to { opacity: 1; transform: scale(1); }
+}
+.os-qa-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-bottom: 1px solid #f0f2f5;
+    background: #fafbfc;
+}
+.os-qa-tab {
+    border: 1px solid #dcdfe6;
+    background: #fff;
+    color: #606266;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    margin-right: 4px;
+}
+.os-qa-tab.active { background: #1aa3a3; border-color: #1aa3a3; color: #fff; }
+.os-qa-period { margin-left: auto; font-size: 12px; color: #606266; display: flex; gap: 10px; }
+.os-qa-period input { accent-color: #1aa3a3; }
+.os-qa-input {
+    width: calc(100% - 20px);
+    margin: 10px;
+    padding: 9px 12px;
+    border: 2px solid #1aa3a3;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+.os-qa-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(26,163,163,0.14); }
+.os-qa-list { max-height: 300px; overflow-y: auto; border-top: 1px solid #f0f2f5; }
+.os-qa-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f7f8fa;
+    cursor: pointer;
+    font-size: 13px;
+}
+.os-qa-row:hover, .os-qa-row.active { background: #f0fbfb; }
+.os-qa-row.active { outline: 1px solid #b8e6e6; outline-offset: -1px; }
+.os-qa-kind {
+    font-size: 11px;
+    border-radius: 3px;
+    padding: 0 5px;
+    line-height: 16px;
+    flex-shrink: 0;
+}
+.os-qa-kind.k-med { background: #e8f4ff; color: #409eff; }
+.os-qa-kind.k-non { background: #e6f7f7; color: #1aa3a3; }
+.os-qa-name { flex: 1; color: #303133; }
+.os-qa-name .ds-class { color: #1aa3a3; }
+.os-qa-meta {
+    color: #909399;
+    font-size: 12px;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.os-qa-hint {
+    padding: 6px 12px;
+    font-size: 11px;
+    color: #a8abb2;
+    background: #fafbfc;
+    border-top: 1px solid #f0f2f5;
+}
+.os-qa-empty { padding: 26px; text-align: center; color: #909399; font-size: 13px; }
+
+/* ===== 医嘱行内编辑抽屉 ===== */
+.os-row-editable td { cursor: pointer; }
+.os-edit-tr td {
+    background: #f5fbfb;
+    border-bottom: 2px solid #b8e6e6;
+    padding: 8px 10px;
+}
+.os-edit-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    font-size: 12px;
+    color: #606266;
+}
+.os-edit-form label { display: flex; align-items: center; gap: 4px; }
+.os-edit-form input,
+.os-edit-form select {
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 12px;
+    color: #303133;
+    background: #fff;
+}
+.os-edit-form input:focus,
+.os-edit-form select:focus { outline: 1px solid #1aa3a3; border-color: #1aa3a3; }
+.os-edit-content { width: 230px; }
+.os-edit-w { width: 74px; }
+.os-edit-flags { display: inline-flex; align-items: center; gap: 8px; }
+.os-edit-flags label { display: inline-flex; align-items: center; gap: 3px; }
+
 /* ===== 医嘱组套 ===== */
 .osets-set {
     border: 1px solid #e4e7ed;
