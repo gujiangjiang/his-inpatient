@@ -274,3 +274,62 @@
     cursor: pointer;
 }
 .os-ctx-item:hover { background: #f0fbfb; color: #1aa3a3; }
+
+/* ===== 临床辅助决策悬浮卡 ===== */
+.os-assist {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    width: 300px;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 6px;
+    box-shadow: 0 6px 22px rgba(0,0,0,0.18);
+    z-index: 150;
+    overflow: hidden;
+}
+.os-assist-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #149a9a;
+    color: #fff;
+    font-size: 13px;
+    padding: 7px 10px;
+}
+.os-assist-name { opacity: .85; }
+.os-assist-close {
+    margin-left: auto;
+    border: 1px solid rgba(255,255,255,0.7);
+    background: transparent;
+    color: #fff;
+    font-size: 11px;
+    border-radius: 3px;
+    padding: 1px 6px;
+    cursor: pointer;
+}
+.os-assist-body { padding: 8px 10px; font-size: 12px; color: #303133; }
+.os-assist-warn {
+    background: #fef0f0;
+    color: #f56c6c;
+    border: 1px solid #fbc4c4;
+    border-radius: 4px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
+}
+.os-assist-line { line-height: 20px; }
+.os-assist-line b { color: #909399; font-weight: 400; margin-right: 6px; }
+.os-assist-tip { color: #909399; margin-top: 6px; }
+
+/* ===== 医嘱组套 ===== */
+.osets-set {
+    border: 1px solid #e4e7ed;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+}
+.osets-head { display: flex; align-items: center; gap: 8px; }
+.osets-name { font-weight: 600; font-size: 14px; color: #303133; }
+.osets-meta { font-size: 12px; color: #909399; margin-left: auto; margin-right: 10px; }
+.osets-items { margin-top: 6px; font-size: 12px; color: #606266; max-height: 120px; overflow-y: auto; }
+.osets-item { line-height: 19px; }

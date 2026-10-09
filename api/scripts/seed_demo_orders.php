@@ -5,6 +5,40 @@ require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 
 $pdo = DB::getPDO();
+
+$meds = [];
+foreach (DB::select("SELECT id, code FROM medications") as $m) {
+    $meds[$m['code']] = $m['id'];
+}
+
+// === 医嘱组套 (幂等, 按名称) ===
+$sets = [
+    ['骨科术后抗感染组套', 'medication', [
+        ['[基]0.9%氯化钠注射液100ml(双管软袋)', 'MED001', '100ml', '袋', '静脉输液', '60滴/分', 'bid', ''],
+        ['注射用头孢拉定', 'MED005', '1g', '支', '静脉输液', '60滴/分', 'bid', '径外'],
+    ]],
+    ['VTE 预防组套', 'nonmedication', [
+        ['弹力袜', null, '', '', '外用', '', '', '径外'],
+        ['踝泵运动指导', null, '', '', '护理', '', 'bid', ''],
+    ]],
+    ['一级护理常规', 'nonmedication', [
+        ['一级护理', null, '', '', '护理', '', '', ''],
+        ['测血压', null, '', '', '测量', '', 'bid', ''],
+        ['普食饮食', null, '', '', '饮食', '', '', ''],
+    ]],
+];
+$creator = DB::selectOne("SELECT id FROM users WHERE username = 'doctor1'")['id'];
+foreach ($sets as $s) {
+    if (DB::selectOne("SELECT id FROM order_sets WHERE name = ?", [$s[0]])) continue;
+    $pdo->prepare("INSERT INTO order_sets (name, category, is_active, created_by, created_at) VALUES (?,?,?,?,?)")
+        ->execute([$s[0], $s[1], 1, $creator, DateHelper::now()]);
+    $setId = $pdo->lastInsertId();
+    foreach ($s[2] as $i => $item) {
+        $pdo->prepare("INSERT INTO order_set_items (set_id, category, drug_id, content, dosage, dosage_unit, usage_name, usage_rate, freq_code, order_period, group_seq, sort_no) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+            ->execute([$setId, $s[1], $item[1] ? ($meds[$item[1]] ?? null) : null, $item[0], $item[2], $item[3], $item[4], $item[5], $item[6], 'long', $i, $i]);
+    }
+}
+
 if (DB::selectOne("SELECT COUNT(*) as c FROM orders")['c'] > 0) {
     echo "医嘱数据已存在，跳过。\n";
     exit;
@@ -13,10 +47,6 @@ if (DB::selectOne("SELECT COUNT(*) as c FROM orders")['c'] > 0) {
 $patients = DB::select("SELECT id, admission_no, name FROM patients ORDER BY id");
 $doctor1 = DB::selectOne("SELECT id FROM users WHERE username = 'doctor1'");
 $doctor2 = DB::selectOne("SELECT id FROM users WHERE username = 'doctor2'");
-$meds = [];
-foreach (DB::select("SELECT id, code FROM medications") as $m) {
-    $meds[$m['code']] = $m['id'];
-}
 
 /**
  * 插入一条医嘱 (成组时首条为主医嘱, 携带组级用法)

@@ -12,6 +12,12 @@
 - **富文本**: Quill.js (本地优先 / CDN fallback)
 - **PDF**: html2pdf.js (本地优先 / CDN fallback)
 
+## 核心技术特性
+
+- **结构化医嘱工作站**: 长期/临时医嘱、成组医嘱 (溶媒 + 主药共享用法/滴速)、药品拼音/编码模糊检索、径外/自费/不计价标签、长期全停、医嘱组套 (路径)、快捷键 (F9/F8/F2/F4/F5)
+- **患者卡片墙**: 护理等级配色床徽、危重/过敏标记、VTE 风险标签、入院天数与费用一览
+- **患者上下文**: 添加/主管/科室患者+/出院多维切换，跨页面 (医嘱/病历/首页) 患者上下文保持
+
 ## 内网部署
 
 在无外网访问的内网环境中部署前，先下载前端依赖库到本地：
@@ -78,6 +84,7 @@ npm run lint            # 或: ~/.local/bin/frankenphp php-cli tools/lint/php-li
     │   ├── core/           # 公共单例 (Format/AjaxLoader/Auth/Dom/...)
     │   ├── login/          # 登录逻辑
     │   ├── shared/         # 各角色 sidebar (PHP)
+    │   ├── orders/         # 医嘱工作站 (order_station/order_editor/drug_search/order_sets)
     │   └── {module}/       # 各工作站页面片段 (PHP)
 ```
 

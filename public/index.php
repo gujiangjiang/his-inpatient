@@ -149,6 +149,7 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 <script src="/js/orders/drug_search.js"></script>
 <script src="/js/orders/order_editor.js"></script>
 <script src="/js/orders/order_actions.js"></script>
+<script src="/js/orders/order_sets.js"></script>
 <script src="/js/login/login.js"></script>
 </body>
 </html>

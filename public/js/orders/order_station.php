@@ -9,8 +9,19 @@
         <button type="button" class="os-tool" onclick="OrderStation.refresh()">刷新<span class="key">F5</span></button>
         <span class="os-sep"></span>
         <button type="button" class="os-tool" onclick="OrderStation.openSetPicker()">路径/组套</button>
+        <button type="button" class="os-tool" onclick="OrderStation.toggleAssist()">辅助决策</button>
         <button type="button" class="os-tool" onclick="OrderStation.batchDelete()">批量删除</button>
         <span id="os-selected-count" class="os-selected-count"></span>
+    </div>
+
+    <!-- 临床辅助决策悬浮卡 -->
+    <div id="os-assist" class="os-assist" style="display:none">
+        <div class="os-assist-head">
+            <span>临床辅助决策</span>
+            <span id="os-assist-name" class="os-assist-name"></span>
+            <button type="button" class="os-assist-close" onclick="OrderStation.toggleAssist()">关闭</button>
+        </div>
+        <div id="os-assist-body" class="os-assist-body"></div>
     </div>
 
     <div class="os-filter">
@@ -79,7 +90,40 @@ var OrderStation = {
         this.patientId = ctx.id;
         this.selected.clear();
         this.bindKeys();
+        this.fillAssist(ctx);
         this.refresh();
+    },
+
+    fillAssist(p) {
+        const nameEl = document.getElementById('os-assist-name');
+        const body = document.getElementById('os-assist-body');
+        if (!nameEl || !body) return;
+        nameEl.textContent = p.name || '';
+        const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+        let html = '';
+        if (p.allergy_history) {
+            html += '<div class="os-assist-warn">⚠ 过敏史：' + Format.escape(p.allergy_history) + '</div>';
+        }
+        if (p.is_critical == 1) {
+            html += '<div class="os-assist-warn">⚠ 危重患者，开嘱请谨慎</div>';
+        }
+        html += '<div class="os-assist-line"><b>诊断</b>' + Format.escape(p.admission_diagnosis || '-') + '</div>';
+        html += '<div class="os-assist-line"><b>VTE</b>Caprini ' + Format.escape(p.vte_caprini || '未评') + ' · 出血 ' + Format.escape(p.vte_bleeding || '未评') + '</div>';
+        html += '<div class="os-assist-line"><b>费用</b>¥ ' + Number(p.total_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' · ' + Format.escape(p.fee_type || '') + '</div>';
+        html += '<div class="os-assist-line os-assist-tip">开嘱时请注意药物相互作用与医保限制</div>';
+        body.innerHTML = html;
+        if (sessionStorage.getItem('os_assist_hidden_' + p.id) !== '1' && (p.allergy_history || p.is_critical == 1)) {
+            document.getElementById('os-assist').style.display = 'block';
+        }
+    },
+
+    toggleAssist() {
+        const el = document.getElementById('os-assist');
+        if (!el) return;
+        const show = el.style.display === 'none';
+        el.style.display = show ? 'block' : 'none';
+        if (!show && this.patientId) sessionStorage.setItem('os_assist_hidden_' + this.patientId, '1');
+        else if (this.patientId) sessionStorage.removeItem('os_assist_hidden_' + this.patientId);
     },
 
     bindKeys() {
