@@ -1,6 +1,6 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="menu-group">临床工作</div>
-<div class="menu-item" onclick="navigateTo('orders','order_list')">医嘱</div>
+<div class="menu-item" onclick="navigateTo('orders','order_station')">医嘱</div>
 <div class="menu-item" onclick="navigateTo('emr','diagnosis')">诊断</div>
 <div class="menu-item" onclick="navigateTo('emr','station')">病历</div>
 <div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="检验">检验</div>

@@ -1,0 +1,151 @@
+/* public/css/doctor/patient_wall.css - 患者卡片墙 + 患者信息条 + 顶部主题 */
+
+/* ===== 顶部主题 (参考院方系统青色) ===== */
+.topbar {
+    background: linear-gradient(180deg, #21b3b3, #149a9a);
+}
+.patient-switcher-trigger { background: rgba(255,255,255,0.18); }
+.patient-switcher-trigger:hover { background: rgba(255,255,255,0.3); }
+
+/* ===== 患者信息条 (选中患者后) ===== */
+.patient-info-bar {
+    background: #e9f8f8;
+    border-bottom: 1px solid #c9ecec;
+    gap: 14px;
+    padding: 6px 16px;
+}
+.pib-bed {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px;
+    height: 24px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: #909399;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+}
+.pib-bed.level-special { background: #c0392b; }
+.pib-bed.level-1 { background: #f56c6c; }
+.pib-bed.level-2 { background: #409eff; }
+.pib-bed.level-3 { background: #909399; }
+.pib-name { font-size: 17px; font-weight: 700; color: #303133; }
+.pib-sub { font-size: 12px; color: #606266; }
+.pib-sub b { color: #909399; font-weight: 400; }
+.pib-fee { font-style: normal; font-weight: 700; color: #f56c6c; }
+.pib-diagnosis i { color: #303133; }
+.pib-actions { margin-left: auto; display: flex; gap: 8px; }
+
+/* ===== 患者卡片墙 ===== */
+.wall-page { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #f4f6f8; }
+.wall-scroll { flex: 1; overflow-y: auto; padding: 12px 14px; }
+.wall-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 10px;
+}
+.pw-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid #e4e7ed;
+    border-radius: 6px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: box-shadow .15s, border-color .15s;
+}
+.pw-card:hover { border-color: #7fd4d4; box-shadow: 0 3px 12px rgba(26,163,163,0.18); }
+.pw-card.critical { border-color: #f56c6c; box-shadow: inset 0 0 0 1px #fbc4c4; }
+.pw-card.allergy::after {
+    content: '过敏';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #f56c6c;
+    color: #fff;
+    font-size: 11px;
+    border-radius: 3px;
+    padding: 0 6px;
+    line-height: 17px;
+}
+.pw-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.pw-bed {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.pw-bed.level-special { background: #c0392b; }
+.pw-bed.level-1 { background: #f56c6c; }
+.pw-bed.level-2 { background: #409eff; }
+.pw-bed.level-3 { background: #909399; }
+.pw-name { font-size: 16px; font-weight: 700; color: #303133; }
+.pw-ward { font-size: 12px; color: #1aa3a3; }
+.pw-line { font-size: 12px; color: #606266; line-height: 19px; }
+.pw-line .pw-label { color: #a8abb2; }
+.pw-diagnosis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw-foot { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.pw-vte {
+    font-size: 11px;
+    line-height: 17px;
+    padding: 0 6px;
+    border-radius: 3px;
+    color: #fff;
+}
+.vte-low { background: #2fb344; }
+.vte-mid { background: #f59a23; }
+.vte-high { background: #f56c6c; }
+.vte-bleed { background: #409eff; }
+.pw-days { margin-left: auto; font-size: 12px; color: #909399; }
+.pw-days b { color: #f56c6c; }
+
+/* 小卡模式 */
+.wall-grid.compact { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.wall-grid.compact .pw-card { padding: 7px 9px; }
+.wall-grid.compact .pw-name { font-size: 14px; }
+.wall-grid.compact .pw-line { font-size: 11px; line-height: 16px; }
+.wall-grid.compact .pw-foot { display: none; }
+.wall-grid.compact .pw-diagnosis { display: none; }
+
+/* ===== 底部统计条 ===== */
+.wall-footer {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: #149a9a;
+    color: #fff;
+    font-size: 13px;
+    padding: 7px 16px;
+}
+.wall-legend { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: 12px; }
+.wall-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; }
+.dot-special { background: #c0392b; }
+.dot-l1 { background: #f56c6c; }
+.dot-l2 { background: #409eff; }
+.dot-l3 { background: #909399; }
+
+/* ===== 患者切换器菜单 (患者列表下拉) ===== */
+.switcher-menu { padding: 4px 0; }
+.switcher-menu-item {
+    padding: 8px 16px;
+    font-size: 13px;
+    color: #303133;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.switcher-menu-item:hover { background: #f0fbfb; color: #1aa3a3; }
+.switcher-menu-item .arrow { margin-left: auto; font-size: 11px; color: #909399; }
+.switcher-menu-group-title { padding: 6px 16px 2px; font-size: 12px; color: #909399; }
+.switcher-card-small .switcher-patient-block { padding: 5px 8px; }
+.switcher-card-small .spb-line3 { display: none; }

@@ -70,5 +70,14 @@ const Format = {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
+    },
+
+    // 医嘱列表风格短时间: 26-10-09 11:30
+    shortTime(dt) {
+        if (!dt) return '';
+        const d = new Date(String(dt).replace(/-/g, '/'));
+        if (isNaN(d.getTime())) return dt;
+        const p = n => String(n).padStart(2, '0');
+        return String(d.getFullYear()).slice(2) + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
     }
 };

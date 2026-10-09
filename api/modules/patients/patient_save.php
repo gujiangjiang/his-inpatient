@@ -13,11 +13,18 @@ if (!$name || !$gender || !$birthDate || !$departmentId || !$wardId) {
     Response::error('请填写完整患者信息');
 }
 
+$nursingLevel = Validator::get('nursing_level', '3');
+$feeType = Validator::get('fee_type', '');
+$allergyHistory = Validator::get('allergy_history', '');
+$vteCaprini = Validator::get('vte_caprini', '');
+$vteBleeding = Validator::get('vte_bleeding', '');
+$isCritical = (int)Validator::get('is_critical', 0);
+
 $pdo = DB::getPDO();
 $id = isset($data['id']) && $data['id'] ? $data['id'] : null;
 
 if ($id) {
-    $stmt = $pdo->prepare("UPDATE patients SET name=?, gender=?, birth_date=?, id_card=?, department_id=?, ward_id=?, bed_no=?, admission_date=?, admission_diagnosis=?, admission_icd_code=? WHERE id=?");
+    $stmt = $pdo->prepare("UPDATE patients SET name=?, gender=?, birth_date=?, id_card=?, department_id=?, ward_id=?, bed_no=?, admission_date=?, admission_diagnosis=?, admission_icd_code=?, nursing_level=?, fee_type=?, allergy_history=?, vte_caprini=?, vte_bleeding=?, is_critical=? WHERE id=?");
     $stmt->execute([
         $name, $gender, $birthDate,
         $data['id_card'] ?? '',
@@ -26,6 +33,7 @@ if ($id) {
         $data['admission_date'] ?? DateHelper::now(),
         $data['admission_diagnosis'] ?? '',
         $data['admission_icd_code'] ?? '',
+        $nursingLevel, $feeType, $allergyHistory, $vteCaprini, $vteBleeding, $isCritical,
         $id
     ]);
     Response::success(['id' => $id]);
@@ -41,7 +49,7 @@ if ($id) {
         }
     }
 
-    $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, nursing_level, fee_type, allergy_history, vte_caprini, vte_bleeding, is_critical, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([
         $patientNo, $name, $gender, $birthDate,
         $data['id_card'] ?? '',
@@ -50,6 +58,7 @@ if ($id) {
         $data['admission_date'] ?? DateHelper::now(),
         $data['admission_diagnosis'] ?? '',
         $data['admission_icd_code'] ?? '',
+        $nursingLevel, $feeType, $allergyHistory, $vteCaprini, $vteBleeding, $isCritical,
         'active',
         DateHelper::now()
     ]);

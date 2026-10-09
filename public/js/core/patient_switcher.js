@@ -1,11 +1,12 @@
 // public/js/core/patient_switcher.js
-// 患者上下文切换浮动面板 (添加/本人/科室 三维度)
+// 患者上下文切换浮动面板 (菜单: 添加/主管/科室患者+/大小卡/出院)
 const PatientSwitcher = {
     activeTab: 'mine',
     deptPatientsCache: {},   // department_id => {active:[], discharged:[]}
+    lastAction: null,
 
     /**
-     * 初始化: 绑定触发按钮 + Tab 切换 + 外部点击关闭
+     * 初始化: 绑定触发按钮 + 菜单点击 + 外部点击关闭
      */
     init() {
         const trigger = document.getElementById('patient-switcher-trigger');
@@ -16,19 +17,19 @@ const PatientSwitcher = {
             e.stopPropagation();
             const isOpen = panel.style.display === 'block';
             panel.style.display = isOpen ? 'none' : 'block';
-            if (!isOpen) this.loadTab(this.activeTab);
+            if (!isOpen && !this.lastAction) this.handleAction('mine');
         });
 
-        const tabs = panel.querySelectorAll('.switcher-tab');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', (e) => {
+        panel.querySelectorAll('.switcher-menu-item').forEach(item => {
+            item.addEventListener('click', (e) => {
                 e.stopPropagation();
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                this.activeTab = tab.dataset.tab;
-                this.handleTab(this.activeTab);
+                this.handleAction(item.dataset.action);
             });
         });
+
+        if (sessionStorage.getItem('his_switcher_compact') === '1') {
+            panel.classList.add('switcher-card-small');
+        }
 
         document.addEventListener('click', (e) => {
             const switcher = document.getElementById('patient-switcher');
@@ -39,21 +40,31 @@ const PatientSwitcher = {
     },
 
     /**
-     * Tab 分发: 添加→悬浮列表弹窗; 本人/科室→面板内联渲染
+     * 菜单动作分发
      */
-    handleTab(tab) {
+    handleAction(action) {
         const panel = document.getElementById('patient-switcher-panel');
-        if (tab === 'incoming') {
-            // 添加: 关闭面板, 弹出悬浮患者列表
+        const content = document.getElementById('switcher-tab-content');
+
+        if (action === 'incoming') {
             panel.style.display = 'none';
             this.showIncomingModal();
             return;
         }
-        this.loadTab(tab);
+        if (action === 'toggle-size') {
+            panel.classList.toggle('switcher-card-small');
+            sessionStorage.setItem('his_switcher_compact', panel.classList.contains('switcher-card-small') ? '1' : '0');
+            return;
+        }
+        if (action === 'mine' || action === 'dept' || action === 'discharged') {
+            this.lastAction = action;
+            content.style.display = 'block';
+            this.loadTab(action);
+        }
     },
 
     /**
-     * 加载内联 Tab (本人/科室)
+     * 加载内联列表 (主管/科室/出院)
      */
     async loadTab(tab) {
         const content = document.getElementById('switcher-tab-content');
@@ -67,8 +78,27 @@ const PatientSwitcher = {
             } catch (e) {
                 content.innerHTML = '<div class="switcher-empty">加载失败</div>';
             }
+        } else if (tab === 'discharged') {
+            this.renderDischargedTab(content);
         } else {
             this.renderDepartmentTab(content);
+        }
+    },
+
+    /**
+     * 出院患者 (菜单直达, 面板内联)
+     */
+    async renderDischargedTab(content) {
+        try {
+            const depts = (await AjaxLoader.api('doctors/departments', { silent: true })).data.departments || [];
+            let all = [];
+            for (const d of depts) {
+                const r = await AjaxLoader.api('patients/by-department?department_id=' + d.id + '&status=discharged', { silent: true });
+                all = all.concat(r.data || []);
+            }
+            this.renderCards(content, all, 'discharged');
+        } catch (e) {
+            content.innerHTML = '<div class="switcher-empty">加载失败</div>';
         }
     },
 
@@ -190,14 +220,17 @@ const PatientSwitcher = {
         const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
         const gender = Format.gender(p.gender);
         const attending = p.attending_name || p.doctor_name || '';
+        const level = String(p.nursing_level || '3');
+        const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[level] || 'Ⅲ';
         return `
             <div class="switcher-patient-block" onclick="PatientSwitcher.onSelectCard(${p.id}, '${tab}')">
                 <div class="spb-line1">
+                    <span class="pw-bed level-${level}" style="min-width:38px;height:20px;font-size:11px">${roman}|${Format.escape(p.bed_no || '-')}</span>
                     <span class="spb-name">${Format.escape(p.name)}</span>
                     <span class="spb-gender">${gender}/${age}</span>
-                    <span class="spb-bed">床 ${Format.escape(p.bed_no || '-')}</span>
+                    <span class="spb-bed">${Format.escape(p.ward_name || '')}</span>
                 </div>
-                <div class="spb-line2">住院号 ${Format.escape(p.admission_no || '')}　主治 ${Format.escape(attending || '未指派')}</div>
+                <div class="spb-line2">住院号 ${Format.escape(p.admission_no || '')}　主治 ${Format.escape(attending || '未指派')}　${Format.escape(p.fee_type || '')}</div>
                 <div class="spb-line3">诊断 ${Format.escape(p.admission_diagnosis || '-')}</div>
             </div>
         `;
@@ -292,10 +325,10 @@ const PatientSwitcher = {
     },
 
     /**
-     * 进入患者工作站: 导航到默认模块 (病历)
+     * 进入患者工作站: 导航到医嘱工作站
      */
     enterPatientWorkstation() {
-        window.navigateTo('emr', 'station');
+        window.navigateTo('orders', 'order_station');
     },
 
     /**

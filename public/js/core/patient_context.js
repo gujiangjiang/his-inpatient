@@ -98,7 +98,7 @@ window.refreshWorkstationLayout = async function() {
 };
 
 /**
- * 填充患者信息栏 (姓名/性别/年龄/科室/病区/主诊断/总费用)
+ * 填充患者信息栏 (床徽/姓名/性别年龄住院号费别/入院天数/费用/诊断)
  */
 PatientContext.fillInfoBar = function(p) {
     if (!p) return;
@@ -107,11 +107,30 @@ PatientContext.fillInfoBar = function(p) {
         const el = document.getElementById(id);
         if (el) el.textContent = v;
     };
+
+    // 床徽: 护理等级着色 (特/Ⅰ/Ⅱ/Ⅲ) + 床号
+    const level = String(p.nursing_level || '3');
+    const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[level] || 'Ⅲ';
+    const bedEl = document.getElementById('pib-bed');
+    if (bedEl) {
+        bedEl.className = 'pib-bed level-' + level;
+        bedEl.textContent = roman + ' | ' + (p.bed_no || '-');
+    }
+
     set('pib-name', p.name || '-');
-    set('pib-gender', Format.gender(p.gender));
-    set('pib-age', age || '-');
-    set('pib-dept', p.department_name || (p.department_id ? '科室' + p.department_id : '-'));
-    set('pib-ward', p.ward_name || (p.ward_id ? '病区' + p.ward_id : '-'));
+    const ward = p.ward_name || (p.department_name || '');
+    set('pib-sub', [Format.gender(p.gender), age ? age + '岁' : '', p.admission_no || '', p.fee_type || '', ward]
+        .filter(Boolean).join(' / '));
+
+    // 入院天数
+    let days = '-';
+    if (p.admission_date) {
+        const d = new Date(String(p.admission_date).replace(/-/g, '/'));
+        if (!isNaN(d.getTime())) {
+            days = Math.max(1, Math.ceil((Date.now() - d.getTime()) / 86400000)) + ' 天';
+        }
+    }
+    set('pib-days', days);
+    set('pib-fee', '¥ ' + Number(p.total_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     set('pib-diagnosis', p.admission_diagnosis || '-');
-    set('pib-fee', '¥ ' + (p.total_fee || '--'));
 };

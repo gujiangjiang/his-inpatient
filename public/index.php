@@ -28,6 +28,8 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
     <link rel="stylesheet" href="/css/core/layout.css">
     <link rel="stylesheet" href="/css/login/login.css">
     <link rel="stylesheet" href="/css/doctor/doctor.css">
+    <link rel="stylesheet" href="/css/doctor/order_station.css">
+    <link rel="stylesheet" href="/css/doctor/patient_wall.css">
     <link rel="stylesheet" href="/css/emr/emr.css">
 </head>
 <body>
@@ -82,12 +84,14 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
                         <span class="switcher-arrow">▾</span>
                     </div>
                     <div id="patient-switcher-panel" class="patient-switcher-panel" style="display:none">
-                        <div class="switcher-tabs">
-                            <button type="button" class="switcher-tab" data-tab="incoming">添加</button>
-                            <button type="button" class="switcher-tab active" data-tab="mine">本人</button>
-                            <button type="button" class="switcher-tab" data-tab="dept">科室</button>
+                        <div class="switcher-menu" id="switcher-menu">
+                            <div class="switcher-menu-item" data-action="incoming">添加患者</div>
+                            <div class="switcher-menu-item" data-action="mine">主管患者</div>
+                            <div class="switcher-menu-item" data-action="dept">科室患者+<span class="arrow">▸</span></div>
+                            <div class="switcher-menu-item" data-action="toggle-size">大小卡切换</div>
+                            <div class="switcher-menu-item" data-action="discharged">出院患者</div>
                         </div>
-                        <div id="switcher-tab-content" class="switcher-tab-content"></div>
+                        <div id="switcher-tab-content" class="switcher-tab-content" style="display:none"></div>
                     </div>
                 </div>
             </div>
@@ -99,14 +103,16 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 
         <!-- 患者信息栏 (选择患者后显示, 顶部栏下横向条) -->
         <div id="patient-info-bar" class="patient-info-bar" style="display:none">
-            <span class="pib-item"><b>姓名</b><i id="pib-name">-</i></span>
-            <span class="pib-item"><b>性别</b><i id="pib-gender">-</i></span>
-            <span class="pib-item"><b>年龄</b><i id="pib-age">-</i></span>
-            <span class="pib-item"><b>科室</b><i id="pib-dept">-</i></span>
-            <span class="pib-item"><b>病区</b><i id="pib-ward">-</i></span>
-            <span class="pib-item pib-diagnosis"><b>主诊断</b><i id="pib-diagnosis">-</i></span>
-            <span class="pib-item"><b>总费用</b><i id="pib-fee">¥ --</i></span>
-            <button type="button" class="btn btn-small" onclick="PatientContext.clear()">切换患者</button>
+            <span class="pib-bed level-3" id="pib-bed">-</span>
+            <span class="pib-name" id="pib-name">-</span>
+            <span class="pib-sub" id="pib-sub">-</span>
+            <span class="pib-item"><b>入院</b><i id="pib-days">-</i></span>
+            <span class="pib-item"><b>费用</b><i class="pib-fee" id="pib-fee">¥ --</i></span>
+            <span class="pib-item pib-diagnosis"><b>诊断</b><i id="pib-diagnosis">-</i></span>
+            <span class="pib-actions">
+                <button type="button" class="btn btn-small" onclick="navigateTo('patients','patient_list')">患者列表</button>
+                <button type="button" class="btn btn-small" onclick="PatientContext.clear()">切换患者</button>
+            </span>
         </div>
 
         <div class="main-container">
@@ -140,6 +146,9 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 <script src="/js/core/print_helper.js"></script>
 <script src="/js/core/patient_context.js"></script>
 <script src="/js/core/patient_switcher.js"></script>
+<script src="/js/orders/drug_search.js"></script>
+<script src="/js/orders/order_editor.js"></script>
+<script src="/js/orders/order_actions.js"></script>
 <script src="/js/login/login.js"></script>
 </body>
 </html>
