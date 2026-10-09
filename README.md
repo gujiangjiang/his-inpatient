@@ -2,7 +2,7 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.13.0-blue)
+![version](https://img.shields.io/badge/version-0.13.1-blue)
 
 ## 技术栈
 
@@ -37,11 +37,11 @@ npm run init            # 下载 libs + 初始化数据库 + 导入 ICD-10 + 生
 npm run start           # 启动开发服务器 (http://127.0.0.1:8000)
 ```
 
-**本地开发 (FrankenPHP)** (推荐用于本地测试):
+**本地开发 (FrankenPHP)** (推荐用于本地测试, 端口固定 9095):
 
 ```bash
-npm run dev             # 启动 FrankenPHP 服务器 (http://0.0.0.0:9090)
-# 或指定端口: PORT=8888 npm run dev
+npm run dev             # 启动 FrankenPHP 服务器 (http://0.0.0.0:9095)
+npm run server          # 检测 9095 服务器, 不存在则自动启动 (AI 每次改完代码后必须执行)
 ```
 
 **手动初始化**:

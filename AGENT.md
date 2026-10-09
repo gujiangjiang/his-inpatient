@@ -5,11 +5,12 @@
 
 1. 递增版本号，三处同步：README.md 顶部徽章 + `api/config.php` APP_VERSION + `package.json`
 2. 在 `docs/CHANGELOG.md` 顶部按既有格式新增条目（新增/修复/变更/移除/安全）
-3. README 功能/目录/运行方式变化需同步更新
-4. 提交规范（Conventional Commits + 中文）：`<type>: <中文简述>`，type ∈ feat/fix/docs/style/refactor/perf/chore；空一行后附详细正文
-5. **一处改动 = 一次提交**：改完一处立即 `git add -A && git commit`
-6. 大重构提升次版本（0.6.x → 0.7.0）
-7. **禁止提交运行时数据**：`data/`、`public/uploads/`、`.vly-run/` 在 .gitignore
+3. **每次代码修改/优化完成后，必须执行 `npm run server`（或 `bash tools/server.sh`）**：检测 9095 端口 PHP 服务器，不存在则自动启动，确保修改后服务可用
+4. README 功能/目录/运行方式变化需同步更新
+5. 提交规范（Conventional Commits + 中文）：`<type>: <中文简述>`，type ∈ feat/fix/docs/style/refactor/perf/chore；空一行后附详细正文
+6. **一处改动 = 一次提交**：改完一处立即 `git add -A && git commit`
+7. 大重构提升次版本（0.6.x → 0.7.0）
+8. **禁止提交运行时数据**：`data/`、`public/uploads/`、`.vly-run/` 在 .gitignore
 
 ## 代码风格
 - 单文件 ≤200 行，职责单一
@@ -19,10 +20,11 @@
 - 接口与页面分离
 
 ## 本地开发
+- **端口固定 9095（约定，不得变更）**：`http://0.0.0.0:9095`
 - 使用 FrankenPHP (`~/.local/bin/frankenphp`) 作为本地开发服务器
-- `npm run dev` 启动: `frankenphp php-server --root public/ --listen 0.0.0.0:9090`
+- `npm run dev` 启动: `frankenphp php-server --root public/ --listen 0.0.0.0:9095`
+- `npm run server` 检测 9095 服务器，不存在则自动启动（AI 每次改完代码后必须执行）
 - `npm run lint` 使用 frankenphp 内置 PHP 检查语法 (无需系统 PHP)
-- `PORT` 环境变量可覆盖默认端口
 
 ## 数据库迁移规范
 - 使用 `api/migrations/php/` 中的 PHP 迁移文件 (001_core.php, 002_department.php, ...)
