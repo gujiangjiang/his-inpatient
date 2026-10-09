@@ -1,59 +1,84 @@
 <?php
-// api/modules/orders/order_list.php
-$roles = ['admin', 'doctor', 'nurse'];
-Auth::requireRole($roles);
+// api/modules/orders/order_list.php - 医嘱列表 (树形: 根医嘱 + 子医嘱, 支持过滤)
+Auth::requireRole(['admin', 'doctor', 'nurse']);
 $data = Validator::all();
 $patientId = Validator::get('patient_id');
-$status = Validator::get('status'); // 可选: 按状态过滤 (draft/pending/verified/executing/completed/invalid)
+$status = Validator::get('status');            // 逗号分隔: draft,pending,...
+$orderPeriod = Validator::get('order_period'); // long|temp
+$dateFrom = Validator::get('date_from');
+$dateTo = Validator::get('date_to');
 $page = (int)Validator::get('page', 1);
-$perPage = (int)Validator::get('per_page', 50);
+$perPage = (int)Validator::get('per_page', 200);
+if ($perPage < 1 || $perPage > 500) $perPage = 200;
 
-// 树形展示：按根医嘱分页，子医嘱内嵌返回
-$sql = "SELECT * FROM orders WHERE parent_id IS NULL";
+$sql = "SELECT o.*, u.name AS creator_name
+        FROM orders o
+        LEFT JOIN users u ON o.created_by = u.id
+        WHERE o.parent_id IS NULL";
 $params = [];
 
 if ($patientId) {
-    $sql .= " AND patient_id = ?";
+    $sql .= " AND o.patient_id = ?";
     $params[] = $patientId;
 }
 
 if ($status) {
-    $sql .= " AND status = ?";
-    $params[] = $status;
+    $statuses = array_filter(array_map('trim', explode(',', $status)));
+    if ($statuses) {
+        $sql .= " AND o.status IN (" . implode(',', array_fill(0, count($statuses), '?')) . ")";
+        $params = array_merge($params, $statuses);
+    }
+}
+
+if (in_array($orderPeriod, ['long', 'temp'])) {
+    $sql .= " AND o.order_period = ?";
+    $params[] = $orderPeriod;
+}
+
+if ($dateFrom) {
+    $sql .= " AND o.start_date >= ?";
+    $params[] = $dateFrom . ' 00:00:00';
+}
+if ($dateTo) {
+    $sql .= " AND o.start_date <= ?";
+    $params[] = $dateTo . ' 23:59:59';
 }
 
 // 按角色过滤
 $user = Auth::user();
 if ($user['role'] === 'nurse') {
-    $sql .= " AND patient_id IN (SELECT id FROM patients WHERE ward_id = ?)";
+    $sql .= " AND o.patient_id IN (SELECT id FROM patients WHERE ward_id = ?)";
     $params[] = $user['ward_id'];
 } elseif ($user['role'] === 'doctor') {
-    $sql .= " AND patient_id IN (SELECT id FROM patients WHERE department_id = ?)";
-    $params[] = $user['department_id'];
+    $sql .= " AND o.patient_id IN (SELECT id FROM patients WHERE department_id = ?
+             OR id IN (SELECT patient_id FROM patient_assignments WHERE attending_doctor_id = ? OR senior_doctor_id = ?))";
+    array_push($params, $user['department_id'], $user['id'], $user['id']);
 }
 
-// 排序
-$sql .= " ORDER BY created_at DESC";
+$sql .= " ORDER BY o.start_date ASC, o.id ASC";
 
-// 分页
 $offset = ($page - 1) * $perPage;
-$sqlCount = "SELECT COUNT(*) as total FROM (" . $sql . ")";
-$sql .= " LIMIT {$perPage} OFFSET {$offset}";
+$sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") t";
+$stmt = DB::getPDO()->prepare($sqlCount);
+$stmt->execute($params);
+$totalCount = $stmt->fetch()['total'];
 
+$sql .= " LIMIT {$perPage} OFFSET {$offset}";
 $stmt = DB::getPDO()->prepare($sql);
 $stmt->execute($params);
 $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 获取子医嘱
+// 子医嘱内嵌 (含开嘱医生名)
 $result = [];
 foreach ($orders as $order) {
-    $subs = DB::select("SELECT * FROM orders WHERE parent_id = ? ORDER BY id ASC", [$order['id']]);
+    $subs = DB::select(
+        "SELECT o.*, u.name AS creator_name FROM orders o
+         LEFT JOIN users u ON o.created_by = u.id
+         WHERE o.parent_id = ? ORDER BY o.group_seq ASC, o.id ASC",
+        [$order['id']]
+    );
     $order['sub_orders'] = $subs;
     $result[] = $order;
 }
-
-$total = DB::getPDO()->prepare($sqlCount);
-$total->execute($params);
-$totalCount = $total->fetch()['total'];
 
 Response::paginated($result, $totalCount, $page, $perPage);

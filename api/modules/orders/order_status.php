@@ -15,10 +15,11 @@ if (!$order) Response::error('医嘱不存在');
 // 状态机校验
 $validTransition = [
     'draft' => ['pending'],
-    'pending' => ['verified', 'draft'],
-    'verified' => ['executing', 'completed', 'invalid'],
-    'executing' => ['completed'],
+    'pending' => ['verified', 'draft', 'stopped'],
+    'verified' => ['executing', 'completed', 'invalid', 'stopped'],
+    'executing' => ['completed', 'stopped'],
     'completed' => [],
+    'stopped' => [],
     'invalid' => []
 ];
 if (!in_array($status, $validTransition[$order['status']] ?? [])) {
@@ -28,8 +29,13 @@ if (!in_array($status, $validTransition[$order['status']] ?? [])) {
 $pdo->beginTransaction();
 try {
     $now = DateHelper::now();
-    $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?");
-    $stmt->execute([$status, $now, $id]);
+    if ($status === 'stopped') {
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, stop_date = ?, stopped_by = ?, updated_at = ? WHERE id = ?");
+        $stmt->execute([$status, $now, Auth::user()['id'], $now, $id]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?");
+        $stmt->execute([$status, $now, $id]);
+    }
 
     // 级联子医嘱
     if ($order['parent_id'] === null || $order['is_group_main']) {

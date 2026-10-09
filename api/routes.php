@@ -42,6 +42,7 @@ function getRoutes() {
 
         // 药房
         'pharmacy/medication-list' => ['pharmacy/medication_list.php', ['admin', 'pharmacist', 'doctor']],
+        'pharmacy/drug-search' => ['pharmacy/drug_search.php', ['admin', 'doctor', 'pharmacist']],
         'pharmacy/medication-save' => ['pharmacy/medication_save.php', ['admin', 'pharmacist']],
         'pharmacy/pending-queue' => ['pharmacy/pending_queue.php', ['admin', 'pharmacist']],
         'pharmacy/dispensing-save' => ['pharmacy/dispensing_save.php', ['admin', 'pharmacist']],
@@ -62,6 +63,7 @@ function getRoutes() {
         'orders/submit' => ['orders/order_submit.php', ['admin', 'doctor']],
         'orders/copy' => ['orders/order_copy.php', ['admin', 'doctor']],
         'orders/invalidate' => ['orders/order_invalidate.php', ['admin', 'doctor']],
+        'orders/stop' => ['orders/order_stop.php', ['admin', 'doctor']],
         'orders/batch-delete' => ['orders/order_batch_delete.php', ['admin', 'doctor']],
 
         // 病历 (结构化)
