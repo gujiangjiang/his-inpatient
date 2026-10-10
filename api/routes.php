@@ -21,6 +21,9 @@ function getRoutes() {
         'admin/api-config-save' => ['admin/api_config_save.php', ['admin']],
         'admin/sys-config-list' => ['admin/sys_config_list.php', ['admin']],
         'admin/sys-config-save' => ['admin/sys_config_save.php', ['admin']],
+        'admin/integration-list' => ['admin/integration_list.php', ['admin']],
+        'admin/integration-save' => ['admin/integration_save.php', ['admin']],
+        'admin/integration-delete' => ['admin/integration_delete.php', ['admin']],
 
         // 患者管理
         'patients/list' => ['patients/patient_list.php', ['admin', 'doctor', 'nurse']],

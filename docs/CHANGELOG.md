@@ -4,6 +4,13 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.13.29] - 2026-10-10
+
+### 新增 (门诊一体化预留)
+- 迁移 016: 对接端点表 `integration_endpoints` (FHIR / HL7 / HIS / DICOM, 业务类型: 检验/检查/处方/处置/患者, 鉴权 none/basic/token/oauth2)
+- 管理端「对接管理」页 (侧边栏入口): 端点增删改查/启停, 鉴权配置 JSON 校验
+- 接口: `admin/integration-list|save|delete`; 新增 `integration_helper` (`integration_endpoints_for` / `integration_dispatch` 适配器预留)
+
 ## [0.13.28] - 2026-10-10
 
 ### 变更
