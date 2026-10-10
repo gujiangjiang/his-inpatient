@@ -122,9 +122,10 @@ const OrderQuickAdd = {
         }
         list.innerHTML = this.items.map((it, i) => {
             const isMed = it.result_type === 'medication';
+            // 非药品显示类别标签 (护理/饮食/测量等, 仅搜索展示, 不开具进医嘱)
             const kind = isMed
                 ? '<span class="os-qa-kind k-med">药</span>'
-                : '<span class="os-qa-kind k-non">嘱</span>';
+                : `<span class="os-qa-kind k-non">${Format.escape(it.catalog_group || '嘱')}</span>`;
             const cls = isMed && it.drug_class ? '<span class="ds-class">[' + Format.escape(it.drug_class) + ']</span>' : '';
             let meta = '';
             if (isMed) {
