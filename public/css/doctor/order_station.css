@@ -532,3 +532,34 @@
 /* 非草稿详情框: 只读样式 */
 .osd-readonly-panel .osd-actions { opacity: 1; }
 .osd-readonly-panel .osd-input[disabled] { background: #f5f7fa; color: #909399; }
+
+/* ===== 剂量选择悬浮窗 ===== */
+.os-dose-link { cursor: pointer; }
+.os-dose-link:hover { text-decoration: underline dotted; }
+.os-dose-panel {
+    position: fixed;
+    width: 380px;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.24);
+    z-index: 1850;
+    padding: 12px 14px 10px;
+    box-sizing: border-box;
+    animation: osQaIn 0.12s ease-out;
+}
+.os-dose-panel .osd-row > label { width: 44px; }
+.dose-unit { color: #909399; font-size: 12px; }
+.dose-presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px 51px; }
+.dose-chip {
+    border: 1px solid #1aa3a3;
+    color: #1aa3a3;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+.dose-chip:hover { background: #1aa3a3; color: #fff; }
+.dose-calc { margin-left: 51px; font-size: 12px; color: #909399; min-height: 18px; margin-bottom: 6px; }
+.dose-hint { margin-left: auto; font-size: 11px; color: #a8abb2; }

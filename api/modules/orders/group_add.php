@@ -43,14 +43,14 @@ $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_P
 DB::execute("UPDATE orders SET is_group_main = 1, updated_at = ? WHERE id = ?", [$now, $root['id']]);
 DB::execute(
     "INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period,
-        order_no, content, category, status, drug_id, dosage, dosage_unit, usage_name, usage_rate,
+        order_no, content, category, status, drug_id, dosage, dosage_unit, base_dosage, usage_name, usage_rate,
         freq_code, freq_detail, billing_flags, group_seq, sort_no, start_date, created_by, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     [
         $root['patient_id'], $root['admission_no'], $root['id'], 0, 'medication',
         $root['order_period'] ?: 'long',
         $orderNo, $item['content'], 'medication', 'draft',
-        $item['drug_id'] ?? null, $item['dosage'] ?? '', $item['dosage_unit'] ?? '',
+        $item['drug_id'] ?? null, $item['dosage'] ?? '', $item['dosage_unit'] ?? '', $item['base_dosage'] ?? '',
         $root['usage_name'] ?? '', $root['usage_rate'] ?? '',
         '', '', $item['billing_flags'] ?? '',
         $seq, 0, $root['start_date'] ?: $now, $userId, $now, $now

@@ -56,10 +56,10 @@ $pdo = DB::getPDO();
 $pdo->beginTransaction();
 try {
     $sql = "INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period,
-                order_no, content, category, status, drug_id, dosage, dosage_unit, usage_name, usage_rate,
+                order_no, content, category, status, drug_id, dosage, dosage_unit, base_dosage, usage_name, usage_rate,
                 freq_code, freq_detail, billing_flags, group_seq, sort_no, start_date, end_date, notes,
                 created_by, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     $stmt = $pdo->prepare($sql);
 
     $isGroup = count($items) > 1 && $category === 'medication'; // 仅药品成组, 非药品逐条独立
@@ -86,7 +86,7 @@ try {
             $itemPeriod,
             $orderNo, $item['content'], $item['category'] ?? $category, $status,
             $item['drug_id'] ?? null,
-            $item['dosage'] ?? '', $item['dosage_unit'] ?? '',
+            $item['dosage'] ?? '', $item['dosage_unit'] ?? '', $item['base_dosage'] ?? '',
             $item['usage_name'] ?? $groupUsage, $item['usage_rate'] ?? $groupRate,
             $freqCode, $freqDetail,
             $item['billing_flags'] ?? '', $i, 0,

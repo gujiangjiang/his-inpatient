@@ -229,7 +229,8 @@ var OrderStation = {
             const groupBtn = canGroup ? `<span class="os-row-act os-group-add" title="加入成组医嘱" onclick="OrderStation.addToGroup(${root.id}, event)">${svgIcon('common/actions/plus', 11)}</span>` : '';
             const delBtn = canQuickDel ? `<span class="os-row-act os-group-del" title="${first ? '删除整组医嘱' : '删除本条子医嘱'}" onclick="OrderStation.quickDelete(${o.id}, ${root.id}, ${first ? 1 : 0}, event)">${svgIcon('common/actions/close', 10)}</span>` : '';
             html += `<td><span class="os-content-link"${openLink}>${Format.escape(o.content)}</span>${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${groupBtn}${delBtn}${this.tags(o.billing_flags)}</td>`;
-            html += `<td class="os-col-dosage">${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
+            const doseClick = editable ? ` onclick="DosePicker.open(${o.id}, ${root.id}, event)" title="点击选择剂量"` : '';
+            html += `<td class="os-col-dosage os-dose-link"${doseClick}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
                 const isTemp = root.order_period === 'temp';

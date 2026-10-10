@@ -159,6 +159,7 @@ const OrderQuickAdd = {
             drug_id: isMed ? it.id : null,
             dosage: isMed ? (it.default_dosage || '') : '',
             dosage_unit: isMed ? (it.unit || '') : '',
+            base_dosage: isMed ? (it.default_dosage || '') : '',
             usage_name: isMed ? (it.default_route || '') : (it.usage_name || ''),
             usage_rate: isMed ? '' : (it.usage_rate || ''),
             freq_code: freqCode,
