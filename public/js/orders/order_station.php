@@ -427,18 +427,24 @@ var OrderStation = {
     },
 
     /**
-     * 快捷删除 (内容右侧 x):
+     * 快捷删除 (内容右侧 x, 带确认防误操作):
      * - 主医嘱: 删除整组 (后端 batch-delete 级联子医嘱)
      * - 子医嘱: 只删除该子医嘱, 不影响主医嘱与其他子医嘱
      */
     async quickDelete(orderId, rootId, isRootRow, event) {
         if (event) event.stopPropagation();
         const ids = isRootRow ? [rootId] : [orderId];
-        try {
-            await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids } });
-            Dom.toast(isRootRow ? '已删除整组医嘱' : '已删除子医嘱', 'success');
-            this.refresh();
-        } catch (e) { /* 已提示 */ }
+        const tip = isRootRow ? '确认删除<b>整组</b>医嘱？（主医嘱及其全部子医嘱）' : '确认删除该条子医嘱？';
+        Dom.modal('删除确认', '<p>' + tip + '</p>', [
+            { text: '删除', type: 'danger', onclick: async () => {
+                try {
+                    await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: ids } });
+                    Dom.toast(isRootRow ? '已删除整组医嘱' : '已删除子医嘱', 'success');
+                    OrderStation.refresh();
+                } catch (e) { /* 已提示 */ }
+            } },
+            { text: '取消', type: 'default' }
+        ]);
     },
     submitSelected() { OrderActions.submitSelected(); },
     batchDelete() { OrderActions.batchDelete(); },
