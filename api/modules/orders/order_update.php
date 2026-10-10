@@ -29,6 +29,13 @@ foreach ($fields as $f) {
     if ($v !== null) {
         if ($f === 'content' && trim((string)$v) === '') Response::error('医嘱内容不能为空');
         if ($f === 'order_period' && !in_array($v, ['long', 'temp'])) continue;
+        // 开嘱时间不能早于患者入科时间
+        if ($f === 'start_date' && trim((string)$v) !== '') {
+            $admittedAt = patient_admitted_at($order['patient_id']);
+            if ($admittedAt && strtotime($v) < strtotime($admittedAt)) {
+                Response::error('开嘱时间不能早于患者入科时间');
+            }
+        }
         // 临时医嘱禁止写频次/执行时间
         if ($effectivePeriod === 'temp' && in_array($f, ['freq_code', 'freq_detail'])) continue;
         $updates[] = "$f = ?";

@@ -17,7 +17,8 @@ $sql = "SELECT p.*, d.name as department_name, w.name as ward_name
         FROM patients p
         LEFT JOIN departments d ON p.department_id = d.id
         LEFT JOIN wards w ON p.ward_id = w.id
-        WHERE p.department_id = ?";
+        WHERE p.department_id = ?
+          AND EXISTS (SELECT 1 FROM patient_assignments pax WHERE pax.patient_id = p.id AND pax.attending_doctor_id IS NOT NULL)";
 $params = [$departmentId];
 
 if ($status !== 'all') {

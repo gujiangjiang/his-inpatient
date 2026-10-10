@@ -11,6 +11,7 @@ $set = DB::selectOne("SELECT * FROM order_sets WHERE id = ? AND is_active = 1", 
 if (!$set) Response::error('组套不存在');
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在');
+if (!is_patient_admitted($patientId)) Response::error('患者尚未入科（未指派主管医师），不能开医嘱');
 
 $items = DB::select("SELECT * FROM order_set_items WHERE set_id = ? ORDER BY sort_no ASC, id ASC", [$setId]);
 if (!$items) Response::error('组套内容为空');

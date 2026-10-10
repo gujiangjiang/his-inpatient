@@ -38,6 +38,9 @@ foreach ($items as $item) {
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在');
 if (!can_access_patient(Auth::user(), $patientId)) Response::error('无权操作该患者', 403);
+// 未入科患者禁止开医嘱 (须先指派主管医师)
+$admittedAt = patient_admitted_at($patientId);
+if (!$admittedAt) Response::error('患者尚未入科（未指派主管医师），不能开医嘱');
 
 $groupId = Validator::get('group_id');   // 组级用法 (前端组容器)
 $groupUsage = Validator::get('usage_name', '');
@@ -63,6 +66,12 @@ try {
     $mainId = null;
     $ids = [];
     foreach ($items as $i => $item) {
+        // 开嘱时间不能早于患者入科时间
+        $itemStart = $item['start_date'] ?? $startDate;
+        if ($itemStart && strtotime($itemStart) < strtotime($admittedAt)) {
+            $pdo->rollback();
+            Response::error('开嘱时间不能早于患者入科时间');
+        }
         $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
         $itemPeriod = $item['order_period'] ?? $orderPeriod;
         $freqCode = $item['freq_code'] ?? $item['frequency'] ?? '';

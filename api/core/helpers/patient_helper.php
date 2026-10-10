@@ -10,6 +10,24 @@ const NURSING_LEVEL_MAP = [
 ];
 
 /**
+ * 患者入科时间 (指派主管医师时间); 未入科返回 null
+ */
+function patient_admitted_at($patientId) {
+    $row = DB::selectOne(
+        "SELECT created_at FROM patient_assignments WHERE patient_id = ? AND attending_doctor_id IS NOT NULL ORDER BY id DESC LIMIT 1",
+        [$patientId]
+    );
+    return $row ? $row['created_at'] : null;
+}
+
+/**
+ * 患者是否已入科 (已指派主管医师)
+ */
+function is_patient_admitted($patientId) {
+    return patient_admitted_at($patientId) !== null;
+}
+
+/**
  * 以最新开具的有效护理医嘱覆盖卡片护理等级
  * (未停止/未作废, 按开单顺序取最新: 如忘停一级护理又开了二级, 显示二级)
  */
