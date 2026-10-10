@@ -342,10 +342,8 @@ var OrderStation = {
                 if (isUsage) {
                     commit({ usage_name: sel.value });
                 } else {
-                    const fields = { freq_code: sel.value };
-                    const auto = this.autoFreqDetail(sel.value);
-                    if (auto) fields.freq_detail = auto;
-                    commit(fields);
+                    // 修改频次: 清空原执行时间并按新频次自动重设 (无对应映射则保持空白)
+                    commit({ freq_code: sel.value, freq_detail: this.autoFreqDetail(sel.value) });
                 }
             });
             sel.addEventListener('blur', () => setTimeout(restore, 150));
