@@ -125,7 +125,7 @@ require_once __DIR__ . '/icons/icon.php';
             <span class="pib-item pib-diagnosis"><b>诊断</b><i id="pib-diagnosis">-</i></span>
             <span class="pib-actions">
                 <button type="button" class="btn btn-small" onclick="navigateTo('patients','patient_list')">患者列表</button>
-                <button type="button" class="btn btn-small" onclick="PatientContext.clear()">切换患者</button>
+                <button type="button" class="btn btn-small" id="pib-switch-btn" onclick="PatientQuickSwitch.open(event)">切换患者</button>
             </span>
         </div>
 
@@ -161,6 +161,7 @@ require_once __DIR__ . '/icons/icon.php';
 <script src="/js/core/print_helper.js"></script>
 <script src="/js/core/patient_context.js"></script>
 <script src="/js/core/patient_switcher.js"></script>
+<script src="/js/core/patient_quick_switch.js"></script>
 <script src="/js/orders/drug_search.js"></script>
 <script src="/js/orders/order_editor.js"></script>
 <script src="/js/orders/order_quickadd.js"></script>

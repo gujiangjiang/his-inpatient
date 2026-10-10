@@ -18,7 +18,7 @@ if (!$items) Response::error('组套内容为空');
 $userId = Auth::user()['id'];
 $now = DateHelper::now();
 $status = (int)Validator::get('submit', 0) ? 'pending' : 'draft';
-$isGroup = count($items) > 1;
+$isGroup = count($items) > 1 && $set['category'] === 'medication'; // 仅药品成组, 非药品逐条独立
 
 $pdo = DB::getPDO();
 $pdo->beginTransaction();
@@ -33,7 +33,7 @@ try {
         $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
         $stmt->execute([
             $patientId, $patient['admission_no'],
-            $i === 0 ? null : $mainId,
+            ($isGroup && $i > 0) ? $mainId : null,
             ($isGroup && $i === 0) ? 1 : 0,
             ($item['category'] === 'medication') ? 'medication' : 'general',
             $item['order_period'] ?: 'long',

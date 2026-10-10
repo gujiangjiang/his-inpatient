@@ -194,18 +194,18 @@ var OrderStation = {
         const dim = ['invalid', 'stopped'].includes(root.status) ? ' os-row-dim' : '';
         const editable = root.status === 'draft';
         let html = '';
+        let drawer = '';
         rows.forEach((o, i) => {
             const first = i === 0;
             const span = first ? ` rowspan="${size}"` : '';
+            const editing = this.editing && this.editing.orderId === o.id;
             const clickable = editable ? ` onclick="OrderStation.toggleEditRow(${o.id}, ${root.id}, event)"` : '';
-            html += `<tr class="${first ? 'os-group-start' : ''}${dim}${editable ? ' os-row-editable' : ''}">`;
+            html += `<tr class="${first ? 'os-group-start' : ''}${dim}${editable ? ' os-row-editable' : ''}${editing ? ' os-row-editing' : ''}">`;
             if (first) {
                 html += `<td class="os-col-check"${span}><input type="checkbox" ${this.selected.has(root.id) ? 'checked' : ''} onchange="OrderStation.toggleSelect(${root.id}, this.checked)"></td>`;
                 html += `<td class="os-col-period"${span}>${this.periodBadge(root.order_period)}</td>`;
-                html += `<td>${this.timeText(root)}</td>`;
-            } else {
-                // 子医嘱: 补时间列占位, 内容保持在"医嘱内容"列
-                html += '<td></td>';
+                // 时间列与组同高合并居中 (子医嘱不再错位)
+                html += `<td class="os-col-time"${span}>${this.timeText(root)}</td>`;
             }
             html += `<td${clickable} title="${editable ? '点击修改' : ''}">${this.statusChip(o)}${Format.escape(o.content)}${this.tags(o.billing_flags)}</td>`;
             html += `<td class="os-col-dosage"${clickable}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
@@ -216,11 +216,10 @@ var OrderStation = {
                 html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">${svgIcon('common/actions/more', 16)}</button></td>`;
             }
             html += '</tr>';
-            if (this.editing && this.editing.orderId === o.id) {
-                html += this.editRowHtml(o);
-            }
+            if (editing) drawer = this.editRowHtml(o);
         });
-        return html;
+        // 编辑抽屉放在整组之后, 避免插在 rowspan 区间内破坏表格布局
+        return html + drawer;
     },
 
     editRowHtml(o) {

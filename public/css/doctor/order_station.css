@@ -158,18 +158,28 @@
 .os-row-dim td { color: #a8abb2; }
 .os-row-dim .os-period { opacity: .5; }
 
-/* 成组连接括号: 用法列 rowspan + 左侧圆角竖线 */
+/* 成组连接括号: } 形 (随组高自动拉伸, 比竖线直观) */
 .os-usage-cell { color: #303133; }
 .os-usage-brace {
     position: relative;
-    padding-left: 12px !important;
-    border-left: 1px solid #909399;
-    border-top-left-radius: 10px;
-    border-bottom-left-radius: 10px;
+    padding-left: 18px !important;
+}
+.os-usage-brace::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 5px;
+    bottom: 5px;
+    width: 10px;
+    background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 100' preserveAspectRatio='none'%3E%3Cpath d='M1.5 1.5 H5 Q9 1.5 9 50 Q9 98.5 5 98.5 H1.5' fill='none' stroke='%23a8abb2' stroke-width='2' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") no-repeat center / 100% 100%;
 }
 .os-usage-brace .os-usage-text { font-size: 13px; }
 .os-usage-rate { font-size: 12px; color: #606266; }
 .os-usage-single { padding-left: 12px; }
+
+/* 行内编辑中的行高亮 (编辑抽屉展示在整组之后) */
+.os-row-editing td { background: #f5fbfb; }
+.os-row-editing td:first-child { box-shadow: inset 3px 0 0 #1aa3a3; }
 
 /* 操作列按钮 */
 .os-op-btn {

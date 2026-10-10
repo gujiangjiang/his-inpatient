@@ -73,7 +73,7 @@ const OrderEditor = {
                 <button type="button" class="btn btn-success btn-small" onclick="OrderEditor.save(true)">保存并提交</button>
                 ${!editOrder && typeof OrderSets !== 'undefined' ? '<button type="button" class="btn btn-small" onclick="OrderSets.saveFromEditor()">存为组套</button>' : ''}
                 <button type="button" class="btn btn-small" onclick="OrderEditor.close()">取消</button>
-                <span class="oe-tip">${isMed ? '成组药品将共享用法/滴速' : '非药品可一次添加多条'}</span>
+                <span class="oe-tip">${isMed ? '成组药品将共享用法/滴速' : '非药品逐条保存为独立医嘱'}</span>
             </div>
         </div>`;
 
