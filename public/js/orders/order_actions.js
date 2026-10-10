@@ -43,13 +43,20 @@ const OrderActions = {
                 fn();
             });
         });
-        const close = () => { this.closeMenu(); document.removeEventListener('click', close); };
-        setTimeout(() => document.addEventListener('click', close), 0);
+        // 统一在 closeMenu 中移除全局关闭监听 (菜单项 stopPropagation 不会再泄漏监听导致菜单第二次点击失效)
+        this.docClose = () => this.closeMenu();
+        setTimeout(() => {
+            if (this.popup && this.docClose) document.addEventListener('click', this.docClose);
+        }, 0);
     },
 
     closeMenu() {
         if (this.popup && this.popup.parentNode) this.popup.parentNode.removeChild(this.popup);
         this.popup = null;
+        if (this.docClose) {
+            document.removeEventListener('click', this.docClose);
+            this.docClose = null;
+        }
     },
 
     async submit(roots) {
