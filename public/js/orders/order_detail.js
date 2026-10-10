@@ -78,9 +78,11 @@ const OrderDetail = {
                 if (this.panel.contains(e.target)) return;
                 // 「更多」菜单属于悬浮框的一部分, 点击菜单不关闭悬浮框
                 if (typeof OrderActions !== 'undefined' && OrderActions.popup && OrderActions.popup.contains(e.target)) return;
+                // 日期选择组件弹出层属于悬浮框交互的一部分, 点击它不关闭悬浮框
+                if (e.target.closest && e.target.closest('.dtp')) return;
                 this.close();
             };
-            this.escHandler = (e) => { if (e.key === 'Escape') this.close(); };
+            this.escHandler = (e) => { if (e.key === 'Escape' && !document.querySelector('.dtp')) this.close(); };
             document.addEventListener('mousedown', this.outsideHandler);
             document.addEventListener('keydown', this.escHandler);
         }, 0);
