@@ -4,6 +4,11 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.13.42] - 2026-10-11
+
+### 修复
+- **时区错误**: PHP 默认 UTC 导致所有时间戳比本地 (CST) 少 8 小时; `api/config.php` 统一设置 `date_default_timezone_set('Asia/Shanghai')`, 实测写入时间与系统本地时间一致
+
 ## [0.13.41] - 2026-10-10
 
 ### 变更
