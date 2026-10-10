@@ -296,7 +296,7 @@ var OrderStation = {
         try {
             await AjaxLoader.api('orders/update', { method: 'POST', data: data });
             this.editing = null;
-            Dom.toast('已保存', 'success');
+            Dom.toast('草稿已实时保存', 'success');
             this.refresh();
         } catch (e) { /* 已提示 */ }
     },

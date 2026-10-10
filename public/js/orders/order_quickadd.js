@@ -199,7 +199,7 @@ const OrderQuickAdd = {
                 items: [item],
                 submit: 0
             }});
-            Dom.toast('已加入: ' + item.content, 'success');
+            Dom.toast('已实时保存草稿: ' + item.content, 'success');
             const newId = r.data && r.data.id ? Number(r.data.id) : null;
             OrderStation.refresh(false, newId);
             const input = this.input();
