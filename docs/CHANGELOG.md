@@ -4,6 +4,12 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.13.13] - 2026-10-09
+
+### 变更
+- **前端静态资源统一管理**: 新增 `public/assets.php` (`Asset::$css` / `Asset::$js` 注册表 + `Asset::css()` / `Asset::js()` 输出, 自动附带 APP_VERSION 防缓存); `index.php` 改为统一调用; AGENT.md 约定新增/移除资源只改 assets.php, 禁止页面散写标签
+- 同时约定页面片段禁止自定义 `navigateTo`, 统一使用全局 hash 路由
+
 ## [0.13.12] - 2026-10-09
 
 ### 修复

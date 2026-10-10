@@ -46,6 +46,8 @@
 
 ## 前端页面约定
 - 唯一入口: `public/index.php` (SPA 壳 + /api/ 路由)
+- **静态资源统一管理**: 所有 JS/CSS 在 `public/assets.php` 的 `Asset::$css` / `Asset::$js` 注册, 页面用 `Asset::css()` / `Asset::js()` 输出 (自动带 APP_VERSION 防缓存); 新增/移除资源只改 assets.php, 禁止在页面里散写 `<script src>` / `<link>`
 - 页面片段: `public/js/{module}/{page}.php`, 通过 `AjaxLoader.loadPage()` 动态加载
 - 侧边栏: `public/js/shared/sidebar_{role}.php`
 - 无独立 HTML 文件, 全部统一为 PHP
+- **路由导航统一使用全局 `navigateTo` (app.js)**: 页面片段内禁止再定义 `navigateTo`, 避免覆盖 hash 路由导致布局/URL 不同步
