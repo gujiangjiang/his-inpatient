@@ -97,15 +97,12 @@ window.refreshWorkstationLayout = async function() {
         return;
     }
 
-    // 浏览页 (患者卡片墙/床位): 侧边栏始终隐藏, 数据区常显
+    // 浏览页 (患者卡片墙/床位): 侧边栏与患者信息栏均隐藏, 数据区常显
     if (browsePage) {
         sidebar.style.display = 'none';
         placeholder.style.display = 'none';
         content.style.display = 'block';
-        if (infoBar) {
-            infoBar.style.display = ctx ? 'flex' : 'none';
-            if (ctx) PatientContext.fillInfoBar(ctx);
-        }
+        if (infoBar) infoBar.style.display = 'none';
         return;
     }
 
