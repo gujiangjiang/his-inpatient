@@ -126,6 +126,8 @@
 }
 .os-period-long { background: #2fb344; }
 .os-period-temp { background: #f59a23; }
+.os-period-toggle { cursor: pointer; }
+.os-period-toggle:hover { filter: brightness(1.12); box-shadow: 0 0 0 2px rgba(26, 163, 163, 0.25); }
 
 /* 内容列标签 */
 .os-tag {

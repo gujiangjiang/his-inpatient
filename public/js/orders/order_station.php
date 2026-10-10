@@ -221,7 +221,7 @@ var OrderStation = {
             html += `<tr data-oid="${o.id}" data-root="${root.id}" class="${first ? 'os-group-start' : ''}${statusCls}${editable ? ' os-row-editable' : ''}${editing ? ' os-row-editing' : ''}">`;
             if (first) {
                 html += `<td class="os-col-check"${span}><input type="checkbox" ${this.selected.has(root.id) ? 'checked' : ''} onchange="OrderStation.toggleSelect(${root.id}, this.checked)"></td>`;
-                html += `<td class="os-col-period"${span}>${this.periodBadge(root.order_period)}</td>`;
+                html += `<td class="os-col-period"${span}>${this.periodBadge(root.order_period, editable, root)}</td>`;
                 // 时间列与组同高合并居中 (子医嘱不再错位)
                 html += `<td class="os-col-time"${span}>${this.timeText(root)}</td>`;
             }
@@ -306,10 +306,27 @@ var OrderStation = {
         this.render();
     },
 
-    periodBadge(period) {
-        return period === 'temp'
-            ? '<span class="os-period os-period-temp">临</span>'
-            : '<span class="os-period os-period-long">长</span>';
+    periodBadge(period, editable, root) {
+        const label = period === 'temp' ? '临' : '长';
+        const cls = period === 'temp' ? 'os-period-temp' : 'os-period-long';
+        if (!editable || !root) return `<span class="os-period ${cls}">${label}</span>`;
+        return `<span class="os-period ${cls} os-period-toggle" title="点击切换长期/临时" onclick="OrderStation.togglePeriod(${root.id}, '${period}', event)">${label}</span>`;
+    },
+
+    /**
+     * 点击长/临徽章快速切换并实时保存 (组内同步)
+     */
+    async togglePeriod(rootId, current, event) {
+        if (event) event.stopPropagation();
+        const root = this.groups.find(g => g.id == rootId);
+        if (!root || root.status !== 'draft') return;
+        const next = current === 'temp' ? 'long' : 'temp';
+        const ids = [rootId].concat((root.sub_orders || []).map(s => s.id));
+        try {
+            await Promise.all(ids.map(id => AjaxLoader.api('orders/update', { method: 'POST', data: { id: id, order_period: next } })));
+            Dom.toast('已切换为' + (next === 'temp' ? '临时' : '长期') + '医嘱', 'success');
+            this.refresh(false, rootId);
+        } catch (e) { /* 已提示 */ }
     },
 
     tags(flags) {
