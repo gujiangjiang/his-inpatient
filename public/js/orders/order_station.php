@@ -203,6 +203,9 @@ var OrderStation = {
                 html += `<td class="os-col-check"${span}><input type="checkbox" ${this.selected.has(root.id) ? 'checked' : ''} onchange="OrderStation.toggleSelect(${root.id}, this.checked)"></td>`;
                 html += `<td class="os-col-period"${span}>${this.periodBadge(root.order_period)}</td>`;
                 html += `<td>${this.timeText(root)}</td>`;
+            } else {
+                // 子医嘱: 补时间列占位, 内容保持在"医嘱内容"列
+                html += '<td></td>';
             }
             html += `<td${clickable} title="${editable ? '点击修改' : ''}">${this.statusChip(o)}${Format.escape(o.content)}${this.tags(o.billing_flags)}</td>`;
             html += `<td class="os-col-dosage"${clickable}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;

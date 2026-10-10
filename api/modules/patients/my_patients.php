@@ -17,6 +17,15 @@ $params = [];
 if ($user['role'] !== 'admin') {
     $sql .= " AND pa.attending_doctor_id = ?";
     $params[] = $user['id'];
+
+    // 仅返回授权科室范围内的患者 (跨科室指派不可见)
+    $allowed = allowed_department_ids($user);
+    if ($allowed) {
+        $sql .= " AND p.department_id IN (" . implode(',', array_fill(0, count($allowed), '?')) . ")";
+        $params = array_merge($params, $allowed);
+    } else {
+        $sql .= " AND 1 = 0";
+    }
 }
 $sql .= " ORDER BY p.id DESC";
 

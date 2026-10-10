@@ -36,14 +36,8 @@ if ($user['role'] === 'nurse' && $patient['ward_id'] != $user['ward_id']) {
     Response::error('权限不足', 403);
 }
 if ($user['role'] === 'doctor') {
-    $allowed = can_access_department($user, $patient['department_id']);
-    if (!$allowed) {
-        // 本人指派管辖 (主管或上级医师)
-        $assign = DB::selectOne("SELECT id FROM patient_assignments WHERE patient_id = ? AND (attending_doctor_id = ? OR senior_doctor_id = ?)",
-            [$patient['id'], $user['id'], $user['id']]);
-        if ($assign) $allowed = true;
-    }
-    if (!$allowed) {
+    // 严格按授权科室范围校验 (越权 403)
+    if (!can_access_department($user, $patient['department_id'])) {
         Response::error('权限不足', 403);
     }
 }

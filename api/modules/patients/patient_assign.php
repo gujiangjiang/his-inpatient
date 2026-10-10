@@ -13,6 +13,8 @@ if (!$attendingDoctorId) Response::error('请指定主管(主治)医师');
 $pdo = DB::getPDO();
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在');
+// 医生仅可指派自己授权科室范围内的患者
+if (!can_access_patient(Auth::user(), $patientId)) Response::error('权限不足', 403);
 
 $existing = DB::selectOne("SELECT * FROM patient_assignments WHERE patient_id = ?", [$patientId]);
 

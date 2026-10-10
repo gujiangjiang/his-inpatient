@@ -28,7 +28,7 @@ function can_access_department($user, $departmentId) {
 
 /**
  * 当前用户是否可访问指定患者
- * admin 恒可; 护士限本病区; 医生限授权科室或指派管辖 (主管/上级)
+ * admin 恒可; 护士限本病区; 医生严格限授权科室范围 (不因指派跨科室放行)
  */
 function can_access_patient($user, $patientId) {
     if ($user['role'] === 'admin') return true;
@@ -38,12 +38,7 @@ function can_access_patient($user, $patientId) {
         return (int)$patient['ward_id'] === (int)$user['ward_id'];
     }
     if ($user['role'] === 'doctor') {
-        if (can_access_department($user, $patient['department_id'])) return true;
-        $assign = DB::selectOne(
-            "SELECT id FROM patient_assignments WHERE patient_id = ? AND (attending_doctor_id = ? OR senior_doctor_id = ?)",
-            [$patientId, $user['id'], $user['id']]
-        );
-        return (bool)$assign;
+        return can_access_department($user, $patient['department_id']);
     }
     return false;
 }

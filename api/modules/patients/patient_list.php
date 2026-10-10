@@ -28,7 +28,7 @@ if ($departmentId) {
     $params[] = $departmentId;
 }
 
-// 护士按病区过滤，医生按授权科室或指派管辖过滤
+// 护士按病区过滤；医生严格按授权科室范围过滤 (无授权则空集)
 if ($user['role'] === 'nurse') {
     $sql .= " AND p.ward_id = ?";
     $params[] = $user['ward_id'];
@@ -36,11 +36,10 @@ if ($user['role'] === 'nurse') {
     $allowed = allowed_department_ids($user);
     if ($allowed) {
         $placeholders = implode(',', array_fill(0, count($allowed), '?'));
-        $sql .= " AND (p.department_id IN ({$placeholders}) OR pa.attending_doctor_id = ? OR pa.senior_doctor_id = ?)";
-        $params = array_merge($params, $allowed, [$user['id'], $user['id']]);
+        $sql .= " AND p.department_id IN ({$placeholders})";
+        $params = array_merge($params, $allowed);
     } else {
-        $sql .= " AND (pa.attending_doctor_id = ? OR pa.senior_doctor_id = ?)";
-        $params = array_merge($params, [$user['id'], $user['id']]);
+        $sql .= " AND 1 = 0";
     }
 }
 

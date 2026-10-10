@@ -88,34 +88,33 @@ window.refreshWorkstationLayout = async function() {
         }
     };
 
-    // 非工作站角色 或 浏览页 (卡片墙): 无需患者上下文即可显示主界面
-    if (!isWorkstation || browsePage) {
+    // 非工作站角色 (护士/管理): 侧边栏常显
+    if (!isWorkstation) {
         sidebar.style.display = 'block';
         placeholder.style.display = 'none';
         content.style.display = 'block';
-        if (infoBar) {
-            infoBar.style.display = ctx ? 'flex' : 'none';
-            if (ctx) PatientContext.fillInfoBar(ctx);
-        }
-        await loadSidebarIfEmpty();
+        if (infoBar) infoBar.style.display = 'none';
         return;
     }
 
-    if (ctx) {
-        sidebar.style.display = 'block';
-        placeholder.style.display = 'none';
-        content.style.display = 'block';
-        if (infoBar) {
-            infoBar.style.display = 'flex';
-            PatientContext.fillInfoBar(ctx);
-        }
-        await loadSidebarIfEmpty();
-    } else {
+    // 工作站未选患者: 侧边栏默认隐藏; 卡片墙等浏览页显示内容, 其余显示占位图
+    if (!ctx) {
         sidebar.style.display = 'none';
-        placeholder.style.display = 'flex';
-        content.style.display = 'none';
+        placeholder.style.display = browsePage ? 'none' : 'flex';
+        content.style.display = browsePage ? 'block' : 'none';
         if (infoBar) infoBar.style.display = 'none';
+        return;
     }
+
+    // 已选患者: 侧边栏 + 患者信息栏 + 内容区
+    sidebar.style.display = 'block';
+    placeholder.style.display = 'none';
+    content.style.display = 'block';
+    if (infoBar) {
+        infoBar.style.display = 'flex';
+        PatientContext.fillInfoBar(ctx);
+    }
+    await loadSidebarIfEmpty();
 };
 
 /**

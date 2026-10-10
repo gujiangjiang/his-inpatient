@@ -5,10 +5,7 @@
 Auth::requireRole(['admin', 'doctor']);
 $user = Auth::user();
 
-// 医生有权限管辖的科室
-$deptSql = "SELECT department_id FROM doctor_department_permissions WHERE doctor_id = ?";
-$permittedDepts = array_column(DB::select($deptSql, [$user['id']]), 'department_id');
-
+// 医生严格按授权科室范围过滤 (无授权则空集)
 $sql = "SELECT p.*, d.name as department_name, w.name as ward_name,
         pa.attending_doctor_id, pa.senior_doctor_id
         FROM patients p
@@ -18,10 +15,14 @@ $sql = "SELECT p.*, d.name as department_name, w.name as ward_name,
         WHERE p.status = 'active' AND p.bed_no IS NOT NULL AND pa.attending_doctor_id IS NULL";
 $params = [];
 
-if ($user['role'] === 'doctor' && !empty($permittedDepts)) {
-    $placeholders = implode(',', array_fill(0, count($permittedDepts), '?'));
-    $sql .= " AND p.department_id IN ({$placeholders})";
-    $params = array_merge($params, $permittedDepts);
+if ($user['role'] === 'doctor') {
+    $allowed = allowed_department_ids($user);
+    if ($allowed) {
+        $sql .= " AND p.department_id IN (" . implode(',', array_fill(0, count($allowed), '?')) . ")";
+        $params = array_merge($params, $allowed);
+    } else {
+        $sql .= " AND 1 = 0";
+    }
 }
 
 $stmt = DB::getPDO()->prepare($sql);
