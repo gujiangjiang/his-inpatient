@@ -63,12 +63,15 @@
 }
 .os-filter-radio { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
 .os-filter input[type="radio"] { accent-color: #1aa3a3; }
-.os-filter input[type="date"] {
+.os-filter input[type="date"],
+.os-date-input {
     border: 1px solid #dcdfe6;
     border-radius: 4px;
     padding: 3px 6px;
     font-size: 12px;
     color: #606266;
+    width: 104px;
+    background: #fff;
 }
 .os-filter-group { display: inline-flex; align-items: center; gap: 10px; }
 .os-filter label.active { color: #1aa3a3; font-weight: 600; }

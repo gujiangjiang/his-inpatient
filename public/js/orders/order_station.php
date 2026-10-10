@@ -33,9 +33,9 @@
         <span class="os-sep"></span>
         <span class="os-filter-group">
             按开始日期
-            <input type="date" id="os-date-from" onchange="OrderStation.setFilter('date_from', this.value)">
+            <input type="text" id="os-date-from" class="os-date-input" data-dtpicker="date" placeholder="开始日期" onchange="OrderStation.setFilter('date_from', this.value)">
             至
-            <input type="date" id="os-date-to" onchange="OrderStation.setFilter('date_to', this.value)">
+            <input type="text" id="os-date-to" class="os-date-input" data-dtpicker="date" placeholder="结束日期" onchange="OrderStation.setFilter('date_to', this.value)">
         </span>
         <span class="os-sep"></span>
         <span class="os-filter-group">
@@ -92,6 +92,8 @@ var OrderStation = {
         this.patientId = ctx.id;
         this.selected.clear();
         this.bindKeys();
+        // 初始化私有日期选择器 (筛选日期范围)
+        if (typeof DateTimePicker !== 'undefined') DateTimePicker.initInputs(document.getElementById('app-content'));
         this.fillAssist(ctx);
         this.refresh();
     },

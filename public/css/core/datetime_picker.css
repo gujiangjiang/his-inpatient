@@ -1,0 +1,74 @@
+/* public/css/core/datetime_picker.css - 私有日期/时间选择组件 */
+.dtp {
+    position: fixed;
+    width: 268px;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    z-index: 2200;
+    padding: 10px 12px 8px;
+    font-size: 13px;
+    color: #303133;
+    user-select: none;
+}
+.dtp-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+.dtp-sel {
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    padding: 3px 4px;
+    font-size: 13px;
+    color: #303133;
+    background: #fff;
+}
+.dtp-sel:focus { outline: none; border-color: #1aa3a3; }
+.dtp-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    color: #909399;
+    font-size: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #f0f2f5;
+}
+.dtp-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 6px 0;
+}
+.dtp-day {
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.dtp-day:hover { background: #f0fbfb; color: #1aa3a3; }
+.dtp-day.dtp-active { background: #14a8a8; color: #fff; }
+.dtp-day.dtp-empty { cursor: default; }
+.dtp-time {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 0;
+    border-top: 1px solid #f0f2f5;
+}
+.dtp-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f2f5;
+}
+.dtp-quick { color: #1aa3a3; cursor: pointer; font-size: 12px; }
+.dtp-quick:hover { text-decoration: underline; }
+.dtp-foot .btn { margin-left: auto; }

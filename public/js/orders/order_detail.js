@@ -28,7 +28,7 @@ const OrderDetail = {
         const panel = document.createElement('div');
         panel.className = 'os-detail';
         panel.innerHTML = `
-            <div class="osd-row"><label>开始时间</label><input type="text" id="osd-start" class="osd-input" value="${Format.escape((o.start_date || '').slice(0, 16))}" placeholder="YYYY-MM-DD HH:mm"></div>
+            <div class="osd-row"><label>开始时间</label><input type="text" id="osd-start" class="osd-input" data-dtpicker="datetime" value="${Format.escape((o.start_date || '').slice(0, 16))}" placeholder="YYYY-MM-DD HH:mm"></div>
             <div class="osd-row"><label>医嘱内容</label><input type="text" class="osd-input osd-readonly" value="${Format.escape(o.content)}" readonly title="医嘱内容不可直接修改"></div>
             <div class="osd-row"><label>医嘱说明</label><input type="text" id="osd-notes" class="osd-input" value="${Format.escape(o.notes || '')}" placeholder="医嘱说明"></div>
             <div class="osd-row"><label>持续时间</label>
@@ -54,6 +54,7 @@ const OrderDetail = {
         document.body.appendChild(panel);
         this.panel = panel;
         this.position(event);
+        if (typeof DateTimePicker !== 'undefined') DateTimePicker.initInputs(panel);
 
         const manualBtn = panel.querySelector('#osd-manual');
         if (manualBtn) manualBtn.addEventListener('click', () => Dom.toast('药品说明书功能对接中', 'info'));
