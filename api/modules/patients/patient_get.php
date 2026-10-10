@@ -42,4 +42,6 @@ if ($user['role'] === 'doctor') {
     }
 }
 
-Response::success($patient);
+$row = [$patient];
+apply_latest_nursing_level($row);
+Response::success($row[0]);

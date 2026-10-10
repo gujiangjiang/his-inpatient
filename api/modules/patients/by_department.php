@@ -28,4 +28,6 @@ $sql .= " ORDER BY p.id DESC";
 
 $stmt = DB::getPDO()->prepare($sql);
 $stmt->execute($params);
-Response::success($stmt->fetchAll(PDO::FETCH_ASSOC));
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+apply_latest_nursing_level($rows);
+Response::success($rows);

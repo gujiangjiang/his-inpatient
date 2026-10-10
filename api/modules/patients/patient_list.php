@@ -47,4 +47,6 @@ $sql .= " ORDER BY p.ward_id ASC, p.bed_no ASC, p.id ASC";
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
-Response::success($stmt->fetchAll(PDO::FETCH_ASSOC));
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+apply_latest_nursing_level($rows);
+Response::success($rows);
