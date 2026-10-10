@@ -107,10 +107,10 @@
 .os-col-check { width: 34px; }
 .os-col-period { width: 44px; text-align: center; }
 .os-col-time { width: 118px; }
-.os-col-dosage { width: 84px; }
-.os-col-usage { width: 150px; }
-.os-col-freq { width: 64px; }
-.os-col-freqdetail { width: 110px; }
+.os-col-dosage { width: 76px; }
+.os-col-usage { width: 108px; }
+.os-col-freq { width: 46px; }
+.os-col-freqdetail { width: 84px; }
 .os-col-doctor { width: 70px; }
 .os-col-op { width: 40px; text-align: center; }
 .os-table th.os-col-period { text-align: center; }
