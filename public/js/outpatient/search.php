@@ -78,5 +78,4 @@ async function outpatient_detail(visitId) {
     Dom.modal('门诊病历详情', content);
 }
 
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

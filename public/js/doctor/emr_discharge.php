@@ -42,5 +42,4 @@ async function doctor_emr_discharge_save() {
     await AjaxLoader.api('emr/save',{method:'POST',data:{patient_id:_dischargePatient.id,record_type:'discharge',content_delta:delta,content_html:e.getHTML()}});
     Dom.toast('保存成功','success');
 }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

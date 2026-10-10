@@ -269,7 +269,4 @@ function showPatientForm(p) {
     setTimeout(function() { IcdSearch.init('admission_diagnosis', 'admission_icd_code', 'admission_diagnosis'); }, 100);
 }
 
-function navigateTo(module, page) {
-    AjaxLoader.loadPage(module, page);
-}
 </script>

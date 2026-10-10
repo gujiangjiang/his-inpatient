@@ -83,5 +83,4 @@ function nurse_vitals_new() {
     ]);
 }
 
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

@@ -65,5 +65,4 @@ function showDeptForm(dept) {
     ]);
 }
 
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

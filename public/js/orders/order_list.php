@@ -322,7 +322,4 @@ function orders_refresh() {
     if (_currentPatientId) loadOrders(_currentPatientId);
 }
 
-function navigateTo(module, page) {
-    AjaxLoader.loadPage(module, page);
-}
 </script>

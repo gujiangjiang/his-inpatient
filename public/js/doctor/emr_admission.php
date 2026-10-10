@@ -163,7 +163,4 @@ function doctor_emr_admission_pdf() {
     PdfGenerator.generate('editor-container', '入院记录.pdf');
 }
 
-function navigateTo(module, page) {
-    AjaxLoader.loadPage(module, page);
-}
 </script>

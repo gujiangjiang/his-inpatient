@@ -196,5 +196,4 @@ async function exam_detail(id) {
 }
 
 function lab_lab_exam_refresh() { loadLabs(); loadExams(); }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

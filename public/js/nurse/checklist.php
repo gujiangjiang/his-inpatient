@@ -60,5 +60,4 @@ async function nurse_checklist_execute(orderId) {
     loadChecklist();
 }
 
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

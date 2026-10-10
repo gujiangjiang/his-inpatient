@@ -31,5 +31,4 @@ async function patients_beds_init() {
         tbody.appendChild(tr);
     });
 }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

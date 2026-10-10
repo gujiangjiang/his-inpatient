@@ -42,5 +42,4 @@ async function doctor_emr_surgery_save() {
     await AjaxLoader.api('emr/save',{method:'POST',data:{patient_id:_surgeryPatient.id,record_type:'surgery',content_delta:delta,content_html:e.getHTML()}});
     Dom.toast('保存成功','success');
 }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

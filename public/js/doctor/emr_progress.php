@@ -53,5 +53,4 @@ async function doctor_emr_progress_save() {
     }});
     Dom.toast('保存成功','success');
 }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

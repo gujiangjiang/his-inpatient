@@ -55,5 +55,4 @@ function admin_sys_configs_edit(key, value) {
         {text:'取消',type:'default'}
     ]);
 }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

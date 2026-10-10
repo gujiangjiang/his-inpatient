@@ -72,5 +72,4 @@ function showMedForm(med) {
         {text:'取消',type:'default'}
     ]);
 }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

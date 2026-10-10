@@ -202,5 +202,4 @@ function case_front_page_pdf() {
     }
 }
 
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

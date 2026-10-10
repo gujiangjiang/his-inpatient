@@ -79,5 +79,4 @@ function showTemplateForm(template) {
         setTimeout(() => { const e = RichEditor.create('tpl-editor', template.content_delta || ''); }, 100);
     }
 }
-function navigateTo(module, page) { AjaxLoader.loadPage(module, page); }
 </script>

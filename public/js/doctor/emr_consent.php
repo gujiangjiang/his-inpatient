@@ -42,5 +42,4 @@ async function doctor_emr_consent_save() {
     await AjaxLoader.api('emr/save',{method:'POST',data:{patient_id:_consentPatient.id,record_type:'consent',content_delta:delta,content_html:e.getHTML()}});
     Dom.toast('保存成功','success');
 }
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

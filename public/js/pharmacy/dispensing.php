@@ -126,5 +126,4 @@ function pharmacy_dispensing_refresh() {
     loadRecords();
 }
 
-function navigateTo(m,p){ AjaxLoader.loadPage(m,p); }
 </script>

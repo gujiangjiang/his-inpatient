@@ -65,5 +65,4 @@ async function executeOrder(orderId) {
     }
 }
 
-function navigateTo(m, p) { AjaxLoader.loadPage(m, p); }
 </script>
