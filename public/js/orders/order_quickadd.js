@@ -12,8 +12,9 @@ const OrderQuickAdd = {
     open(mode, event) {
         if (this.panel) this.close();
         if (!OrderStation || !OrderStation.patientId) { Dom.toast('请先选择患者', 'error'); return; }
-        this.mode = mode || 'all';
-        this.period = 'long';
+        // 药品/非药品分开检索; 默认期间参照上一条医嘱 (开具后可点长/临切换)
+        this.mode = mode === 'nonmedication' ? 'nonmedication' : 'medication';
+        this.period = (typeof OrderStation.lastOrderPeriod === 'function') ? OrderStation.lastOrderPeriod() : 'long';
         this.items = [];
         this.activeIndex = 0;
 
@@ -21,35 +22,15 @@ const OrderQuickAdd = {
         panel.className = 'os-qa';
         panel.innerHTML = `
             <div class="os-qa-head">
-                <span class="os-qa-tabs">
-                    <button type="button" class="os-qa-tab" data-mode="all">全部</button>
-                    <button type="button" class="os-qa-tab" data-mode="medication">药品</button>
-                    <button type="button" class="os-qa-tab" data-mode="nonmedication">非药品</button>
-                </span>
-                <span class="os-qa-period">
-                    <label><input type="radio" name="os-qa-period" value="long" checked> 长期</label>
-                    <label><input type="radio" name="os-qa-period" value="temp"> 临时</label>
-                </span>
+                <span class="os-qa-title">${this.mode === 'medication' ? '药品' : '非药品'}</span>
+                <span class="os-qa-period-hint">默认: ${this.period === 'temp' ? '临时' : '长期'}医嘱 (参照上一条, 开具后可点长/临切换)</span>
             </div>
-            <input type="text" class="os-qa-input" placeholder="搜索药品 / 非药品 (名称、拼音首字母、编码), Enter 加入医嘱">
+            <input type="text" class="os-qa-input" placeholder="搜索${this.mode === 'medication' ? '药品 (名称、拼音首字母、编码)' : '非药品 (名称)'}, Enter 加入医嘱">
             <div class="os-qa-list"><div class="os-qa-empty">加载中...</div></div>
-            <div class="os-qa-hint">↑↓ 选择 · Enter 加入 · Esc 关闭 · 加入后点击医嘱行可修改剂量用法</div>`;
+            <div class="os-qa-hint">↑↓ 选择 · Enter 加入 · Esc 关闭 · 加入后点击医嘱内容文字可修改</div>`;
         document.body.appendChild(panel);
         this.panel = panel;
         this.position(event);
-
-        panel.querySelectorAll('.os-qa-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this.mode = btn.dataset.mode;
-                this.updateTabs();
-                this.search(this.input().value.trim());
-            });
-        });
-        panel.querySelectorAll('input[name="os-qa-period"]').forEach(radio => {
-            radio.addEventListener('change', () => {
-                this.period = panel.querySelector('input[name="os-qa-period"]:checked').value;
-            });
-        });
 
         const input = this.input();
         input.addEventListener('input', () => {
@@ -58,8 +39,6 @@ const OrderQuickAdd = {
         });
         input.addEventListener('keydown', (e) => this.onKey(e));
         input.focus();
-
-        this.updateTabs();
         this.search('');
 
         setTimeout(() => {
@@ -74,13 +53,6 @@ const OrderQuickAdd = {
 
     input() {
         return this.panel ? this.panel.querySelector('.os-qa-input') : null;
-    },
-
-    updateTabs() {
-        if (!this.panel) return;
-        this.panel.querySelectorAll('.os-qa-tab').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === this.mode);
-        });
     },
 
     position(event) {

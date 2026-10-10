@@ -51,29 +51,6 @@ const OrderSets = {
         } catch (e) { /* 已提示 */ }
     },
 
-    /**
-     * 将编辑器当前内容另存为组套
-     */
-    saveFromEditor() {
-        const data = OrderEditor.collect();
-        if (data.items.length === 0 || data.items.some(it => !it.content)) {
-            Dom.toast('请先完善医嘱内容', 'error');
-            return;
-        }
-        const html = '<div class="form-group"><label class="form-label">组套名称</label>' +
-            '<input type="text" id="osets-name" class="form-control" placeholder="如: 骨科术后抗感染组套"></div>';
-        Dom.modal('存为组套', html, [
-            { text: '保存', type: 'primary', onclick: async () => {
-                const name = document.getElementById('osets-name').value.trim();
-                if (!name) { Dom.toast('请输入组套名称', 'error'); return; }
-                await AjaxLoader.api('orders/set-save', { method: 'POST', data: {
-                    name, category: OrderEditor.category, items: data.items
-                } });
-                Dom.toast('组套已保存', 'success');
-            } },
-            { text: '取消', type: 'default' }
-        ]);
-    }
 };
 
 window.OrderSets = OrderSets;

@@ -11,7 +11,6 @@ const OrderActions = {
         if (!root) return;
         const items = [];
         if (root.status === 'draft') {
-            items.push(['整组编辑', () => OrderEditor.open(root.category === 'medication' ? 'medication' : 'nonmedication', OrderStation.patientId, root)]);
             items.push(['提交', () => this.submit([root])]);
             items.push(['删除', () => this.removeDraft(root)]);
         } else {

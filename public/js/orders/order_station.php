@@ -78,6 +78,12 @@
 <script>
 var OrderStation = {
     patientId: null,
+    FREQS: [
+        ['', '无'], ['qd', 'qd 每日1次'], ['bid', 'bid 每日2次'], ['tid', 'tid 每日3次'],
+        ['qid', 'qid 每日4次'], ['q6h', 'q6h 每6小时'], ['q8h', 'q8h 每8小时'],
+        ['q12h', 'q12h 每12小时'], ['q2h', 'q2h 每2小时'], ['qn', 'qn 每晚'],
+        ['prn', 'prn 必要时'], ['st', 'st 立即']
+    ],
     filters: { period: '', status: '', date_from: '', date_to: '' },
     groups: [],
     selected: new Set(),
@@ -285,6 +291,13 @@ var OrderStation = {
         return this.FREQ_DETAILS[freq] || '';
     },
 
+    /** 上一条医嘱的期间 (新开医嘱默认沿用, 开具后可点长/临切换) */
+    lastOrderPeriod() {
+        if (!this.groups || this.groups.length === 0) return 'long';
+        const last = this.groups[this.groups.length - 1];
+        return last.order_period === 'temp' ? 'temp' : 'long';
+    },
+
     /**
      * 行内编辑途径/频次/执行时间 (仅草稿, 变更即实时保存)
      */
@@ -312,7 +325,7 @@ var OrderStation = {
 
         if (kind === 'usage' || kind === 'freq') {
             const isUsage = kind === 'usage';
-            const freqs = (typeof OrderEditor !== 'undefined') ? OrderEditor.FREQS : [['', '无']];
+            const freqs = this.FREQS;
             const values = isUsage
                 ? ['', '静脉输液', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护']
                 : freqs.map(f => f[0]);

@@ -41,8 +41,6 @@ class Asset {
         '/js/core/patient_context.js',
         '/js/core/patient_switcher.js',
         '/js/core/patient_quick_switch.js',
-        '/js/orders/drug_search.js',
-        '/js/orders/order_editor.js',
         '/js/orders/order_quickadd.js',
         '/js/orders/order_actions.js',
         '/js/orders/order_detail.js',
