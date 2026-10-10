@@ -506,3 +506,11 @@
 .osets-meta { font-size: 12px; color: #909399; margin-left: auto; margin-right: 10px; }
 .osets-items { margin-top: 6px; font-size: 12px; color: #606266; max-height: 120px; overflow-y: auto; }
 .osets-item { line-height: 19px; }
+
+/* 医嘱内容文字: 仅此区域可点击打开详情 (下划线提示) */
+.os-content-link { cursor: pointer; }
+.os-content-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+/* 非草稿详情框: 只读样式 */
+.osd-readonly-panel .osd-actions { opacity: 1; }
+.osd-readonly-panel .osd-input[disabled] { background: #f5f7fa; color: #909399; }

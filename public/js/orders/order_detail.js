@@ -16,8 +16,10 @@ const OrderDetail = {
         this.order = found.order;
 
         const o = found.order;
+        const readonly = o.status !== 'draft'; // 非草稿只读: 可查看, 不可修改
+        const ro = readonly ? 'disabled' : '';
         const flags = (o.billing_flags || '').split(',');
-        const flagBox = (v) => `<label class="osd-flag"><input type="checkbox" class="osd-flagbox" value="${v}" ${flags.includes(v) ? 'checked' : ''}>${v}</label>`;
+        const flagBox = (v) => `<label class="osd-flag"><input type="checkbox" class="osd-flagbox" value="${v}" ${flags.includes(v) ? 'checked' : ''} ${ro}>${v}</label>`;
         const dur = this.parseDuration(o.duration);
         const isTemp = o.order_period === 'temp';
         const isMed = o.category === 'medication';
@@ -26,21 +28,21 @@ const OrderDetail = {
         const pricingOpts = ['正常计价', '不计价'].concat(isMed ? ['不摆药'] : []);
 
         const panel = document.createElement('div');
-        panel.className = 'os-detail';
+        panel.className = 'os-detail' + (readonly ? ' osd-readonly-panel' : '');
         panel.innerHTML = `
-            <div class="osd-row"><label>开始时间</label><input type="text" id="osd-start" class="osd-input" data-dtpicker="datetime" value="${Format.escape((o.start_date || '').slice(0, 16))}" placeholder="YYYY-MM-DD HH:mm"></div>
+            <div class="osd-row"><label>开始时间</label><input type="text" id="osd-start" class="osd-input" ${readonly ? 'disabled' : 'data-dtpicker="datetime"'} value="${Format.escape((o.start_date || '').slice(0, 16))}" placeholder="YYYY-MM-DD HH:mm"></div>
             <div class="osd-row"><label>医嘱内容</label><input type="text" class="osd-input osd-readonly" value="${Format.escape(o.content)}" readonly title="医嘱内容不可直接修改"></div>
-            <div class="osd-row"><label>医嘱说明</label><input type="text" id="osd-notes" class="osd-input" value="${Format.escape(o.notes || '')}" placeholder="医嘱说明"></div>
+            <div class="osd-row"><label>医嘱说明</label><input type="text" id="osd-notes" class="osd-input" value="${Format.escape(o.notes || '')}" placeholder="医嘱说明" ${ro}></div>
             <div class="osd-row"><label>持续时间</label>
-                <input type="number" min="0" id="osd-duration" class="osd-input osd-duration-num" value="${dur.num}" placeholder="0">
-                <select id="osd-duration-unit" class="osd-input osd-duration-unit">
+                <input type="number" min="0" id="osd-duration" class="osd-input osd-duration-num" value="${dur.num}" placeholder="0" ${ro}>
+                <select id="osd-duration-unit" class="osd-input osd-duration-unit" ${ro}>
                     ${['天', '次', '小时', '分钟'].map(u => `<option value="${u}" ${u === dur.unit ? 'selected' : ''}>${u}</option>`).join('')}
                 </select>
                 <label class="osd-inline-label">执行时间</label>
-                <input type="text" id="osd-freqdetail" class="osd-input" value="${isTemp ? '' : Format.escape(o.freq_detail || '')}" placeholder="${isTemp ? '临时医嘱无执行时间' : '如 07-16'}" ${isTemp ? 'disabled' : ''}>
+                <input type="text" id="osd-freqdetail" class="osd-input" value="${isTemp ? '' : Format.escape(o.freq_detail || '')}" placeholder="${isTemp ? '临时医嘱无执行时间' : '如 07-16'}" ${isTemp || readonly ? 'disabled' : ''}>
             </div>
             <div class="osd-row"><label>计价</label>
-                <select id="osd-pricing" class="osd-input osd-pricing">
+                <select id="osd-pricing" class="osd-input osd-pricing" ${ro}>
                     ${pricingOpts.map(p => `<option value="${p}" ${p === pricing ? 'selected' : ''}>${p}</option>`).join('')}
                 </select>
                 <span class="osd-flags">${flagBox('径外')}${flagBox('自费')}${flagBox('预防')}</span>
@@ -48,7 +50,7 @@ const OrderDetail = {
             <div class="osd-actions">
                 ${isMed ? '<button type="button" class="btn btn-small btn-primary" id="osd-manual">药品说明书</button>' : ''}
                 <button type="button" class="btn btn-small btn-primary" id="osd-priceitem">计价项目</button>
-                <button type="button" class="btn btn-small btn-primary" id="osd-save">保存</button>
+                ${readonly ? '' : '<button type="button" class="btn btn-small btn-primary" id="osd-save">保存</button>'}
                 <span class="osd-more" id="osd-more">更多</span>
             </div>`;
         document.body.appendChild(panel);
@@ -59,7 +61,8 @@ const OrderDetail = {
         const manualBtn = panel.querySelector('#osd-manual');
         if (manualBtn) manualBtn.addEventListener('click', () => Dom.toast('药品说明书功能对接中', 'info'));
         panel.querySelector('#osd-priceitem').addEventListener('click', () => Dom.toast('计价项目功能对接中', 'info'));
-        panel.querySelector('#osd-save').addEventListener('click', () => this.save());
+        const saveBtn = panel.querySelector('#osd-save');
+        if (saveBtn) saveBtn.addEventListener('click', () => this.save());
         panel.querySelector('#osd-more').addEventListener('click', (e) => {
             e.stopPropagation();
             // 悬浮框保持显示, 菜单在其「更多」位置弹出, 与悬浮框共存亡

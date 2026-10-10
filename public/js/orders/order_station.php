@@ -209,7 +209,7 @@ var OrderStation = {
             const first = i === 0;
             const span = first ? ` rowspan="${size}"` : '';
             const statusCls = { draft: ' os-txt-draft', pending: ' os-txt-pending', invalid: ' os-txt-invalid', stopped: ' os-txt-stopped' }[o.status] || '';
-            const clickable = editable ? ` onclick="OrderDetail.open(${o.id}, ${root.id}, event)" title="点击查看/修改"` : '';
+            const openLink = ` onclick="OrderDetail.open(${o.id}, ${root.id}, event)" title="点击查看医嘱详情"`;
             html += `<tr data-oid="${o.id}" data-root="${root.id}" class="${first ? 'os-group-start' : ''}${statusCls}${editable ? ' os-row-editable' : ''}">`;
             if (first) {
                 html += `<td class="os-col-check"${span}><input type="checkbox" ${this.selected.has(root.id) ? 'checked' : ''} onchange="OrderStation.toggleSelect(${root.id}, this.checked)"></td>`;
@@ -217,8 +217,9 @@ var OrderStation = {
                 // 时间列与组同高合并居中 (子医嘱不再错位)
                 html += `<td class="os-col-time"${span}>${this.timeText(root)}</td>`;
             }
-            html += `<td${clickable} title="${editable ? '点击修改' : ''}">${Format.escape(o.content)}${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${this.tags(o.billing_flags)}</td>`;
-            html += `<td class="os-col-dosage"${clickable}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
+            // 仅医嘱内容文字可点击 (下划线提示), 其余为空白区域; 任意状态均可查看详情
+            html += `<td><span class="os-content-link"${openLink}>${Format.escape(o.content)}</span>${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${this.tags(o.billing_flags)}</td>`;
+            html += `<td class="os-col-dosage">${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
                 const isTemp = root.order_period === 'temp';
