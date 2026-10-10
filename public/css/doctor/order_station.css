@@ -446,18 +446,18 @@
 /* ===== 医嘱悬浮详情框 ===== */
 .os-detail {
     position: fixed;
-    width: 520px;
+    width: 470px;
     background: #fff;
     border: 1px solid #d9dde3;
     border-radius: 10px;
     box-shadow: 0 14px 40px rgba(0, 0, 0, 0.24);
     z-index: 1850;
-    padding: 14px 16px 12px;
+    padding: 12px 14px 10px;
     animation: osQaIn 0.12s ease-out;
     box-sizing: border-box;
 }
-.osd-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
-.osd-row > label { width: 68px; text-align: right; color: #606266; font-size: 13px; flex-shrink: 0; }
+.osd-row { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.osd-row > label { width: 60px; text-align: right; color: #606266; font-size: 13px; flex-shrink: 0; }
 .osd-input {
     flex: 1;
     border: 1px solid #dcdfe6;
@@ -470,9 +470,10 @@
 }
 .osd-input:focus { outline: none; border-color: #1aa3a3; box-shadow: 0 0 0 2px rgba(26, 163, 163, 0.15); }
 .osd-readonly { background: #f5f7fa; color: #909399; }
-.osd-duration-num { flex: 0 0 110px; }
-.osd-duration-unit { flex: 0 0 80px; }
-.osd-pricing { flex: 0 0 110px; }
+.osd-duration-num { flex: 0 0 56px; }
+.osd-duration-unit { flex: 0 0 62px; }
+.osd-pricing { flex: 0 0 104px; }
+.osd-inline-label { font-size: 13px; color: #606266; margin-left: 6px; flex-shrink: 0; white-space: nowrap; }
 .osd-flags { display: inline-flex; gap: 10px; font-size: 12px; color: #606266; }
 .osd-flag { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; }
 .osd-flag input { accent-color: #1aa3a3; }

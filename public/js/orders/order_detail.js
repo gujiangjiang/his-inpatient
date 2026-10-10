@@ -36,8 +36,9 @@ const OrderDetail = {
                 <select id="osd-duration-unit" class="osd-input osd-duration-unit">
                     ${['天', '次', '小时', '分钟'].map(u => `<option value="${u}" ${u === dur.unit ? 'selected' : ''}>${u}</option>`).join('')}
                 </select>
+                <label class="osd-inline-label">执行时间</label>
+                <input type="text" id="osd-freqdetail" class="osd-input" value="${isTemp ? '' : Format.escape(o.freq_detail || '')}" placeholder="${isTemp ? '临时医嘱无执行时间' : '如 07-16'}" ${isTemp ? 'disabled' : ''}>
             </div>
-            <div class="osd-row"><label>执行时间</label><input type="text" id="osd-freqdetail" class="osd-input" value="${isTemp ? '' : Format.escape(o.freq_detail || '')}" placeholder="${isTemp ? '临时医嘱无执行时间' : '如 07-16 (按频次自动生成, 可修改)'}" ${isTemp ? 'disabled' : ''}></div>
             <div class="osd-row"><label>计价</label>
                 <select id="osd-pricing" class="osd-input osd-pricing">
                     ${pricingOpts.map(p => `<option value="${p}" ${p === pricing ? 'selected' : ''}>${p}</option>`).join('')}
