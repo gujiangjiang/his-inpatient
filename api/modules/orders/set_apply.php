@@ -31,16 +31,21 @@ try {
     $ids = [];
     foreach ($items as $i => $item) {
         $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+        $itemPeriod = $item['order_period'] ?: 'long';
+        $freqCode = $item['freq_code'];
+        $freqDetail = $item['freq_detail'];
+        // 临时医嘱无频次/执行时间
+        if ($itemPeriod === 'temp') { $freqCode = ''; $freqDetail = ''; }
         $stmt->execute([
             $patientId, $patient['admission_no'],
             ($isGroup && $i > 0) ? $mainId : null,
             ($isGroup && $i === 0) ? 1 : 0,
             ($item['category'] === 'medication') ? 'medication' : 'general',
-            $item['order_period'] ?: 'long',
+            $itemPeriod,
             $orderNo, $item['content'], $item['category'], $status,
             $item['drug_id'], $item['dosage'], $item['dosage_unit'],
             $item['usage_name'], $item['usage_rate'],
-            $item['freq_code'], $item['freq_detail'], '',
+            $freqCode, $freqDetail, '',
             $i, 0, $now, $userId, $now, $now
         ]);
         $id = $pdo->lastInsertId();

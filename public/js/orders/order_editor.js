@@ -173,6 +173,10 @@ const OrderEditor = {
         const data = this.collect();
         if (data.items.length === 0) { Dom.toast('请至少添加一条医嘱', 'error'); return; }
         if (data.items.some(it => !it.content)) { Dom.toast('医嘱内容不能为空', 'error'); return; }
+        // 临时医嘱无频次/执行时间
+        if (data.period === 'temp') {
+            data.items.forEach(it => { it.freq_code = ''; it.freq_detail = ''; });
+        }
 
         try {
             if (this.editId) {

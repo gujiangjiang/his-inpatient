@@ -193,6 +193,8 @@ const OrderQuickAdd = {
     },
 
     async addToOrders(item) {
+        // 临时医嘱无频次/执行时间
+        if (this.period === 'temp') { item.freq_code = ''; item.freq_detail = ''; }
         try {
             const r = await AjaxLoader.api('orders/save', { method: 'POST', data: {
                 patient_id: OrderStation.patientId,

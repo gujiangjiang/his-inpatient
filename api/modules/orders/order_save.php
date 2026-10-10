@@ -64,17 +64,22 @@ try {
     $ids = [];
     foreach ($items as $i => $item) {
         $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+        $itemPeriod = $item['order_period'] ?? $orderPeriod;
+        $freqCode = $item['freq_code'] ?? $item['frequency'] ?? '';
+        $freqDetail = $item['freq_detail'] ?? '';
+        // 临时医嘱无频次/执行时间
+        if ($itemPeriod === 'temp') { $freqCode = ''; $freqDetail = ''; }
         $stmt->execute([
             $patientId, $patient['admission_no'],
             ($isGroup && $i > 0) ? $mainId : null,
             ($isGroup && $i === 0) ? 1 : 0,
             ($item['category'] ?? $category) === 'medication' ? 'medication' : 'general',
-            $item['order_period'] ?? $orderPeriod,
+            $itemPeriod,
             $orderNo, $item['content'], $item['category'] ?? $category, $status,
             $item['drug_id'] ?? null,
             $item['dosage'] ?? '', $item['dosage_unit'] ?? '',
             $item['usage_name'] ?? $groupUsage, $item['usage_rate'] ?? $groupRate,
-            $item['freq_code'] ?? $item['frequency'] ?? '', $item['freq_detail'] ?? '',
+            $freqCode, $freqDetail,
             $item['billing_flags'] ?? '', $i, 0,
             $item['start_date'] ?? $startDate, $endDate, $notes,
             $userId, $now, $now

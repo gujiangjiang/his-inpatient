@@ -16,6 +16,12 @@ if (!can_access_patient($user, $order['patient_id'])) Response::error('权限不
 $fields = ['content', 'dosage', 'dosage_unit', 'usage_name', 'usage_rate',
            'freq_code', 'freq_detail', 'billing_flags', 'order_period',
            'start_date', 'notes', 'duration'];
+
+// 生效期间: 请求里带 order_period 以请求为准
+$effectivePeriod = $order['order_period'] ?: 'long';
+$reqPeriod = Validator::get('order_period');
+if (in_array($reqPeriod, ['long', 'temp'])) $effectivePeriod = $reqPeriod;
+
 $updates = [];
 $params = [];
 foreach ($fields as $f) {
@@ -23,9 +29,16 @@ foreach ($fields as $f) {
     if ($v !== null) {
         if ($f === 'content' && trim((string)$v) === '') Response::error('医嘱内容不能为空');
         if ($f === 'order_period' && !in_array($v, ['long', 'temp'])) continue;
+        // 临时医嘱禁止写频次/执行时间
+        if ($effectivePeriod === 'temp' && in_array($f, ['freq_code', 'freq_detail'])) continue;
         $updates[] = "$f = ?";
         $params[] = $v;
     }
+}
+// 切换到临时医嘱: 强制清空频次与执行时间
+if ($effectivePeriod === 'temp') {
+    $updates[] = "freq_code = ''";
+    $updates[] = "freq_detail = ''";
 }
 if (empty($updates)) Response::error('没有需要更新的字段');
 

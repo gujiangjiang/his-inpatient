@@ -19,6 +19,7 @@ const OrderDetail = {
         const flags = (o.billing_flags || '').split(',');
         const flagBox = (v) => `<label class="osd-flag"><input type="checkbox" class="osd-flagbox" value="${v}" ${flags.includes(v) ? 'checked' : ''}>${v}</label>`;
         const dur = this.parseDuration(o.duration);
+        const isTemp = o.order_period === 'temp';
 
         const panel = document.createElement('div');
         panel.className = 'os-detail';
@@ -32,7 +33,7 @@ const OrderDetail = {
                     ${['天', '次', '小时', '分钟'].map(u => `<option value="${u}" ${u === dur.unit ? 'selected' : ''}>${u}</option>`).join('')}
                 </select>
             </div>
-            <div class="osd-row"><label>执行时间</label><input type="text" id="osd-freqdetail" class="osd-input" value="${Format.escape(o.freq_detail || '')}" placeholder="如 07-16 (按频次自动生成, 可修改)"></div>
+            <div class="osd-row"><label>执行时间</label><input type="text" id="osd-freqdetail" class="osd-input" value="${isTemp ? '' : Format.escape(o.freq_detail || '')}" placeholder="${isTemp ? '临时医嘱无执行时间' : '如 07-16 (按频次自动生成, 可修改)'}" ${isTemp ? 'disabled' : ''}></div>
             <div class="osd-row"><label>计价</label>
                 <span class="osd-price">${flags.filter(Boolean).length ? '特殊计价' : '正常计价'}</span>
                 <span class="osd-flags">${flagBox('径外')}${flagBox('自费')}${flagBox('不计价')}${flagBox('预防')}</span>

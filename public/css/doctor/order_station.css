@@ -130,6 +130,9 @@
 .os-cell-select:focus,
 .os-cell-input:focus { outline: none; box-shadow: 0 0 0 2px rgba(26, 163, 163, 0.18); }
 
+/* 临时医嘱频次/执行时间禁用态 */
+.os-cell-disabled { background: #fafafa; color: #c0c4cc; cursor: not-allowed; }
+
 /* 长/临 徽章 */
 .os-period {
     display: inline-flex;
