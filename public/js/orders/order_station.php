@@ -162,14 +162,18 @@ var OrderStation = {
             const r = await AjaxLoader.api('orders/list?' + qs.toString(), { silent: true });
             this.groups = r.data || [];
             this.selected.clear();
+            // 保留当前滚动位置 (仅新开医嘱才定位滚动, 其余操作不跳动)
+            const wrap = document.querySelector('.os-table-wrap');
+            const scrollTop = wrap ? wrap.scrollTop : 0;
             this.render();
+            if (wrap) wrap.scrollTop = scrollTop;
             if (focusId) this.focusOrder(focusId);
             if (feedback) Dom.toast('已刷新 ' + Format.shortTime(new Date()) + ' · 共 ' + this.groups.length + ' 组医嘱', 'success');
         } catch (e) { /* 已提示 */ }
     },
 
     /**
-     * 定位并闪烁新开/变更的医嘱 (整组高亮)
+     * 定位并闪烁新开医嘱 (整组高亮, 仅用于新开)
      */
     focusOrder(orderId) {
         const tbody = document.getElementById('os-tbody');
@@ -248,7 +252,7 @@ var OrderStation = {
         try {
             await Promise.all(ids.map(id => AjaxLoader.api('orders/update', { method: 'POST', data: { id: id, order_period: next } })));
             Dom.toast('已切换为' + (next === 'temp' ? '临时' : '长期') + '医嘱', 'success');
-            this.refresh(false, rootId);
+            this.refresh();
         } catch (e) { /* 已提示 */ }
     },
 
@@ -293,7 +297,7 @@ var OrderStation = {
             try {
                 await AjaxLoader.api('orders/update', { method: 'POST', data: Object.assign({ id: rootId }, fields) });
                 Dom.toast('已实时保存', 'success');
-                this.refresh(false, rootId);
+                this.refresh();
             } catch (e) { td.innerHTML = orig; }
         };
 

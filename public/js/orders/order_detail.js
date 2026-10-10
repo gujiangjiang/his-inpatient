@@ -115,7 +115,7 @@ const OrderDetail = {
             await AjaxLoader.api('orders/update', { method: 'POST', data: data });
             Dom.toast('已实时保存', 'success');
             this.close();
-            OrderStation.refresh(false, this.rootId);
+            OrderStation.refresh();
         } catch (e) { /* 已提示 */ }
     },
 

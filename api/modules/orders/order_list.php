@@ -60,7 +60,8 @@ if ($user['role'] === 'nurse') {
     }
 }
 
-$sql .= " ORDER BY o.start_date ASC, o.id ASC";
+// 固定按开单顺序 (id 升序) 展示; 修改开始时间不影响顺序 (护士执行端可另按时间排序)
+$sql .= " ORDER BY o.id ASC";
 
 $offset = ($page - 1) * $perPage;
 $sqlCount = "SELECT COUNT(*) AS total FROM (" . $sql . ") t";
