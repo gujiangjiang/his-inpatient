@@ -53,16 +53,21 @@ const OrderDetail = {
         panel.querySelector('#osd-save').addEventListener('click', () => this.save());
         panel.querySelector('#osd-more').addEventListener('click', (e) => {
             e.stopPropagation();
-            const root = this.rootId;
-            this.close();
-            OrderActions.show(root, e);
+            // 悬浮框保持显示, 菜单在其「更多」位置弹出, 与悬浮框共存亡
+            OrderActions.show(this.rootId, e);
         });
 
         // 高亮该组医嘱行
         document.querySelectorAll('#os-tbody tr[data-root="' + rootId + '"]').forEach(tr => tr.classList.add('os-row-selected'));
 
         setTimeout(() => {
-            this.outsideHandler = (e) => { if (this.panel && !this.panel.contains(e.target)) this.close(); };
+            this.outsideHandler = (e) => {
+                if (!this.panel) return;
+                if (this.panel.contains(e.target)) return;
+                // 「更多」菜单属于悬浮框的一部分, 点击菜单不关闭悬浮框
+                if (typeof OrderActions !== 'undefined' && OrderActions.popup && OrderActions.popup.contains(e.target)) return;
+                this.close();
+            };
             this.escHandler = (e) => { if (e.key === 'Escape') this.close(); };
             document.addEventListener('mousedown', this.outsideHandler);
             document.addEventListener('keydown', this.escHandler);
@@ -127,6 +132,8 @@ const OrderDetail = {
         this.escHandler = null;
         if (this.panel && this.panel.parentNode) this.panel.parentNode.removeChild(this.panel);
         this.panel = null;
+        // 悬浮框消失时, 其弹出的「更多」菜单一并关闭
+        if (typeof OrderActions !== 'undefined') OrderActions.closeMenu();
         document.querySelectorAll('#os-tbody tr.os-row-selected').forEach(tr => tr.classList.remove('os-row-selected'));
     }
 };

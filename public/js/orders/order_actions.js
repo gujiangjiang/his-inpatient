@@ -34,12 +34,20 @@ const OrderActions = {
         el.style.cssText = `position:fixed;left:${event.clientX}px;top:${event.clientY}px;z-index:2100`;
         el.innerHTML = items.map((it, i) => `<div class="os-ctx-item" data-idx="${i}">${it[0]}</div>`).join('');
         document.body.appendChild(el);
+        // 视口内定位, 防止菜单溢出浏览器
+        const rect = el.getBoundingClientRect();
+        const x = Math.max(8, Math.min(event.clientX, window.innerWidth - rect.width - 8));
+        const y = Math.max(8, Math.min(event.clientY, window.innerHeight - rect.height - 8));
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
         this.popup = el;
         el.querySelectorAll('.os-ctx-item').forEach(item => {
             item.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const fn = items[parseInt(item.dataset.idx, 10)][1];
                 this.closeMenu();
+                // 菜单与医嘱悬浮详情框联动: 选择操作后一起关闭
+                if (window.OrderDetail && OrderDetail.panel) OrderDetail.close();
                 fn();
             });
         });
