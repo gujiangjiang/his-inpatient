@@ -26,7 +26,10 @@
     color: #fff;
     font-size: 13px;
     font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s;
 }
+.pib-bed:hover { filter: brightness(1.15); box-shadow: 0 0 0 3px rgba(20,154,154,0.18); }
 .pib-bed.level-special { background: #c0392b; }
 .pib-bed.level-1 { background: #f56c6c; }
 .pib-bed.level-2 { background: #409eff; }

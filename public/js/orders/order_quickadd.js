@@ -192,7 +192,7 @@ const OrderQuickAdd = {
 
     async addToOrders(item) {
         try {
-            await AjaxLoader.api('orders/save', { method: 'POST', data: {
+            const r = await AjaxLoader.api('orders/save', { method: 'POST', data: {
                 patient_id: OrderStation.patientId,
                 order_period: this.period,
                 category: item.category,
@@ -200,7 +200,8 @@ const OrderQuickAdd = {
                 submit: 0
             }});
             Dom.toast('已加入: ' + item.content, 'success');
-            OrderStation.refresh();
+            const newId = r.data && r.data.id ? Number(r.data.id) : null;
+            OrderStation.refresh(false, newId);
             const input = this.input();
             if (input) { input.value = ''; input.focus(); }
             this.search('');

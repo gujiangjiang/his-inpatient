@@ -117,14 +117,13 @@ require_once __DIR__ . '/icons/icon.php';
 
         <!-- 患者信息栏 (选择患者后显示, 顶部栏下横向条) -->
         <div id="patient-info-bar" class="patient-info-bar" style="display:none">
-            <span class="pib-bed level-3" id="pib-bed">-</span>
+            <span class="pib-bed level-3" id="pib-bed" title="返回患者列表" onclick="navigateTo('patients','patient_list')">-</span>
             <span class="pib-name" id="pib-name">-</span>
             <span class="pib-sub" id="pib-sub">-</span>
             <span class="pib-item"><b>入院</b><i id="pib-days">-</i></span>
             <span class="pib-item"><b>费用</b><i class="pib-fee" id="pib-fee">¥ --</i></span>
             <span class="pib-item pib-diagnosis"><b>诊断</b><i id="pib-diagnosis">-</i></span>
             <span class="pib-actions">
-                <button type="button" class="btn btn-small" onclick="navigateTo('patients','patient_list')">患者列表</button>
                 <button type="button" class="btn btn-small" id="pib-switch-btn" onclick="PatientQuickSwitch.open(event)">切换患者</button>
             </span>
         </div>

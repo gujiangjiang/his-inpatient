@@ -142,21 +142,21 @@
 .os-tag-bujijia { color: #909399; border: 1px solid #c0c4cc; background: #f4f4f5; }
 .os-tag-yufang { color: #2fb344; border: 1px solid #2fb344; }
 
-/* 状态态 */
-.os-status-chip {
-    display: inline-block;
-    font-size: 11px;
-    padding: 0 6px;
-    border-radius: 8px;
-    margin-right: 6px;
-    vertical-align: 1px;
+/* 医嘱状态文字配色: 已核对(默认黑) / 待核对黄 / 草稿蓝 / 作废红 / 停止灰 */
+.os-txt-draft > td { color: #409eff; }
+.os-txt-pending > td { color: #e6a23c; }
+.os-txt-invalid > td { color: #f56c6c; text-decoration: line-through; }
+.os-txt-stopped > td { color: #909399; }
+.os-txt-stopped .os-period,
+.os-txt-invalid .os-period { opacity: .6; }
+
+/* 新开医嘱定位闪烁 (整组) */
+.os-row-flash td { animation: osFlash 1.8s ease-out; }
+@keyframes osFlash {
+    0% { background: #c9ecec; }
+    60% { background: #e6f7f7; }
+    100% { background: transparent; }
 }
-.os-status-draft { background: #ecf5ff; color: #409eff; border: 1px solid #b3d8ff; }
-.os-status-pending { background: #fdf6ec; color: #e6a23c; border: 1px solid #f5dab1; }
-.os-status-stopped { background: #f4f4f5; color: #909399; border: 1px solid #d3d4d6; }
-.os-status-invalid { background: #fef0f0; color: #f56c6c; border: 1px solid #fbc4c4; text-decoration: line-through; }
-.os-row-dim td { color: #a8abb2; }
-.os-row-dim .os-period { opacity: .5; }
 
 /* 成组连接括号: } 形 (随组高自动拉伸, 比竖线直观) */
 .os-usage-cell { color: #303133; }

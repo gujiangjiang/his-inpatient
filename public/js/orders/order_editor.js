@@ -169,7 +169,7 @@ const OrderEditor = {
             if (this.editId) {
                 await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: [this.editId] } });
             }
-            await AjaxLoader.api('orders/save', { method: 'POST', data: {
+            const r = await AjaxLoader.api('orders/save', { method: 'POST', data: {
                 patient_id: this.patientId,
                 order_period: data.period,
                 category: this.category,
@@ -180,7 +180,10 @@ const OrderEditor = {
             }});
             Dom.toast(submit ? '医嘱已提交' : '已存为草稿', 'success');
             this.close();
-            if (typeof OrderStation !== 'undefined') OrderStation.refresh();
+            if (typeof OrderStation !== 'undefined') {
+                const newId = r.data && r.data.id ? Number(r.data.id) : null;
+                OrderStation.refresh(false, newId);
+            }
         } catch (e) { /* AjaxLoader 已提示 */ }
     },
 

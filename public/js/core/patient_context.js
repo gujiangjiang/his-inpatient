@@ -97,11 +97,23 @@ window.refreshWorkstationLayout = async function() {
         return;
     }
 
-    // 工作站未选患者: 侧边栏默认隐藏; 卡片墙等浏览页显示内容, 其余显示占位图
+    // 浏览页 (患者卡片墙/床位): 侧边栏始终隐藏, 数据区常显
+    if (browsePage) {
+        sidebar.style.display = 'none';
+        placeholder.style.display = 'none';
+        content.style.display = 'block';
+        if (infoBar) {
+            infoBar.style.display = ctx ? 'flex' : 'none';
+            if (ctx) PatientContext.fillInfoBar(ctx);
+        }
+        return;
+    }
+
+    // 工作站未选患者: 侧边栏隐藏, 显示占位图
     if (!ctx) {
         sidebar.style.display = 'none';
-        placeholder.style.display = browsePage ? 'none' : 'flex';
-        content.style.display = browsePage ? 'block' : 'none';
+        placeholder.style.display = 'flex';
+        content.style.display = 'none';
         if (infoBar) infoBar.style.display = 'none';
         return;
     }

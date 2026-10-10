@@ -41,10 +41,10 @@
         <span class="os-filter-group">
             状态
             <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="" checked onchange="OrderStation.setFilter('status', '')">全部</label>
-            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="draft,pending" onchange="OrderStation.setFilter('status', 'draft,pending')">医嘱本</label>
+            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="draft,pending,verified,executing,completed,stopped" onchange="OrderStation.setFilter('status', 'draft,pending,verified,executing,completed,stopped')">医嘱本</label>
             <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="invalid" onchange="OrderStation.setFilter('status', 'invalid')">作废</label>
             <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="stopped" onchange="OrderStation.setFilter('status', 'stopped')">停止</label>
-            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="pending,verified,executing" onchange="OrderStation.setFilter('status', 'pending,verified,executing')">待完成</label>
+            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="draft" onchange="OrderStation.setFilter('status', 'draft')">待完成</label>
         </span>
     </div>
 
@@ -150,7 +150,7 @@ var OrderStation = {
         this.refresh();
     },
 
-    async refresh(feedback) {
+    async refresh(feedback, focusId) {
         if (!this.patientId) return;
         const qs = new URLSearchParams({ patient_id: this.patientId, per_page: 500 });
         if (this.filters.period) qs.set('order_period', this.filters.period);
@@ -163,8 +163,26 @@ var OrderStation = {
             this.selected.clear();
             this.editing = null;
             this.render();
+            if (focusId) this.focusOrder(focusId);
             if (feedback) Dom.toast('已刷新 ' + Format.shortTime(new Date()) + ' · 共 ' + this.groups.length + ' 组医嘱', 'success');
         } catch (e) { /* 已提示 */ }
+    },
+
+    /**
+     * 定位并闪烁新开/变更的医嘱 (整组高亮)
+     */
+    focusOrder(orderId) {
+        const tbody = document.getElementById('os-tbody');
+        if (!tbody) return;
+        const tr = tbody.querySelector('tr[data-oid="' + orderId + '"]');
+        if (!tr) return;
+        tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        const rootId = tr.dataset.root;
+        const rows = rootId ? tbody.querySelectorAll('tr[data-root="' + rootId + '"]') : [tr];
+        rows.forEach(r => r.classList.add('os-row-flash'));
+        setTimeout(() => {
+            tbody.querySelectorAll('tr.os-row-flash').forEach(r => r.classList.remove('os-row-flash'));
+        }, 1800);
     },
 
     render() {
@@ -191,7 +209,6 @@ var OrderStation = {
     renderGroup(root) {
         const rows = [root].concat(root.sub_orders || []);
         const size = rows.length;
-        const dim = ['invalid', 'stopped'].includes(root.status) ? ' os-row-dim' : '';
         const editable = root.status === 'draft';
         let html = '';
         let drawer = '';
@@ -199,15 +216,16 @@ var OrderStation = {
             const first = i === 0;
             const span = first ? ` rowspan="${size}"` : '';
             const editing = this.editing && this.editing.orderId === o.id;
+            const statusCls = { draft: ' os-txt-draft', pending: ' os-txt-pending', invalid: ' os-txt-invalid', stopped: ' os-txt-stopped' }[o.status] || '';
             const clickable = editable ? ` onclick="OrderStation.toggleEditRow(${o.id}, ${root.id}, event)"` : '';
-            html += `<tr class="${first ? 'os-group-start' : ''}${dim}${editable ? ' os-row-editable' : ''}${editing ? ' os-row-editing' : ''}">`;
+            html += `<tr data-oid="${o.id}" data-root="${root.id}" class="${first ? 'os-group-start' : ''}${statusCls}${editable ? ' os-row-editable' : ''}${editing ? ' os-row-editing' : ''}">`;
             if (first) {
                 html += `<td class="os-col-check"${span}><input type="checkbox" ${this.selected.has(root.id) ? 'checked' : ''} onchange="OrderStation.toggleSelect(${root.id}, this.checked)"></td>`;
                 html += `<td class="os-col-period"${span}>${this.periodBadge(root.order_period)}</td>`;
                 // 时间列与组同高合并居中 (子医嘱不再错位)
                 html += `<td class="os-col-time"${span}>${this.timeText(root)}</td>`;
             }
-            html += `<td${clickable} title="${editable ? '点击修改' : ''}">${this.statusChip(o)}${Format.escape(o.content)}${this.tags(o.billing_flags)}</td>`;
+            html += `<td${clickable} title="${editable ? '点击修改' : ''}">${Format.escape(o.content)}${this.tags(o.billing_flags)}</td>`;
             html += `<td class="os-col-dosage"${clickable}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
@@ -292,13 +310,6 @@ var OrderStation = {
         return period === 'temp'
             ? '<span class="os-period os-period-temp">临</span>'
             : '<span class="os-period os-period-long">长</span>';
-    },
-
-    statusChip(o) {
-        if (['draft', 'pending', 'stopped', 'invalid'].includes(o.status)) {
-            return `<span class="os-status-chip os-status-${o.status}">${Format.orderStatus(o.status)}</span>`;
-        }
-        return '';
     },
 
     tags(flags) {
