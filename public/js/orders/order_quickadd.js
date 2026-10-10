@@ -192,10 +192,8 @@ const OrderQuickAdd = {
             }});
             Dom.toast('已实时保存草稿: ' + item.content, 'success');
             const newId = r.data && r.data.id ? Number(r.data.id) : null;
+            this.close(); // 添加成功后自动隐藏悬浮窗
             OrderStation.refresh(false, newId);
-            const input = this.input();
-            if (input) { input.value = ''; input.focus(); }
-            this.search('');
         } catch (e) { /* 已提示 */ }
     },
 
