@@ -8,7 +8,7 @@
 3. **每次代码修改/优化完成后，必须执行 `npm run server`（或 `bash tools/server.sh`）**：检测 9095 端口 PHP 服务器，不存在则自动启动，确保修改后服务可用
 4. README 功能/目录/运行方式变化需同步更新
 5. 提交规范（Conventional Commits + 中文）：`<type>: <中文简述>`，type ∈ feat/fix/docs/style/refactor/perf/chore；空一行后附详细正文
-6. **一处改动 = 一次提交**：改完一处立即 `git add -A && git commit`
+6. **一处改动 = 一次提交, 且每个小的优化/修复必须单独 commit**：改完一处立即 `git add -A && git commit`; 严禁把多个不相关的修复/优化捆绑在一次提交里, 便于维护与问题排查 (提交信息按 Conventional Commits + 中文)
 7. 大重构提升次版本（0.6.x → 0.7.0）
 8. **禁止提交运行时数据**：`data/`、`public/uploads/`、`.vly-run/` 在 .gitignore
 
