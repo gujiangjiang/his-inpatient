@@ -10,7 +10,7 @@
         <span class="os-sep"></span>
         <button type="button" class="os-tool" onclick="OrderStation.openSetPicker()">路径/组套</button>
         <button type="button" class="os-tool" onclick="OrderStation.toggleAssist()">辅助决策</button>
-        <button type="button" class="os-tool" onclick="OrderStation.batchDelete()">批量删除</button>
+        <button type="button" class="os-tool" onclick="OrderActions.showQuickActions(event)">快速操作</button>
         <span id="os-selected-count" class="os-selected-count"></span>
     </div>
 

@@ -106,6 +106,54 @@ const OrderActions = {
         ]);
     },
 
+    /**
+     * 快速操作: 批量停止 / 批量复制 / 批量删除 (工具栏下拉)
+     */
+    showQuickActions(event) {
+        this.openMenu(event, [
+            ['批量停止', () => this.batchStop()],
+            ['批量复制', () => this.batchCopy()],
+            ['批量删除', () => this.batchDelete()],
+        ]);
+    },
+
+    async batchStop() {
+        const roots = OrderStation.selectedRoots();
+        if (!roots.length) { Dom.toast('请先勾选医嘱', 'error'); return; }
+        const stoppable = roots.filter(r => r.order_period === 'long' && ['pending', 'verified', 'executing'].includes(r.status));
+        if (!stoppable.length) { Dom.toast('所选医嘱中没有可停止的长期医嘱', 'error'); return; }
+        Dom.modal('批量停止', `<p>确认批量停止 ${stoppable.length} 组长期医嘱？</p>`, [
+            { text: '确认停止', type: 'danger', onclick: async () => {
+                let ok = 0;
+                for (const r of stoppable) {
+                    try {
+                        await AjaxLoader.api('orders/stop', { method: 'POST', data: { id: r.id } });
+                        ok++;
+                    } catch (e) { /* 继续 */ }
+                }
+                Dom.toast('已停止 ' + ok + ' 组长期医嘱', 'success');
+                OrderStation.refresh();
+            } },
+            { text: '取消', type: 'default' }
+        ]);
+    },
+
+    async batchCopy() {
+        const roots = OrderStation.selectedRoots();
+        if (!roots.length) { Dom.toast('请先勾选医嘱', 'error'); return; }
+        const copyable = roots.filter(r => r.status !== 'draft');
+        if (!copyable.length) { Dom.toast('草稿医嘱不可复制', 'error'); return; }
+        let ok = 0;
+        for (const r of copyable) {
+            try {
+                await AjaxLoader.api('orders/copy', { method: 'POST', data: { id: r.id } });
+                ok++;
+            } catch (e) { /* 继续 */ }
+        }
+        Dom.toast('已复制 ' + ok + ' 组为新草稿', 'success');
+        OrderStation.refresh();
+    },
+
     stop(root) {
         Dom.modal('停止医嘱', '<p>停止「' + Format.escape(root.content) + '」？</p>', [
             { text: '停止', type: 'danger', onclick: async () => {
