@@ -236,10 +236,9 @@ var OrderStation = {
                 const editUsage = editable ? ` onclick="OrderStation.editCell('usage', ${root.id}, event)" title="点击修改途径"` : '';
                 const editFreq = (editable && !isTemp) ? ` onclick="OrderStation.editCell('freq', ${root.id}, event)" title="点击修改频次"` : '';
                 const editDetail = (editable && !isTemp) ? ` onclick="OrderStation.editCell('detail', ${root.id}, event)" title="点击修改执行时间"` : '';
-                const tempCls = isTemp ? ' os-cell-disabled' : '';
                 html += `<td class="os-col-usage ${usageCls}"${span}${editUsage}>${this.usageText(root, o)}</td>`;
-                html += `<td class="os-col-freq${tempCls}"${span}${editFreq} title="${isTemp ? '临时医嘱无频次' : ''}">${Format.escape(root.freq_code || root.frequency || '')}</td>`;
-                html += `<td class="os-col-freqdetail${tempCls}"${span}${editDetail} title="${isTemp ? '临时医嘱无执行时间' : ''}">${Format.escape(root.freq_detail || '')}</td>`;
+                html += `<td class="os-col-freq"${span}${editFreq} title="${isTemp ? '临时医嘱无频次' : ''}">${Format.escape(root.freq_code || root.frequency || '')}</td>`;
+                html += `<td class="os-col-freqdetail"${span}${editDetail} title="${isTemp ? '临时医嘱无执行时间' : ''}">${Format.escape(root.freq_detail || '')}</td>`;
                 html += `<td class="os-col-doctor"${span}>${Format.escape(root.creator_name || '')}</td>`;
                 html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">${svgIcon('common/actions/more', 16)}</button></td>`;
             }
