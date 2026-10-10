@@ -20,6 +20,10 @@ const OrderDetail = {
         const flagBox = (v) => `<label class="osd-flag"><input type="checkbox" class="osd-flagbox" value="${v}" ${flags.includes(v) ? 'checked' : ''}>${v}</label>`;
         const dur = this.parseDuration(o.duration);
         const isTemp = o.order_period === 'temp';
+        const isMed = o.category === 'medication';
+        // 计价: 正常计价 / 不计价 / 不摆药 (不摆药仅药品, 护士摆药时跳过, 可直接执行)
+        const pricing = flags.includes('不计价') ? '不计价' : (flags.includes('不摆药') ? '不摆药' : '正常计价');
+        const pricingOpts = ['正常计价', '不计价'].concat(isMed ? ['不摆药'] : []);
 
         const panel = document.createElement('div');
         panel.className = 'os-detail';
@@ -35,11 +39,13 @@ const OrderDetail = {
             </div>
             <div class="osd-row"><label>执行时间</label><input type="text" id="osd-freqdetail" class="osd-input" value="${isTemp ? '' : Format.escape(o.freq_detail || '')}" placeholder="${isTemp ? '临时医嘱无执行时间' : '如 07-16 (按频次自动生成, 可修改)'}" ${isTemp ? 'disabled' : ''}></div>
             <div class="osd-row"><label>计价</label>
-                <span class="osd-price">${flags.filter(Boolean).length ? '特殊计价' : '正常计价'}</span>
-                <span class="osd-flags">${flagBox('径外')}${flagBox('自费')}${flagBox('不计价')}${flagBox('预防')}</span>
+                <select id="osd-pricing" class="osd-input osd-pricing">
+                    ${pricingOpts.map(p => `<option value="${p}" ${p === pricing ? 'selected' : ''}>${p}</option>`).join('')}
+                </select>
+                <span class="osd-flags">${flagBox('径外')}${flagBox('自费')}${flagBox('预防')}</span>
             </div>
             <div class="osd-actions">
-                <button type="button" class="btn btn-small btn-primary" id="osd-manual">药品说明书</button>
+                ${isMed ? '<button type="button" class="btn btn-small btn-primary" id="osd-manual">药品说明书</button>' : ''}
                 <button type="button" class="btn btn-small btn-primary" id="osd-priceitem">计价项目</button>
                 <button type="button" class="btn btn-small btn-primary" id="osd-save">保存</button>
                 <span class="osd-more" id="osd-more">更多</span>
@@ -48,7 +54,8 @@ const OrderDetail = {
         this.panel = panel;
         this.position(event);
 
-        panel.querySelector('#osd-manual').addEventListener('click', () => Dom.toast('药品说明书功能对接中', 'info'));
+        const manualBtn = panel.querySelector('#osd-manual');
+        if (manualBtn) manualBtn.addEventListener('click', () => Dom.toast('药品说明书功能对接中', 'info'));
         panel.querySelector('#osd-priceitem').addEventListener('click', () => Dom.toast('计价项目功能对接中', 'info'));
         panel.querySelector('#osd-save').addEventListener('click', () => this.save());
         panel.querySelector('#osd-more').addEventListener('click', (e) => {
@@ -109,13 +116,17 @@ const OrderDetail = {
         const start = p.querySelector('#osd-start').value.trim();
         const num = p.querySelector('#osd-duration').value.trim();
         const unit = p.querySelector('#osd-duration-unit').value;
+        // 计价: 正常计价 / 不计价 / 不摆药 + 附加标签
+        const pricing = p.querySelector('#osd-pricing').value;
+        const flagList = Array.from(p.querySelectorAll('.osd-flagbox:checked')).map(c => c.value);
+        if (pricing === '不计价' || pricing === '不摆药') flagList.push(pricing);
         const data = {
             id: this.orderId,
             start_date: start ? (start.length === 16 ? start + ':00' : start) : (this.order.start_date || ''),
             notes: p.querySelector('#osd-notes').value.trim(),
             duration: num ? (num + unit) : '',
-            freq_detail: p.querySelector('#osd-freqdetail').value.trim(),
-            billing_flags: Array.from(p.querySelectorAll('.osd-flagbox:checked')).map(c => c.value).join(',')
+            freq_detail: p.querySelector('#osd-freqdetail').disabled ? (this.order.freq_detail || '') : p.querySelector('#osd-freqdetail').value.trim(),
+            billing_flags: flagList.join(',')
         };
         try {
             await AjaxLoader.api('orders/update', { method: 'POST', data: data });

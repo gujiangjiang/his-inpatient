@@ -472,7 +472,7 @@
 .osd-readonly { background: #f5f7fa; color: #909399; }
 .osd-duration-num { flex: 0 0 110px; }
 .osd-duration-unit { flex: 0 0 80px; }
-.osd-price { font-size: 13px; color: #303133; width: 76px; flex-shrink: 0; }
+.osd-pricing { flex: 0 0 110px; }
 .osd-flags { display: inline-flex; gap: 10px; font-size: 12px; color: #606266; }
 .osd-flag { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; }
 .osd-flag input { accent-color: #1aa3a3; }

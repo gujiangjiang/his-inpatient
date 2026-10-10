@@ -1,6 +1,6 @@
 <?php
 // api/config.php
-define('APP_VERSION', '0.13.19');
+define('APP_VERSION', '0.13.20');
 define('BASE_DIR', dirname(__DIR__));
 define('DATA_DIR', BASE_DIR . '/data');
 define('DB_PATH', DATA_DIR . '/hospital.sqlite');
