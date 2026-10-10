@@ -52,7 +52,7 @@
         <table class="os-table">
             <colgroup>
                 <col class="os-col-check"><col class="os-col-period"><col class="os-col-time">
-                <col><col class="os-col-dosage"><col class="os-col-usage">
+                <col><col class="os-col-dosage"><col class="os-col-usage"><col class="os-col-freq"><col class="os-col-freqdetail">
                 <col class="os-col-doctor"><col class="os-col-op">
             </colgroup>
             <thead>
@@ -62,7 +62,9 @@
                     <th>开始时间</th>
                     <th>医嘱内容</th>
                     <th>剂量</th>
-                    <th></th>
+                    <th>途径</th>
+                    <th>频次</th>
+                    <th>执行时间</th>
                     <th>医生</th>
                     <th></th>
                 </tr>
@@ -229,7 +231,12 @@ var OrderStation = {
             html += `<td class="os-col-dosage"${clickable}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
-                html += `<td class="os-col-usage ${usageCls}"${span}>${this.usageText(root, o)}</td>`;
+                const editUsage = editable ? ` onclick="OrderStation.editCell('usage', ${root.id}, event)" title="点击修改途径"` : '';
+                const editFreq = editable ? ` onclick="OrderStation.editCell('freq', ${root.id}, event)" title="点击修改频次"` : '';
+                const editDetail = editable ? ` onclick="OrderStation.editCell('detail', ${root.id}, event)" title="点击修改执行时间"` : '';
+                html += `<td class="os-col-usage ${usageCls}"${span}${editUsage}>${this.usageText(root, o)}</td>`;
+                html += `<td class="os-col-freq"${span}${editFreq}>${Format.escape(root.freq_code || root.frequency || '')}</td>`;
+                html += `<td class="os-col-freqdetail"${span}${editDetail}>${Format.escape(root.freq_detail || '')}</td>`;
                 html += `<td class="os-col-doctor"${span}>${Format.escape(root.creator_name || '')}</td>`;
                 html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">${svgIcon('common/actions/more', 16)}</button></td>`;
             }
@@ -247,7 +254,7 @@ var OrderStation = {
         const usageOpts = usages.map(u => `<option value="${u}" ${u === o.usage_name ? 'selected' : ''}>${u}</option>`).join('');
         const flags = (o.billing_flags || '').split(',');
         const flagBox = (v) => `<label><input type="checkbox" class="os-edit-flag" value="${v}" ${flags.includes(v) ? 'checked' : ''}>${v}</label>`;
-        return `<tr class="os-edit-tr"><td colspan="8">
+        return `<tr class="os-edit-tr"><td colspan="10">
             <div class="os-edit-form" data-id="${o.id}">
                 <label>内容 <input class="os-edit-content" value="${Format.escape(o.content)}"></label>
                 <label>剂量 <input class="os-edit-w os-edit-dosage" value="${Format.escape(o.dosage || '')}"></label>
@@ -340,14 +347,86 @@ var OrderStation = {
     usageText(root, o) {
         const usage = o.usage_name || root.usage_name || '';
         const rate = o.usage_rate || root.usage_rate || '';
-        const freq = o.freq_code || o.frequency || '';
-        const detail = o.freq_detail || '';
-        let parts = [];
+        const parts = [];
         if (usage) parts.push(Format.escape(usage));
         if (rate) parts.push(Format.escape(rate));
-        let text = `<span class="os-usage-text">${parts.join(' ')}</span>`;
-        if (freq || detail) text += ` <span class="os-usage-rate">${Format.escape(freq)} ${Format.escape(detail)}</span>`;
-        return text;
+        return `<span class="os-usage-text">${parts.join(' ')}</span>`;
+    },
+
+    /** 频次对应的默认执行时间 (自动生成, 可手动修改) */
+    FREQ_DETAILS: { qd: '07', bid: '07-16', tid: '07-11-16', qid: '07-11-16-21', qn: '20' },
+
+    autoFreqDetail(freq) {
+        return this.FREQ_DETAILS[freq] || '';
+    },
+
+    /**
+     * 行内编辑途径/频次/执行时间 (仅草稿, 变更即实时保存)
+     */
+    editCell(kind, rootId, event) {
+        if (event) event.stopPropagation();
+        const td = event && event.currentTarget ? event.currentTarget : null;
+        if (!td || td.querySelector('select,input')) return;
+        const root = this.groups.find(g => g.id == rootId);
+        if (!root || root.status !== 'draft') return;
+        const orig = td.innerHTML;
+        let done = false;
+        const restore = () => { if (!done) { done = true; td.innerHTML = orig; } };
+        const commit = async (fields) => {
+            done = true;
+            try {
+                await AjaxLoader.api('orders/update', { method: 'POST', data: Object.assign({ id: rootId }, fields) });
+                Dom.toast('已实时保存', 'success');
+                this.refresh(false, rootId);
+            } catch (e) { td.innerHTML = orig; }
+        };
+
+        if (kind === 'usage' || kind === 'freq') {
+            const isUsage = kind === 'usage';
+            const freqs = (typeof OrderEditor !== 'undefined') ? OrderEditor.FREQS : [['', '无']];
+            const values = isUsage
+                ? ['', '静脉输液', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护']
+                : freqs.map(f => f[0]);
+            const labels = isUsage ? values : freqs.map(f => f[1]);
+            const current = isUsage ? (root.usage_name || '') : (root.freq_code || root.frequency || '');
+            td.innerHTML = '<select class="os-cell-select">' + values.map((v, i) =>
+                `<option value="${v}" ${v === current ? 'selected' : ''}>${labels[i] || v || '-'}</option>`).join('') + '</select>';
+            const sel = td.querySelector('select');
+            sel.focus();
+            sel.addEventListener('change', () => {
+                if (isUsage) {
+                    commit({ usage_name: sel.value });
+                } else {
+                    const fields = { freq_code: sel.value };
+                    const auto = this.autoFreqDetail(sel.value);
+                    if (auto) fields.freq_detail = auto;
+                    commit(fields);
+                }
+            });
+            sel.addEventListener('blur', () => setTimeout(restore, 150));
+            sel.addEventListener('keydown', e => { if (e.key === 'Escape') { done = true; td.innerHTML = orig; } });
+        } else {
+            td.innerHTML = `<input class="os-cell-input" value="${Format.escape(root.freq_detail || '')}" placeholder="如 07-16">`;
+            const input = td.querySelector('input');
+            input.focus();
+            input.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    done = true;
+                    if (input.value.trim() !== (root.freq_detail || '')) commit({ freq_detail: input.value.trim() });
+                    else restore();
+                } else if (e.key === 'Escape') {
+                    done = true;
+                    td.innerHTML = orig;
+                }
+            });
+            input.addEventListener('blur', () => setTimeout(() => {
+                if (done) return;
+                done = true;
+                if (input.value.trim() !== (root.freq_detail || '')) commit({ freq_detail: input.value.trim() });
+                else td.innerHTML = orig;
+            }, 150));
+        }
     },
 
     timeText(o) {

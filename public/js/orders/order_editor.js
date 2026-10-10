@@ -133,6 +133,15 @@ const OrderEditor = {
                 <td><button type="button" class="oe-del" onclick="OrderEditor.removeItem(${i})">${svgIcon('common/actions/close', 12)}</button></td>
             </tr>`;
         }).join('');
+        // 频次变更时自动生成执行时间 (若执行时间为空)
+        tbody.querySelectorAll('.oe-freq').forEach(sel => {
+            sel.addEventListener('change', () => {
+                const detail = tbody.querySelector('.oe-freq-detail[data-idx="' + sel.dataset.idx + '"]');
+                if (!detail || detail.value) return;
+                const auto = (typeof OrderStation !== 'undefined') ? OrderStation.autoFreqDetail(sel.value) : '';
+                if (auto) detail.value = auto;
+            });
+        });
     },
 
     collect() {

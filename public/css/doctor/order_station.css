@@ -107,11 +107,28 @@
 .os-col-check { width: 34px; }
 .os-col-period { width: 44px; text-align: center; }
 .os-col-time { width: 118px; }
-.os-col-dosage { width: 90px; }
-.os-col-usage { width: 190px; }
+.os-col-dosage { width: 84px; }
+.os-col-usage { width: 150px; }
+.os-col-freq { width: 64px; }
+.os-col-freqdetail { width: 110px; }
 .os-col-doctor { width: 70px; }
 .os-col-op { width: 40px; text-align: center; }
 .os-table th.os-col-period { text-align: center; }
+
+/* 行内单元格编辑 (途径/频次/执行时间, 变更即保存) */
+.os-cell-select,
+.os-cell-input {
+    width: 100%;
+    border: 1px solid #1aa3a3;
+    border-radius: 4px;
+    padding: 3px 4px;
+    font-size: 12px;
+    background: #fff;
+    color: #303133;
+    box-sizing: border-box;
+}
+.os-cell-select:focus,
+.os-cell-input:focus { outline: none; box-shadow: 0 0 0 2px rgba(26, 163, 163, 0.18); }
 
 /* 长/临 徽章 */
 .os-period {

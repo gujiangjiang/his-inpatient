@@ -172,6 +172,8 @@ const OrderQuickAdd = {
         const it = this.items[idx];
         if (!it) return;
         const isMed = it.result_type === 'medication';
+        const freqCode = isMed ? (it.default_freq || '') : (it.freq_code || '');
+        const auto = (typeof OrderStation !== 'undefined') ? OrderStation.autoFreqDetail(freqCode) : '';
         await this.addToOrders({
             content: isMed ? it.name : it.content,
             drug_id: isMed ? it.id : null,
@@ -179,8 +181,8 @@ const OrderQuickAdd = {
             dosage_unit: isMed ? (it.unit || '') : '',
             usage_name: isMed ? (it.default_route || '') : (it.usage_name || ''),
             usage_rate: isMed ? '' : (it.usage_rate || ''),
-            freq_code: isMed ? (it.default_freq || '') : (it.freq_code || ''),
-            freq_detail: isMed ? '' : (it.freq_detail || ''),
+            freq_code: freqCode,
+            freq_detail: (it.freq_detail || '') || auto,
             billing_flags: isMed ? '' : (it.billing_flags || ''),
             category: it.result_type
         });
