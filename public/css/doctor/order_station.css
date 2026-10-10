@@ -318,6 +318,9 @@
     margin-bottom: 6px;
 }
 .os-assist-line { line-height: 20px; }
+.os-assist-warn svg { vertical-align: -2px; margin-right: 2px; }
+.os-op-btn svg { display: block; margin: 0 auto; }
+.oe-del svg { vertical-align: -1px; }
 .os-assist-line b { color: #909399; font-weight: 400; margin-right: 6px; }
 .os-assist-tip { color: #909399; margin-top: 6px; }
 

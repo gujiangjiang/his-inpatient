@@ -103,10 +103,10 @@ var OrderStation = {
         const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
         let html = '';
         if (p.allergy_history) {
-            html += '<div class="os-assist-warn">⚠ 过敏史：' + Format.escape(p.allergy_history) + '</div>';
+            html += '<div class="os-assist-warn">' + Icons.warning(14) + ' 过敏史：' + Format.escape(p.allergy_history) + '</div>';
         }
         if (p.is_critical == 1) {
-            html += '<div class="os-assist-warn">⚠ 危重患者，开嘱请谨慎</div>';
+            html += '<div class="os-assist-warn">' + Icons.warning(14) + ' 危重患者，开嘱请谨慎</div>';
         }
         html += '<div class="os-assist-line"><b>诊断</b>' + Format.escape(p.admission_diagnosis || '-') + '</div>';
         html += '<div class="os-assist-line"><b>VTE</b>Caprini ' + Format.escape(p.vte_caprini || '未评') + ' · 出血 ' + Format.escape(p.vte_bleeding || '未评') + '</div>';
@@ -210,7 +210,7 @@ var OrderStation = {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
                 html += `<td class="os-col-usage ${usageCls}"${span}>${this.usageText(root, o)}</td>`;
                 html += `<td class="os-col-doctor"${span}>${Format.escape(root.creator_name || '')}</td>`;
-                html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">⋯</button></td>`;
+                html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">${Icons.more(16)}</button></td>`;
             }
             html += '</tr>';
             if (this.editing && this.editing.orderId === o.id) {

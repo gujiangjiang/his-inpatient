@@ -28,6 +28,8 @@
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 .hidden { display: none; }
+/* SVG 图标基线对齐 (全站禁 emoji, 统一自绘 SVG) */
+.svg-icon { vertical-align: -0.15em; flex-shrink: 0; }
 /* Components: buttons */
 .btn {
     display: inline-block;

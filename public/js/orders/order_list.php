@@ -160,7 +160,7 @@ function renderOrders() {
 
 function formatSubOrders(subs) {
     if (!subs || subs.length === 0) return '';
-    return subs.map(s => '<div style="padding-left:20px">→ ' + Format.escape(s.content) + ' <span class="badge ' + Format.orderStatusClass(s.status) + '">' + Format.orderStatus(s.status) + '</span></div>').join('');
+    return subs.map(s => '<div style="padding-left:20px">' + Icons.caretRight(10) + ' ' + Format.escape(s.content) + ' <span class="badge ' + Format.orderStatusClass(s.status) + '">' + Format.orderStatus(s.status) + '</span></div>').join('');
 }
 
 function showTab(tab) {

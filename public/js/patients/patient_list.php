@@ -7,7 +7,10 @@
                     <option value="">全部科室</option>
                 </select>
                 <span id="wall-title" class="wall-title"></span>
-                <button type="button" class="wall-clear" id="wall-clear" style="display:none" onclick="patients_wall_clear_filter()">✕ 返回全部</button>
+                <button type="button" class="wall-clear" id="wall-clear" style="display:none" onclick="patients_wall_clear_filter()">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5.5 5.5l13 13"/><path d="M18.5 5.5l-13 13"/></svg>
+                    返回全部
+                </button>
                 <label style="font-size:13px;color:#606266;display:flex;align-items:center;gap:4px;cursor:pointer">
                     <input type="checkbox" id="wall-compact" onchange="patients_wall_toggle()"> 小卡
                 </label>

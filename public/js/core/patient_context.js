@@ -33,11 +33,19 @@ const PatientContext = {
     },
 
     /**
-     * 清除/重置患者上下文
+     * 清除/重置患者上下文 (工作站模式下回到患者卡片墙)
      */
     clear() {
         sessionStorage.removeItem(this.key);
-        this._afterChange();
+        if (window.WorkstationMode === true) {
+            if (window.location.hash !== '#patients/patient_list') {
+                window.location.hash = 'patients/patient_list';
+            } else {
+                this._afterChange();
+            }
+        } else {
+            this._afterChange();
+        }
     },
 
     /**
@@ -55,7 +63,8 @@ const PatientContext = {
 
 /**
  * 全局: 根据患者上下文刷新工作站布局
- * 未选患者: 隐藏侧边栏/信息栏, 显示占位图; 已选患者: 反之, 并按需加载侧边栏
+ * - 浏览页 (患者卡片墙/床位): 无需患者上下文也可显示
+ * - 未选患者: 隐藏侧边栏/信息栏, 显示占位图; 已选患者: 反之, 并按需加载侧边栏
  */
 window.refreshWorkstationLayout = async function() {
     const isWorkstation = window.WorkstationMode === true;
@@ -66,15 +75,32 @@ window.refreshWorkstationLayout = async function() {
 
     if (!sidebar || !placeholder || !content) return;
 
-    if (!isWorkstation) {
+    const ctx = PatientContext.current();
+    const hash = window.location.hash.replace('#', '');
+    const browsePage = ['patients/patient_list', 'patients/beds'].includes(hash);
+
+    const loadSidebarIfEmpty = async () => {
+        if (sidebar.children.length === 0 && Auth.user) {
+            try {
+                const html = await fetch('/js/shared/sidebar_' + Auth.user.role + '.php').then(r => r.text());
+                sidebar.innerHTML = html;
+            } catch (e) {}
+        }
+    };
+
+    // 非工作站角色 或 浏览页 (卡片墙): 无需患者上下文即可显示主界面
+    if (!isWorkstation || browsePage) {
         sidebar.style.display = 'block';
         placeholder.style.display = 'none';
         content.style.display = 'block';
-        if (infoBar) infoBar.style.display = 'none';
+        if (infoBar) {
+            infoBar.style.display = ctx ? 'flex' : 'none';
+            if (ctx) PatientContext.fillInfoBar(ctx);
+        }
+        await loadSidebarIfEmpty();
         return;
     }
 
-    const ctx = PatientContext.current();
     if (ctx) {
         sidebar.style.display = 'block';
         placeholder.style.display = 'none';
@@ -83,12 +109,7 @@ window.refreshWorkstationLayout = async function() {
             infoBar.style.display = 'flex';
             PatientContext.fillInfoBar(ctx);
         }
-        if (sidebar.children.length === 0 && Auth.user) {
-            try {
-                const html = await fetch('/js/shared/sidebar_' + Auth.user.role + '.php').then(r => r.text());
-                sidebar.innerHTML = html;
-            } catch (e) {}
-        }
+        await loadSidebarIfEmpty();
     } else {
         sidebar.style.display = 'none';
         placeholder.style.display = 'flex';

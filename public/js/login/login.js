@@ -25,9 +25,13 @@ async function handleHashChange() {
     document.getElementById('main-app').style.display = 'flex';
     updateUserInfo();
 
-    // 工作站模式 (医生) 下, 患者上下文未锁定时停留在占位图
-    if (window.WorkstationMode === true && !PatientContext.isActive()) {
-        window.refreshWorkstationLayout();
+    const key = route.module + '/' + route.page;
+    const browsePages = ['patients/patient_list', 'patients/beds'];
+
+    // 工作站模式 (医生): 浏览页无需患者上下文; 其他页未选患者时跳回患者卡片墙
+    if (window.WorkstationMode === true && !PatientContext.isActive() && !browsePages.includes(key)) {
+        Dom.toast('请先在患者卡片墙选择患者', 'info');
+        window.location.hash = 'patients/patient_list';
         return;
     }
 
@@ -95,12 +99,16 @@ Auth.check({ silent: true }).then(loggedIn => {
         initWorkstation(role);
         const route = App.roleRoutes[role] || App.roleRoutes.admin;
 
-        // 医生工作站: 无患者上下文时进占位图, 不导航
+        // 医生工作站: 无患者上下文时进入患者卡片墙 (患者主页面)
         if (window.WorkstationMode === true && !PatientContext.isActive()) {
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             updateUserInfo();
-            window.refreshWorkstationLayout();
+            if (window.location.hash !== '#patients/patient_list') {
+                window.location.hash = 'patients/patient_list';
+            } else {
+                handleHashChange();
+            }
             return;
         }
 

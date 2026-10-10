@@ -39,7 +39,7 @@ const PatientSwitcher = {
      * 主管/科室/出院 → 写入筛选并跳转卡片墙
      */
     handleAction(action) {
-        const content = document.getElementById('switcher-tab-content');
+        const sub = document.getElementById('switcher-dept-sub');
         if (action === 'incoming') {
             this.closePanel();
             this.showIncomingModal();
@@ -50,9 +50,12 @@ const PatientSwitcher = {
             this.closePanel();
             this.goWall({ type: 'discharged' });
         } else if (action === 'dept') {
-            const show = content.style.display !== 'block';
-            content.style.display = show ? 'block' : 'none';
-            if (show) this.renderDeptList(content);
+            // 在「科室患者+」菜单项下方就地展开科室列表
+            const show = sub.style.display !== 'block';
+            sub.style.display = show ? 'block' : 'none';
+            const caret = document.getElementById('switcher-dept-caret');
+            if (caret) caret.classList.toggle('open', show);
+            if (show) this.renderDeptList(sub);
         } else if (action === 'toggle-size') {
             const compact = sessionStorage.getItem('his_wall_compact') === '1';
             sessionStorage.setItem('his_wall_compact', compact ? '0' : '1');
@@ -70,24 +73,24 @@ const PatientSwitcher = {
     },
 
     /**
-     * 科室患者+: 仅渲染授权科室列表 (不显示患者)
+     * 科室患者+: 仅渲染授权科室列表 (就地展开, 不显示患者)
      */
-    async renderDeptList(content) {
-        content.innerHTML = '<div class="switcher-loading">加载中...</div>';
+    async renderDeptList(sub) {
+        sub.innerHTML = '<div class="switcher-loading">加载中...</div>';
         try {
             const r = await AjaxLoader.api('doctors/departments', { silent: true });
             this.depts = r.data.departments || [];
             if (this.depts.length === 0) {
-                content.innerHTML = '<div class="switcher-empty">暂无授权科室</div>';
+                sub.innerHTML = '<div class="switcher-empty">暂无授权科室</div>';
                 return;
             }
-            let html = '<div class="switcher-menu-group-title">选择科室, 卡片墙查看患者</div>';
-            this.depts.forEach(d => {
-                html += `<div class="switcher-menu-item" onclick="PatientSwitcher.goDept(${d.id})"><span class="dept-caret">▸</span>${Format.escape(d.name)}</div>`;
-            });
-            content.innerHTML = html;
+            sub.innerHTML = this.depts.map(d =>
+                `<div class="switcher-menu-item switcher-dept-item" onclick="PatientSwitcher.goDept(${d.id})">
+                    ${Icons.caretRight(10)}${Format.escape(d.name)}
+                </div>`
+            ).join('');
         } catch (e) {
-            content.innerHTML = '<div class="switcher-empty">加载失败</div>';
+            sub.innerHTML = '<div class="switcher-empty">加载失败</div>';
         }
     },
 

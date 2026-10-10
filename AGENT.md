@@ -16,6 +16,10 @@
 - 单文件 ≤200 行，职责单一
 - 类名 PascalCase，文件名 snake_case
 - 公共字典统一维护（前端 `Format`、后端 helpers）
+- **全站禁止 emoji 图标**（如 🏥 🛠 ⚠ ✕ ⋯ ▾ ▸ 等），统一使用自绘 SVG：
+  - 名称类图标加入 `public/js/core/icons.js` 的 `Icons` 库（24×24 线稿风格，`stroke="currentColor"`，按需传 size）
+  - 静态 HTML 片段使用内联 SVG（属性一致：`fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"`）
+  - JS 动态渲染优先 `Icons.xxx(size)`；非图标语义的键盘按键提示（↑↓ Enter Esc）可用文本
 - 数据库迁移使用 PHP Migration 类 (`api/migrations/php/0xx_*.php`)
 - 接口与页面分离
 

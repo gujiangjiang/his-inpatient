@@ -40,7 +40,13 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
         <div class="login-deco login-deco-3"></div>
         <div class="login-form-wrapper">
             <div class="login-brand">
-                <div class="login-logo">医</div>
+                <div class="login-logo">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"
+                         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M4 21V7.5L12 3l8 4.5V21"/><path d="M2.5 21h19"/>
+                        <path d="M12 7.5v6"/><path d="M9 10.5h6"/>
+                    </svg>
+                </div>
                 <h1 class="login-title" id="login-title">住院一体化系统</h1>
                 <p class="login-subtitle">HOSPITAL INPATIENT INFORMATION SYSTEM</p>
             </div>
@@ -91,17 +97,19 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
                 <div id="patient-switcher" class="patient-switcher" style="display:none">
                     <div id="patient-switcher-trigger" class="patient-switcher-trigger">
                         <span id="current-patient-summary">请选择患者</span>
-                        <span class="switcher-arrow">▾</span>
+                        <svg class="switcher-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg>
                     </div>
                     <div id="patient-switcher-panel" class="patient-switcher-panel" style="display:none">
                         <div class="switcher-menu" id="switcher-menu">
                             <div class="switcher-menu-item" data-action="incoming">添加患者</div>
                             <div class="switcher-menu-item" data-action="mine">主管患者</div>
-                            <div class="switcher-menu-item" data-action="dept">科室患者+<span class="arrow">▸</span></div>
+                            <div class="switcher-menu-item" data-action="dept">科室患者+
+                                <svg class="arrow" id="switcher-dept-caret" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+                            </div>
+                            <div id="switcher-dept-sub" class="switcher-menu-sub" style="display:none"></div>
                             <div class="switcher-menu-item" data-action="toggle-size">大小卡切换</div>
                             <div class="switcher-menu-item" data-action="discharged">出院患者</div>
                         </div>
-                        <div id="switcher-tab-content" class="switcher-tab-content" style="display:none"></div>
                     </div>
                 </div>
             </div>
@@ -131,7 +139,14 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
             <!-- 未选患者占位 -->
             <div id="patient-placeholder" class="patient-placeholder">
                 <div class="placeholder-inner">
-                    <div class="placeholder-icon">🏥</div>
+                    <div class="placeholder-icon">
+                        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#c0c4cc" stroke-width="1.2"
+                             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 21V7.5L12 3l8 4.5V21"/><path d="M2.5 21h19"/>
+                            <path d="M12 7.5v6"/><path d="M9 10.5h6"/>
+                            <path d="M9 21v-5h6v5"/>
+                        </svg>
+                    </div>
                     <p class="placeholder-title">请先选择患者</p>
                     <p class="placeholder-hint">点击左上角「请选择患者」，从 添加/本人/科室 三个维度选择患者进入工作站</p>
                 </div>
@@ -144,6 +159,7 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 <script src="/lib/quill/quill.min.js"></script>
 <script src="/lib/html2pdf/html2pdf.bundle.min.js"></script>
 <script src="/js/core/app.js"></script>
+<script src="/js/core/icons.js"></script>
 <script src="/js/core/format.js"></script>
 <script src="/js/core/ajax.js"></script>
 <script src="/js/core/auth.js"></script>
