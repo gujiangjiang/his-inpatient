@@ -128,6 +128,12 @@
     background: #fff;
     padding: 20px;
 }
+/* 全屏工作页 (医嘱工作站/患者卡片墙): 去掉 main-content 四边留白 */
+.main-content:has(> .order-station),
+.main-content:has(> .wall-page) {
+    padding: 0;
+    overflow: hidden;
+}
 
 /* ===== 患者占位图 ===== */
 .patient-placeholder {
