@@ -8,7 +8,7 @@ $pdo = DB::getPDO();
 $status = Validator::get('status', 'active');
 $departmentId = Validator::get('department_id');
 
-$sql = "SELECT p.*, d.name AS department_name, w.name AS ward_name,
+$sql = "SELECT p.*, d.name AS department_name, d.risk_assessment, w.name AS ward_name,
                a.name AS attending_name, s.name AS senior_name
         FROM patients p
         LEFT JOIN departments d ON p.department_id = d.id

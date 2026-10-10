@@ -44,6 +44,8 @@ var _wallFilter = { type: 'active' };
 
 var _wallNursingText = { 'special': '特级护理', '1': '一级护理', '2': '二级护理', '3': '三级护理' };
 var _wallNursingRoman = { 'special': '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' };
+// 科室风险评估量表 (管理员-科室管理中配置; 护理端评估流程后续实现)
+var _wallRiskLabels = { caprini: 'Caprini', padua: 'Padua', cha2ds2: 'CHA₂DS₂', hasbled: 'HAS-BLED', none: 'VTE' };
 
 async function patients_patient_list_init() {
     document.getElementById('main-app').style.display = 'flex';
@@ -181,7 +183,8 @@ function patients_wall_render() {
         var days = patients_wall_days(p);
         var age = patients_wall_age(p);
         var ward = [p.department_name, p.ward_name].filter(Boolean).join('-');
-        var vte = patients_wall_vte('Caprini', p.vte_caprini) + ' ' + patients_wall_vte('出血', p.vte_bleeding);
+        var riskLabel = _wallRiskLabels[p.risk_assessment] || 'Caprini';
+        var vte = patients_wall_vte(riskLabel, p.vte_caprini) + ' ' + patients_wall_vte('出血', p.vte_bleeding);
         var cls = 'pw-card' + (p.is_critical == 1 ? ' critical' : '') + (p.allergy_history ? ' allergy' : '') + (p.status === 'discharged' ? ' discharged' : '');
         var admDate = p.admission_date ? String(p.admission_date).slice(0, 10) : '';
         return '<div class="' + cls + '" onclick="patients_wall_enter(' + p.id + ')" title="进入医嘱工作站">' +

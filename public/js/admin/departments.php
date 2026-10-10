@@ -6,7 +6,7 @@
 
 <div class="card">
     <table class="table">
-        <thead><tr><th>编码</th><th>名称</th><th>描述</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>编码</th><th>名称</th><th>描述</th><th>风险评估量表</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="dept-table-body"></tbody>
     </table>
 </div>
@@ -19,6 +19,8 @@ async function admin_departments_init() {
     loadDepartments();
 }
 
+var _RISK_LABELS = { caprini: 'Caprini (外科VTE)', padua: 'Padua (内科VTE)', cha2ds2: 'CHA₂DS₂-VASc', hasbled: 'HAS-BLED', none: '不启用' };
+
 async function loadDepartments() {
     const result = await AjaxLoader.api('admin/department-list', {silent:true});
     const tbody = document.getElementById('dept-table-body');
@@ -29,6 +31,7 @@ async function loadDepartments() {
             <td>${Format.escape(d.code)}</td>
             <td>${Format.escape(d.name)}</td>
             <td>${Format.escape(d.description||'')}</td>
+            <td>${_RISK_LABELS[d.risk_assessment] || _RISK_LABELS.caprini}</td>
             <td>${d.is_active ? '激活' : '禁用'}</td>
             <td><button class="btn btn-small" onclick="admin_departments_edit(${d.id})">编辑</button></td>
         `;
@@ -44,11 +47,13 @@ async function admin_departments_edit(id) {
 }
 
 function showDeptForm(dept) {
+    const riskOptions = Object.keys(_RISK_LABELS).map(v => ({ label: _RISK_LABELS[v], value: v }));
     const content = `
         <form id="dept-form">
             ${Dom.formField({name:'code',label:'编码',type:'text'}, dept.code||'')}
             ${Dom.formField({name:'name',label:'名称',type:'text'}, dept.name||'')}
             ${Dom.formField({name:'description',label:'描述',type:'textarea'}, dept.description||'')}
+            ${Dom.formField({name:'risk_assessment',label:'风险评估量表',type:'select',options:riskOptions}, dept.risk_assessment||'caprini')}
             ${Dom.formField({name:'is_active',label:'状态',type:'select',options:[{label:'激活',value:'1'},{label:'禁用',value:'0'}]}, dept.is_active ? '1' : '0')}
             <input type="hidden" name="id" value="${dept.id||''}">
         </form>
