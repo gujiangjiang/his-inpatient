@@ -224,8 +224,11 @@ var OrderStation = {
                 html += `<td class="os-col-time"${span}>${this.timeText(root)}</td>`;
             }
             // 仅医嘱内容文字可点击 (下划线提示), 其余为空白区域; 任意状态均可查看详情
-            const canGroup = editable && o.category === 'medication';
-            html += `<td><span class="os-content-link"${openLink}>${Format.escape(o.content)}</span>${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${canGroup ? `<span class="os-group-add" title="加入成组医嘱" onclick="OrderStation.addToGroup(${root.id}, event)">+</span>` : ''}${this.tags(o.billing_flags)}</td>`;
+            const canGroup = editable && first && root.category === 'medication';
+            const canQuickDel = editable;
+            const groupBtn = canGroup ? `<span class="os-row-act os-group-add" title="加入成组医嘱" onclick="OrderStation.addToGroup(${root.id}, event)">${svgIcon('common/actions/plus', 11)}</span>` : '';
+            const delBtn = canQuickDel ? `<span class="os-row-act os-group-del" title="${first ? '删除整组医嘱' : '删除本条子医嘱'}" onclick="OrderStation.quickDelete(${o.id}, ${root.id}, ${first ? 1 : 0}, event)">${svgIcon('common/actions/close', 10)}</span>` : '';
+            html += `<td><span class="os-content-link"${openLink}>${Format.escape(o.content)}</span>${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${groupBtn}${delBtn}${this.tags(o.billing_flags)}</td>`;
             html += `<td class="os-col-dosage">${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
@@ -420,6 +423,21 @@ var OrderStation = {
         try {
             await AjaxLoader.api('orders/group-add', { method: 'POST', data: { root_id: rootId, item: item } });
             Dom.toast('已加入成组: ' + item.content, 'success');
+            this.refresh();
+        } catch (e) { /* 已提示 */ }
+    },
+
+    /**
+     * 快捷删除 (内容右侧 x):
+     * - 主医嘱: 删除整组 (后端 batch-delete 级联子医嘱)
+     * - 子医嘱: 只删除该子医嘱, 不影响主医嘱与其他子医嘱
+     */
+    async quickDelete(orderId, rootId, isRootRow, event) {
+        if (event) event.stopPropagation();
+        const ids = isRootRow ? [rootId] : [orderId];
+        try {
+            await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids } });
+            Dom.toast(isRootRow ? '已删除整组医嘱' : '已删除子医嘱', 'success');
             this.refresh();
         } catch (e) { /* 已提示 */ }
     },

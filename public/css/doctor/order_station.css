@@ -511,8 +511,8 @@
 .os-content-link { cursor: pointer; }
 .os-content-link:hover { text-decoration: underline; text-underline-offset: 2px; }
 
-/* 成组: 草稿药品内容右侧 + (快速加组) */
-.os-group-add {
+/* 行内快捷操作按钮: 成组 + / 删除 x (圆形居中) */
+.os-row-act {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -522,13 +522,15 @@
     border-radius: 50%;
     border: 1px solid #1aa3a3;
     color: #1aa3a3;
-    font-size: 13px;
-    line-height: 1;
     cursor: pointer;
-    vertical-align: -2px;
+    vertical-align: -3px;
     user-select: none;
+    line-height: 1;
 }
-.os-group-add:hover { background: #1aa3a3; color: #fff; }
+.os-row-act svg { display: block; }
+.os-row-act:hover { background: #1aa3a3; color: #fff; }
+.os-group-del { border-color: #f56c6c; color: #f56c6c; }
+.os-group-del:hover { background: #f56c6c; color: #fff; }
 
 /* 非草稿详情框: 只读样式 */
 .osd-readonly-panel .osd-actions { opacity: 1; }
