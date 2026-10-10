@@ -18,6 +18,7 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
     return;
 }
 
+require_once __DIR__ . '/../api/config.php';
 require_once __DIR__ . '/icons/icon.php';
 ?><!DOCTYPE html>
 <html lang="zh-CN">
@@ -25,14 +26,14 @@ require_once __DIR__ . '/icons/icon.php';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HIS 住院一体化系统</title>
-    <link rel="stylesheet" href="/lib/quill/quill.snow.css">
-    <link rel="stylesheet" href="/css/core/reset.css">
-    <link rel="stylesheet" href="/css/core/layout.css">
-    <link rel="stylesheet" href="/css/login/login.css">
-    <link rel="stylesheet" href="/css/doctor/doctor.css">
-    <link rel="stylesheet" href="/css/doctor/order_station.css">
-    <link rel="stylesheet" href="/css/doctor/patient_wall.css">
-    <link rel="stylesheet" href="/css/emr/emr.css">
+    <link rel="stylesheet" href="/lib/quill/quill.snow.css?v=<?= APP_VERSION ?>">
+    <link rel="stylesheet" href="/css/core/reset.css?v=<?= APP_VERSION ?>">
+    <link rel="stylesheet" href="/css/core/layout.css?v=<?= APP_VERSION ?>">
+    <link rel="stylesheet" href="/css/login/login.css?v=<?= APP_VERSION ?>">
+    <link rel="stylesheet" href="/css/doctor/doctor.css?v=<?= APP_VERSION ?>">
+    <link rel="stylesheet" href="/css/doctor/order_station.css?v=<?= APP_VERSION ?>">
+    <link rel="stylesheet" href="/css/doctor/patient_wall.css?v=<?= APP_VERSION ?>">
+    <link rel="stylesheet" href="/css/emr/emr.css?v=<?= APP_VERSION ?>">
 </head>
 <body>
 <div id="app">
@@ -146,26 +147,26 @@ require_once __DIR__ . '/icons/icon.php';
 </div>
 <script src="/lib/quill/quill.min.js"></script>
 <script src="/lib/html2pdf/html2pdf.bundle.min.js"></script>
-<script src="/js/core/app.js"></script>
-<script src="/icons/js.php"></script>
-<script src="/js/core/format.js"></script>
-<script src="/js/core/ajax.js"></script>
-<script src="/js/core/auth.js"></script>
-<script src="/js/core/dom.js"></script>
-<script src="/js/core/components.js"></script>
-<script src="/js/core/rich_editor.js"></script>
-<script src="/js/core/template_picker.js"></script>
-<script src="/js/core/icd_search.js"></script>
-<script src="/js/core/pdf_generator.js"></script>
-<script src="/js/core/print_helper.js"></script>
-<script src="/js/core/patient_context.js"></script>
-<script src="/js/core/patient_switcher.js"></script>
-<script src="/js/core/patient_quick_switch.js"></script>
-<script src="/js/orders/drug_search.js"></script>
-<script src="/js/orders/order_editor.js"></script>
-<script src="/js/orders/order_quickadd.js"></script>
-<script src="/js/orders/order_actions.js"></script>
-<script src="/js/orders/order_sets.js"></script>
-<script src="/js/login/login.js"></script>
+<script src="/js/core/app.js?v=<?= APP_VERSION ?>"></script>
+<script src="/icons/js.php?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/format.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/ajax.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/auth.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/dom.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/components.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/rich_editor.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/template_picker.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/icd_search.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/pdf_generator.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/print_helper.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/patient_context.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/patient_switcher.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/core/patient_quick_switch.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/orders/drug_search.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/orders/order_editor.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/orders/order_quickadd.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/orders/order_actions.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/orders/order_sets.js?v=<?= APP_VERSION ?>"></script>
+<script src="/js/login/login.js?v=<?= APP_VERSION ?>"></script>
 </body>
 </html>

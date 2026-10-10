@@ -33,6 +33,8 @@ const AjaxLoader = {
                 'Content-Type': 'application/json; charset=utf-8',
             }
         };
+        // GET 请求禁用缓存, 避免读到陈旧数据
+        if (method === 'GET') opts.cache = 'no-store';
 
         // 添加 session_id header (令牌回退)
         const sessionId = sessionStorage.getItem('session_id');
@@ -73,9 +75,10 @@ const AjaxLoader = {
     },
 
     loadPage(module, page) {
-        const url = '/js/' + module + '/' + page + '.php';
+        const v = (typeof App !== 'undefined' && App.version) ? App.version : '';
+        const url = '/js/' + module + '/' + page + '.php' + (v ? '?v=' + v : '');
         this.initLoading();
-        return fetch(url)
+        return fetch(url, { cache: 'no-store' })
             .then(resp => {
                 if (!resp.ok) throw new Error('页面加载失败: ' + resp.status);
                 return resp.text();
