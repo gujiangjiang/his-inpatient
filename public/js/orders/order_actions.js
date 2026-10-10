@@ -15,7 +15,8 @@ const OrderActions = {
             items.push(['提交', () => this.submit([root])]);
             items.push(['删除', () => this.removeDraft(root)]);
         } else {
-            if (['pending', 'verified', 'executing'].includes(root.status)) {
+            // 停止: 仅长期医嘱 (临时医嘱无停止概念)
+            if (['pending', 'verified', 'executing'].includes(root.status) && root.order_period === 'long') {
                 items.push(['停止', () => this.stop(root)]);
             }
             if (['verified', 'executing'].includes(root.status)) {

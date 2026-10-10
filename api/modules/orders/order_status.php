@@ -26,6 +26,15 @@ if (!in_array($status, $validTransition[$order['status']] ?? [])) {
     Response::error('非法状态跳转：' . $order['status'] . ' → ' . $status);
 }
 
+// 停止校验: 仅长期医嘱, 且停止时间不能早于开具时间
+if ($status === 'stopped') {
+    if ($order['order_period'] !== 'long') Response::error('仅长期医嘱可停止, 临时医嘱可作废或删除');
+    $nowCheck = DateHelper::now();
+    if (!empty($order['start_date']) && strtotime($nowCheck) < strtotime($order['start_date'])) {
+        Response::error('停止时间不能早于开具时间');
+    }
+}
+
 $pdo->beginTransaction();
 try {
     $now = DateHelper::now();
