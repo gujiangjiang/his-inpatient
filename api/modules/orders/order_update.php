@@ -14,7 +14,8 @@ $user = Auth::user();
 if (!can_access_patient($user, $order['patient_id'])) Response::error('权限不足', 403);
 
 $fields = ['content', 'dosage', 'dosage_unit', 'usage_name', 'usage_rate',
-           'freq_code', 'freq_detail', 'billing_flags', 'order_period'];
+           'freq_code', 'freq_detail', 'billing_flags', 'order_period',
+           'start_date', 'notes', 'duration'];
 $updates = [];
 $params = [];
 foreach ($fields as $f) {

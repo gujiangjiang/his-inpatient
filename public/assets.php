@@ -43,6 +43,7 @@ class Asset {
         '/js/orders/order_editor.js',
         '/js/orders/order_quickadd.js',
         '/js/orders/order_actions.js',
+        '/js/orders/order_detail.js',
         '/js/orders/order_sets.js',
         '/js/login/login.js',
     ];

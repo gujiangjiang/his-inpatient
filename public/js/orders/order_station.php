@@ -81,7 +81,6 @@ var OrderStation = {
     filters: { period: '', status: '', date_from: '', date_to: '' },
     groups: [],
     selected: new Set(),
-    editing: null,
     keyHandler: null,
 
     init() {
@@ -163,7 +162,6 @@ var OrderStation = {
             const r = await AjaxLoader.api('orders/list?' + qs.toString(), { silent: true });
             this.groups = r.data || [];
             this.selected.clear();
-            this.editing = null;
             this.render();
             if (focusId) this.focusOrder(focusId);
             if (feedback) Dom.toast('已刷新 ' + Format.shortTime(new Date()) + ' · 共 ' + this.groups.length + ' 组医嘱', 'success');
@@ -193,18 +191,6 @@ var OrderStation = {
         if (!tbody) return;
         empty.style.display = this.groups.length === 0 ? 'block' : 'none';
         tbody.innerHTML = this.groups.map(g => this.renderGroup(g)).join('');
-        const form = tbody.querySelector('.os-edit-form');
-        if (form) {
-            form.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !['BUTTON', 'SELECT'].includes(e.target.tagName)) {
-                    e.preventDefault();
-                    this.saveEditRow();
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    this.cancelEdit();
-                }
-            });
-        }
         this.updateSelectedHint();
     },
 
@@ -213,14 +199,12 @@ var OrderStation = {
         const size = rows.length;
         const editable = root.status === 'draft';
         let html = '';
-        let drawer = '';
         rows.forEach((o, i) => {
             const first = i === 0;
             const span = first ? ` rowspan="${size}"` : '';
-            const editing = this.editing && this.editing.orderId === o.id;
             const statusCls = { draft: ' os-txt-draft', pending: ' os-txt-pending', invalid: ' os-txt-invalid', stopped: ' os-txt-stopped' }[o.status] || '';
-            const clickable = editable ? ` onclick="OrderStation.toggleEditRow(${o.id}, ${root.id}, event)"` : '';
-            html += `<tr data-oid="${o.id}" data-root="${root.id}" class="${first ? 'os-group-start' : ''}${statusCls}${editable ? ' os-row-editable' : ''}${editing ? ' os-row-editing' : ''}">`;
+            const clickable = editable ? ` onclick="OrderDetail.open(${o.id}, ${root.id}, event)" title="点击查看/修改"` : '';
+            html += `<tr data-oid="${o.id}" data-root="${root.id}" class="${first ? 'os-group-start' : ''}${statusCls}${editable ? ' os-row-editable' : ''}">`;
             if (first) {
                 html += `<td class="os-col-check"${span}><input type="checkbox" ${this.selected.has(root.id) ? 'checked' : ''} onchange="OrderStation.toggleSelect(${root.id}, this.checked)"></td>`;
                 html += `<td class="os-col-period"${span}>${this.periodBadge(root.order_period, editable, root)}</td>`;
@@ -241,76 +225,8 @@ var OrderStation = {
                 html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">${svgIcon('common/actions/more', 16)}</button></td>`;
             }
             html += '</tr>';
-            if (editing) drawer = this.editRowHtml(o);
         });
-        // 编辑抽屉放在整组之后, 避免插在 rowspan 区间内破坏表格布局
-        return html + drawer;
-    },
-
-    editRowHtml(o) {
-        const freqOpts = (typeof OrderEditor !== 'undefined' ? OrderEditor.FREQS : [['', '无']])
-            .map(f => `<option value="${f[0]}" ${f[0] === (o.freq_code || o.frequency || '') ? 'selected' : ''}>${f[1]}</option>`).join('');
-        const usages = ['静脉输液', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护'];
-        const usageOpts = usages.map(u => `<option value="${u}" ${u === o.usage_name ? 'selected' : ''}>${u}</option>`).join('');
-        const flags = (o.billing_flags || '').split(',');
-        const flagBox = (v) => `<label><input type="checkbox" class="os-edit-flag" value="${v}" ${flags.includes(v) ? 'checked' : ''}>${v}</label>`;
-        return `<tr class="os-edit-tr"><td colspan="10">
-            <div class="os-edit-form" data-id="${o.id}">
-                <label>内容 <input class="os-edit-content" value="${Format.escape(o.content)}"></label>
-                <label>剂量 <input class="os-edit-w os-edit-dosage" value="${Format.escape(o.dosage || '')}"></label>
-                <label>单位 <input class="os-edit-w os-edit-unit" value="${Format.escape(o.dosage_unit || '')}"></label>
-                <label>用法 <select class="os-edit-usage"><option value="">-</option>${usageOpts}</select></label>
-                <label>滴速 <input class="os-edit-w os-edit-rate" value="${Format.escape(o.usage_rate || '')}"></label>
-                <label>频次 <select class="os-edit-freq">${freqOpts}</select></label>
-                <label>时间 <input class="os-edit-w os-edit-detail" value="${Format.escape(o.freq_detail || '')}"></label>
-                <label>期间 <select class="os-edit-period">
-                    <option value="long" ${o.order_period !== 'temp' ? 'selected' : ''}>长期</option>
-                    <option value="temp" ${o.order_period === 'temp' ? 'selected' : ''}>临时</option>
-                </select></label>
-                <span class="os-edit-flags">${flagBox('径外')}${flagBox('自费')}${flagBox('不计价')}${flagBox('预防')}</span>
-                <button type="button" class="btn btn-small btn-primary" onclick="OrderStation.saveEditRow()">保存</button>
-                <button type="button" class="btn btn-small" onclick="OrderStation.cancelEdit()">取消</button>
-            </div>
-        </td></tr>`;
-    },
-
-    toggleEditRow(orderId, rootId, event) {
-        if (event) event.stopPropagation();
-        if (this.editing && this.editing.orderId === orderId) {
-            this.editing = null;
-        } else {
-            this.editing = { orderId: orderId, rootId: rootId };
-        }
-        this.render();
-    },
-
-    async saveEditRow() {
-        const form = document.querySelector('.os-edit-form');
-        if (!form) return;
-        const data = {
-            id: parseInt(form.dataset.id, 10),
-            content: form.querySelector('.os-edit-content').value.trim(),
-            dosage: form.querySelector('.os-edit-dosage').value.trim(),
-            dosage_unit: form.querySelector('.os-edit-unit').value.trim(),
-            usage_name: form.querySelector('.os-edit-usage').value,
-            usage_rate: form.querySelector('.os-edit-rate').value.trim(),
-            freq_code: form.querySelector('.os-edit-freq').value,
-            freq_detail: form.querySelector('.os-edit-detail').value.trim(),
-            billing_flags: Array.from(form.querySelectorAll('.os-edit-flag:checked')).map(c => c.value).join(','),
-            order_period: form.querySelector('.os-edit-period').value
-        };
-        if (!data.content) { Dom.toast('医嘱内容不能为空', 'error'); return; }
-        try {
-            await AjaxLoader.api('orders/update', { method: 'POST', data: data });
-            this.editing = null;
-            Dom.toast('草稿已实时保存', 'success');
-            this.refresh();
-        } catch (e) { /* 已提示 */ }
-    },
-
-    cancelEdit() {
-        this.editing = null;
-        this.render();
+        return html;
     },
 
     periodBadge(period, editable, root) {

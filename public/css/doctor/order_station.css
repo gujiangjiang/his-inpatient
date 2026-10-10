@@ -196,9 +196,9 @@
 .os-usage-rate { font-size: 12px; color: #606266; }
 .os-usage-single { padding-left: 12px; }
 
-/* 行内编辑中的行高亮 (编辑抽屉展示在整组之后) */
-.os-row-editing td { background: #f5fbfb; }
-.os-row-editing td:first-child { box-shadow: inset 3px 0 0 #1aa3a3; }
+/* 悬浮详情框打开时高亮对应医嘱组 */
+.os-row-selected td { background: #f5fbfb; }
+.os-row-selected td:first-child { box-shadow: inset 3px 0 0 #1aa3a3; }
 
 /* 操作列按钮 */
 .os-op-btn {
@@ -440,37 +440,49 @@
 }
 .os-qa-empty { padding: 26px; text-align: center; color: #909399; font-size: 13px; }
 
-/* ===== 医嘱行内编辑抽屉 ===== */
-.os-row-editable td { cursor: pointer; }
-.os-edit-tr td {
-    background: #f5fbfb;
-    border-bottom: 2px solid #b8e6e6;
-    padding: 8px 10px;
+/* ===== 医嘱悬浮详情框 ===== */
+.os-detail {
+    position: fixed;
+    width: 520px;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.24);
+    z-index: 1850;
+    padding: 14px 16px 12px;
+    animation: osQaIn 0.12s ease-out;
+    box-sizing: border-box;
 }
-.os-edit-form {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
-    font-size: 12px;
-    color: #606266;
-}
-.os-edit-form label { display: flex; align-items: center; gap: 4px; }
-.os-edit-form input,
-.os-edit-form select {
+.osd-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+.osd-row > label { width: 68px; text-align: right; color: #606266; font-size: 13px; flex-shrink: 0; }
+.osd-input {
+    flex: 1;
     border: 1px solid #dcdfe6;
     border-radius: 4px;
-    padding: 4px 6px;
-    font-size: 12px;
+    padding: 6px 8px;
+    font-size: 13px;
     color: #303133;
-    background: #fff;
+    box-sizing: border-box;
+    min-width: 0;
 }
-.os-edit-form input:focus,
-.os-edit-form select:focus { outline: 1px solid #1aa3a3; border-color: #1aa3a3; }
-.os-edit-content { width: 230px; }
-.os-edit-w { width: 74px; }
-.os-edit-flags { display: inline-flex; align-items: center; gap: 8px; }
-.os-edit-flags label { display: inline-flex; align-items: center; gap: 3px; }
+.osd-input:focus { outline: none; border-color: #1aa3a3; box-shadow: 0 0 0 2px rgba(26, 163, 163, 0.15); }
+.osd-readonly { background: #f5f7fa; color: #909399; }
+.osd-duration-num { flex: 0 0 110px; }
+.osd-duration-unit { flex: 0 0 80px; }
+.osd-price { font-size: 13px; color: #303133; width: 76px; flex-shrink: 0; }
+.osd-flags { display: inline-flex; gap: 10px; font-size: 12px; color: #606266; }
+.osd-flag { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; }
+.osd-flag input { accent-color: #1aa3a3; }
+.osd-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f2f5;
+}
+.osd-more { margin-left: auto; color: #1aa3a3; font-size: 13px; cursor: pointer; }
+.osd-more:hover { text-decoration: underline; }
 
 /* ===== 医嘱组套 ===== */
 .osets-set {
