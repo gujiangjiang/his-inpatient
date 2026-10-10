@@ -152,6 +152,9 @@
 .os-period-toggle { cursor: pointer; }
 .os-period-toggle:hover { filter: brightness(1.12); box-shadow: 0 0 0 2px rgba(26, 163, 163, 0.25); }
 
+/* 医嘱说明: 小一号斜体展示在内容后 */
+.os-note { font-size: 12px; font-style: italic; color: #909399; }
+
 /* 内容列标签 */
 .os-tag {
     display: inline-block;

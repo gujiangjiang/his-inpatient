@@ -217,7 +217,7 @@ var OrderStation = {
                 // 时间列与组同高合并居中 (子医嘱不再错位)
                 html += `<td class="os-col-time"${span}>${this.timeText(root)}</td>`;
             }
-            html += `<td${clickable} title="${editable ? '点击修改' : ''}">${Format.escape(o.content)}${this.tags(o.billing_flags)}</td>`;
+            html += `<td${clickable} title="${editable ? '点击修改' : ''}">${Format.escape(o.content)}${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${this.tags(o.billing_flags)}</td>`;
             html += `<td class="os-col-dosage"${clickable}>${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
