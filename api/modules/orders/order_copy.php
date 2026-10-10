@@ -57,7 +57,7 @@ try {
             $orderNo, $m['content'], $m['category'], 'draft',
             $m['drug_id'], $m['dosage'], $m['dosage_unit'], $m['usage_name'], $m['usage_rate'],
             $m['freq_code'], $m['freq_detail'], $m['billing_flags'],
-            $i, 0, $now, $userId, '复制自 #' . $m['id'], $now, $now
+            $i, 0, $now, $userId, '', $now, $now
         ]);
         $new = $pdo->lastInsertId();
         if ($i === 0) { $mainId = $new; $newId = $new; }
