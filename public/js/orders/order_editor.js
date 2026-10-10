@@ -130,7 +130,7 @@ const OrderEditor = {
                 <td><select class="oe-freq" data-idx="${i}">${freqOpts(it.freq_code)}</select></td>
                 <td><input class="oe-freq-detail" data-idx="${i}" value="${Format.escape(it.freq_detail)}" placeholder="如 07-16"></td>
                 <td>${flagBoxes}</td>
-                <td><button type="button" class="oe-del" onclick="OrderEditor.removeItem(${i})">${Icons.close(12)}</button></td>
+                <td><button type="button" class="oe-del" onclick="OrderEditor.removeItem(${i})">${svgIcon('common/actions/close', 12)}</button></td>
             </tr>`;
         }).join('');
     },

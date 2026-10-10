@@ -13,6 +13,7 @@ try {
     foreach ($ids as $id) {
         $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
         if (!$order) continue;
+        if (!can_access_patient(Auth::user(), $order['patient_id'])) Response::error('权限不足', 403);
         // 只能删除草稿状态
         if ($order['status'] !== 'draft') {
             Response::error('只能删除草稿状态的医嘱');

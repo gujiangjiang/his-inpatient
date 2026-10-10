@@ -1,4 +1,7 @@
-<?php header("Content-Type: text/html; charset=utf-8"); ?>
+<?php
+header("Content-Type: text/html; charset=utf-8");
+require_once __DIR__ . '/../../icons/icon.php';
+?>
 <div class="wall-page">
     <div class="wall-scroll">
         <div class="flex-between mb-10">
@@ -8,7 +11,7 @@
                 </select>
                 <span id="wall-title" class="wall-title"></span>
                 <button type="button" class="wall-clear" id="wall-clear" style="display:none" onclick="patients_wall_clear_filter()">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5.5 5.5l13 13"/><path d="M18.5 5.5l-13 13"/></svg>
+                    <?= icon('common/actions', 'close', 10) ?>
                     返回全部
                 </button>
                 <label style="font-size:13px;color:#606266;display:flex;align-items:center;gap:4px;cursor:pointer">
@@ -49,8 +52,14 @@ async function patients_patient_list_init() {
     var sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(function(r) { return r.text(); });
     document.getElementById('sidebar').innerHTML = sidebar;
 
-    var deptsRes = await AjaxLoader.api('admin/department-list', { silent: true });
-    _wallDeptList = deptsRes.data || [];
+    // 科室下拉仅展示当前医生权限范围内科室 (admin 全部)
+    if (user.role === 'doctor' || user.role === 'admin') {
+        var deptsRes = await AjaxLoader.api('doctors/departments', { silent: true });
+        _wallDeptList = deptsRes.data.departments || [];
+    } else {
+        var deptsRes2 = await AjaxLoader.api('admin/department-list', { silent: true });
+        _wallDeptList = deptsRes2.data || [];
+    }
     var wardsRes = await AjaxLoader.api('admin/ward-list', { silent: true });
     _wallWardList = wardsRes.data || [];
     var sel = document.getElementById('wall-dept');

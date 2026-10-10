@@ -86,7 +86,7 @@ const PatientSwitcher = {
             }
             sub.innerHTML = this.depts.map(d =>
                 `<div class="switcher-menu-item switcher-dept-item" onclick="PatientSwitcher.goDept(${d.id})">
-                    ${Icons.caretRight(10)}${Format.escape(d.name)}
+                    ${svgIcon('common/arrows/caret-right', 10)}${Format.escape(d.name)}
                 </div>`
             ).join('');
         } catch (e) {

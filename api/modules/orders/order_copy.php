@@ -9,6 +9,7 @@ if (!$id) Response::error('请输入医嘱ID');
 
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
+if (!can_access_patient(Auth::user(), $order['patient_id'])) Response::error('权限不足', 403);
 
 // 复制条件: 仅限手动开具医嘱, 不能复制草稿
 if ($order['is_auto_generated'] == 1) {

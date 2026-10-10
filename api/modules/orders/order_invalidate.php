@@ -10,6 +10,7 @@ if (!$id) Response::error('请输入医嘱ID');
 $pdo = DB::getPDO();
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
+if (!can_access_patient(Auth::user(), $order['patient_id'])) Response::error('权限不足', 403);
 
 // 作废条件：必须已被护士核对 (verified 状态) 才能作废
 // OR 已提交(pending)但护士已核对

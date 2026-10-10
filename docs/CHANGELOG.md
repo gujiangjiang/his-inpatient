@@ -4,6 +4,17 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.13.5] - 2026-10-09
+
+### 变更
+- **SVG 图标改为 PHP 绘制并集中管理**: 新增 `public/icons/` 图标库 — `icon.php` 渲染器 (`icon('分类', '名称', 尺寸, class, attrs)`) + 多级分类目录 (`common/arrows.php` 箭头、`common/actions.php` 操作、`common/status.php` 状态、`medical/objects.php` 医疗对象) + `js.php` JS 桥接 (`svgIcon('分类/名称', 尺寸)`); 删除 JS 版 `icons.js`, 全站内联 SVG 全部清理; AGENT.md 同步图标规范与目录约定
+
+### 修复
+- 患者卡片墙科室下拉显示全部科室: 医生仅显示本人科室 + `doctor_department_permissions` 授权科室, admin 显示全部
+
+### 安全
+- 数据权限后端拦截: 新增 `department_helper` (`allowed_department_ids` / `can_access_department` / `can_access_patient`); `patients/list|get|save|by-department|discharge`, `orders/save|list|update|submit|stop|copy|invalidate|verify|batch-delete` 全部校验授权科室或指派管辖, 越权请求返回 403
+
 ## [0.13.4] - 2026-10-09
 
 ### 修复

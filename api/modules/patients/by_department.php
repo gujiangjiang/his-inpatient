@@ -8,10 +8,9 @@ $status = Validator::get('status', 'active'); // active | discharged | all
 
 if (!$departmentId) Response::error('缺少科室ID');
 
-// 校验授权 (admin 或 授权科室)
-if ($user['role'] !== 'admin') {
-    $perm = DB::selectOne("SELECT id FROM doctor_department_permissions WHERE doctor_id = ? AND department_id = ?", [$user['id'], $departmentId]);
-    if (!$perm) Response::error('无权访问该科室', 403);
+// 数据权限校验 (admin 或 授权科室, 含本人所属科室)
+if (!can_access_department($user, $departmentId)) {
+    Response::error('无权访问该科室', 403);
 }
 
 $sql = "SELECT p.*, d.name as department_name, w.name as ward_name

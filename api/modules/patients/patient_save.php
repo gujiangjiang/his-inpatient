@@ -20,6 +20,12 @@ $vteCaprini = Validator::get('vte_caprini', '');
 $vteBleeding = Validator::get('vte_bleeding', '');
 $isCritical = (int)Validator::get('is_critical', 0);
 
+// 数据权限: 医生只能向授权科室登记/调整患者
+$currentUser = Auth::user();
+if ($currentUser['role'] === 'doctor' && !can_access_department($currentUser, $departmentId)) {
+    Response::error('无权操作该科室', 403);
+}
+
 $pdo = DB::getPDO();
 $id = isset($data['id']) && $data['id'] ? $data['id'] : null;
 

@@ -37,6 +37,7 @@ foreach ($items as $item) {
 
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在');
+if (!can_access_patient(Auth::user(), $patientId)) Response::error('无权操作该患者', 403);
 
 $groupId = Validator::get('group_id');   // 组级用法 (前端组容器)
 $groupUsage = Validator::get('usage_name', '');

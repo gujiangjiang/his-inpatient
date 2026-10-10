@@ -1,11 +1,9 @@
-<?php header("Content-Type: text/html; charset=utf-8"); ?>
+<?php
+header("Content-Type: text/html; charset=utf-8");
+require_once __DIR__ . '/../../icons/icon.php';
+?>
 <div class="module-placeholder">
-    <div class="placeholder-icon">
-        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#c0c4cc" stroke-width="1.4"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M14.6 6.2a4.4 4.4 0 0 0-5.8 5.7L3 17.7 6.3 21l5.8-5.8a4.4 4.4 0 0 0 5.7-5.8l-2.9 2.9-2.7-2.7 2.4-3.4z"/>
-        </svg>
-    </div>
+    <div class="placeholder-icon"><?= icon('medical/objects', 'tool', 56) ?></div>
     <h3 id="placeholder-title">功能模块</h3>
     <p>该模块尚未对接，敬请期待</p>
 </div>

@@ -13,6 +13,7 @@ $patient = DB::selectOne("SELECT * FROM patients WHERE id = ? AND status = 'acti
 if (!$patient) {
     Response::error('患者不存在或已出院');
 }
+if (!can_access_patient(Auth::user(), $id)) Response::error('权限不足', 403);
 
 $pdo->beginTransaction();
 try {

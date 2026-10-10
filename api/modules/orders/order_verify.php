@@ -12,6 +12,7 @@ if (!$id) Response::error('请输入医嘱ID');
 $pdo = DB::getPDO();
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
+if (!can_access_patient(Auth::user(), $order['patient_id'])) Response::error('权限不足', 403);
 
     // 状态校验: 医嘱核对状态机
     $validTransition = [

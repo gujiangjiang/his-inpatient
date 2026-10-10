@@ -50,9 +50,16 @@ if ($user['role'] === 'nurse') {
     $sql .= " AND o.patient_id IN (SELECT id FROM patients WHERE ward_id = ?)";
     $params[] = $user['ward_id'];
 } elseif ($user['role'] === 'doctor') {
-    $sql .= " AND o.patient_id IN (SELECT id FROM patients WHERE department_id = ?
-             OR id IN (SELECT patient_id FROM patient_assignments WHERE attending_doctor_id = ? OR senior_doctor_id = ?))";
-    array_push($params, $user['department_id'], $user['id'], $user['id']);
+    $allowed = allowed_department_ids($user);
+    if ($allowed) {
+        $placeholders = implode(',', array_fill(0, count($allowed), '?'));
+        $sql .= " AND o.patient_id IN (SELECT id FROM patients WHERE department_id IN ({$placeholders})
+                 OR id IN (SELECT patient_id FROM patient_assignments WHERE attending_doctor_id = ? OR senior_doctor_id = ?))";
+        $params = array_merge($params, $allowed, [$user['id'], $user['id']]);
+    } else {
+        $sql .= " AND o.patient_id IN (SELECT patient_id FROM patient_assignments WHERE attending_doctor_id = ? OR senior_doctor_id = ?)";
+        $params = array_merge($params, [$user['id'], $user['id']]);
+    }
 }
 
 $sql .= " ORDER BY o.start_date ASC, o.id ASC";

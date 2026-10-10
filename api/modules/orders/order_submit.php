@@ -8,6 +8,7 @@ $patientId = Validator::get('patient_id');
 $ids = Validator::get('ids'); // 可选: 提交指定 ID 的医嘱
 
 if (!$patientId) Response::error('请选择患者');
+if (!can_access_patient(Auth::user(), $patientId)) Response::error('权限不足', 403);
 
 $pdo = DB::getPDO();
 $now = DateHelper::now();

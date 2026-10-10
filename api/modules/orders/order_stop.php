@@ -12,6 +12,14 @@ $userId = Auth::user()['id'];
 $now = DateHelper::now();
 $stoppable = ['pending', 'verified', 'executing'];
 
+if ($id) {
+    $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
+    if (!$order) Response::error('医嘱不存在');
+    if (!can_access_patient(Auth::user(), $order['patient_id'])) Response::error('权限不足', 403);
+} else {
+    if (!can_access_patient(Auth::user(), $patientId)) Response::error('权限不足', 403);
+}
+
 $pdo->beginTransaction();
 try {
     if ($id) {

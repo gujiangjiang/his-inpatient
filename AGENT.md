@@ -16,10 +16,11 @@
 - 单文件 ≤200 行，职责单一
 - 类名 PascalCase，文件名 snake_case
 - 公共字典统一维护（前端 `Format`、后端 helpers）
-- **全站禁止 emoji 图标**（如 🏥 🛠 ⚠ ✕ ⋯ ▾ ▸ 等），统一使用自绘 SVG：
-  - 名称类图标加入 `public/js/core/icons.js` 的 `Icons` 库（24×24 线稿风格，`stroke="currentColor"`，按需传 size）
-  - 静态 HTML 片段使用内联 SVG（属性一致：`fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"`）
-  - JS 动态渲染优先 `Icons.xxx(size)`；非图标语义的键盘按键提示（↑↓ Enter Esc）可用文本
+- **全站禁止 emoji 图标**（如 🏥 🛠 ⚠ ✕ ⋯ ▾ ▸ 等），统一使用 PHP 绘制的自绘 SVG（`public/icons/`）：
+  - 图标按功能分类存放于多级目录：`public/icons/{分类}/{功能}.php`（现有 `common/arrows.php`、`common/actions.php`、`common/status.php`、`medical/objects.php`），每个文件返回 `[名称 => 路径串 或 ['paths'=>..,'stroke_width'=>..]]`，24×24 线稿、`stroke="currentColor"`
+  - 页面/片段调用：`require_once __DIR__ . '/../../icons/icon.php';` 后 `<?= icon('common/arrows', 'caret-right', 12) ?>`（大小、class、附加属性可选）
+  - JS 动态渲染：页面已引入 `<script src="/icons/js.php"></script>`，统一用 `svgIcon('common/actions/more', 16)`（SVG 仍由 PHP 绘制）
+  - 新增图标一律加入对应分类文件（分类可按功能继续细分目录），禁止在页面内散落内联 SVG；键盘按键提示（↑↓ Enter Esc）可用文本
 - 数据库迁移使用 PHP Migration 类 (`api/migrations/php/0xx_*.php`)
 - 接口与页面分离
 
