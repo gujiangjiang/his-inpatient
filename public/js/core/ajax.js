@@ -96,6 +96,8 @@ const AjaxLoader = {
                         s.parentNode.replaceChild(ns, s);
                     });
                 }
+                // 自定义下拉组件增强 (页面注入后)
+                if (window.SelectPicker && app) SelectPicker.initInputs(app);
                 // 执行页面初始化函数
                 const initFn = window[module + '_' + page + '_init'];
                 if (typeof initFn === 'function') {

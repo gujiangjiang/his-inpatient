@@ -57,6 +57,7 @@ const OrderDetail = {
         this.panel = panel;
         this.position(event);
         if (typeof DateTimePicker !== 'undefined') DateTimePicker.initInputs(panel);
+        if (typeof SelectPicker !== 'undefined') SelectPicker.initInputs(panel);
 
         const manualBtn = panel.querySelector('#osd-manual');
         if (manualBtn) manualBtn.addEventListener('click', () => Dom.toast('药品说明书功能对接中', 'info'));

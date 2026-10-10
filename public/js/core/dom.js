@@ -63,6 +63,7 @@ const Dom = {
 
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
+        if (window.SelectPicker) SelectPicker.initInputs(overlay);
 
         return overlay;
     },

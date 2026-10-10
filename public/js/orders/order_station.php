@@ -338,7 +338,13 @@ var OrderStation = {
             td.innerHTML = '<select class="os-cell-select">' + values.map((v, i) =>
                 `<option value="${v}" ${v === current ? 'selected' : ''}>${labels[i] || v || '-'}</option>`).join('') + '</select>';
             const sel = td.querySelector('select');
-            sel.focus();
+            const useSpicker = typeof SelectPicker !== 'undefined';
+            if (useSpicker) {
+                SelectPicker.attach(sel, { small: true });
+                SelectPicker.open(sel);
+            } else {
+                sel.focus();
+            }
             sel.addEventListener('change', () => {
                 if (isUsage) {
                     commit({ usage_name: sel.value });
@@ -347,7 +353,11 @@ var OrderStation = {
                     commit({ freq_code: sel.value, freq_detail: this.autoFreqDetail(sel.value) });
                 }
             });
-            sel.addEventListener('blur', () => setTimeout(restore, 150));
+            if (useSpicker) {
+                sel.addEventListener('spicker-cancel', () => { done = true; td.innerHTML = orig; });
+            } else {
+                sel.addEventListener('blur', () => setTimeout(restore, 150));
+            }
             sel.addEventListener('keydown', e => { if (e.key === 'Escape') { done = true; td.innerHTML = orig; } });
         } else {
             td.innerHTML = `<input class="os-cell-input" value="${Format.escape(root.freq_detail || '')}" placeholder="如 07-16">`;
