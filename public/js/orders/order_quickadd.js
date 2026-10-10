@@ -9,25 +9,29 @@ const OrderQuickAdd = {
     outsideHandler: null,
     escHandler: null,
 
-    open(mode, event) {
+    open(mode, event, onPick) {
         if (this.panel) this.close();
         if (!OrderStation || !OrderStation.patientId) { Dom.toast('请先选择患者', 'error'); return; }
         // 药品/非药品分开检索; 默认期间参照上一条医嘱 (开具后可点长/临切换)
         this.mode = mode === 'nonmedication' ? 'nonmedication' : 'medication';
         this.period = (typeof OrderStation.lastOrderPeriod === 'function') ? OrderStation.lastOrderPeriod() : 'long';
+        this.onPickCb = (typeof onPick === 'function') ? onPick : null;
         this.items = [];
         this.activeIndex = 0;
 
+        const hint = this.onPickCb
+            ? '↑↓ 选择 · Enter 加入成组 · Esc 关闭'
+            : '↑↓ 选择 · Enter 加入 · Esc 关闭 · 加入后点击医嘱内容文字可修改';
         const panel = document.createElement('div');
         panel.className = 'os-qa';
         panel.innerHTML = `
             <div class="os-qa-head">
-                <span class="os-qa-title">${this.mode === 'medication' ? '药品' : '非药品'}</span>
+                <span class="os-qa-title">${this.mode === 'medication' ? '药品' : '非药品'}${this.onPickCb ? ' (加入成组)' : ''}</span>
                 <span class="os-qa-period-hint">默认: ${this.period === 'temp' ? '临时' : '长期'}医嘱 (参照上一条, 开具后可点长/临切换)</span>
             </div>
             <input type="text" class="os-qa-input" placeholder="搜索${this.mode === 'medication' ? '药品 (名称、拼音首字母、编码)' : '非药品 (名称)'}, Enter 加入医嘱">
             <div class="os-qa-list"><div class="os-qa-empty">加载中...</div></div>
-            <div class="os-qa-hint">↑↓ 选择 · Enter 加入 · Esc 关闭 · 加入后点击医嘱内容文字可修改</div>`;
+            <div class="os-qa-hint">${hint}</div>`;
         document.body.appendChild(panel);
         this.panel = panel;
         this.position(event);
@@ -141,13 +145,16 @@ const OrderQuickAdd = {
     /**
      * 点击/回车: 直接加入医嘱列表 (草稿)
      */
+    /**
+     * 点击/回车: 直接加入医嘱列表 (草稿); 成组模式则回调选择结果
+     */
     async pick(idx) {
         const it = this.items[idx];
         if (!it) return;
         const isMed = it.result_type === 'medication';
         const freqCode = isMed ? (it.default_freq || '') : (it.freq_code || '');
         const auto = (typeof OrderStation !== 'undefined') ? OrderStation.autoFreqDetail(freqCode) : '';
-        await this.addToOrders({
+        const item = {
             content: isMed ? it.name : it.content,
             drug_id: isMed ? it.id : null,
             dosage: isMed ? (it.default_dosage || '') : '',
@@ -158,7 +165,14 @@ const OrderQuickAdd = {
             freq_detail: (it.freq_detail || '') || auto,
             billing_flags: isMed ? '' : (it.billing_flags || ''),
             category: it.result_type
-        });
+        };
+        if (this.onPickCb) {
+            const cb = this.onPickCb;
+            this.close();
+            cb(item);
+            return;
+        }
+        await this.addToOrders(item);
     },
 
     addCustom(text) {
@@ -185,12 +199,18 @@ const OrderQuickAdd = {
         } catch (e) { /* 已提示 */ }
     },
 
+    /** 仅选择药品/非药品, 选中后回调 (用于成组等场景) */
+    openPick(mode, event, onPick) {
+        this.open(mode, event, onPick);
+    },
+
     close() {
         clearTimeout(this.timer);
         if (this.outsideHandler) document.removeEventListener('mousedown', this.outsideHandler);
         if (this.escHandler) document.removeEventListener('keydown', this.escHandler);
         this.outsideHandler = null;
         this.escHandler = null;
+        this.onPickCb = null;
         if (this.panel && this.panel.parentNode) this.panel.parentNode.removeChild(this.panel);
         this.panel = null;
     }

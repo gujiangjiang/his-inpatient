@@ -224,7 +224,8 @@ var OrderStation = {
                 html += `<td class="os-col-time"${span}>${this.timeText(root)}</td>`;
             }
             // 仅医嘱内容文字可点击 (下划线提示), 其余为空白区域; 任意状态均可查看详情
-            html += `<td><span class="os-content-link"${openLink}>${Format.escape(o.content)}</span>${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${this.tags(o.billing_flags)}</td>`;
+            const canGroup = editable && o.category === 'medication';
+            html += `<td><span class="os-content-link"${openLink}>${Format.escape(o.content)}</span>${o.notes ? ` <span class="os-note">（${Format.escape(o.notes)}）</span>` : ''}${canGroup ? `<span class="os-group-add" title="加入成组医嘱" onclick="OrderStation.addToGroup(${root.id}, event)">+</span>` : ''}${this.tags(o.billing_flags)}</td>`;
             html += `<td class="os-col-dosage">${Format.escape(o.dosage || '')}${o.dosage_unit ? ' ' + Format.escape(o.dosage_unit) : ''}</td>`;
             if (first) {
                 const usageCls = size > 1 ? 'os-usage-brace' : 'os-usage-single';
@@ -395,6 +396,33 @@ var OrderStation = {
 
     openMedication(event) { if (this.patientId) OrderQuickAdd.open('medication', event); },
     openNonmedication(event) { if (this.patientId) OrderQuickAdd.open('nonmedication', event); },
+
+    /**
+     * 成组: 草稿药品内容右侧「+」→ 调药品列表, 选择后追加为子医嘱 (组内排他)
+     */
+    addToGroup(rootId, event) {
+        if (event) event.stopPropagation();
+        const root = this.groups.find(g => g.id == rootId);
+        if (!root || root.status !== 'draft' || root.category !== 'medication') return;
+        OrderQuickAdd.openPick('medication', event, (item) => this.appendToGroup(rootId, item));
+    },
+
+    async appendToGroup(rootId, item) {
+        // 前端排他预检 (后端同样拦截)
+        const root = this.groups.find(g => g.id == rootId);
+        if (root) {
+            const members = [root].concat(root.sub_orders || []);
+            const dup = members.some(m =>
+                (item.drug_id && m.drug_id && m.drug_id == item.drug_id) || m.content === item.content
+            );
+            if (dup) { Dom.toast('该药品已在组内, 不能重复添加', 'error'); return; }
+        }
+        try {
+            await AjaxLoader.api('orders/group-add', { method: 'POST', data: { root_id: rootId, item: item } });
+            Dom.toast('已加入成组: ' + item.content, 'success');
+            this.refresh();
+        } catch (e) { /* 已提示 */ }
+    },
     submitSelected() { OrderActions.submitSelected(); },
     batchDelete() { OrderActions.batchDelete(); },
     stopAllLong() { OrderActions.stopAllLong(); },
