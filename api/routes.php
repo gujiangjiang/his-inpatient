@@ -122,5 +122,10 @@ function getRoutes() {
         // 门诊病历查询
         'outpatient/search' => ['outpatient/outpatient_search.php', ['admin', 'doctor']],
         'outpatient/mock-data' => ['outpatient/outpatient_mock_data.php', []],
+
+        // 门诊互通 (一期: 只读) - 患者记录/检验结果/检查报告 + PACS 影像
+        'outpatient/records' => ['outpatient/outpatient_records.php', ['admin', 'doctor', 'nurse']],
+        'outpatient/labs' => ['outpatient/outpatient_labs.php', ['admin', 'doctor', 'nurse']],
+        'outpatient/exams' => ['outpatient/outpatient_exams.php', ['admin', 'doctor', 'nurse']],
     ];
 }
