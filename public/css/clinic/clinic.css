@@ -61,6 +61,19 @@
 .apply-hint { font-size: 12px; color: #b0b8c4; margin-top: 8px; }
 .rx-defaults { display: block; font-size: 11px; color: #a8b0bd; margin-top: 2px; }
 
+/* 病案首页编辑 */
+.cf-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0 14px; }
+.cf-span-2 { grid-column: span 2; }
+.cf-span-3 { grid-column: span 3; }
+.cf-span-4 { grid-column: span 4; }
+.cf-fee-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 14px; }
+.cf-fee .form-label { font-size: 12px; color: #64748b; }
+@media (max-width: 1200px) {
+    .cf-grid { grid-template-columns: repeat(2, 1fr); }
+    .cf-fee-grid { grid-template-columns: repeat(2, 1fr); }
+    .cf-span-3, .cf-span-4 { grid-column: span 2; }
+}
+
 /* 会诊 */
 .consult-purpose { color: #607086; font-size: 13px; white-space: pre-wrap; }
 .consult-reply { background: #f4fafa; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #303133; white-space: pre-wrap; }
