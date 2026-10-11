@@ -10,11 +10,11 @@ const SelectPicker = {
     activePanel: null,
     activeSelect: null,
 
-    initInputs(root) {
+    initInputs(root, opts) {
         (root || document).querySelectorAll('select').forEach(sel => {
             if (sel.classList.contains('spicker-native')) return;
             if (sel.dataset.spicker === 'off') return;
-            this.attach(sel);
+            this.attach(sel, opts);
         });
     },
 
@@ -26,6 +26,12 @@ const SelectPicker = {
 
         const wrap = document.createElement('div');
         wrap.className = 'spicker' + (opts.small ? ' spicker-small' : '') + (select.disabled ? ' spicker-disabled' : '');
+        // 继承原生 select 的尺寸约束: 包裹层若不继承 width/flex 会铺满同行, 把旁边元素(输入框/标签)挤压
+        const cs = getComputedStyle(select);
+        if (select.style.width) wrap.style.width = select.style.width;
+        if (cs.flex && cs.flex !== '0 1 auto') wrap.style.flex = cs.flex;
+        if (cs.minWidth && cs.minWidth !== 'auto' && cs.minWidth !== '0px') wrap.style.minWidth = cs.minWidth;
+        if (cs.maxWidth && cs.maxWidth !== 'none') wrap.style.maxWidth = cs.maxWidth;
         const control = document.createElement('div');
         control.className = 'spicker-control';
         if (!select.disabled) control.tabIndex = 0;
@@ -109,7 +115,7 @@ const SelectPicker = {
 
     position(select, panel) {
         const rect = select._spicker.control.getBoundingClientRect();
-        const w = Math.max(rect.width, 200);
+        const w = Math.max(rect.width, select._spicker.wrap.classList.contains('spicker-small') ? 120 : 200);
         const h = 300;
         let x = Math.min(rect.left, window.innerWidth - w - 8);
         let y = rect.bottom + 4;
