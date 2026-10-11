@@ -123,6 +123,12 @@ function getRoutes() {
         'exam/apply' => ['exam/exam_apply.php', ['admin', 'doctor']],
         'exam/delete' => ['exam/exam_delete.php', ['admin', 'doctor']],
 
+        // 会诊
+        'consult/save' => ['consult/consult_save.php', ['admin', 'doctor']],
+        'consult/list' => ['consult/consult_list.php', ['admin', 'doctor']],
+        'consult/reply' => ['consult/consult_reply.php', ['admin', 'doctor']],
+        'consult/delete' => ['consult/consult_delete.php', ['admin', 'doctor']],
+
         // 病案首页
         'case/get' => ['case_front_page/get.php', ['admin', 'doctor']],
         'case/save' => ['case_front_page/save.php', ['admin', 'doctor']],
