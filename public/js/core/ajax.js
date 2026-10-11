@@ -98,10 +98,15 @@ const AjaxLoader = {
                 }
                 // 自定义下拉组件增强 (页面注入后)
                 if (window.SelectPicker && app) SelectPicker.initInputs(app);
-                // 执行页面初始化函数
+                // 执行页面初始化函数 (支持异步), 完成后标记侧边栏当前项
                 const initFn = window[module + '_' + page + '_init'];
+                const markActive = () => {
+                    if (typeof App !== 'undefined' && App.markActiveMenu) App.markActiveMenu(module, page);
+                };
                 if (typeof initFn === 'function') {
-                    initFn();
+                    Promise.resolve(initFn()).then(markActive).catch(markActive);
+                } else {
+                    markActive();
                 }
             })
             .catch(err => {

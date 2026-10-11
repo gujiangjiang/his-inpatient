@@ -1,6 +1,6 @@
 // public/js/core/app.js
 const App = {
-    version: '0.13.51',
+    version: '0.13.52',
     roleRoutes: {
         admin: { module: 'admin', page: 'departments' },
         doctor: { module: 'patients', page: 'patient_list' },
@@ -19,6 +19,15 @@ const App = {
 
     navigateTo(module, page) {
         AjaxLoader.loadPage(module, page);
+    },
+
+    // 侧边栏当前页高亮 (页面加载完成后调用)
+    markActiveMenu(module, page) {
+        const needle = "'" + module + "','" + page + "'";
+        document.querySelectorAll('#sidebar .menu-item').forEach(function(item) {
+            const oc = item.getAttribute('onclick') || '';
+            item.classList.toggle('active', oc.indexOf(needle) !== -1);
+        });
     }
 };
 

@@ -4,6 +4,12 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.13.52] - 2026-10-11
+
+### 修复
+- 侧边栏菜单 active 高亮从未生效: 页面加载完成后按路由标记当前菜单项 (AjaxLoader.loadPage 兼容异步初始化)
+- 补齐公共样式缺失: badge-info / badge-success / badge-warning / badge-danger 徽章变体, 新增 Tab / 键值网格 / 空态 / 文本辅助类
+
 ## [0.13.51] - 2026-10-11
 
 ### 新增

@@ -106,6 +106,10 @@
 .badge-completed { background: #909399; color: #fff; }
 .badge-critical { background: #f56c6c; color: #fff; }
 .badge-default { background: #f5f7fa; color: #606266; }
+.badge-info { background: #409eff; color: #fff; }
+.badge-success { background: #67c23a; color: #fff; }
+.badge-warning { background: #e6a23c; color: #fff; }
+.badge-danger { background: #f56c6c; color: #fff; }
 /* Modal */
 .modal-overlay {
     position: fixed;
@@ -148,3 +152,46 @@
 .toast-error { background: #f56c6c; }
 .toast-success { background: #67c23a; }
 .toast-info { background: #409eff; }
+/* Text helpers */
+.text-muted { color: #909399; }
+.fs-12 { font-size: 12px; }
+.fs-13 { font-size: 13px; }
+.page-sub { font-size: 12px; color: #909399; font-weight: 400; margin-left: 8px; }
+.cell-ellipsis { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Tabs (页内标签切换) */
+.tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid #e4e7ed;
+    margin-bottom: 16px;
+}
+.tabs .tab {
+    padding: 9px 18px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    color: #606266;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+.tabs .tab:hover { color: #409eff; }
+.tabs .tab.active { color: #409eff; font-weight: 600; border-bottom-color: #409eff; }
+/* 键值网格 (患者信息/报告详情) */
+.kv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 8px 24px;
+}
+.kv-item { display: flex; gap: 8px; font-size: 13px; padding: 4px 0; }
+.kv-item b { color: #909399; font-weight: 400; white-space: nowrap; min-width: 84px; }
+.kv-item span { color: #303133; word-break: break-all; }
+/* 空态 (居中: 图标/提示) */
+.empty-state {
+    text-align: center;
+    color: #909399;
+    font-size: 13px;
+    padding: 36px 0;
+}
+.empty-state .empty-ico { color: #c0c4cc; margin-bottom: 8px; }
+.empty-state p { margin: 0; }
