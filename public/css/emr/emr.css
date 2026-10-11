@@ -46,7 +46,7 @@
     line-height: 16px;
     text-align: center;
     border-radius: 50%;
-    background: #409eff;
+    background: #149a9a;
     color: #fff;
     font-size: 14px;
     cursor: pointer;
@@ -157,7 +157,7 @@
     resize: vertical;
     outline: none;
 }
-.emr-section-input:focus { border-color: #409eff; border-style: solid; }
+.emr-section-input:focus { border-color: var(--primary); border-style: solid; }
 .emr-section-render {
     min-height: 30px;
     padding: 4px 2px;

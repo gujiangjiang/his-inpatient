@@ -36,8 +36,10 @@ const Dom = {
 
         const modal = document.createElement('div');
         modal.className = 'modal';
+        const closeHtml = '<button type="button" class="modal-close" title="关闭">' +
+            (window.svgIcon ? svgIcon('common/actions/close', 14) : '×') + '</button>';
         modal.innerHTML = `
-            <div class="modal-header">${title}</div>
+            <div class="modal-header"><span class="modal-title">${title}</span>${closeHtml}</div>
             <div class="modal-body">${content}</div>
         `;
 
@@ -64,6 +66,21 @@ const Dom = {
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
         if (window.SelectPicker) SelectPicker.initInputs(overlay);
+
+        // 关闭交互: X 按钮 / 点击遮罩空白处 / Esc (仅最上层)
+        overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
+        overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) overlay.remove(); });
+        const onKey = (e) => {
+            if (e.key !== 'Escape') return;
+            const all = document.querySelectorAll('.modal-overlay');
+            if (all.length && all[all.length - 1] === overlay && document.body.contains(overlay)) {
+                overlay.remove();
+                document.removeEventListener('keydown', onKey);
+            } else if (!document.body.contains(overlay)) {
+                document.removeEventListener('keydown', onKey);
+            }
+        };
+        document.addEventListener('keydown', onKey);
 
         return overlay;
     },
