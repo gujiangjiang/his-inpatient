@@ -2,7 +2,7 @@
 <div class="page-head flex-between">
     <div>
         <h3 class="page-title">诊断</h3>
-        <p class="page-desc">患者诊断分类管理、诊断同步与诊断符合情况</p>
+        <p class="page-desc">患者诊断分类管理、诊断同步与诊断符合情况（点击行内「＋」添加）</p>
     </div>
     <div>
         <button class="btn" onclick="emr_diagnosis_sync('discharge')">出院诊断同步</button>
@@ -12,15 +12,7 @@
 </div>
 
 <div class="card">
-    <div class="diag-add">
-        <div class="diag-add-input">
-            <input type="text" id="diag-input" class="form-control" placeholder="搜索诊断 / ICD-10 编码 / 拼音首字母（门诊标准编码库）" autocomplete="off">
-            <input type="hidden" id="diag-code">
-        </div>
-        <select id="diag-category" class="form-control diag-cat-select"></select>
-        <label class="fs-13" style="white-space:nowrap"><input type="checkbox" id="diag-save-tpl"> 存为常用诊断</label>
-        <button class="btn btn-primary" onclick="emr_diagnosis_add()">添加</button>
-    </div>
+    <div class="card-header">常用诊断 <span class="fs-12 text-muted">点击模板可打开添加窗并自动填入</span></div>
     <div class="apply-panels" id="diag-tpl-box"></div>
 </div>
 
@@ -29,6 +21,33 @@
     <div class="card diag-right">
         <div class="card-header">诊断符合情况</div>
         <div id="diag-match-box"></div>
+    </div>
+</div>
+
+<div class="diag-pop hidden" id="diag-pop">
+    <input class="form-control" id="diag-pop-kw" placeholder="搜索诊断 / ICD-10 编码 / 拼音首字母"
+        oninput="emr_diag_pop_search(this.value)" onkeydown="emr_diag_pop_key(event)">
+    <div class="diag-pop-res" id="diag-pop-res"></div>
+    <div class="diag-pop-form">
+        <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label">已选诊断</label>
+            <div id="diag-pop-sel" class="diag-pop-empty">搜索并选择诊断，或直接输入名称「保存」</div>
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label">分类</label>
+            <select id="diag-pop-cat" class="form-control" data-spicker="off"></select>
+        </div>
+        <div class="form-group" style="margin-bottom:8px">
+            <label class="form-label">备注（选填）</label>
+            <input id="diag-pop-note" class="form-control">
+        </div>
+        <div class="flex-between">
+            <label class="fs-13"><input type="checkbox" id="diag-pop-tpl"> 存为常用</label>
+            <div>
+                <button class="btn btn-small" onclick="emr_diag_pop_close()">取消</button>
+                <button class="btn btn-small btn-primary" onclick="emr_diag_pop_save()">保存</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -50,15 +69,29 @@ var _diagMatchOpts = [['', '请选择'], ['0', '未做'], ['1', '符合'], ['2',
 var _diagRows = [];
 var _diagTemplates = [];
 var _diagMatchData = {};
+var _diagPopSel = null;
+var _diagPopTimer = null;
 
 async function emr_diagnosis_init() {
     document.getElementById('main-app').style.display = 'flex';
     document.getElementById('login-container').style.display = 'none';
     const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
-    document.getElementById('diag-category').innerHTML = _diagCats.map(([k, label]) =>
+    document.getElementById('diag-pop-cat').innerHTML = _diagCats.map(([k, label]) =>
         `<option value="${k}">${label}</option>`).join('');
-    IcdSearch.init('diag-input', 'diag-code');
+    document.addEventListener('mousedown', function(e) {
+        const pop = document.getElementById('diag-pop');
+        if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target) && !e.target.closest('.diag-plus')) {
+            emr_diag_pop_close();
+        }
+    });
+    document.addEventListener('keydown', function(e) {
+        const pop = document.getElementById('diag-pop');
+        if (e.key === 'Escape' && pop && !pop.classList.contains('hidden')) {
+            e.stopPropagation();
+            emr_diag_pop_close();
+        }
+    });
     emr_diagnosis_load();
 }
 
@@ -90,32 +123,28 @@ function emr_diagnosis_renderRows() {
         return `<div class="diag-row">
             <div class="diag-label">${label}</div>
             <div class="diag-content">${content}</div>
-            <button class="diag-plus" title="添加到该分类" onclick="emr_diagnosis_focus('${k}')">＋</button>
+            <button class="diag-plus" title="添加到该分类" onclick="emr_diag_pop_open('${k}', event)">＋</button>
         </div>`;
     }).join('');
 }
 
-function emr_diagnosis_focus(k) {
-    document.getElementById('diag-category').value = k;
-    document.getElementById('diag-input').focus();
-}
-
 function emr_diagnosis_renderTemplates() {
     const box = document.getElementById('diag-tpl-box');
-    if (!_diagTemplates.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="apply-panels-title">常用诊断</div>' + _diagTemplates.map(t => `
+    if (!_diagTemplates.length) {
+        box.innerHTML = '<div class="empty-state">暂无常用诊断（添加时可勾选「存为常用」）</div>';
+        return;
+    }
+    box.innerHTML = _diagTemplates.map(t => `
         <span class="apply-panel-chip">
-            <a onclick="emr_diagnosis_useTemplate(${t.id})">${Format.escape(t.name)}</a>
+            <a data-tpl-id="${t.id}">${Format.escape(t.name)}</a>
             <button type="button" title="删除模板" onclick="emr_diagnosis_deleteTemplate(${t.id})">×</button>
         </span>`).join('');
-}
-
-function emr_diagnosis_useTemplate(id) {
-    const t = _diagTemplates.find(x => x.id == id);
-    if (!t) return;
-    document.getElementById('diag-input').value = t.name;
-    document.getElementById('diag-code').value = t.icd_code || '';
-    Dom.toast('已填入「' + t.name + '」，点击「添加」确认', 'info');
+    box.querySelectorAll('a[data-tpl-id]').forEach(el => {
+        el.addEventListener('click', () => {
+            const t = _diagTemplates.find(x => x.id == el.dataset.tplId);
+            if (t) emr_diag_pop_open('', { clientX: el.getBoundingClientRect().left, clientY: el.getBoundingClientRect().bottom }, t.name, t.icd_code);
+        });
+    });
 }
 
 function emr_diagnosis_renderMatch() {
@@ -135,29 +164,6 @@ async function emr_diagnosis_saveMatch(key, value) {
     if (!p) return;
     await AjaxLoader.api('emr/diagnosis-match-save', { method: 'POST', data: { patient_id: p.id, mkey: key, mvalue: value } });
     Dom.toast('诊断符合情况已保存', 'success');
-}
-
-async function emr_diagnosis_add() {
-    const p = PatientContext.current();
-    if (!p) return;
-    const name = (document.getElementById('diag-input').value || '').trim();
-    const code = (document.getElementById('diag-code').value || '').trim();
-    const category = document.getElementById('diag-category').value;
-    if (!name) { Dom.toast('请输入或选择诊断', 'error'); return; }
-    const saveTpl = document.getElementById('diag-save-tpl').checked;
-    await AjaxLoader.api('emr/diagnosis-save', { method: 'POST', data: {
-        patient_id: p.id, category: category, name: name, icd_code: code
-    }});
-    if (saveTpl) {
-        try {
-            await AjaxLoader.api('emr/diagnosis-template-save', { method: 'POST', data: { name: name, icd_code: code, category: category } });
-        } catch (e) { /* 模板重复等不阻断添加 */ }
-    }
-    Dom.toast('诊断已添加', 'success');
-    document.getElementById('diag-input').value = '';
-    document.getElementById('diag-code').value = '';
-    document.getElementById('diag-save-tpl').checked = false;
-    emr_diagnosis_load();
 }
 
 function emr_diagnosis_sync(mode) {
@@ -196,5 +202,106 @@ function emr_diagnosis_deleteTemplate(id) {
         } },
         { text: '取消', type: 'default' }
     ]);
+}
+
+/* ===== 添加诊断悬浮窗 (参考门诊一体化) ===== */
+function emr_diag_pop_open(cat, ev, presetName, presetCode) {
+    _diagPopSel = presetName ? { name: presetName, code: presetCode || '' } : null;
+    const pop = document.getElementById('diag-pop');
+    pop.classList.remove('hidden');
+    document.getElementById('diag-pop-cat').value = cat || 'initial';
+    document.getElementById('diag-pop-kw').value = '';
+    document.getElementById('diag-pop-note').value = '';
+    document.getElementById('diag-pop-tpl').checked = false;
+    document.getElementById('diag-pop-res').innerHTML = '';
+    emr_diag_pop_renderSel();
+    emr_diag_pop_position(ev);
+    setTimeout(() => document.getElementById('diag-pop-kw').focus(), 30);
+}
+
+function emr_diag_pop_position(ev) {
+    const pop = document.getElementById('diag-pop');
+    const w = 320, h = 420;
+    let x = (ev && ev.clientX) ? ev.clientX - 24 : (window.innerWidth - w) / 2;
+    let y = (ev && ev.clientY) ? ev.clientY + 6 : 120;
+    x = Math.min(Math.max(8, x), window.innerWidth - w - 8);
+    if (y + h > window.innerHeight - 8) y = Math.max(8, window.innerHeight - h - 8);
+    pop.style.left = x + 'px';
+    pop.style.top = y + 'px';
+}
+
+function emr_diag_pop_search(v) {
+    const kw = (v || '').trim();
+    const res = document.getElementById('diag-pop-res');
+    if (kw.length < 1) { res.innerHTML = ''; return; }
+    clearTimeout(_diagPopTimer);
+    _diagPopTimer = setTimeout(() => {
+        AjaxLoader.api('emr/icd-search?keyword=' + encodeURIComponent(kw), { silent: true }).then(r => {
+            const rows = r.data || [];
+            if (!rows.length) {
+                res.innerHTML = '<div class="diag-pop-item diag-pop-none">无匹配，回车按输入文本直接保存</div>';
+                return;
+            }
+            res.innerHTML = rows.map(x =>
+                `<div class="diag-pop-item" data-code="${Format.escape(x.code)}" data-name="${Format.escape(x.name)}">
+                    <b>[${Format.escape(x.code)}]</b> ${Format.escape(x.name)}</div>`).join('');
+            res.querySelectorAll('.diag-pop-item').forEach(el => {
+                el.addEventListener('click', () => emr_diag_pop_pick(el.dataset.code, el.dataset.name));
+            });
+        }).catch(() => {});
+    }, 250);
+}
+
+function emr_diag_pop_pick(code, name) {
+    _diagPopSel = { name: name, code: code };
+    document.getElementById('diag-pop-kw').value = '';
+    document.getElementById('diag-pop-res').innerHTML = '';
+    emr_diag_pop_renderSel();
+}
+
+function emr_diag_pop_renderSel() {
+    const box = document.getElementById('diag-pop-sel');
+    if (!_diagPopSel) {
+        box.innerHTML = '搜索并选择诊断，或直接输入名称「保存」';
+        box.classList.add('diag-pop-empty');
+        return;
+    }
+    box.classList.remove('diag-pop-empty');
+    box.innerHTML = `<b>[${Format.escape(_diagPopSel.code || '-')}]</b> ${Format.escape(_diagPopSel.name)}`;
+}
+
+function emr_diag_pop_key(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        emr_diag_pop_save();
+    }
+}
+
+async function emr_diag_pop_save() {
+    const p = PatientContext.current();
+    if (!p) return;
+    let sel = _diagPopSel;
+    const freeText = document.getElementById('diag-pop-kw').value.trim();
+    if (!sel && freeText) sel = { name: freeText, code: '' };
+    if (!sel) { Dom.toast('请先搜索选择或输入诊断', 'error'); return; }
+    const cat = document.getElementById('diag-pop-cat').value;
+    const note = document.getElementById('diag-pop-note').value.trim();
+    const saveTpl = document.getElementById('diag-pop-tpl').checked;
+    await AjaxLoader.api('emr/diagnosis-save', { method: 'POST', data: {
+        patient_id: p.id, category: cat, name: sel.name, icd_code: sel.code, note: note
+    }});
+    if (saveTpl) {
+        try {
+            await AjaxLoader.api('emr/diagnosis-template-save', { method: 'POST', data: { name: sel.name, icd_code: sel.code, category: cat } });
+        } catch (e2) { /* 模板重复等不阻断 */ }
+    }
+    Dom.toast('诊断已添加', 'success');
+    emr_diag_pop_close();
+    emr_diagnosis_load();
+}
+
+function emr_diag_pop_close() {
+    document.getElementById('diag-pop').classList.add('hidden');
+    _diagPopSel = null;
 }
 </script>

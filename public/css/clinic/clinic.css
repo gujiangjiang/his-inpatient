@@ -142,3 +142,25 @@
 .diag-plus:hover { opacity: .75; }
 .diag-match-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
 .diag-match-label { flex: 1; color: #607086; }
+
+/* 添加诊断悬浮窗 (参考门诊一体化) */
+.diag-pop {
+    position: fixed;
+    z-index: 2400;
+    width: 320px;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+    padding: 10px;
+    box-sizing: border-box;
+}
+.diag-pop-res { max-height: 168px; overflow-y: auto; margin-top: 8px; border: 1px solid #eef2f7; border-radius: 8px; }
+.diag-pop-res:empty { display: none; }
+.diag-pop-item { padding: 6px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f5f7fa; }
+.diag-pop-item:last-child { border-bottom: none; }
+.diag-pop-item:hover { background: #f4fafa; }
+.diag-pop-none { color: #909399; cursor: default; }
+.diag-pop-none:hover { background: transparent; }
+.diag-pop-form { margin-top: 8px; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
+.diag-pop-empty { color: #b0b8c4; font-size: 13px; padding: 4px 2px; }
