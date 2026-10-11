@@ -5,7 +5,13 @@ $user = Auth::user();
 $patientId = (int)Validator::get('patient_id', 0);
 $toDeptId = (int)Validator::get('to_dept_id', 0);
 $purpose = trim((string)Validator::get('purpose', ''));
+$consultType = trim((string)Validator::get('consult_type', '普通会诊'));
+$plannedAt = trim((string)Validator::get('planned_at', ''));
+$summary = trim((string)Validator::get('summary', ''));
+$diagnosis = trim((string)Validator::get('diagnosis', ''));
+$joinDepts = trim((string)Validator::get('join_depts', ''));
 if (!$patientId || !$toDeptId || $purpose === '') Response::error('请选择目标科室并填写会诊目的');
+if ($consultType === '') $consultType = '普通会诊';
 
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在', 404);
@@ -55,6 +61,11 @@ try {
         'to_dept_id' => $toDeptId,
         'to_dept_name' => $toDept['name'],
         'purpose' => $purpose,
+        'consult_type' => $consultType,
+        'planned_at' => $plannedAt,
+        'summary' => $summary,
+        'diagnosis' => $diagnosis,
+        'join_depts' => $joinDepts,
         'status' => 'pending',
         'created_by' => $user['id'],
         'created_by_name' => $user['name'],
