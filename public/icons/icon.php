@@ -53,7 +53,7 @@ function icon($set, $name, $size = 24, $class = '', $attrs = '') {
  * 全部图标 (键: 分类/名称), 供 JS 桥接输出
  */
 function icon_all() {
-    $sets = ['common/arrows', 'common/actions', 'common/status', 'medical/objects'];
+    $sets = ['common/arrows', 'common/actions', 'common/status', 'common/nav', 'medical/objects', 'clinic/nav'];
     $all = [];
     foreach ($sets as $set) {
         foreach (icon_set($set) as $name => $def) {

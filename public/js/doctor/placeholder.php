@@ -15,9 +15,9 @@ require_once __DIR__ . '/../../icons/icon.php';
 function doctor_placeholder_init() {
     const title = document.getElementById('placeholder-title');
     if (title) {
-        // 尝试读取侧边栏 item 传入的模块名
+        // 优先取点击时记录的模块名, 回退活动菜单项
         const activeItem = document.querySelector('.sidebar .menu-item.active');
-        title.textContent = (activeItem && activeItem.dataset.placeholder) ? activeItem.dataset.placeholder : '功能模块';
+        title.textContent = window.__placeholderTitle || (activeItem && activeItem.dataset.placeholder) || '功能模块';
     }
 }
 </script>

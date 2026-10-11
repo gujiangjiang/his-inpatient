@@ -28,6 +28,12 @@ const App = {
             const oc = item.getAttribute('onclick') || '';
             item.classList.toggle('active', oc.indexOf(needle) !== -1);
         });
+        // 占位页: 多个菜单共用同一路由, 仅高亮标题匹配的菜单项
+        if (module === 'doctor' && page === 'placeholder' && window.__placeholderTitle) {
+            document.querySelectorAll('#sidebar .menu-item[data-placeholder]').forEach(function(item) {
+                item.classList.toggle('active', item.getAttribute('data-placeholder') === window.__placeholderTitle);
+            });
+        }
     }
 };
 
@@ -39,6 +45,12 @@ window.navigateTo = function(module, page) {
     } else {
         window.location.hash = target;
     }
+};
+
+// 打开占位页 (多个占位菜单共用 doctor/placeholder 路由时, 用标题区分当前项)
+window.openPlaceholder = function(title) {
+    window.__placeholderTitle = title;
+    window.navigateTo('doctor', 'placeholder');
 };
 
 App.init();
