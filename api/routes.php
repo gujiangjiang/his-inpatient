@@ -27,6 +27,7 @@ function getRoutes() {
         'admin/integration-config' => ['admin/integration_config.php', ['admin']],
         'admin/integration-config-save' => ['admin/integration_config_save.php', ['admin']],
         'admin/integration-test' => ['admin/integration_test.php', ['admin']],
+        'admin/integration-push-catalog' => ['admin/integration_push_catalog.php', ['admin']],
 
         // 患者管理
         'patients/list' => ['patients/patient_list.php', ['admin', 'doctor', 'nurse']],
