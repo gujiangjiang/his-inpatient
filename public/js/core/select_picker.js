@@ -26,12 +26,34 @@ const SelectPicker = {
 
         const wrap = document.createElement('div');
         wrap.className = 'spicker' + (opts.small ? ' spicker-small' : '') + (select.disabled ? ' spicker-disabled' : '');
-        // 继承原生 select 的尺寸约束: 包裹层若不继承 width/flex 会铺满同行, 把旁边元素(输入框/标签)挤压
+        // 继承原生 select 的尺寸约束: 包裹层若不继承 width/flex, 会铺满同行把旁边元素(输入框/标签)挤压
+        // 规则: ① 内联 width 原样继承; ② 纯 CSS 中的固定像素宽 (如 .diag-cat-select) 复制像素值;
+        //       ③ 百分比/自适应宽 (form-control 100%): 弹性容器内转 auto 防换行 (由 flex 定尺寸),
+        //          普通容器内保持默认 100% (与原行为一致)
         const cs = getComputedStyle(select);
-        if (select.style.width) wrap.style.width = select.style.width;
+        const parent = select.parentNode;
+        if (select.style.width) {
+            wrap.style.width = select.style.width;
+            if (cs.minWidth && cs.minWidth !== 'auto' && cs.minWidth !== '0px') wrap.style.minWidth = cs.minWidth;
+            if (cs.maxWidth && cs.maxWidth !== 'none') wrap.style.maxWidth = cs.maxWidth;
+        } else {
+            const pxWidth = parseFloat(cs.width) || 0;
+            const parentStyle = parent ? getComputedStyle(parent) : null;
+            const parentInner = parent ? parent.getBoundingClientRect().width
+                - (parseFloat(parentStyle.paddingLeft) || 0)
+                - (parseFloat(parentStyle.paddingRight) || 0) : 0;
+            const isPercentage = parentInner > 0 && pxWidth >= parentInner - 1;
+            if (!isPercentage && pxWidth > 0) {
+                // CSS 固定宽度 (如诊断分类下拉 190px): 包裹层同宽
+                wrap.style.width = pxWidth + 'px';
+            } else if (parentStyle && (parentStyle.display === 'flex' || parentStyle.display === 'inline-flex')) {
+                // 弹性容器 + 百分比宽: 转 auto 防止撑满换行
+                wrap.style.width = 'auto';
+                wrap.style.maxWidth = '100%';
+            }
+            // 其余保持 .spicker 默认 100% (普通表单块内行为不变)
+        }
         if (cs.flex && cs.flex !== '0 1 auto') wrap.style.flex = cs.flex;
-        if (cs.minWidth && cs.minWidth !== 'auto' && cs.minWidth !== '0px') wrap.style.minWidth = cs.minWidth;
-        if (cs.maxWidth && cs.maxWidth !== 'none') wrap.style.maxWidth = cs.maxWidth;
         const control = document.createElement('div');
         control.className = 'spicker-control';
         if (!select.disabled) control.tabIndex = 0;
