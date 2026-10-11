@@ -51,6 +51,7 @@ class Asset {
         '/js/orders/dose_picker.js',
         '/js/orders/order_sets.js',
         '/js/clinic/lab_panel.js',
+        '/js/clinic/exam_panel.js',
         '/js/admin/integrations.js',
         '/js/login/login.js',
     ];

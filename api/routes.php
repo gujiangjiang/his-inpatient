@@ -119,6 +119,9 @@ function getRoutes() {
         'exam/list' => ['exam/exam_list.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
         'exam/detail' => ['exam/exam_detail.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
         'exam/report' => ['exam/exam_report.php', ['admin', 'lab_tech']],
+        'exam/catalog' => ['exam/exam_catalog.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
+        'exam/apply' => ['exam/exam_apply.php', ['admin', 'doctor']],
+        'exam/delete' => ['exam/exam_delete.php', ['admin', 'doctor']],
 
         // 病案首页
         'case/get' => ['case_front_page/get.php', ['admin', 'doctor']],
