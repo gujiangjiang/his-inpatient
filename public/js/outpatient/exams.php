@@ -6,6 +6,7 @@
     </div>
     <div>
         <button class="btn btn-primary" onclick="ExamPanel.open()">检查申请</button>
+        <button class="btn" onclick="outpatient_exams_printAll()">全部打印</button>
         <button class="btn" onclick="outpatient_exams_reload()">刷新</button>
     </div>
 </div>
@@ -20,7 +21,7 @@
         <div id="exam-apply-notice"></div>
         <div style="overflow-x:auto">
         <table class="table hidden" id="exam-apply-table">
-            <thead><tr><th>申请单号</th><th>检查项目</th><th>部位</th><th>状态</th><th>开单时间</th><th>操作</th></tr></thead>
+            <thead><tr><th>次</th><th>申请单号</th><th>检查项目</th><th>部位</th><th>执行科室</th><th>申请时间</th><th>状态</th><th>操作</th></tr></thead>
             <tbody id="exam-apply-body"></tbody>
         </table>
         </div>
@@ -82,13 +83,15 @@ function outpatient_exams_loadApply() {
         }
         notice.innerHTML = '';
         table.classList.remove('hidden');
-        document.getElementById('exam-apply-body').innerHTML = _examApplyRows.map(x => `
+        document.getElementById('exam-apply-body').innerHTML = _examApplyRows.map((x, i) => `
             <tr>
+                <td>${i + 1}</td>
                 <td>${Format.escape(x.report_no)}</td>
                 <td>${Format.escape(x.exam_type)}</td>
                 <td>${Format.escape(x.body_part || '')}</td>
-                <td><span class="badge ${_EXAM_STATUS_CLS[x.status] || 'badge-default'}">${_EXAM_STATUS[x.status] || Format.escape(x.status)}</span></td>
+                <td>${Format.escape(x.exec_dept || '')}</td>
                 <td>${Format.escape(x.created_at || '')}</td>
+                <td><span class="badge ${_EXAM_STATUS_CLS[x.status] || 'badge-default'}">${_EXAM_STATUS[x.status] || Format.escape(x.status)}</span></td>
                 <td>
                     <button class="btn btn-small" onclick="outpatient_exams_applyDetail(${x.id})">查看</button>
                     <button class="btn btn-small" onclick="outpatient_exams_applyPrint(${x.id})">打印</button>
@@ -114,18 +117,29 @@ function outpatient_exams_applyDetail(id) {
     }).catch(() => {});
 }
 
+function outpatient_exams_printBlock(rep) {
+    return `
+        <h2 class="doc-title">检查申请单</h2>
+        <div class="doc-sub">${Format.escape(rep.report_no)}</div>
+        <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>
+        <table class="doc-table"><thead><tr><th>检查项目</th><th>检查部位</th><th>所见</th><th>结论</th></tr></thead>
+        <tbody><tr><td>${Format.escape(rep.exam_type)}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
+        <div class="doc-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>`;
+}
+
 function outpatient_exams_applyPrint(id) {
     AjaxLoader.api('exam/detail?id=' + id, { silent: true }).then(r => {
-        const rep = r.data;
-        const html = `
-            <h2 class="doc-title">检查申请单</h2>
-            <div class="doc-sub">${Format.escape(rep.report_no)}</div>
-            <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>
-            <table class="doc-table"><thead><tr><th>检查项目</th><th>检查部位</th><th>所见</th><th>结论</th></tr></thead>
-            <tbody><tr><td>${Format.escape(rep.exam_type)}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
-            <div class="doc-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>`;
-        PrintHelper.printHtml('检查申请单', html);
+        PrintHelper.printHtml('检查申请单', outpatient_exams_printBlock(r.data));
     }).catch(() => {});
+}
+
+function outpatient_exams_printAll() {
+    if (!_examApplyRows.length) { Dom.toast('暂无检查申请', 'info'); return; }
+    Promise.all(_examApplyRows.map(x => AjaxLoader.api('exam/detail?id=' + x.id, { silent: true })))
+        .then(rs => {
+            const html = rs.map(r => outpatient_exams_printBlock(r.data)).join('<div style="page-break-after: always;"></div>');
+            PrintHelper.printHtml('检查申请单（全部）', html);
+        }).catch(() => {});
 }
 
 function outpatient_exams_applyDelete(id) {

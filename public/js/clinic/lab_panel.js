@@ -37,7 +37,7 @@ const LabPanel = {
         <div class="apply-panel">
             <div class="apply-left">
                 <input class="form-control" id="lab-kw" placeholder="搜索项目名称" oninput="LabPanel.onKw(this.value)">
-                <div class="apply-source">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地虚拟库（门诊接口未启用/不可用）'}</div>
+                <div class="apply-source">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地虚拟库（门诊接口未启用/不可用）'} <span class="apply-warn">注：请一次性开好所有的项目！</span></div>
                 <div class="apply-cats" id="lab-cats">
                     ${cats.map((c, i) => `<button type="button" class="apply-chip${i === 0 ? ' active' : ''}" data-cat="${i === 0 ? '' : Format.escape(c)}" onclick="LabPanel.onCat(this)">${Format.escape(c)}</button>`).join('')}
                 </div>

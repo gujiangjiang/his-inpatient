@@ -6,6 +6,7 @@
     </div>
     <div>
         <button class="btn btn-primary" onclick="LabPanel.open()">检验申请</button>
+        <button class="btn" onclick="outpatient_labs_printAll()">全部打印</button>
         <button class="btn" onclick="outpatient_labs_reload()">刷新</button>
     </div>
 </div>
@@ -17,10 +18,11 @@
 
 <div id="lab-pane-apply">
     <div class="card">
+        <p class="apply-warn" style="font-size:12px">请一次性开好所有的项目！</p>
         <div id="lab-apply-notice"></div>
         <div style="overflow-x:auto">
         <table class="table hidden" id="lab-apply-table">
-            <thead><tr><th>申请单号</th><th>项目</th><th>标本</th><th>状态</th><th>开单时间</th><th>操作</th></tr></thead>
+            <thead><tr><th>次</th><th>申请单号</th><th>申请项目</th><th>标本</th><th>执行科室</th><th>申请时间</th><th>状态</th><th>操作</th></tr></thead>
             <tbody id="lab-apply-body"></tbody>
         </table>
         </div>
@@ -80,13 +82,15 @@ function outpatient_labs_loadApply() {
         }
         notice.innerHTML = '';
         table.classList.remove('hidden');
-        document.getElementById('lab-apply-body').innerHTML = _labApplyRows.map(x => `
+        document.getElementById('lab-apply-body').innerHTML = _labApplyRows.map((x, i) => `
             <tr>
+                <td>${i + 1}</td>
                 <td>${Format.escape(x.report_no)}</td>
                 <td>${Format.escape(x.exam_name)}</td>
                 <td>${Format.escape(x.specimen_type || '')}</td>
-                <td><span class="badge ${_LAB_STATUS_CLS[x.status] || 'badge-default'}">${_LAB_STATUS[x.status] || Format.escape(x.status)}</span>${x.is_critical == 1 ? ' <span class="badge badge-critical">危急</span>' : ''}</td>
+                <td>${Format.escape(x.exec_dept || '')}</td>
                 <td>${Format.escape(x.created_at || '')}</td>
+                <td><span class="badge ${_LAB_STATUS_CLS[x.status] || 'badge-default'}">${_LAB_STATUS[x.status] || Format.escape(x.status)}</span>${x.is_critical == 1 ? ' <span class="badge badge-critical">危急</span>' : ''}</td>
                 <td>
                     <button class="btn btn-small" onclick="outpatient_labs_detail(${x.id})">查看</button>
                     <button class="btn btn-small" onclick="outpatient_labs_print(${x.id})">打印</button>
@@ -115,19 +119,30 @@ function outpatient_labs_detail(id) {
     }).catch(() => {});
 }
 
+function outpatient_labs_printBlock(rep) {
+    const rows = (rep.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${Format.escape(it.item_name)}</td>
+        <td>${Format.escape(rep.specimen_type || '')}</td><td>${Format.escape(it.result || '')}</td><td>${Format.escape(it.reference_range || '')}</td></tr>`).join('');
+    return `
+        <h2 class="doc-title">检验申请单</h2>
+        <div class="doc-sub">${Format.escape(rep.report_no)}</div>
+        <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>
+        <table class="doc-table"><thead><tr><th>序号</th><th>检验项目</th><th>标本</th><th>结果</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="doc-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>`;
+}
+
 function outpatient_labs_print(id) {
     AjaxLoader.api('lab/detail?id=' + id, { silent: true }).then(r => {
-        const rep = r.data;
-        const rows = (rep.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${Format.escape(it.item_name)}</td>
-            <td>${Format.escape(rep.specimen_type || '')}</td><td>${Format.escape(it.result || '')}</td><td>${Format.escape(it.reference_range || '')}</td></tr>`).join('');
-        const html = `
-            <h2 class="doc-title">检验申请单</h2>
-            <div class="doc-sub">${Format.escape(rep.report_no)}</div>
-            <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>
-            <table class="doc-table"><thead><tr><th>序号</th><th>检验项目</th><th>标本</th><th>结果</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
-            <div class="doc-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>`;
-        PrintHelper.printHtml('检验申请单', html);
+        PrintHelper.printHtml('检验申请单', outpatient_labs_printBlock(r.data));
     }).catch(() => {});
+}
+
+function outpatient_labs_printAll() {
+    if (!_labApplyRows.length) { Dom.toast('暂无检验申请', 'info'); return; }
+    Promise.all(_labApplyRows.map(x => AjaxLoader.api('lab/detail?id=' + x.id, { silent: true })))
+        .then(rs => {
+            const html = rs.map(r => outpatient_labs_printBlock(r.data)).join('<div style="page-break-after: always;"></div>');
+            PrintHelper.printHtml('检验申请单（全部）', html);
+        }).catch(() => {});
 }
 
 function outpatient_labs_delete(id) {

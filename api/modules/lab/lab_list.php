@@ -2,7 +2,8 @@
 // api/modules/lab/lab_list.php
 Auth::requireRole(['admin', 'doctor', 'nurse', 'lab_tech']);
 $patientId = Validator::get('patient_id');
-$sql = "SELECT lr.*, p.name as patient_name, p.bed_no, u.name as creator_name
+$sql = "SELECT lr.*, p.name as patient_name, p.bed_no, u.name as creator_name,
+        (SELECT dept FROM lab_catalog WHERE name = lr.exam_name AND opd_id IS NOT NULL LIMIT 1) AS exec_dept
         FROM lab_reports lr
         LEFT JOIN patients p ON lr.patient_id = p.id
         LEFT JOIN users u ON lr.created_by = u.id";
