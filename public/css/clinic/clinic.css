@@ -59,6 +59,7 @@
 .apply-panel-chip button { border: none; background: transparent; color: #7ab7b7; cursor: pointer; font-size: 13px; line-height: 1; }
 .apply-panel-chip button:hover { color: #e5484d; }
 .apply-hint { font-size: 12px; color: #b0b8c4; margin-top: 8px; }
+.rx-defaults { display: block; font-size: 11px; color: #a8b0bd; margin-top: 2px; }
 
 /* 会诊 */
 .consult-purpose { color: #607086; font-size: 13px; white-space: pre-wrap; }

@@ -57,6 +57,9 @@ function getRoutes() {
         'pharmacy/dispensing-save' => ['pharmacy/dispensing_save.php', ['admin', 'pharmacist']],
         'pharmacy/dispensing-list' => ['pharmacy/dispensing_list.php', ['admin', 'pharmacist']],
 
+        // 处方 (药品项目库来自门诊一体化)
+        'rx/catalog' => ['rx/rx_catalog.php', ['admin', 'doctor', 'pharmacist']],
+
         // 护士
         'nurse/patient-list' => ['nurse/patient_list.php', ['admin', 'nurse']],
         'nurse/order-list' => ['nurse/order_list.php', ['admin', 'nurse']],

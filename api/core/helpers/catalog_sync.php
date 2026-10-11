@@ -21,12 +21,26 @@ function exam_dept_by_category($cat) {
     return '医技科';
 }
 
+/** 频次中文 → 频次代码 */
+function freq_code_from_text($text) {
+    $map = [
+        '每日一次' => 'qd', '每日1次' => 'qd', 'qd' => 'qd',
+        '每日二次' => 'bid', '每日两次' => 'bid', '每日2次' => 'bid', 'bid' => 'bid',
+        '每日三次' => 'tid', '每日3次' => 'tid', 'tid' => 'tid',
+        '每日四次' => 'qid', '每日4次' => 'qid', 'qid' => 'qid',
+        '每晚一次' => 'qn', 'qn' => 'qn', '隔日一次' => 'qod', 'qod' => 'qod',
+        '必要时' => 'prn', 'prn' => 'prn', '立即' => 'st', 'st' => 'st',
+    ];
+    $t = trim((string)$text);
+    return isset($map[$t]) ? $map[$t] : '';
+}
+
 /**
  * 同步门诊项目字典到本地缓存
  * @return array [ok, count, error] (count=-1 表示未到期跳过)
  */
 function catalog_sync_from_opd($type, $force = false) {
-    if ($type !== 'lab_items' && $type !== 'exam_items') {
+    if (!in_array($type, ['lab_items', 'exam_items', 'drugs'], true)) {
         return ['ok' => false, 'count' => 0, 'error' => '未知字典类型'];
     }
     if (!$force && !catalog_sync_due($type)) {
@@ -60,7 +74,7 @@ function catalog_sync_from_opd($type, $force = false) {
                     'report_time' => '', 'sort_no' => 0, 'created_at' => $now,
                 ]);
             }
-        } else {
+        } elseif ($type === 'exam_items') {
             $cat = (string)($it['category'] ?? '');
             $fields = [
                 'name' => (string)($it['name'] ?? ''),
@@ -76,6 +90,32 @@ function catalog_sync_from_opd($type, $force = false) {
                 DB::update('exam_catalog', $fields, 'id = ?', [$exists['id']]);
             } else {
                 DB::insert('exam_catalog', $fields + [
+                    'opd_id' => $opdId, 'sort_no' => 0, 'created_at' => $now,
+                ]);
+            }
+        } else {
+            // drugs: 门诊药品字典
+            $freqText = (string)($it['frequency'] ?? '');
+            $fields = [
+                'name' => (string)($it['name'] ?? ''),
+                'spec' => (string)($it['spec'] ?? ''),
+                'unit' => (string)($it['package_unit'] ?? ''),
+                'price' => (float)($it['price'] ?? 0),
+                'vendor' => (string)($it['vendor'] ?? ''),
+                'vendor_short' => (string)($it['vendor_short'] ?? ''),
+                'category' => (string)($it['category'] ?? ''),
+                'form' => (string)($it['form'] ?? ''),
+                'single_dose' => (string)($it['single_dose'] ?? ''),
+                'frequency_code' => freq_code_from_text($freqText),
+                'frequency_text' => $freqText,
+                'route' => (string)($it['route'] ?? ''),
+                'is_active' => 1,
+            ];
+            $exists = DB::selectOne("SELECT id FROM drug_catalog WHERE opd_id = ?", [$opdId]);
+            if ($exists) {
+                DB::update('drug_catalog', $fields, 'id = ?', [$exists['id']]);
+            } else {
+                DB::insert('drug_catalog', $fields + [
                     'opd_id' => $opdId, 'sort_no' => 0, 'created_at' => $now,
                 ]);
             }
