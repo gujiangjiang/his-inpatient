@@ -19,6 +19,7 @@ const LabPanel = {
             AjaxLoader.api('lab/panel-list', { silent: true })
         ]);
         this.catalog = c.data || [];
+        this.source = c.source || 'local';
         this.panels = pn.data || [];
         Dom.modal('检验申请', this.html(), [
             { text: '保存', type: 'primary', onclick: () => this.submit(0) },
@@ -36,6 +37,7 @@ const LabPanel = {
         <div class="apply-panel">
             <div class="apply-left">
                 <input class="form-control" id="lab-kw" placeholder="搜索项目名称" oninput="LabPanel.onKw(this.value)">
+                <div class="apply-source">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地虚拟库（门诊接口未启用/不可用）'}</div>
                 <div class="apply-cats" id="lab-cats">
                     ${cats.map((c, i) => `<button type="button" class="apply-chip${i === 0 ? ' active' : ''}" data-cat="${i === 0 ? '' : Format.escape(c)}" onclick="LabPanel.onCat(this)">${Format.escape(c)}</button>`).join('')}
                 </div>
@@ -78,13 +80,18 @@ const LabPanel = {
         if (!rows.length) { list.innerHTML = '<div class="empty-state">无匹配项目</div>'; return; }
         list.innerHTML = rows.map(i => {
             const sel = this.selected.includes(i.id) ? ' selected' : '';
+            const isGroup = i.is_group == 1 && i.members && i.members.length;
+            const tag = isGroup ? `<span class="ai-tag">组合 ${i.members.length} 项</span>`
+                : (i.category ? `<span class="ai-tag">${Format.escape(i.category)}</span>` : '');
+            const meta = [i.specimen, i.dept, i.report_time].filter(Boolean).join(' · ');
+            const noteText = isGroup ? i.members.map(m => m.name).join('、') : (i.note || '');
             return `<div class="apply-item${sel}" onclick="LabPanel.toggle(${i.id})">
                 <div class="ai-main">
                     <span class="ai-name">${Format.escape(i.name)}</span>
-                    ${i.category ? `<span class="ai-tag">${Format.escape(i.category)}</span>` : ''}
+                    ${tag}
                 </div>
-                <div class="ai-meta">${Format.escape(i.specimen || '')} · ${Format.escape(i.dept || '')} · ${Format.escape(i.report_time || '')}</div>
-                ${i.note ? `<div class="ai-note">${Format.escape(i.note)}</div>` : ''}
+                <div class="ai-meta">${Format.escape(meta)}</div>
+                ${noteText ? `<div class="ai-note">${Format.escape(noteText)}</div>` : ''}
                 <div class="ai-price">¥${Number(i.price || 0).toFixed(2)}</div>
             </div>`;
         }).join('');
@@ -107,13 +114,17 @@ const LabPanel = {
         document.getElementById('lab-count').textContent = items.length;
         document.getElementById('lab-total').textContent = '¥' + items.reduce((s, i) => s + Number(i.price || 0), 0).toFixed(2);
         if (!items.length) { box.innerHTML = '<div class="empty-state">点击左侧项目加入</div>'; return; }
-        box.innerHTML = items.map(i => `
+        box.innerHTML = items.map(i => {
+            const isGroup = i.is_group == 1 && i.members && i.members.length;
+            const meta = isGroup ? ('组合 ' + i.members.length + ' 项') : (i.specimen || '');
+            return `
             <div class="apply-sel-row">
                 <span class="asr-name">${Format.escape(i.name)}</span>
-                <span class="asr-meta">${Format.escape(i.specimen || '')}</span>
+                <span class="asr-meta">${Format.escape(meta)}</span>
                 <span class="asr-price">¥${Number(i.price || 0).toFixed(2)}</span>
                 <button type="button" class="asr-x" onclick="LabPanel.toggle(${i.id})">×</button>
-            </div>`).join('');
+            </div>`;
+        }).join('');
     },
 
     renderPanels() {

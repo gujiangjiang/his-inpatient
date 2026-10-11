@@ -39,11 +39,26 @@ try {
             'created_by' => $user['id'],
             'created_at' => $now,
         ]);
-        DB::insert('lab_report_items', [
-            'report_id' => $reportId,
-            'item_name' => $it['name'],
-            'created_at' => $now,
-        ]);
+        // 组合项目: 申请单明细展开为组合成员 (名称/单位/参考范围来自门诊字典)
+        $members = json_decode((string)($it['members_json'] ?? ''), true) ?: [];
+        if ($members) {
+            foreach ($members as $mem) {
+                if (trim((string)($mem['name'] ?? '')) === '') continue;
+                DB::insert('lab_report_items', [
+                    'report_id' => $reportId,
+                    'item_name' => (string)$mem['name'],
+                    'unit' => (string)($mem['unit'] ?? ''),
+                    'reference_range' => (string)($mem['normal_range'] ?? ''),
+                    'created_at' => $now,
+                ]);
+            }
+        } else {
+            DB::insert('lab_report_items', [
+                'report_id' => $reportId,
+                'item_name' => $it['name'],
+                'created_at' => $now,
+            ]);
+        }
         $orderNo = 'O' . date('YmdHis') . str_pad((string)random_int(0, 999), 3, '0', STR_PAD_LEFT);
         $orderId = (int)DB::insert('orders', [
             'patient_id' => $patientId,

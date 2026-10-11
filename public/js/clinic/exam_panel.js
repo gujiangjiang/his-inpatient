@@ -15,6 +15,7 @@ const ExamPanel = {
         this.kw = '';
         const c = await AjaxLoader.api('exam/catalog', { silent: true });
         this.catalog = c.data || [];
+        this.source = c.source || 'local';
         Dom.modal('检查申请', this.html(), [
             { text: '保存', type: 'primary', onclick: () => this.submit(0) },
             { text: '保存并提交', type: 'success', onclick: () => this.submit(1) },
@@ -34,7 +35,7 @@ const ExamPanel = {
                     ${cats.map((c, i) => `<button type="button" class="apply-chip${i === 0 ? ' active' : ''}" data-cat="${i === 0 ? '' : Format.escape(c)}" onclick="ExamPanel.onCat(this)">${Format.escape(c)}</button>`).join('')}
                 </div>
                 <div class="apply-list" id="exam-list"></div>
-                <div class="apply-hint">项目库当前为虚拟数据，预留接口对接门诊一体化检查项目库</div>
+                <div class="apply-hint">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地虚拟数据（预留接口对接门诊一体化检查项目库）'}</div>
             </div>
             <div class="apply-right">
                 <div class="flex-between apply-sel-head">
