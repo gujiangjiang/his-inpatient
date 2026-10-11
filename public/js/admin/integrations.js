@@ -13,10 +13,11 @@ async function admin_integrations_init() {
 }
 
 function admin_integrations_switch(name) {
-    ['opd', 'pacs', 'endpoints'].forEach(function(k) {
+    ['opd', 'pacs', 'endpoints', 'audit', 'help'].forEach(function(k) {
         document.getElementById('itg-pane-' + k).classList.toggle('hidden', k !== name);
         document.getElementById('itg-tab-' + k).classList.toggle('active', k === name);
     });
+    if (name === 'audit') admin_integrations_auditList();
 }
 
 async function admin_integrations_load_config() {
@@ -35,6 +36,11 @@ function admin_integrations_status(c) {
     const badge = (ok, onText, offText) => ok
         ? '<span class="badge badge-success">' + onText + '</span>'
         : '<span class="badge badge-default">' + offText + '</span>';
+    const testHtml = c.last_test_at
+        ? (c.last_test_ok === '1'
+            ? '<span class="badge badge-success">通过</span> ' + Format.escape(c.last_test_at)
+            : '<span class="badge badge-danger">未通过</span> ' + Format.escape(c.last_test_at))
+        : '<span class="text-muted">尚未测试</span>';
     const rows = [
         ['门诊接口', badge(c.opd_enabled, '已启用', '未启用')],
         ['门诊服务地址', c.opd_base_url ? Format.escape(c.opd_base_url) : '<span class="text-muted">未配置</span>'],
@@ -42,6 +48,7 @@ function admin_integrations_status(c) {
         ['业务 Token', badge(!!c.opd_his_token, '已配置', '未配置')],
         ['PACS 阅片', badge(c.pacs_enabled, '已启用', '未启用')],
         ['阅片地址', c.pacs_viewer_url ? Format.escape(c.pacs_viewer_url) : '<span class="text-muted">未配置</span>'],
+        ['最近测试', testHtml],
     ];
     document.getElementById('itg-opd-status').innerHTML = rows.map(r =>
         '<div class="status-row"><span class="status-label">' + r[0] + '</span><span class="status-value">' + r[1] + '</span></div>'
@@ -72,6 +79,32 @@ async function admin_integrations_test() {
         '<span class="tr-name">' + Format.escape(it.name) + '</span><span class="tr-detail">' + Format.escape(it.detail) + '</span></div>'
     ).join('');
     Dom.toast(r.data && r.data.ok ? '连通性全部通过' : '存在未通过项，请检查配置', r.data && r.data.ok ? 'success' : 'error');
+    admin_integrations_load_config();
+}
+
+async function admin_integrations_auditList() {
+    const r = await AjaxLoader.api('admin/integration-audit-list', { silent: true });
+    const rows = r.data || [];
+    const tbody = document.getElementById('itg-audit-body');
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">暂无变更记录</div></td></tr>';
+        return;
+    }
+    tbody.innerHTML = rows.map(a =>
+        '<tr><td>' + Format.escape(a.created_at) + '</td><td>' + Format.escape(a.actor_name) + '</td>' +
+        '<td>' + Format.escape(a.detail) + '</td><td>' + Format.escape(a.ip) + '</td></tr>'
+    ).join('');
+}
+
+function admin_integrations_auditClear() {
+    Dom.modal('清空变更记录', '<p>确定清空全部配置变更记录？</p>', [
+        { text: '清空', type: 'danger', onclick: async function() {
+            await AjaxLoader.api('admin/integration-audit-clear', { method: 'POST' });
+            Dom.toast('已清空', 'success');
+            admin_integrations_auditList();
+        } },
+        { text: '取消', type: 'default' }
+    ]);
 }
 
 function admin_integrations_push() {

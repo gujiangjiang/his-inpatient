@@ -11,6 +11,8 @@ function opd_defaults() {
         'opd_his_token' => '',
         'pacs_enabled' => '1',
         'pacs_viewer_url' => 'http://127.0.0.1:8090/?r=viewer&uid={study_uid}',
+        'last_test_at' => '',
+        'last_test_ok' => '',
     ];
 }
 

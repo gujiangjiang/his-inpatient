@@ -9,4 +9,6 @@ Response::success([
     'opd_his_token' => $s['opd_his_token'],
     'pacs_enabled' => $s['pacs_enabled'] === '1',
     'pacs_viewer_url' => $s['pacs_viewer_url'],
+    'last_test_at' => $s['last_test_at'],
+    'last_test_ok' => $s['last_test_ok'],
 ]);

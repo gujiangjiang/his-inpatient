@@ -44,4 +44,9 @@ $allOk = true;
 foreach ($items as $it) {
     if (!$it['ok']) $allOk = false;
 }
+// 记录最近一次测试结果 (状态总览展示)
+opd_settings_save([
+    'last_test_at' => DateHelper::now(),
+    'last_test_ok' => $allOk ? '1' : '0',
+]);
 Response::success(['ok' => $allOk, 'items' => $items]);
