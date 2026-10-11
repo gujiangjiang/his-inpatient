@@ -1,18 +1,44 @@
 <?php
-// api/modules/exam/exam_catalog.php - 检查项目库 (虚拟数据, 预留对接门诊检查项目库)
+// api/modules/exam/exam_catalog.php - 检查项目库 (优先门诊一体化同步, 不可用时回退本地)
 Auth::requireRole(['admin', 'doctor', 'nurse', 'lab_tech']);
 $kw = trim((string)Validator::get('kw', ''));
 $category = trim((string)Validator::get('category', ''));
+
+$source = 'local';
+if (opd_settings()['opd_enabled'] === '1') {
+    $sync = catalog_sync_from_opd('exam_items');
+    if ($sync['ok']) $source = 'opd';
+}
+
 $sql = "SELECT * FROM exam_catalog WHERE is_active = 1";
-$params = [];
+if ($source === 'opd') {
+    $sql .= " AND opd_id IS NOT NULL";
+    $sql .= " ORDER BY category, name";
+} else {
+    $sql .= " ORDER BY sort_no, id";
+}
+$rows = DB::select($sql);
+foreach ($rows as &$r) {
+    $r['id'] = (int)$r['id'];
+    $r['price'] = (float)$r['price'];
+}
+unset($r);
+
 if ($category !== '') {
-    $sql .= " AND category = ?";
-    $params[] = $category;
+    $rows = array_values(array_filter($rows, function ($r) use ($category) {
+        return ($r['category'] ?? '') === $category;
+    }));
 }
 if ($kw !== '') {
-    $sql .= " AND (name LIKE ? OR sub_category LIKE ?)";
-    $params[] = '%' . $kw . '%';
-    $params[] = '%' . $kw . '%';
+    $rows = array_values(array_filter($rows, function ($r) use ($kw) {
+        return mb_stripos($r['name'], $kw) !== false
+            || mb_stripos($r['sub_category'] ?? '', $kw) !== false;
+    }));
 }
-$sql .= " ORDER BY sort_no, id";
-Response::success(DB::select($sql, $params));
+
+Response::json([
+    'status' => 'success',
+    'message' => '',
+    'data' => $rows,
+    'source' => $source,
+]);

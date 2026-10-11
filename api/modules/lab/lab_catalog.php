@@ -1,13 +1,43 @@
 <?php
-// api/modules/lab/lab_catalog.php - 检验项目库 (虚拟数据, 预留对接门诊项目库)
+// api/modules/lab/lab_catalog.php - 检验项目库 (优先门诊一体化同步, 不可用时回退本地)
 Auth::requireRole(['admin', 'doctor', 'nurse', 'lab_tech']);
 $kw = trim((string)Validator::get('kw', ''));
+
+$source = 'local';
+if (opd_settings()['opd_enabled'] === '1') {
+    $sync = catalog_sync_from_opd('lab_items');
+    if ($sync['ok']) $source = 'opd';
+}
+
 $sql = "SELECT * FROM lab_catalog WHERE is_active = 1";
 $params = [];
-if ($kw !== '') {
-    $sql .= " AND (name LIKE ? OR category LIKE ?)";
-    $params[] = '%' . $kw . '%';
-    $params[] = '%' . $kw . '%';
+if ($source === 'opd') {
+    $sql .= " AND opd_id IS NOT NULL";
+    $sql .= " ORDER BY category, name";
+} else {
+    $sql .= " ORDER BY sort_no, id";
 }
-$sql .= " ORDER BY sort_no, id";
-Response::success(DB::select($sql, $params));
+$rows = DB::select($sql, $params);
+foreach ($rows as &$r) {
+    $r['id'] = (int)$r['id'];
+    $r['price'] = (float)$r['price'];
+    $r['is_group'] = (int)($r['is_group'] ?? 0);
+    $r['members'] = json_decode((string)($r['members_json'] ?? '[]'), true) ?: [];
+}
+unset($r);
+
+// 关键字过滤 (在结果集上过滤, 避免 SQL 方言差异)
+if ($kw !== '') {
+    $rows = array_values(array_filter($rows, function ($r) use ($kw) {
+        return mb_stripos($r['name'], $kw) !== false
+            || mb_stripos($r['category'] ?? '', $kw) !== false
+            || mb_stripos($r['note'] ?? '', $kw) !== false;
+    }));
+}
+
+Response::json([
+    'status' => 'success',
+    'message' => '',
+    'data' => $rows,
+    'source' => $source,
+]);
