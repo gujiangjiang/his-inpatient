@@ -1,6 +1,9 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
-<div class="flex-between mb-20">
-    <h2>接口配置</h2>
+<div class="page-head flex-between">
+    <div>
+        <h3 class="page-title">接口配置</h3>
+        <p class="page-desc">外部接口基础配置（旧版通道，门诊互通请使用「接口管理」）</p>
+    </div>
     <button class="btn btn-primary" onclick="admin_apis_new()">添加接口</button>
 </div>
 

@@ -20,6 +20,7 @@ class Asset {
         '/css/doctor/order_station.css',
         '/css/doctor/patient_wall.css',
         '/css/emr/emr.css',
+        '/css/admin/admin.css',
     ];
 
     /** 脚本 (按顺序加载: 公共单例 → 图标桥 → 组件 → 登录) */
@@ -48,6 +49,7 @@ class Asset {
         '/js/orders/order_detail.js',
         '/js/orders/dose_picker.js',
         '/js/orders/order_sets.js',
+        '/js/admin/integrations.js',
         '/js/login/login.js',
     ];
 

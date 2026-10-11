@@ -1,6 +1,9 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
-<div class="flex-between mb-20">
-    <h2>人员管理</h2>
+<div class="page-head flex-between">
+    <div>
+        <h3 class="page-title">人员管理</h3>
+        <p class="page-desc">账号、角色与科室/病区归属</p>
+    </div>
     <button class="btn btn-primary" onclick="admin_users_new()">添加人员</button>
 </div>
 

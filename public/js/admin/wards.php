@@ -1,6 +1,9 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
-<div class="flex-between mb-20">
-    <h2>病区管理</h2>
+<div class="page-head flex-between">
+    <div>
+        <h3 class="page-title">病区管理</h3>
+        <p class="page-desc">病区与床位规模维护</p>
+    </div>
     <button class="btn btn-primary" onclick="admin_wards_new()">添加病区</button>
 </div>
 

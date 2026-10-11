@@ -1,6 +1,9 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
-<div class="flex-between mb-20">
-    <h2>科室管理</h2>
+<div class="page-head flex-between">
+    <div>
+        <h3 class="page-title">科室管理</h3>
+        <p class="page-desc">临床科室信息与风险评估量表配置</p>
+    </div>
     <button class="btn btn-primary" onclick="admin_departments_new()">添加科室</button>
 </div>
 

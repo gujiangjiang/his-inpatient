@@ -1,6 +1,7 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
-<div class="flex-between mb-20">
-    <h2>系统设置</h2>
+<div class="page-head">
+    <h3 class="page-title">系统设置</h3>
+    <p class="page-desc">医院信息与全局参数</p>
 </div>
 
 <div class="card">
