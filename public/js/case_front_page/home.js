@@ -299,10 +299,10 @@ const CaseHome = {
         PrintHelper.printHtml('住院病案首页', html);
     },
 
-    /* 值渲染: 空值输出下划线空位 */
+    /* 值渲染: 纯文本 (下划线由外层 cf-ub/cf-fee-val 提供, 避免双层线); 空值输出空串 */
     v(k) {
         const x = this.data[k];
-        if (x === '' || x === undefined || x === null) return '<span class="cf-v"></span>';
+        if (x === '' || x === undefined || x === null) return '';
         return Format.escape(String(x));
     },
 
@@ -313,27 +313,26 @@ const CaseHome = {
 
     printCss() {
         return `
-        .cf-page { width: 210mm; min-height: 296mm; padding: 10mm 12mm; margin: 0 auto 24px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.18); box-sizing: border-box; font-size: 10.5pt; color: #000; line-height: 1.9; }
+        .cf-page { width: 210mm; height: 296mm; overflow: hidden; padding: 8mm 10mm; margin: 0 auto 24px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.18); box-sizing: border-box; font-size: 10pt; color: #000; line-height: 1.62; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         .cf-pagebreak { page-break-after: always; }
-        @page { size: A4; margin: 8mm; }
-        @media print { body { margin: 0; background: #fff; } .cf-page { box-shadow: none; margin: 0; width: auto; min-height: auto; padding: 0; } }
+        @page { size: A4; margin: 0; }
+        @media print { body { margin: 0; background: #fff; } .cf-page { box-shadow: none; margin: 0; } }
         .cf-p1-head { position: relative; margin-bottom: 4px; }
-        .cf-org { font-size: 10.5pt; }
-        .cf-title { text-align: center; font-size: 16pt; font-weight: 700; letter-spacing: 6px; margin: 2px 0 6px; }
-        .cf-subline { display: flex; justify-content: space-between; font-size: 9.5pt; margin-bottom: 2px; }
-        .cf-line { margin: 2px 0; word-break: break-all; }
+        .cf-org { font-size: 10pt; }
+        .cf-title { text-align: center; font-size: 15pt; font-weight: 700; letter-spacing: 6px; margin: 2px 0 6px; }
+        .cf-subline { display: flex; justify-content: space-between; font-size: 9pt; margin-bottom: 2px; }
+        .cf-line { margin: 1px 0; word-break: break-all; }
         .cf-lb { color: #000; }
-        .cf-v, .cf-ub { display: inline-block; min-width: 60px; border-bottom: 1px solid #000; padding: 0 4px; text-align: center; }
-        .cf-ub { min-width: 90px; }
+        .cf-ub { display: inline-block; min-width: 70px; border-bottom: 1px solid #000; padding: 0 4px; text-align: center; line-height: 1.5; vertical-align: bottom; }
         .cf-box { display: inline-block; min-width: 15px; height: 15px; line-height: 15px; text-align: center; border: 1px solid #000; font-weight: 600; font-style: italic; margin: 0 2px; padding: 0 1px; }
         .cf-codes { font-weight: 400; }
-        .cf-table { width: 100%; border-collapse: collapse; margin: 4px 0; }
-        .cf-table th, .cf-table td { border: 1px solid #000; padding: 2px 5px; font-size: 10pt; height: 20px; }
+        .cf-table { width: 100%; border-collapse: collapse; margin: 3px 0; }
+        .cf-table th, .cf-table td { border: 1px solid #000; padding: 1px 4px; font-size: 9.5pt; height: 16px; }
         .cf-table th { background: #f2f2f2; font-weight: 600; text-align: center; }
         .cf-fee-grid2 { display: flex; flex-wrap: wrap; }
-        .cf-fee-grid2 .cf-fee-item { width: 50%; box-sizing: border-box; padding-right: 10px; font-size: 9.5pt; line-height: 2.0; }
-        .cf-fee-val { display: inline-block; min-width: 58px; border-bottom: 1px solid #000; text-align: right; padding: 0 3px; }
-        .cf-note { font-size: 9pt; color: #333; }
+        .cf-fee-grid2 .cf-fee-item { width: 50%; box-sizing: border-box; padding-right: 10px; font-size: 9pt; line-height: 1.85; }
+        .cf-fee-val { display: inline-block; min-width: 58px; border-bottom: 1px solid #000; text-align: right; padding: 0 3px; line-height: 1.5; vertical-align: bottom; }
+        .cf-note { font-size: 8.5pt; color: #222; }
         .cf-consent { text-align: center; font-size: 9pt; color: #888; margin-top: 6px; }`;
     },
 
@@ -368,7 +367,7 @@ const CaseHome = {
             <div class="cf-line">年龄 <span class="cf-ub">${this.v('age_y')}</span> 岁 国籍 <span class="cf-ub">${this.v('nationality')}</span>（年龄不足1周岁的）年龄 <span class="cf-ub">${this.v('age_m')}</span> 月（新生儿≤28天的）年龄 <span class="cf-ub">${this.v('age_d')}</span> 天</div>
             <div class="cf-line">新生儿出生体重（一孩 <span class="cf-ub">${this.v('baby1_weight')}</span> 克 二孩 <span class="cf-ub">${this.v('baby2_weight')}</span> 克）新生儿入院体重 <span class="cf-ub">${this.v('baby_admit_weight')}</span> 克</div>
             <div class="cf-line">身份证件类型 ${this.box(d.id_type)}<span class="cf-codes">0.居民身份证 1.护照 2.港澳台居民居住证/通行证 4.旅行证件 9.其他</span> 身份证件号码 <span class="cf-ub">${this.v('id_card')}</span></div>
-            <div class="cf-line">身份证件不详的具体原因 ${this.box(d.id_unknown_reason)} 1.三无人员 2.新生儿未办理 3.无完全民事行为能力 4.意识障碍 9.其他 <span class="cf-ub">${this.v('b')}</span></div>
+            <div class="cf-line">身份证件不详的具体原因 ${this.box(d.id_unknown_reason)} 1.三无人员 2.新生儿未办理 3.无完全民事行为能力 4.意识障碍 9.其他 <span class="cf-ub"></span></div>
             <div class="cf-line">出生地 <span class="cf-ub">${this.v('birth_prov')}</span> 省（区、市）<span class="cf-ub">${this.v('birth_city')}</span> 市 <span class="cf-ub">${this.v('birth_county')}</span> 县 籍贯 <span class="cf-ub">${this.v('native_prov')}</span> 省（区、市）<span class="cf-ub">${this.v('native_city')}</span> 市 民族 <span class="cf-ub">${this.v('nation')}</span></div>
             <div class="cf-line">职业 <span class="cf-ub">${this.v('occupation')}</span> 婚姻 ${this.box(d.marriage)} 1.未婚 2.已婚 3.丧偶 4.离婚 9.其他</div>
             <div class="cf-line">现住址 <span class="cf-ub">${this.v('addr_prov')}</span> 省（区、市）<span class="cf-ub">${this.v('addr_city')}</span> 市 <span class="cf-ub">${this.v('addr_county')}</span> 县 <span class="cf-ub">${this.v('addr_detail')}</span> 电话 <span class="cf-ub">${this.v('phone')}</span> 邮编 <span class="cf-ub">${this.v('zip')}</span></div>
