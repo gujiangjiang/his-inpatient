@@ -4,6 +4,13 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.13.48] - 2026-10-11
+
+### 新增
+- **集成连接配置与门诊一体化客户端**: 迁移 020 `integration_settings` 集成连接配置表 (门诊服务地址 / FHIR Token / 业务 Token / PACS 阅片地址模板)
+- `api/core/helpers/opd_helper.php`: 门诊 FHIR R4 + 业务接口客户端 (cURL 优先、流式兜底、Token 双头发送、超时与错误兜底, 兼容 PHP 8.5)
+- 管理端接口 `admin/integration-config` / `integration-config-save` (URL 与 {study_uid} 模板校验) / `integration-test` (FHIR 服务 / FHIR 令牌 / 业务接口 / PACS 阅片 四项连通性测试)
+
 ## [0.13.47] - 2026-10-11
 
 ### 新增
