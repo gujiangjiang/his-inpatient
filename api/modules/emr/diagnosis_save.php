@@ -8,7 +8,7 @@ $icdCode = trim((string)Validator::get('icd_code', ''));
 $name = trim((string)Validator::get('name', ''));
 $note = trim((string)Validator::get('note', ''));
 
-$allowed = ['emergency', 'admission', 'discharge', 'pathology', 'external', 'nosocomial', 'complication', 'death_cause'];
+$allowed = ['emergency', 'admission', 'discharge', 'pathology', 'external', 'nosocomial', 'complication', 'death_cause', 'initial', 'corrected', 'supplement'];
 if (!$patientId || !in_array($category, $allowed, true) || $name === '') Response::error('参数不完整');
 
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);

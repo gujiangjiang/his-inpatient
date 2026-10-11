@@ -97,6 +97,9 @@ function getRoutes() {
         'emr/diagnosis-template-list' => ['emr/diagnosis_template_list.php', ['admin', 'doctor']],
         'emr/diagnosis-template-save' => ['emr/diagnosis_template_save.php', ['admin', 'doctor']],
         'emr/diagnosis-template-delete' => ['emr/diagnosis_template_delete.php', ['admin', 'doctor']],
+        'emr/diagnosis-match-get' => ['emr/diagnosis_match_get.php', ['admin', 'doctor', 'nurse']],
+        'emr/diagnosis-match-save' => ['emr/diagnosis_match_save.php', ['admin', 'doctor']],
+        'emr/diagnosis-sync' => ['emr/diagnosis_sync.php', ['admin', 'doctor']],
 
         // 患者上下文
         'patients/incoming' => ['patients/incoming_queue.php', ['admin', 'doctor']],
