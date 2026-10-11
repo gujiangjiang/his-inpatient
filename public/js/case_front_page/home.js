@@ -83,6 +83,19 @@ const CaseHome = {
             { k: 'coma_after_h', l: '小时', t: 'number' },
             { k: 'coma_after_m', l: '分钟', t: 'number' },
         ] },
+        { title: '诊断补充与符合情况', fields: [
+            { k: 'diagnose_date', l: '确诊日期', t: 'date' },
+            { k: 'injury_reason', l: '损伤、中毒的外部原因' },
+            { k: 'injury_code', l: '（损伤中毒）疾病编码' },
+            { k: 'pathology_diagnosis', l: '病理诊断' },
+            { k: 'pathology_code', l: '（病理）疾病编码' },
+            { k: 'pathology_no', l: '病理号' },
+            { k: 'match1', l: '诊断符合·门诊与出院', t: 'select', o: [['', ''], ['0', '0 未做'], ['1', '1 符合'], ['2', '2 不符合'], ['3', '3 不肯定']] },
+            { k: 'match2', l: '诊断符合·入院与出院', t: 'select', o: [['', ''], ['0', '0 未做'], ['1', '1 符合'], ['2', '2 不符合'], ['3', '3 不肯定']] },
+            { k: 'match3', l: '诊断符合·术前与术后', t: 'select', o: [['', ''], ['0', '0 未做'], ['1', '1 符合'], ['2', '2 不符合'], ['3', '3 不肯定']] },
+            { k: 'match4', l: '诊断符合·临床与病理', t: 'select', o: [['', ''], ['0', '0 未做'], ['1', '1 符合'], ['2', '2 不符合'], ['3', '3 不肯定']] },
+            { k: 'match5', l: '诊断符合·放射与病理', t: 'select', o: [['', ''], ['0', '0 未做'], ['1', '1 符合'], ['2', '2 不符合'], ['3', '3 不肯定']] },
+        ] },
         { title: '病例与质控', fields: [
             { k: 'critical_case', l: '危重病例', t: 'select', o: [['0', '0 否'], ['1', '1 是']] },
             { k: 'difficult_case', l: '疑难病例', t: 'select', o: [['0', '0 否'], ['1', '1 是']] },
@@ -111,12 +124,21 @@ const CaseHome = {
         const p = PatientContext.current();
         if (!p || !p.admission_no) { Dom.toast('请先选择患者', 'info'); return; }
         this.admissionNo = p.admission_no;
-        const [saved, auto] = await Promise.all([
+        const [saved, auto, st, mr] = await Promise.all([
             AjaxLoader.api('case/get?admission_no=' + encodeURIComponent(this.admissionNo), { silent: true }),
-            AjaxLoader.api('case/autofill?admission_no=' + encodeURIComponent(this.admissionNo), { silent: true })
+            AjaxLoader.api('case/autofill?admission_no=' + encodeURIComponent(this.admissionNo), { silent: true }),
+            AjaxLoader.api('auth/setup-status', { silent: true }),
+            AjaxLoader.api('emr/diagnosis-match-get?patient_id=' + p.id, { silent: true }).catch(() => ({ data: {} }))
         ]);
         this.autofill = auto.data || {};
-        this.data = Object.assign(this.buildAutoData(this.autofill), (saved.data && saved.data.data) || {});
+        const autoData = this.buildAutoData(this.autofill);
+        // 诊断符合情况默认取自诊断模块
+        const m = mr.data || {};
+        autoData.match1 = m.out_in || ''; autoData.match2 = m.adm_out || '';
+        autoData.match3 = m.pre_post || ''; autoData.match4 = m.clin_path || ''; autoData.match5 = m.rad_path || '';
+        // 机构名默认
+        if (st.data && st.data.hospital_name) autoData.hospital_name = st.data.hospital_name;
+        this.data = Object.assign(autoData, (saved.data && saved.data.data) || {});
         this.render();
         this.fill();
     },
@@ -272,6 +294,164 @@ const CaseHome = {
     },
 
     print() {
-        Dom.toast('打印功能即将上线', 'info');
+        this.collect();
+        const html = '<style>' + this.printCss() + '</style>' + this.buildPage1() + '<div class="cf-pagebreak"></div>' + this.buildPage2();
+        PrintHelper.printHtml('住院病案首页', html);
+    },
+
+    /* 值渲染: 空值输出下划线空位 */
+    v(k) {
+        const x = this.data[k];
+        if (x === '' || x === undefined || x === null) return '<span class="cf-v"></span>';
+        return Format.escape(String(x));
+    },
+
+    box(v) {
+        const s = (v === '' || v === undefined || v === null) ? '' : String(v);
+        return '<b class="cf-box">' + (s === '' ? '&nbsp;' : Format.escape(s)) + '</b>';
+    },
+
+    printCss() {
+        return `
+        .cf-page { width: 210mm; min-height: 296mm; padding: 10mm 12mm; margin: 0 auto 24px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,.18); box-sizing: border-box; font-size: 10.5pt; color: #000; line-height: 1.9; }
+        .cf-pagebreak { page-break-after: always; }
+        @page { size: A4; margin: 8mm; }
+        @media print { body { margin: 0; background: #fff; } .cf-page { box-shadow: none; margin: 0; width: auto; min-height: auto; padding: 0; } }
+        .cf-p1-head { position: relative; margin-bottom: 4px; }
+        .cf-org { font-size: 10.5pt; }
+        .cf-title { text-align: center; font-size: 16pt; font-weight: 700; letter-spacing: 6px; margin: 2px 0 6px; }
+        .cf-subline { display: flex; justify-content: space-between; font-size: 9.5pt; margin-bottom: 2px; }
+        .cf-line { margin: 2px 0; word-break: break-all; }
+        .cf-lb { color: #000; }
+        .cf-v, .cf-ub { display: inline-block; min-width: 60px; border-bottom: 1px solid #000; padding: 0 4px; text-align: center; }
+        .cf-ub { min-width: 90px; }
+        .cf-box { display: inline-block; min-width: 15px; height: 15px; line-height: 15px; text-align: center; border: 1px solid #000; font-weight: 600; font-style: italic; margin: 0 2px; padding: 0 1px; }
+        .cf-codes { font-weight: 400; }
+        .cf-table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+        .cf-table th, .cf-table td { border: 1px solid #000; padding: 2px 5px; font-size: 10pt; height: 20px; }
+        .cf-table th { background: #f2f2f2; font-weight: 600; text-align: center; }
+        .cf-fee-grid2 { display: flex; flex-wrap: wrap; }
+        .cf-fee-grid2 .cf-fee-item { width: 50%; box-sizing: border-box; padding-right: 10px; font-size: 9.5pt; line-height: 2.0; }
+        .cf-fee-val { display: inline-block; min-width: 58px; border-bottom: 1px solid #000; text-align: right; padding: 0 3px; }
+        .cf-note { font-size: 9pt; color: #333; }
+        .cf-consent { text-align: center; font-size: 9pt; color: #888; margin-top: 6px; }`;
+    },
+
+    buildPage1() {
+        const d = this.data;
+        const p = (this.autofill || {}).patient || {};
+        const diags = (d.discharge_diags && d.discharge_diags.length) ? d.discharge_diags : [{}, {}];
+        const diagRows = [];
+        for (let i = 0; i < Math.max(12, diags.length); i++) {
+            const r = diags[i] || {};
+            diagRows.push(`<tr>
+                <td>${i === 0 ? '主要诊断' : (r.name ? '其他诊断' : '')} ${Format.escape(r.name || '')}</td>
+                <td>${Format.escape(r.code || '')}</td>
+                <td>${Format.escape(r.in_status === '1' ? '有' : r.in_status === '2' ? '临床未确定' : r.in_status === '3' ? '情况不明' : r.in_status === '4' ? '无' : '')}</td>
+                <td>${Format.escape(r.outcome === '1' ? '治愈' : r.outcome === '2' ? '好转' : r.outcome === '3' ? '未愈' : r.outcome === '5' ? '死亡' : r.outcome === '9' ? '其他' : '')}</td>
+            </tr>`);
+        }
+        return `
+        <div class="cf-page">
+            <div class="cf-p1-head">
+                <div class="cf-org">医疗机构：<span class="cf-ub">${this.v('hospital_name') || Format.escape(p.hospital || '')}</span>（组织机构代码：<span class="cf-ub"></span>）</div>
+                <div class="cf-title">住院病案首页（一）</div>
+                <div class="cf-subline">
+                    <span>健康卡号：<span class="cf-ub">${this.v('health_card')}</span></span>
+                    <span>ID：<span class="cf-ub">${this.v('mr_no')}</span></span>
+                    <span>第 ${this.box(d.admit_times)} 次住院</span>
+                    <span>住院号：<span class="cf-ub">${Format.escape(this.admissionNo || '')}</span></span>
+                </div>
+            </div>
+            <div class="cf-line">医疗付费方式：${this.box(d.pay_type)}<span class="cf-codes">1.城镇职工基本医疗保险 2.城镇居民基本医疗保险 3.新型农村合作医疗 4.贫困救助 5.商业医疗保险 6.全公费 7.全自费 8.其他社会保险 9.其他</span></div>
+            <div class="cf-line">姓名 <span class="cf-ub">${this.v('name')}</span> 性别 ${this.box(d.gender)}<span class="cf-codes">0.未知的性别 1.男 2.女 9.未说明的性别</span> 出生日期 <span class="cf-ub">${this.v('birth_date')}</span></div>
+            <div class="cf-line">年龄 <span class="cf-ub">${this.v('age_y')}</span> 岁 国籍 <span class="cf-ub">${this.v('nationality')}</span>（年龄不足1周岁的）年龄 <span class="cf-ub">${this.v('age_m')}</span> 月（新生儿≤28天的）年龄 <span class="cf-ub">${this.v('age_d')}</span> 天</div>
+            <div class="cf-line">新生儿出生体重（一孩 <span class="cf-ub">${this.v('baby1_weight')}</span> 克 二孩 <span class="cf-ub">${this.v('baby2_weight')}</span> 克）新生儿入院体重 <span class="cf-ub">${this.v('baby_admit_weight')}</span> 克</div>
+            <div class="cf-line">身份证件类型 ${this.box(d.id_type)}<span class="cf-codes">0.居民身份证 1.护照 2.港澳台居民居住证/通行证 4.旅行证件 9.其他</span> 身份证件号码 <span class="cf-ub">${this.v('id_card')}</span></div>
+            <div class="cf-line">身份证件不详的具体原因 ${this.box(d.id_unknown_reason)} 1.三无人员 2.新生儿未办理 3.无完全民事行为能力 4.意识障碍 9.其他 <span class="cf-ub">${this.v('b')}</span></div>
+            <div class="cf-line">出生地 <span class="cf-ub">${this.v('birth_prov')}</span> 省（区、市）<span class="cf-ub">${this.v('birth_city')}</span> 市 <span class="cf-ub">${this.v('birth_county')}</span> 县 籍贯 <span class="cf-ub">${this.v('native_prov')}</span> 省（区、市）<span class="cf-ub">${this.v('native_city')}</span> 市 民族 <span class="cf-ub">${this.v('nation')}</span></div>
+            <div class="cf-line">职业 <span class="cf-ub">${this.v('occupation')}</span> 婚姻 ${this.box(d.marriage)} 1.未婚 2.已婚 3.丧偶 4.离婚 9.其他</div>
+            <div class="cf-line">现住址 <span class="cf-ub">${this.v('addr_prov')}</span> 省（区、市）<span class="cf-ub">${this.v('addr_city')}</span> 市 <span class="cf-ub">${this.v('addr_county')}</span> 县 <span class="cf-ub">${this.v('addr_detail')}</span> 电话 <span class="cf-ub">${this.v('phone')}</span> 邮编 <span class="cf-ub">${this.v('zip')}</span></div>
+            <div class="cf-line">户口地址 <span class="cf-ub">${this.v('hukou_prov')}</span> 省（区、市）<span class="cf-ub">${this.v('hukou_city')}</span> 市 <span class="cf-ub">${this.v('hukou_county')}</span> 县 <span class="cf-ub">${this.v('hukou_detail')}</span> 邮编 <span class="cf-ub">${this.v('hukou_zip')}</span></div>
+            <div class="cf-line">工作单位及地址 <span class="cf-ub">${this.v('work_unit')}</span> 电话 <span class="cf-ub">${this.v('work_phone')}</span> 邮编 <span class="cf-ub">${this.v('work_zip')}</span></div>
+            <div class="cf-line">联系人姓名 <span class="cf-ub">${this.v('contact_name')}</span> 关系 <span class="cf-ub">${this.v('contact_rel')}</span> 地址 <span class="cf-ub">${this.v('contact_addr')}</span> 电话 <span class="cf-ub">${this.v('contact_phone')}</span></div>
+            <div class="cf-line">入院途径 ${this.box(d.admit_route)} 1.急诊 2.门诊 3.其他医疗机构转入 9.其他</div>
+            <div class="cf-line">入院时间 <span class="cf-ub">${this.v('admit_time')}</span> 入院科别 <span class="cf-ub">${this.v('admit_dept')}</span> 病房 <span class="cf-ub">${this.v('admit_ward')}</span> 转科科别 <span class="cf-ub">${this.v('transfer_dept')}</span></div>
+            <div class="cf-line">出院时间 <span class="cf-ub">${this.v('discharge_time')}</span> 出院科别 <span class="cf-ub">${this.v('discharge_dept')}</span> 病房 <span class="cf-ub">${this.v('discharge_ward')}</span> 实际住院 <span class="cf-ub">${this.v('stay_days')}</span> 天</div>
+            <div class="cf-line">门（急）诊诊断（西医诊断） <span class="cf-ub">${this.v('diagnosis_emergency')}</span> 疾病编码 <span class="cf-ub">${this.v('diagnosis_emergency_code')}</span> 确诊日期 <span class="cf-ub">${this.v('diagnose_date')}</span></div>
+            <table class="cf-table">
+                <thead><tr><th style="width:46%">出院诊断</th><th style="width:22%">疾病编码</th><th style="width:16%">入院病情</th><th style="width:16%">治疗转归</th></tr></thead>
+                <tbody>${diagRows.join('')}</tbody>
+            </table>
+            <div class="cf-line cf-note">入院病情：1.有 2.临床未确定 3.情况不明 4.无　　治疗转归：1.治愈 2.好转 3.未愈 5.死亡 9.其他</div>
+            <div class="cf-line">损伤、中毒的外部原因 <span class="cf-ub">${this.v('injury_reason')}</span> 疾病编码 <span class="cf-ub">${this.v('injury_code')}</span></div>
+            <div class="cf-line">病理诊断 <span class="cf-ub">${this.v('pathology_diagnosis')}</span> 疾病编码 <span class="cf-ub">${this.v('pathology_code')}</span> 病理号 <span class="cf-ub">${this.v('pathology_no')}</span></div>
+            <div class="cf-line">药物过敏 ${this.box(d.allergy)} 1.无 2.有，过敏药物：<span class="cf-ub">${this.v('allergy_drugs')}</span> 死亡患者尸检 ${this.box(d.autopsy)} 1.是 2.否</div>
+            <div class="cf-line">血型 ${this.box(d.blood_type)} 1.A 2.B 3.O 4.AB 5.不详 6.未查　　Rh ${this.box(d.rh)} 1.阴 2.阳 3.不详 4.未查</div>
+            <div class="cf-line">科主任 <span class="cf-ub">${this.v('chief_physician')}</span> 主任（副主任）医师 <span class="cf-ub">${this.v('director_physician')}</span> 主治医师 <span class="cf-ub">${this.v('attending_physician')}</span> 住院医师 <span class="cf-ub">${this.v('resident_physician')}</span></div>
+            <div class="cf-line">责任护士 <span class="cf-ub">${this.v('charge_nurse')}</span> 进修医师 <span class="cf-ub">${this.v('trainee')}</span> 实习医师 <span class="cf-ub">${this.v('intern')}</span> 编码员 <span class="cf-ub">${this.v('coder')}</span></div>
+            <div class="cf-line">病案质量 ${this.box(d.case_quality)} 1.甲 2.乙 3.丙　质控医师 <span class="cf-ub">${this.v('qc_physician')}</span> 质控护士 <span class="cf-ub">${this.v('qc_nurse')}</span> 质控日期 <span class="cf-ub">${this.v('qc_date')}</span></div>
+        </div>`;
+    },
+
+    buildPage2() {
+        const d = this.data;
+        const sgs = (d.surgeries || []).slice();
+        while (sgs.length < 7) sgs.push({});
+        const sgRows = sgs.map(s => `<tr>
+            <td>${Format.escape(s.code || '')}</td><td>${Format.escape(s.date || '')}</td>
+            <td>${Format.escape(s.level || '')}</td><td>${Format.escape(s.category || '')}</td>
+            <td>${Format.escape(s.name || '')}</td><td>${Format.escape(s.surgeon || '')}</td>
+            <td>${Format.escape(s.a1 || '')}</td><td>${Format.escape(s.a2 || '')}</td>
+            <td>${Format.escape(s.incision || '')}</td><td>${Format.escape(s.heal || '')}</td>
+            <td>${Format.escape(s.anesthesia || '')}</td><td>${Format.escape(s.anes_doc || '')}</td>
+        </tr>`).join('');
+        const icu = (d.icu || []).slice();
+        while (icu.length < 3) icu.push({});
+        const icuRows = icu.map(r => `<tr><td>${Format.escape(r.name || '')}</td><td>${Format.escape(r.in || '')}</td><td>${Format.escape(r.out || '')}</td></tr>`).join('');
+        const feeLine = ([k, label]) =>
+            `<div class="cf-fee-item">${label} <span class="cf-fee-val">${this.v(k)}</span></div>`;
+        const fees = this.feeItems.map(feeLine).join('');
+        return `
+        <div class="cf-page">
+            <div class="cf-p1-head">
+                <div class="cf-org">医疗机构：<span class="cf-ub"></span>（组织机构代码：<span class="cf-ub"></span>）</div>
+                <div class="cf-title">住院病案首页（二）</div>
+                <div class="cf-subline">
+                    <span>姓名：<span class="cf-ub">${this.v('name')}</span></span>
+                    <span>ID：<span class="cf-ub">${this.v('mr_no')}</span></span>
+                    <span>第 ${this.box(d.admit_times)} 次住院</span>
+                    <span>住院号：<span class="cf-ub">${Format.escape(this.admissionNo || '')}</span></span>
+                </div>
+            </div>
+            <table class="cf-table">
+                <thead><tr>
+                    <th>手术及操作编码</th><th>手术及操作日期</th><th>手术级别</th><th>手术类别</th>
+                    <th style="width:20%">手术及操作名称</th>
+                    <th colspan="3">手术及操作医师</th>
+                    <th>切口类别</th><th>愈合等级</th><th>麻醉方式</th><th>麻醉医师</th>
+                </tr><tr>
+                    <th></th><th></th><th></th><th></th><th></th><th>术者</th><th>Ⅰ助</th><th>Ⅱ助</th><th></th><th></th><th></th><th></th>
+                </tr></thead>
+                <tbody>${sgRows}</tbody>
+            </table>
+            <div class="cf-line cf-note">手术类别：1.择期手术 2.急诊手术　　切口类别：0.0类切口 1.Ⅰ类切口 2.Ⅱ类切口 3.Ⅲ类切口　　愈合等级：1.甲 2.乙 3.丙 9.其他</div>
+            <div class="cf-line">离院方式 ${this.box(d.leave_way)} 1.医嘱离院 2.医嘱转院，拟接收医疗机构名称：<span class="cf-ub">${this.v('leave_transfer_hospital')}</span></div>
+            <div class="cf-line">　3.医嘱转社区卫生服务机构/乡镇卫生院，拟接收医疗机构名称：<span class="cf-ub">${this.v('leave_transfer_community')}</span> 4.非医嘱离院 5.死亡 9.其他</div>
+            <div class="cf-line">是否有出院31天内再住院计划 ${this.box(d.readmit_plan)} 1.无 2.有　目的：<span class="cf-ub">${this.v('readmit_purpose')}</span></div>
+            <div class="cf-line">颅脑损伤患者昏迷时间：入院前 <span class="cf-ub">${this.v('coma_in_d')}</span> 天 <span class="cf-ub">${this.v('coma_in_h')}</span> 小时 <span class="cf-ub">${this.v('coma_in_m')}</span> 分钟　入院后 <span class="cf-ub">${this.v('coma_after_d')}</span> 天 <span class="cf-ub">${this.v('coma_after_h')}</span> 小时 <span class="cf-ub">${this.v('coma_after_m')}</span> 分钟</div>
+            <div class="cf-line">住院费用总计（元）：<span class="cf-ub">${this.v('fee_total')}</span>　（自付金额：<span class="cf-ub">${this.v('fee_self')}</span>）</div>
+            <div class="cf-fee-grid2">${fees}</div>
+            <table class="cf-table">
+                <thead><tr><th>重症监护室名称</th><th>进入重症监护室时间</th><th>转出重症监护室时间</th></tr></thead>
+                <tbody>${icuRows}</tbody>
+            </table>
+            <div class="cf-line">危重病例：${this.box(d.critical_case)} 0.否 1.是　　疑难病例：${this.box(d.difficult_case)} 0.否 1.是　　MDT病历：${this.box(d.mdt_case)} 0.否 1.是</div>
+            <div class="cf-line">单病种病例：${this.box(d.single_disease)} 0.否 1.是　　日间手术病例：${this.box(d.day_surgery)} 0.否 1.是　　教学查房病历：${this.box(d.teaching_round)} 0.否 1.是</div>
+            <div class="cf-line">诊断符合情况：1.门诊与出院 ${this.box(d.match1)}　2.入院与出院 ${this.box(d.match2)}　3.术前与术后 ${this.box(d.match3)}　4.临床与病理 ${this.box(d.match4)}　5.放射与病理 ${this.box(d.match5)}　（0.未做 1.符合 2.不符合 3.不肯定）</div>
+            <div class="cf-line">抢救情况：抢救 <span class="cf-ub">${this.v('rescue_times')}</span> 次 成功 <span class="cf-ub">${this.v('rescue_success')}</span> 次　　临床路径管理：${this.box(d.clinical_path)} 1.完成 2.变异 3.退出 4.未入</div>
+            <div class="cf-line cf-note">说明：医疗付费方式 1.城镇职工基本医疗保险 2.城镇居民基本医疗保险 3.新型农村合作医疗 4.贫困救助 5.商业医疗保险 6.全公费 7.全自费 8.其他社会保险 9.其他</div>
+        </div>`;
     }
 };
+
