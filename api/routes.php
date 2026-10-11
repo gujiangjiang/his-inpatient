@@ -107,6 +107,12 @@ function getRoutes() {
         'lab/detail' => ['lab/lab_detail.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
         'lab/collect' => ['lab/lab_collect.php', ['admin', 'nurse']],
         'lab/result' => ['lab/lab_result.php', ['admin', 'lab_tech']],
+        'lab/catalog' => ['lab/lab_catalog.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
+        'lab/panel-list' => ['lab/lab_panel_list.php', ['admin', 'doctor']],
+        'lab/panel-save' => ['lab/lab_panel_save.php', ['admin', 'doctor']],
+        'lab/panel-delete' => ['lab/lab_panel_delete.php', ['admin', 'doctor']],
+        'lab/apply' => ['lab/lab_apply.php', ['admin', 'doctor']],
+        'lab/delete' => ['lab/lab_delete.php', ['admin', 'doctor']],
 
         // 检查
         'exam/save' => ['exam/exam_save.php', ['admin', 'doctor']],
