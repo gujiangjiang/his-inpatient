@@ -34,3 +34,59 @@
 
 /* 表格内按钮间距 */
 .table .btn + .btn { margin-left: 6px; }
+
+/* 床位管理 (按病区) */
+.ward-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.ward-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: #fff;
+    color: #606266;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+}
+.ward-tab:hover { border-color: var(--primary); color: var(--primary); }
+.ward-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+.ward-tab-count { font-size: 12px; opacity: .85; }
+.ward-stat { font-size: 13px; color: #64748b; margin-bottom: 14px; }
+.ward-stat b { color: #303133; }
+.text-danger { color: #e5484d; }
+.text-success { color: #2fb344; }
+.bed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); gap: 10px; }
+.bed-cell {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    background: #fff;
+    min-height: 58px;
+}
+.bed-cell .bed-no { font-weight: 700; font-size: 14px; color: #303133; }
+.bed-cell .bed-patient {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bed-cell.free { background: #f8fafc; border-style: dashed; }
+.bed-cell.free .bed-patient { color: #a8b0bd; }
+.bed-cell.level-special { border-left: 3px solid #e5484d; }
+.bed-cell.level-1 { border-left: 3px solid #e6a23c; }
+.bed-cell.level-2 { border-left: 3px solid #409eff; }
+.bed-cell.level-3 { border-left: 3px solid #2fb344; }
+.bed-cell.critical { background: #fff7f7; border-color: #f1b6b8; }
+.bed-critical-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #e5484d;
+    margin-left: 4px;
+    vertical-align: middle;
+}
