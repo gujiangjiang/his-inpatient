@@ -113,7 +113,7 @@ require_once __DIR__ . '/assets.php';
         <!-- 患者信息栏 (选择患者后显示, 顶部栏下横向条) -->
         <div id="patient-info-bar" class="patient-info-bar" style="display:none">
             <span class="pib-bed level-3" id="pib-bed" title="返回患者列表" onclick="navigateTo('patients','patient_list')">-</span>
-            <span class="pib-name" id="pib-name">-</span>
+            <span class="pib-name" id="pib-name" title="查看住院/门诊记录" style="cursor:pointer" onclick="navigateTo('outpatient','records')">-</span>
             <span class="pib-sub" id="pib-sub">-</span>
             <span class="pib-item"><b>入院</b><i id="pib-days">-</i></span>
             <span class="pib-item"><b>费用</b><i class="pib-fee" id="pib-fee">¥ --</i></span>

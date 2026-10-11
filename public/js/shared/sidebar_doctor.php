@@ -3,8 +3,9 @@
 <div class="menu-item" onclick="navigateTo('orders','order_station')">医嘱</div>
 <div class="menu-item" onclick="navigateTo('emr','diagnosis')">诊断</div>
 <div class="menu-item" onclick="navigateTo('emr','station')">病历</div>
-<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="检验">检验</div>
-<div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="检查">检查</div>
+<div class="menu-item" onclick="navigateTo('outpatient','records')">门诊记录</div>
+<div class="menu-item" onclick="navigateTo('outpatient','labs')">检验</div>
+<div class="menu-item" onclick="navigateTo('outpatient','exams')">检查</div>
 <div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="处方">处方</div>
 <div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="手术">手术</div>
 <div class="menu-item" onclick="navigateTo('doctor','placeholder')" data-placeholder="护理">护理</div>
