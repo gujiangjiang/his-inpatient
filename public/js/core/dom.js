@@ -91,7 +91,8 @@ const Dom = {
         const label = def.label || '';
         const name = def.name || def.key || '';
         const required = def.required ? 'required' : '';
-        const cls = def.class ? ' class="' + def.class + '"' : '';
+        // 默认整宽表单控件 (form-control), 避免原生 input 窄宽度与全宽下拉混排
+        const cls = ' class="' + (def.class || 'form-control') + '"';
         let html = '<div class="form-group">';
         if (label) {
             html += '<label class="form-label">' + Format.escape(label) + '</label>';
