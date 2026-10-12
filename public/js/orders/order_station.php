@@ -86,6 +86,9 @@ var OrderStation = {
     ],
     filters: { period: '', status: '', date_from: '', date_to: '' },
     groups: [],
+    pageSize: 50,        // 动态加载: 每页医嘱组数
+    pageCount: 1,        // 已加载页数
+    total: 0,            // 服务端总数 (组)
     selected: new Set(),
     keyHandler: null,
 
@@ -99,10 +102,19 @@ var OrderStation = {
         this.selected.clear();
         this.bindKeys();
         this.bindGroupHover();
+        this.bindInfiniteScroll();
         // 初始化私有日期选择器 (筛选日期范围)
         if (typeof DateTimePicker !== 'undefined') DateTimePicker.initInputs(document.getElementById('app-content'));
         this.fillAssist(ctx);
         this.refresh();
+    },
+
+    /* 医嘱列表动态滚动加载 (住院长列表: 触底续载, 避免一次性拉取几千组) */
+    bindInfiniteScroll() {
+        const wrap = document.querySelector('.os-table-wrap');
+        if (!wrap || wrap._osScrollBound) return;
+        wrap._osScrollBound = true;
+        this._scroll = ScrollLoad.attach(wrap, () => this.loadMoreGroups());
     },
 
     /* 整组联动悬停: 鼠标悬停组内任意行, 主/子医嘱同时高亮 */
@@ -182,16 +194,46 @@ var OrderStation = {
         this.refresh();
     },
 
-    async refresh(feedback, focusId) {
-        if (!this.patientId) return;
-        const qs = new URLSearchParams({ patient_id: this.patientId, per_page: 500 });
+    filterQuery() {
+        const qs = new URLSearchParams({ patient_id: this.patientId, per_page: this.pageSize });
         if (this.filters.period) qs.set('order_period', this.filters.period);
         if (this.filters.status) qs.set('status', this.filters.status);
         if (this.filters.date_from) qs.set('date_from', this.filters.date_from);
         if (this.filters.date_to) qs.set('date_to', this.filters.date_to);
+        return qs;
+    },
+
+    fetchGroupsPage(page) {
+        const qs = this.filterQuery();
+        qs.set('page', page);
+        return AjaxLoader.api('orders/list?' + qs.toString(), { silent: true }).catch(() => null);
+    },
+
+    /* 触底加载下一页 (ScrollLoad 回调, 返回是否还有更多) */
+    async loadMoreGroups() {
+        if (!this.total || this.groups.length >= this.total) return false;
+        const next = this.pageCount + 1;
+        const r = await this.fetchGroupsPage(next);
+        if (!r || !r.data || !r.data.length) return false;
+        this.groups = this.groups.concat(r.data);
+        this.pageCount = next;
+        if (r.pagination) this.total = Number(r.pagination.total);
+        const wrap = document.querySelector('.os-table-wrap');
+        const scrollTop = wrap ? wrap.scrollTop : 0;
+        this.render();
+        if (wrap) wrap.scrollTop = scrollTop;
+        return this.groups.length < this.total;
+    },
+
+    async refresh(feedback, focusId) {
+        if (!this.patientId) return;
+        const keepPages = Math.max(1, this.pageCount || 1);
         try {
-            const r = await AjaxLoader.api('orders/list?' + qs.toString(), { silent: true });
+            const r = await this.fetchGroupsPage(1);
+            if (!r) return;
             this.groups = r.data || [];
+            this.pageCount = 1;
+            this.total = r.pagination ? Number(r.pagination.total) : this.groups.length;
             this.selected.clear();
             this._hoverRoot = null; // 重渲染后重置悬停组标记
             // 保留当前滚动位置 (仅新开医嘱才定位滚动, 其余操作不跳动)
@@ -200,6 +242,17 @@ var OrderStation = {
             this.render();
             if (wrap) wrap.scrollTop = scrollTop;
             if (focusId) this.focusOrder(focusId);
+            // 后台补齐此前已加载的页数 (刷新后保持浏览数据量与滚动位置)
+            for (let p = 2; p <= keepPages; p++) {
+                const rp = await this.fetchGroupsPage(p);
+                if (!rp || !rp.data || !rp.data.length) break;
+                this.groups = this.groups.concat(rp.data);
+                this.pageCount = p;
+                if (rp.pagination) this.total = Number(rp.pagination.total);
+                this.render();
+                if (wrap) wrap.scrollTop = scrollTop;
+            }
+            if (this._scroll) ScrollLoad.check(this._scroll);
             if (feedback) Dom.toast('已刷新 ' + Format.shortTime(new Date()) + ' · 共 ' + this.groups.length + ' 组医嘱', 'success');
         } catch (e) { /* 已提示 */ }
     },
@@ -221,12 +274,21 @@ var OrderStation = {
         }, 1800);
     },
 
+    /* 列表底部加载提示 (全部加载完成才显示, 支持中滚动自动续载) */
+    loadHintHtml() {
+        if (this.groups.length === 0) return '';
+        if (!this.total || this.groups.length >= this.total) {
+            return '<tr class="os-load-end"><td colspan="10">已全部加载 · 共 ' + this.groups.length + ' 组医嘱</td></tr>';
+        }
+        return '';
+    },
+
     render() {
         const tbody = document.getElementById('os-tbody');
         const empty = document.getElementById('os-empty');
         if (!tbody) return;
         empty.style.display = this.groups.length === 0 ? 'block' : 'none';
-        tbody.innerHTML = this.groups.map(g => this.renderGroup(g)).join('');
+        tbody.innerHTML = this.groups.map(g => this.renderGroup(g)).join('') + this.loadHintHtml();
         this.updateSelectedHint();
     },
 
