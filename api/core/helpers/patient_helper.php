@@ -21,6 +21,55 @@ function patient_admitted_at($patientId) {
 }
 
 /**
+ * 已用费用自动计算: 有效医嘱 (已提交及以后) 按项目库价格累计
+ * 说明: 收费标准 (数量/折扣/退费) 后续接入收费功能后完善
+ */
+function patient_used_fee($patientId) {
+    $rows = DB::select(
+        "SELECT content, category FROM orders WHERE patient_id = ? AND status NOT IN ('draft', 'invalid')",
+        [$patientId]
+    );
+    if (!$rows) return 0.0;
+    $drug = [];
+    $lab = [];
+    $exam = [];
+    if (DB::table('drug_catalog')) {
+        foreach (DB::select("SELECT name, price FROM drug_catalog") as $r) $drug[$r['name']] = (float)$r['price'];
+    }
+    if (DB::table('lab_catalog')) {
+        foreach (DB::select("SELECT name, price FROM lab_catalog") as $r) $lab[$r['name']] = (float)$r['price'];
+    }
+    if (DB::table('exam_catalog')) {
+        foreach (DB::select("SELECT name, price FROM exam_catalog") as $r) $exam[$r['name']] = (float)$r['price'];
+    }
+    $total = 0.0;
+    foreach ($rows as $o) {
+        $name = (string)$o['content'];
+        if ($o['category'] === 'medication') {
+            if (isset($drug[$name])) $total += $drug[$name];
+        } else {
+            if (isset($lab[$name])) $total += $lab[$name];
+            elseif (isset($exam[$name])) $total += $exam[$name];
+        }
+    }
+    return round($total, 2);
+}
+
+/** 患者资金概览: 预交费用 / 已用费用(自动) / 可透支额度 / 可用余额 */
+function patient_funds($patientId) {
+    $p = DB::selectOne("SELECT prepay_fee, overdraft_limit FROM patients WHERE id = ?", [$patientId]);
+    $prepay = $p ? (float)$p['prepay_fee'] : 0.0;
+    $overdraft = $p ? (float)$p['overdraft_limit'] : 1000.0;
+    $used = patient_used_fee($patientId);
+    return [
+        'prepay' => round($prepay, 2),
+        'used' => $used,
+        'overdraft' => round($overdraft, 2),
+        'balance' => round($prepay + $overdraft - $used, 2),
+    ];
+}
+
+/**
  * 患者是否已入科 (已指派主管医师)
  */
 function is_patient_admitted($patientId) {

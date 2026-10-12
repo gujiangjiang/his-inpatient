@@ -30,7 +30,10 @@ $pdo = DB::getPDO();
 $id = isset($data['id']) && $data['id'] ? $data['id'] : null;
 
 if ($id) {
-    $stmt = $pdo->prepare("UPDATE patients SET name=?, gender=?, birth_date=?, id_card=?, department_id=?, ward_id=?, bed_no=?, admission_date=?, admission_diagnosis=?, admission_icd_code=?, nursing_level=?, fee_type=?, allergy_history=?, vte_caprini=?, vte_bleeding=?, is_critical=? WHERE id=?");
+    $existingFunds = DB::selectOne("SELECT prepay_fee, overdraft_limit FROM patients WHERE id = ?", [$id]);
+    $prepay = array_key_exists('prepay_fee', $data) ? (float)$data['prepay_fee'] : ($existingFunds ? (float)$existingFunds['prepay_fee'] : 0.0);
+    $overdraft = array_key_exists('overdraft_limit', $data) ? (float)$data['overdraft_limit'] : ($existingFunds ? (float)$existingFunds['overdraft_limit'] : 1000.0);
+    $stmt = $pdo->prepare("UPDATE patients SET name=?, gender=?, birth_date=?, id_card=?, department_id=?, ward_id=?, bed_no=?, admission_date=?, admission_diagnosis=?, admission_icd_code=?, nursing_level=?, fee_type=?, allergy_history=?, vte_caprini=?, vte_bleeding=?, is_critical=?, prepay_fee=?, overdraft_limit=? WHERE id=?");
     $stmt->execute([
         $name, $gender, $birthDate,
         $data['id_card'] ?? '',
@@ -40,6 +43,7 @@ if ($id) {
         $data['admission_diagnosis'] ?? '',
         $data['admission_icd_code'] ?? '',
         $nursingLevel, $feeType, $allergyHistory, $vteCaprini, $vteBleeding, $isCritical,
+        $prepay, $overdraft,
         $id
     ]);
     Response::success(['id' => $id]);
@@ -55,7 +59,7 @@ if ($id) {
         }
     }
 
-    $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, nursing_level, fee_type, allergy_history, vte_caprini, vte_bleeding, is_critical, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, nursing_level, fee_type, allergy_history, vte_caprini, vte_bleeding, is_critical, prepay_fee, overdraft_limit, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     $stmt->execute([
         $patientNo, $name, $gender, $birthDate,
         $data['id_card'] ?? '',
@@ -65,6 +69,8 @@ if ($id) {
         $data['admission_diagnosis'] ?? '',
         $data['admission_icd_code'] ?? '',
         $nursingLevel, $feeType, $allergyHistory, $vteCaprini, $vteBleeding, $isCritical,
+        (float)($data['prepay_fee'] ?? 0),
+        (float)($data['overdraft_limit'] ?? 1000),
         'active',
         DateHelper::now()
     ]);

@@ -110,6 +110,7 @@ function getRoutes() {
         'patients/assignment' => ['patients/assignment_get.php', ['admin', 'doctor']],
         'patients/my-patients' => ['patients/my_patients.php', ['admin', 'doctor']],
         'patients/by-department' => ['patients/by_department.php', ['admin', 'doctor']],
+        'patients/funds' => ['patients/patient_funds.php', ['admin', 'doctor', 'nurse', 'pharmacist']],
 
         // 医生科室授权
         'doctors/departments' => ['doctors/doctor_departments.php', ['admin', 'doctor']],
