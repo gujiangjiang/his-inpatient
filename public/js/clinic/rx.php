@@ -111,8 +111,7 @@ var RxPanel = {
         this.catalog = c.data || [];
         this.source = c.source || 'local';
         Dom.modal('新方（处方开具）', this.html(), [
-            { text: '保存', type: 'primary', onclick: () => this.submit(0) },
-            { text: '保存并提交', type: 'success', onclick: () => this.submit(1) },
+            { text: '开具', type: 'primary', onclick: () => this.submit() },
             { text: '取消', type: 'default' }
         ]);
         this.renderList();
@@ -208,7 +207,7 @@ var RxPanel = {
         }).join('');
     },
 
-    async submit(flag) {
+    async submit() {
         if (!this.selected.length) { Dom.toast('请先选择药品', 'error'); return; }
         const items = this.selected.map(id => {
             const i = this.itemById(id);
@@ -221,15 +220,17 @@ var RxPanel = {
                 order_period: 'long'
             };
         });
+        // 处方直接提交 (待护士核对), 医嘱备注「处方」以便医嘱列表识别来源
         const r = await AjaxLoader.api('orders/save', { method: 'POST', data: {
             patient_id: this.patientId,
             order_period: 'long',
             category: 'medication',
             items: items,
-            submit: flag
+            submit: 1,
+            notes: '处方'
         }});
         if (r.status === 'success') {
-            Dom.toast('处方已生成（以成组医嘱形式保存）', 'success');
+            Dom.toast('处方已开具（待护士核对）', 'success');
             clinic_rx_load();
         }
     }
