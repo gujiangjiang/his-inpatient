@@ -162,7 +162,7 @@ function outpatient_exams_load() {
         _opdExamRows = d.rows || [];
         const notice = document.getElementById('opd-exams-notice');
         const table = document.getElementById('opd-exams-table');
-        document.getElementById('opd-exams-match').textContent = d.matched ? ('门诊号 ' + d.patient_no) : '';
+        document.getElementById('opd-exams-match').textContent = d.matched ? ('门诊患者号 ' + d.patient_no) : '';
         notice.innerHTML = '';
         table.classList.add('hidden');
 

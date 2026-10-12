@@ -164,7 +164,7 @@ function outpatient_labs_load() {
         const d = r.data;
         const notice = document.getElementById('opd-labs-notice');
         const table = document.getElementById('opd-labs-table');
-        document.getElementById('opd-labs-match').textContent = d.matched ? ('门诊号 ' + d.patient_no) : '';
+        document.getElementById('opd-labs-match').textContent = d.matched ? ('门诊患者号 ' + d.patient_no) : '';
         notice.innerHTML = '';
         table.classList.add('hidden');
 

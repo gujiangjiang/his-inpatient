@@ -94,7 +94,7 @@ function outpatient_records_match(opd) {
     } else if (!opd.matched) {
         el.innerHTML = '<span class="badge badge-warning">未匹配</span> 按身份证未在门诊系统找到该患者';
     } else {
-        el.innerHTML = '<span class="badge badge-success">已匹配</span> 门诊号 ' + Format.escape(opd.patient_no) +
+        el.innerHTML = '<span class="badge badge-success">已匹配</span> 门诊患者号 ' + Format.escape(opd.patient_no) +
             ' · 就诊 ' + opd.visits.length + ' 次 · 诊断 ' + opd.conditions.length + ' 条 · 处方 ' + opd.prescriptions.length + ' 张';
     }
 }
