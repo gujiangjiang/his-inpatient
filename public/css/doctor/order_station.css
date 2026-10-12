@@ -103,7 +103,7 @@
     vertical-align: middle;
     word-break: break-all;
 }
-.os-table tbody tr:hover td { background: #f5fbfb; }
+.os-table tbody tr.os-row-hover td { background: #f5fbfb; }
 .os-table tbody tr.os-group-start td { border-top: 1px solid #e4e7ed; }
 
 /* 列宽 */

@@ -98,10 +98,33 @@ var OrderStation = {
         this.patientId = ctx.id;
         this.selected.clear();
         this.bindKeys();
+        this.bindGroupHover();
         // 初始化私有日期选择器 (筛选日期范围)
         if (typeof DateTimePicker !== 'undefined') DateTimePicker.initInputs(document.getElementById('app-content'));
         this.fillAssist(ctx);
         this.refresh();
+    },
+
+    /* 整组联动悬停: 鼠标悬停组内任意行, 主/子医嘱同时高亮 */
+    bindGroupHover() {
+        const tbody = document.getElementById('os-tbody');
+        if (!tbody || tbody._hoverBound) return;
+        tbody._hoverBound = true;
+        tbody.addEventListener('mouseover', (e) => {
+            const tr = e.target.closest('tr[data-root]');
+            if (!tr) return;
+            const root = tr.getAttribute('data-root');
+            if (this._hoverRoot === root) return;
+            this._hoverRoot = root;
+            tbody.querySelectorAll('tr[data-root]').forEach(x =>
+                x.classList.toggle('os-row-hover', x.getAttribute('data-root') === root));
+        });
+        tbody.addEventListener('mouseleave', () => this.clearGroupHover());
+    },
+
+    clearGroupHover() {
+        this._hoverRoot = null;
+        document.querySelectorAll('#os-tbody tr.os-row-hover').forEach(x => x.classList.remove('os-row-hover'));
     },
 
     fillAssist(p) {
@@ -170,6 +193,7 @@ var OrderStation = {
             const r = await AjaxLoader.api('orders/list?' + qs.toString(), { silent: true });
             this.groups = r.data || [];
             this.selected.clear();
+            this._hoverRoot = null; // 重渲染后重置悬停组标记
             // 保留当前滚动位置 (仅新开医嘱才定位滚动, 其余操作不跳动)
             const wrap = document.querySelector('.os-table-wrap');
             const scrollTop = wrap ? wrap.scrollTop : 0;
