@@ -50,6 +50,14 @@ function admin_integrations_status(c) {
         ['阅片地址', c.pacs_viewer_url ? Format.escape(c.pacs_viewer_url) : '<span class="text-muted">未配置</span>'],
         ['最近测试', testHtml],
     ];
+    const p = c.order_push || { pending: 0, failed: 0, success: 0 };
+    if (p.failed > 0) {
+        rows.push(['单据推送', '<span class="badge badge-danger">失败 ' + p.failed + ' 条</span> <span class="text-muted">可点「重推失败单据」</span>']);
+    } else if (p.pending > 0) {
+        rows.push(['单据推送', '<span class="badge badge-warning">待推送 ' + p.pending + ' 条</span>']);
+    } else if (p.success > 0) {
+        rows.push(['单据推送', '<span class="badge badge-success">已推送 ' + p.success + ' 条</span>']);
+    }
     document.getElementById('itg-opd-status').innerHTML = rows.map(r =>
         '<div class="status-row"><span class="status-label">' + r[0] + '</span><span class="status-value">' + r[1] + '</span></div>'
     ).join('');
@@ -115,6 +123,17 @@ function admin_integrations_push() {
                 const c = r.data.counts;
                 Dom.toast('推送完成：药品 ' + c.drugs + ' · 处置 ' + c.disposal_items + ' · 检验 ' + c.lab_items + ' · 检查 ' + c.exam_items, 'success');
             }
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+}
+
+function admin_integrations_retryOrders() {
+    Dom.modal('重推失败单据', '<p>将重推门诊推送队列中待推送 / 失败（重试未超限）的住院检验检查单，住院单一律视为已缴费。</p>', [
+        { text: '重推', type: 'primary', onclick: async function() {
+            const r = await AjaxLoader.api('admin/integration-retry-orders', { method: 'POST' });
+            Dom.toast(r.message || '已处理', (r.data && r.data.failed > 0) ? 'error' : 'success');
+            admin_integrations_load_config();
         } },
         { text: '取消', type: 'default' }
     ]);

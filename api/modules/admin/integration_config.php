@@ -11,4 +11,6 @@ Response::success([
     'pacs_viewer_url' => $s['pacs_viewer_url'],
     'last_test_at' => $s['last_test_at'],
     'last_test_ok' => $s['last_test_ok'],
+    // 住院检验检查单推送队列统计（接口管理页展示）
+    'order_push' => opd_order_push_counts(),
 ]);

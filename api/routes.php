@@ -28,6 +28,7 @@ function getRoutes() {
         'admin/integration-config-save' => ['admin/integration_config_save.php', ['admin']],
         'admin/integration-test' => ['admin/integration_test.php', ['admin']],
         'admin/integration-push-catalog' => ['admin/integration_push_catalog.php', ['admin']],
+'admin/integration-retry-orders' => ['admin/integration_retry_orders.php', ['admin']],
         'admin/integration-audit-list' => ['admin/integration_audit_list.php', ['admin']],
         'admin/integration-audit-clear' => ['admin/integration_audit_clear.php', ['admin']],
 

@@ -120,6 +120,9 @@ const ExamPanel = {
         }});
         if (r.status === 'success') {
             Dom.toast(r.message, 'success');
+            if (r.data && r.data.opd_push && r.data.opd_push.failed > 0) {
+                Dom.toast('有 ' + r.data.opd_push.failed + ' 张检查单未推送门诊，可在接口管理重推', 'error');
+            }
             if (typeof outpatient_exams_loadApply === 'function') outpatient_exams_loadApply();
         }
     }

@@ -1,7 +1,7 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="page-head">
     <h3 class="page-title">接口管理</h3>
-    <p class="page-desc">门诊一体化系统 · PACS 影像系统互通（一期：只读查询 + 字典推送）</p>
+    <p class="page-desc">门诊一体化系统 · PACS 影像系统互通（只读查询 + 字典推送 + 住院检验检查单推送）</p>
 </div>
 
 <div class="tabs">
@@ -43,6 +43,7 @@
         </div>
         <button class="btn btn-primary" onclick="admin_integrations_save()">保存配置</button>
         <button class="btn btn-success" onclick="admin_integrations_push()">推送 HIS 字典到门诊</button>
+        <button class="btn" onclick="admin_integrations_retryOrders()">重推失败单据</button>
     </div>
 </div>
 

@@ -176,6 +176,17 @@ function opd_his_push_catalog($payload) {
     return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => $json['msg'] ?? ('HTTP ' . $code)];
 }
 
+/** 住院检验/检查单推送 (sync-orders): 门诊登记出报告（住院开单即计费，一律视为已缴费） */
+function opd_his_push_orders($payload) {
+    $settings = opd_settings();
+    $headers = ['Content-Type: application/json; charset=utf-8'];
+    if ($settings['opd_his_token'] !== '') $headers[] = 'X-HIS-Token: ' . $settings['opd_his_token'];
+    list($code, $body) = opd_http('POST', opd_base_url() . '/api/external/his/sync-orders', $headers, json_encode($payload, JSON_UNESCAPED_UNICODE), 15);
+    $json = json_decode((string)$body, true);
+    $ok = $code === 200 && is_array($json) && !empty($json['ok']);
+    return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => $json['msg'] ?? ('HTTP ' . $code)];
+}
+
 /** ISO 时间 → Y-m-d H:i */
 function opd_fmt_datetime($iso) {
     if (!$iso) return '';

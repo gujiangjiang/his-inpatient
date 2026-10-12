@@ -22,6 +22,7 @@ $status = 'pending';
 $now = DateHelper::now();
 $base = (int)DB::selectOne("SELECT COUNT(*) as c FROM lab_reports")['c'];
 $pdo = DB::getPDO();
+$opdPush = ['processed' => 0, 'success' => 0, 'failed' => 0];
 $pdo->beginTransaction();
 try {
     $reportIds = [];
@@ -82,6 +83,15 @@ try {
         $orderIds[] = $orderId;
     }
     $pdo->commit();
+    // 住院检验单推送门诊（登记出结果）：住院开单即计费，一律视为已缴费；失败入队重试
+    if (opd_order_push_enabled()) {
+        try {
+            foreach ($reportIds as $opdRid) opd_order_push_submit('lab', (int)$opdRid);
+            $opdPush = opd_order_push_process(count($reportIds) + 10);
+        } catch (Exception $opdEx) {
+            $opdPush['failed'] = count($reportIds);
+        }
+    }
 } catch (Exception $e) {
     $pdo->rollBack();
     Response::error('生成检验申请失败: ' . $e->getMessage(), 500);
@@ -91,4 +101,5 @@ Response::success([
     'orders' => count($orderIds),
     'report_ids' => $reportIds,
     'order_ids' => $orderIds,
+    'opd_push' => $opdPush,
 ], '已提交 ' . count($items) . ' 条检验医嘱（待护士核对）');
