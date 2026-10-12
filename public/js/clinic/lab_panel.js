@@ -22,8 +22,7 @@ const LabPanel = {
         this.source = c.source || 'local';
         this.panels = pn.data || [];
         Dom.modal('检验申请', this.html(), [
-            { text: '保存', type: 'primary', onclick: () => this.submit(0) },
-            { text: '保存并提交', type: 'success', onclick: () => this.submit(1) },
+            { text: '开具', type: 'primary', onclick: () => this.submit() },
             { text: '取消', type: 'default' }
         ]);
         this.renderList();
@@ -178,10 +177,10 @@ const LabPanel = {
         ]);
     },
 
-    async submit(flag) {
+    async submit() {
         if (!this.selected.length) { Dom.toast('请先选择检验项目', 'error'); return; }
         const r = await AjaxLoader.api('lab/apply', { method: 'POST', data: {
-            patient_id: this.patientId, item_ids: this.selected, submit: flag
+            patient_id: this.patientId, item_ids: this.selected
         }});
         if (r.status === 'success') {
             Dom.toast(r.message, 'success');
