@@ -22,6 +22,12 @@ try {
     $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$orderId]);
     if (!$order) throw new Exception('医嘱不存在');
 
+    // 摆药扣费校验: 预缴金不足 (余额=预交+可透支-已用) 则摆药失败
+    $funds = patient_funds((int)$order['patient_id']);
+    if ($funds['balance'] < 0) {
+        throw new Exception('患者预缴金不足，摆药失败（可用余额 ¥' . number_format($funds['balance'], 2) . '，请先补交费用）');
+    }
+
     // 扣减库存
     DB::execute("UPDATE medications SET stock_quantity = stock_quantity - ? WHERE id = ?", [$quantity, $medicationId]);
 
