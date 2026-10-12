@@ -16,7 +16,8 @@ const OrderDetail = {
         this.order = found.order;
 
         const o = found.order;
-        const readonly = o.status !== 'draft'; // 非草稿只读: 可查看, 不可修改
+        // 非草稿只读; 申请类自动医嘱 (检验/检查/会诊) 恒只读 (不可修改剂量/途径/频次/执行时间等)
+        const readonly = o.status !== 'draft' || o.is_auto_generated == 1;
         const ro = readonly ? 'disabled' : '';
         const flags = (o.billing_flags || '').split(',');
         const flagBox = (v) => `<label class="osd-flag"><input type="checkbox" class="osd-flagbox" value="${v}" ${flags.includes(v) ? 'checked' : ''} ${ro}>${v}</label>`;

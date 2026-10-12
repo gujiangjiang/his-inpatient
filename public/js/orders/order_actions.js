@@ -9,8 +9,9 @@ const OrderActions = {
     show(rootId, event) {
         const root = this.find(rootId);
         if (!root) return;
+        const isAuto = root.is_auto_generated == 1; // 申请类自动医嘱: 不由医嘱站提交/删除/复制 (经申请页面管理)
         const items = [];
-        if (root.status === 'draft') {
+        if (root.status === 'draft' && !isAuto) {
             items.push(['提交', () => this.submit([root])]);
             items.push(['删除', () => this.removeDraft(root)]);
         } else {
@@ -21,7 +22,9 @@ const OrderActions = {
             if (['verified', 'executing'].includes(root.status)) {
                 items.push(['作废', () => this.invalidate(root)]);
             }
-            items.push(['复制', () => this.copy(root)]);
+            if (!isAuto) {
+                items.push(['复制', () => this.copy(root)]);
+            }
             items.push(['护理执行记录', () => Dom.toast('护理执行记录请在护士工作站查看', 'info')]);
         }
         this.openMenu(event, items);

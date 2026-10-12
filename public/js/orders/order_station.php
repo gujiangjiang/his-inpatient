@@ -209,7 +209,9 @@ var OrderStation = {
     renderGroup(root) {
         const rows = [root].concat(root.sub_orders || []);
         const size = rows.length;
-        const editable = root.status === 'draft';
+        // 申请类自动医嘱 (检验/检查/会诊) 锁定行内编辑: 不可切换周期/修改剂量/途径/频次/执行时间
+        const isAuto = root.is_auto_generated == 1;
+        const editable = root.status === 'draft' && !isAuto;
         let html = '';
         rows.forEach((o, i) => {
             const first = i === 0;
