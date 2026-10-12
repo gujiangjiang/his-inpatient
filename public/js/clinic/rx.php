@@ -217,13 +217,13 @@ var RxPanel = {
                 usage_name: i.route || '',
                 freq_code: i.frequency_code || '',
                 category: 'medication',
-                order_period: 'long'
+                order_period: 'temp'
             };
         });
         // 处方直接提交 (待护士核对), 医嘱备注「处方」以便医嘱列表识别来源
         const r = await AjaxLoader.api('orders/save', { method: 'POST', data: {
             patient_id: this.patientId,
-            order_period: 'long',
+            order_period: 'temp',
             category: 'medication',
             items: items,
             submit: 1,
