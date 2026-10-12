@@ -1,7 +1,7 @@
 <?php
 // api/config.php
 date_default_timezone_set('Asia/Shanghai'); // 统一时区 (修复 PHP 默认 UTC 导致时间相差 8 小时)
-define('APP_VERSION', '0.16.4');
+define('APP_VERSION', '0.16.5');
 define('BASE_DIR', dirname(__DIR__));
 define('DATA_DIR', BASE_DIR . '/data');
 define('DB_PATH', DATA_DIR . '/hospital.sqlite');
