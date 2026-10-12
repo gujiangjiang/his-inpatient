@@ -204,7 +204,8 @@
 
 /* 悬浮详情框打开时高亮对应医嘱组 */
 .os-row-selected td { background: #f5fbfb; }
-.os-row-selected td:first-child { box-shadow: inset 3px 0 0 #1aa3a3; }
+/* 组高亮左侧色条仅画在组首列 (勾选列 rowspan 覆盖整组), 避免子医嘱行首格(内容格)凭空多出选中色条 */
+.os-row-selected .os-col-check { box-shadow: inset 3px 0 0 #1aa3a3; }
 
 /* 操作列按钮 */
 .os-op-btn {
