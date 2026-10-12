@@ -19,15 +19,33 @@ const ExamPanel = {
                 Dom.toast('患者预缴金不足（可用余额 ¥' + Number(f.data.balance).toFixed(2) + '），请提醒患者补交', 'error');
             }
         }).catch(() => {});
-        const c = await AjaxLoader.api('exam/catalog', { silent: true });
-        this.catalog = c.data || [];
-        this.source = c.source || 'local';
+        this.catalog = [];
+        this.listTotal = 0;
+        this.source = 'local';
         Dom.modal('检查申请', this.html(), [
             { text: '开具', type: 'primary', onclick: () => this.submit() },
             { text: '取消', type: 'default' }
         ]);
-        this.renderList();
+        this._scroll = ScrollLoad.attach(document.getElementById('exam-list'), () => this.fetchList(false));
         this.renderSelected();
+        await this.fetchList(true);
+    },
+
+    /* 分页拉取目录 (滚动触底续载, 一次 30 条) */
+    fetchList(reset) {
+        if (reset) { this.catalog = []; this.listTotal = 0; }
+        if (!reset && this.catalog.length >= this.listTotal) return Promise.resolve(false);
+        const params = new URLSearchParams({ limit: 30, offset: this.catalog.length });
+        if (this.kw) params.set('kw', this.kw);
+        if (this.cat) params.set('category', this.cat);
+        return AjaxLoader.api('exam/catalog?' + params.toString(), { silent: true }).then(r => {
+            this.source = r.source || this.source;
+            this.listTotal = r.total != null ? Number(r.total) : (r.data || []).length;
+            this.catalog = this.catalog.concat(r.data || []);
+            this.renderList();
+            if (this._scroll) ScrollLoad.check(this._scroll);
+            return this.catalog.length < this.listTotal;
+        }).catch(() => false);
     },
 
     html() {
@@ -52,13 +70,21 @@ const ExamPanel = {
         </div>`;
     },
 
-    onKw(v) { this.kw = v.trim(); this.renderList(); },
+    onKw(v) {
+        this.kw = v.trim();
+        clearTimeout(this._kwTimer);
+        this._kwTimer = setTimeout(() => {
+            ScrollLoad.reset(this._scroll);
+            this.fetchList(true);
+        }, 250);
+    },
 
     onCat(el) {
         document.querySelectorAll('#exam-cats .apply-chip').forEach(c => c.classList.remove('active'));
         el.classList.add('active');
         this.cat = el.dataset.cat;
-        this.renderList();
+        ScrollLoad.reset(this._scroll);
+        this.fetchList(true);
     },
 
     filtered() {

@@ -20,20 +20,36 @@ const LabPanel = {
                 Dom.toast('患者预缴金不足（可用余额 ¥' + Number(f.data.balance).toFixed(2) + '），请提醒患者补交', 'error');
             }
         }).catch(() => {});
-        const [c, pn] = await Promise.all([
-            AjaxLoader.api('lab/catalog', { silent: true }),
-            AjaxLoader.api('lab/panel-list', { silent: true })
-        ]);
-        this.catalog = c.data || [];
-        this.source = c.source || 'local';
+        const pn = await AjaxLoader.api('lab/panel-list', { silent: true });
         this.panels = pn.data || [];
+        this.catalog = [];
+        this.listTotal = 0;
+        this.source = 'local';
         Dom.modal('检验申请', this.html(), [
             { text: '开具', type: 'primary', onclick: () => this.submit() },
             { text: '取消', type: 'default' }
         ]);
-        this.renderList();
+        this._scroll = ScrollLoad.attach(document.getElementById('lab-list'), () => this.fetchList(false));
         this.renderSelected();
         this.renderPanels();
+        await this.fetchList(true);
+    },
+
+    /* 分页拉取目录 (滚动触底续载, 一次 30 条) */
+    fetchList(reset) {
+        if (reset) { this.catalog = []; this.listTotal = 0; }
+        if (!reset && this.catalog.length >= this.listTotal) return Promise.resolve(false);
+        const params = new URLSearchParams({ limit: 30, offset: this.catalog.length });
+        if (this.kw) params.set('kw', this.kw);
+        if (this.cat) params.set('category', this.cat);
+        return AjaxLoader.api('lab/catalog?' + params.toString(), { silent: true }).then(r => {
+            this.source = r.source || this.source;
+            this.listTotal = r.total != null ? Number(r.total) : (r.data || []).length;
+            this.catalog = this.catalog.concat(r.data || []);
+            this.renderList();
+            if (this._scroll) ScrollLoad.check(this._scroll);
+            return this.catalog.length < this.listTotal;
+        }).catch(() => false);
     },
 
     html() {
@@ -62,13 +78,21 @@ const LabPanel = {
         </div>`;
     },
 
-    onKw(v) { this.kw = v.trim(); this.renderList(); },
+    onKw(v) {
+        this.kw = v.trim();
+        clearTimeout(this._kwTimer);
+        this._kwTimer = setTimeout(() => {
+            ScrollLoad.reset(this._scroll);
+            this.fetchList(true);
+        }, 250);
+    },
 
     onCat(el) {
         document.querySelectorAll('#lab-cats .apply-chip').forEach(c => c.classList.remove('active'));
         el.classList.add('active');
         this.cat = el.dataset.cat;
-        this.renderList();
+        ScrollLoad.reset(this._scroll);
+        this.fetchList(true);
     },
 
     filtered() {

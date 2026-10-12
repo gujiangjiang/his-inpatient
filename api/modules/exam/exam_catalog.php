@@ -2,6 +2,9 @@
 // api/modules/exam/exam_catalog.php - 检查项目库 (优先门诊一体化同步, 不可用时回退本地)
 Auth::requireRole(['admin', 'doctor', 'nurse', 'lab_tech']);
 $kw = trim((string)Validator::get('kw', ''));
+$categoryFilter = trim((string)Validator::get('category', ''));
+$limit = max(1, min(200, (int)Validator::get('limit', 30) ?: 30));
+$offset = max(0, (int)Validator::get('offset', 0));
 $category = trim((string)Validator::get('category', ''));
 
 $source = 'local';
@@ -36,9 +39,19 @@ if ($kw !== '') {
     }));
 }
 
+if ($categoryFilter !== '' && $categoryFilter !== '全部') {
+    $rows = array_values(array_filter($rows, function ($r) use ($categoryFilter) {
+        return ($r['category'] ?? '') === $categoryFilter;
+    }));
+}
+
+$total = count($rows);
+$rows = array_slice($rows, $offset, $limit);
+
 Response::json([
     'status' => 'success',
     'message' => '',
     'data' => $rows,
+    'total' => $total,
     'source' => $source,
 ]);
