@@ -70,6 +70,7 @@ try {
             'content' => $it['name'],
             'category' => 'nonmedication',
             'status' => $status,
+            'is_auto_generated' => 1,
             'notes' => $it['note'] ?? '',
             'start_date' => $now,
             'created_by' => $user['id'],

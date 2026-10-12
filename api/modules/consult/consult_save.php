@@ -47,6 +47,7 @@ try {
         'content' => $content,
         'category' => 'nonmedication',
         'status' => 'pending',
+        'is_auto_generated' => 1,
         'notes' => $purpose,
         'start_date' => $now,
         'created_by' => $user['id'],
