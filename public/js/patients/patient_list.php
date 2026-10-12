@@ -199,7 +199,7 @@ function patients_wall_render() {
             '<div class="pw-line pw-diagnosis"><span class="pw-label">诊断:</span> ' + Format.escape(p.admission_diagnosis || '-') + '</div>' +
             '<div class="pw-line"><span class="pw-label">病区:</span> ' + Format.escape(p.ward_name || '-') + '护理</div>' +
             '<div class="pw-foot">' + vte +
-                '<span class="pw-days">费用 ¥' + Number(p.total_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
+                '<span class="pw-days">费用 ¥' + Number(p.used_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>' +
             '</div>' +
         '</div>';
     }).join('');

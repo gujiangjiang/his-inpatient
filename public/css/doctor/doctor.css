@@ -191,6 +191,8 @@
 .pib-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #303133; }
 .pib-item b { color: #909399; font-weight: 400; }
 .pib-item i { font-style: normal; font-weight: 600; }
+/* 费用栏: 欠费 (超过预交+可透支) 红色提示, 否则黑色 */
+.pib-fee.debt { color: #e5484d; }
 .pib-diagnosis { max-width: 340px; }
 .pib-diagnosis i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

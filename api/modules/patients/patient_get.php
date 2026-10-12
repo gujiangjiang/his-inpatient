@@ -44,4 +44,5 @@ if ($user['role'] === 'doctor') {
 
 $row = [$patient];
 apply_latest_nursing_level($row);
+attach_patient_funds($row);
 Response::success($row[0]);

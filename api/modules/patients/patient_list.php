@@ -50,4 +50,5 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 apply_latest_nursing_level($rows);
+attach_patient_funds($rows);
 Response::success($rows);

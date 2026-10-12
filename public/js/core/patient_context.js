@@ -160,9 +160,28 @@ PatientContext.fillInfoBar = function(p) {
         }
     }
     set('pib-days', days);
-    set('pib-fee', '¥ ' + Number(p.total_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    // 费用: 显示当前已产生费用; 欠费 (超过预交+可透支) 红色, 否则黑色
+    const usedFee = Number(p.used_fee != null ? p.used_fee : (p.total_fee || 0));
+    set('pib-fee', '¥ ' + usedFee.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    const feeI = document.getElementById('pib-fee');
+    if (feeI) feeI.classList.toggle('debt', p.is_debt == 1);
     set('pib-diagnosis', p.admission_diagnosis || '-');
     PatientContext.bindFundsPop();
+    PatientContext.refreshFundsBar(p.id);
+};
+
+/**
+ * 异步刷新费用栏: 以实时资金数据更新已产生费用与欠费着色
+ */
+PatientContext.refreshFundsBar = function(patientId) {
+    if (!patientId) return;
+    AjaxLoader.api('patients/funds?patient_id=' + patientId, { silent: true }).then(r => {
+        const f = r.data;
+        const el = document.getElementById('pib-fee');
+        if (!f || !el) return;
+        el.textContent = '¥ ' + Number(f.used || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        el.classList.toggle('debt', Number(f.balance) < 0);
+    }).catch(() => {});
 };
 
 /**
