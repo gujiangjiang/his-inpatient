@@ -179,7 +179,7 @@ function patients_wall_render() {
         var level = String(p.nursing_level || '3');
         var nursing = _wallNursingText[level] || '三级护理';
         var roman = _wallNursingRoman[level] || 'Ⅲ';
-        var bed = roman + '|' + (p.bed_no || '-');
+        var bed = roman + ' | ' + (p.bed_no || '-');
         var days = patients_wall_days(p);
         var age = patients_wall_age(p);
         var ward = [p.department_name, p.ward_name].filter(Boolean).join('-');
@@ -241,12 +241,14 @@ function showPatientForm(p) {
     var feeOpts = ['', '职工医保', '居民医保', '自费', '新农合']
         .map(function(f) { return '<option value="' + f + '"' + (p.fee_type === f ? ' selected' : '') + '>' + (f || '请选择') + '</option>'; }).join('');
 
-    var content = '<form id="patient-form" style="max-height:70vh;overflow-y:auto">' +
+    var content = '<form id="patient-form">' +
+        '<div class="form-grid">' +
         Dom.formField({ name: 'name', label: '姓名', type: 'text' }, p.name || '') +
         Dom.formField({ name: 'gender', label: '性别', type: 'select', options: [{ label: '男', value: 'male' }, { label: '女', value: 'female' }] }, p.gender || '') +
         Dom.formField({ name: 'birth_date', label: '生日', type: 'date' }, p.birth_date || '') +
         Dom.formField({ name: 'id_card', label: '身份证号', type: 'text' }, p.id_card || '') +
-        Dom.formField({ name: 'admission_diagnosis', label: '入院诊断', type: 'text' }, p.admission_diagnosis || '') +
+        '<div class="form-group colspan-2"><label class="form-label">入院诊断</label>' +
+            '<input type="text" name="admission_diagnosis" id="admission_diagnosis" class="form-control" placeholder="搜索 ICD-10 诊断" value="' + Format.escape(p.admission_diagnosis || '') + '"></div>' +
         '<input type="hidden" name="admission_icd_code" id="admission_icd_code" value="' + Format.escape(p.admission_icd_code || '') + '">' +
         '<div class="form-group"><label class="form-label">科室</label><select name="department_id" class="form-control">' + deptHtml + '</select></div>' +
         '<div class="form-group"><label class="form-label">病区</label><select name="ward_id" class="form-control">' + wardHtml + '</select></div>' +
@@ -255,7 +257,7 @@ function showPatientForm(p) {
         Dom.formField({ name: 'allergy_history', label: '过敏史', type: 'text' }, p.allergy_history || '') +
         Dom.formField({ name: 'bed_no', label: '床号', type: 'text' }, p.bed_no || '') +
         '<input type="hidden" name="id" value="' + (p.id || '') + '">' +
-        '</form>';
+        '</div></form>';
 
     Dom.modal('患者信息', content, [
         { text: '保存', type: 'primary', onclick: async function() {

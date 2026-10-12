@@ -37,7 +37,8 @@
 .pib-name { font-size: 17px; font-weight: 700; color: #303133; }
 .pib-sub { font-size: 12px; color: #606266; }
 .pib-sub b { color: #909399; font-weight: 400; }
-.pib-fee { font-style: normal; font-weight: 700; color: #f56c6c; }
+/* 费用: 默认黑色, 欠费红色由 doctor.css .pib-fee.debt 覆盖 */
+.pib-fee { font-style: normal; font-weight: 700; color: #303133; }
 .pib-diagnosis i { color: #303133; }
 .pib-actions { margin-left: auto; display: flex; gap: 8px; }
 
