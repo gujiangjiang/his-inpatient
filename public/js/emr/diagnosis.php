@@ -71,6 +71,8 @@ var _diagTemplates = [];
 var _diagMatchData = {};
 var _diagPopSel = null;
 var _diagPopTimer = null;
+var _diagPopState = { kw: '', offset: 0, hasMore: true, loading: false, cursor: -1 };
+var _diagPopScroll = null;
 
 async function emr_diagnosis_init() {
     document.getElementById('main-app').style.display = 'flex';
@@ -79,6 +81,9 @@ async function emr_diagnosis_init() {
     document.getElementById('sidebar').innerHTML = sidebar;
     document.getElementById('diag-pop-cat').innerHTML = _diagCats.map(([k, label]) =>
         `<option value="${k}">${label}</option>`).join('');
+    _diagPopScroll = ScrollLoad.attach(document.getElementById('diag-pop-res'), function() {
+        return emr_diag_pop_loadMore(false);
+    }, { autoCheck: false });
     document.addEventListener('mousedown', function(e) {
         const pop = document.getElementById('diag-pop');
         if (pop && !pop.classList.contains('hidden') && !pop.contains(e.target) && !e.target.closest('.diag-plus')) {
@@ -207,6 +212,8 @@ function emr_diagnosis_deleteTemplate(id) {
 /* ===== 添加诊断悬浮窗 (参考门诊一体化) ===== */
 function emr_diag_pop_open(cat, ev, presetName, presetCode) {
     _diagPopSel = presetName ? { name: presetName, code: presetCode || '' } : null;
+    _diagPopState = { kw: '', offset: 0, hasMore: true, loading: false, cursor: -1 };
+    if (_diagPopScroll) ScrollLoad.reset(_diagPopScroll);
     const pop = document.getElementById('diag-pop');
     pop.classList.remove('hidden');
     document.getElementById('diag-pop-cat').value = cat || 'initial';
@@ -231,29 +238,66 @@ function emr_diag_pop_position(ev) {
 }
 
 function emr_diag_pop_search(v) {
-    const kw = (v || '').trim();
+    _diagPopState.kw = (v || '').trim();
     const res = document.getElementById('diag-pop-res');
-    if (kw.length < 1) { res.innerHTML = ''; return; }
+    if (_diagPopState.kw.length < 1) { res.innerHTML = ''; return; }
     clearTimeout(_diagPopTimer);
-    _diagPopTimer = setTimeout(() => {
-        AjaxLoader.api('emr/icd-search?keyword=' + encodeURIComponent(kw), { silent: true }).then(r => {
-            const rows = r.data || [];
-            if (!rows.length) {
-                res.innerHTML = '<div class="diag-pop-item diag-pop-none">无匹配，回车按输入文本直接保存</div>';
-                return;
-            }
-            res.innerHTML = rows.map(x =>
-                `<div class="diag-pop-item" data-code="${Format.escape(x.code)}" data-name="${Format.escape(x.name)}">
-                    <b>[${Format.escape(x.code)}]</b> ${Format.escape(x.name)}</div>`).join('');
-            res.querySelectorAll('.diag-pop-item').forEach(el => {
-                el.addEventListener('click', () => emr_diag_pop_pick(el.dataset.code, el.dataset.name));
-            });
-        }).catch(() => {});
+    _diagPopTimer = setTimeout(function() {
+        if (_diagPopScroll) ScrollLoad.reset(_diagPopScroll);
+        emr_diag_pop_loadMore(true);
     }, 250);
+}
+
+/* 分页加载 (滚动触底续载, 键盘导航联动) */
+function emr_diag_pop_loadMore(reset) {
+    const st = _diagPopState;
+    if (st.loading || !st.kw) return Promise.resolve(false);
+    if (!reset && !st.hasMore) return Promise.resolve(false);
+    st.loading = true;
+    const res = document.getElementById('diag-pop-res');
+    if (reset) { st.offset = 0; st.hasMore = true; st.cursor = -1; res.innerHTML = ''; }
+    return AjaxLoader.api('emr/icd-search?keyword=' + encodeURIComponent(st.kw) + '&limit=20&offset=' + st.offset, { silent: true })
+        .then(function(r) {
+            st.loading = false;
+            const rows = r.data || [];
+            if (reset && !rows.length) {
+                res.innerHTML = '<div class="diag-pop-item diag-pop-none">无匹配，回车按输入文本直接保存</div>';
+                st.hasMore = false;
+                return false;
+            }
+            res.insertAdjacentHTML('beforeend', rows.map(function(x) {
+                return '<div class="diag-pop-item" data-code="' + Format.escape(x.code) + '" data-name="' + Format.escape(x.name) + '">' +
+                    '<span class="dp-code">' + Format.escape(x.code) + '</span>' +
+                    '<span class="dp-name">' + Format.escape(x.name) + '</span></div>';
+            }).join(''));
+            res.querySelectorAll('.diag-pop-item[data-code]').forEach(function(el) {
+                if (el._bound) return;
+                el._bound = true;
+                el.addEventListener('click', function() { emr_diag_pop_pick(el.dataset.code, el.dataset.name); });
+            });
+            st.offset += rows.length;
+            const total = r.total != null ? Number(r.total) : 0;
+            st.hasMore = rows.length >= 20 && (total === 0 || st.offset < total);
+            ScrollLoad.check(_diagPopScroll);
+            return st.hasMore;
+        }).catch(function() { st.loading = false; return false; });
+}
+
+/* 键盘上下移动候选 */
+function emr_diag_pop_moveCursor(delta) {
+    const items = Array.from(document.querySelectorAll('#diag-pop-res .diag-pop-item[data-code]'));
+    if (!items.length) return;
+    const st = _diagPopState;
+    const base = st.cursor < 0 ? (delta > 0 ? -1 : 0) : st.cursor;
+    st.cursor = Math.max(0, Math.min(items.length - 1, base + delta));
+    items.forEach(function(el, i) { el.classList.toggle('cursor', i === st.cursor); });
+    if (items[st.cursor]) items[st.cursor].scrollIntoView({ block: 'nearest' });
 }
 
 function emr_diag_pop_pick(code, name) {
     _diagPopSel = { name: name, code: code };
+    _diagPopState.kw = '';
+    _diagPopState.cursor = -1;
     document.getElementById('diag-pop-kw').value = '';
     document.getElementById('diag-pop-res').innerHTML = '';
     emr_diag_pop_renderSel();
@@ -271,9 +315,23 @@ function emr_diag_pop_renderSel() {
 }
 
 function emr_diag_pop_key(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'ArrowDown') {
         e.preventDefault();
-        emr_diag_pop_save();
+        emr_diag_pop_moveCursor(1);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        emr_diag_pop_moveCursor(-1);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const items = document.querySelectorAll('#diag-pop-res .diag-pop-item[data-code]');
+        const st = _diagPopState;
+        if (st.cursor >= 0 && items[st.cursor]) {
+            emr_diag_pop_pick(items[st.cursor].dataset.code, items[st.cursor].dataset.name);
+        } else if (items.length === 1) {
+            emr_diag_pop_pick(items[0].dataset.code, items[0].dataset.name);
+        } else {
+            emr_diag_pop_save();
+        }
     }
 }
 

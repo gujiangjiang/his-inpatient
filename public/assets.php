@@ -35,6 +35,7 @@ class Asset {
         '/js/core/auth.js',
         '/js/core/dom.js',
         '/js/core/components.js',
+        '/js/core/scroll_load.js',
         '/js/core/datetime_picker.js',
         '/js/core/select_picker.js',
         '/js/core/rich_editor.js',
