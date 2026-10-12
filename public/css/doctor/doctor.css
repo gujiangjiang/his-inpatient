@@ -194,6 +194,33 @@
 .pib-diagnosis { max-width: 340px; }
 .pib-diagnosis i { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
+/* 费用悬停浮窗 (预交/已用/可透支/可用余额) */
+.funds-pop {
+    position: fixed;
+    z-index: 2300;
+    background: #fff;
+    border: 1px solid #e4e7ed;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+    padding: 10px 14px;
+    min-width: 200px;
+    font-size: 13px;
+    color: #303133;
+}
+.funds-pop-row { display: flex; justify-content: space-between; gap: 18px; padding: 3px 0; }
+.funds-pop-row b { color: #64748b; font-weight: 400; }
+.funds-pop-bal { border-top: 1px solid #eef2f7; margin-top: 4px; padding-top: 6px; }
+.funds-pop .neg { color: #e5484d; font-weight: 700; }
+.funds-pop-note {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed #eef2f7;
+    font-size: 12px;
+    color: #e5484d;
+    max-width: 230px;
+    line-height: 1.5;
+}
+
 /* ===== 患者文字方块 (顶部切换器) ===== */
 .switcher-patient-block {
     border: 1px solid #ebeef5;

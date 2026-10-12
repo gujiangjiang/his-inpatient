@@ -162,4 +162,48 @@ PatientContext.fillInfoBar = function(p) {
     set('pib-days', days);
     set('pib-fee', '¥ ' + Number(p.total_fee || 0).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     set('pib-diagnosis', p.admission_diagnosis || '-');
+    PatientContext.bindFundsPop();
+};
+
+/**
+ * 费用一栏悬停浮窗 (预交费用 / 已用费用 / 可透支 / 可用余额), 仅绑定一次
+ */
+PatientContext.bindFundsPop = function() {
+    const feeEl = document.getElementById('pib-fee');
+    if (!feeEl || feeEl._fundsBound) return;
+    feeEl._fundsBound = true;
+    feeEl.style.cursor = 'pointer';
+    feeEl.addEventListener('mouseenter', () => PatientContext.showFunds(feeEl));
+    feeEl.addEventListener('mouseleave', () => PatientContext.hideFunds());
+};
+
+PatientContext.showFunds = function(anchor) {
+    const ctx = PatientContext.current();
+    if (!ctx) return;
+    PatientContext.hideFunds();
+    AjaxLoader.api('patients/funds?patient_id=' + ctx.id, { silent: true }).then(r => {
+        const f = r.data || {};
+        const bal = Number(f.balance || 0);
+        const pop = document.createElement('div');
+        pop.className = 'funds-pop';
+        pop.id = 'funds-pop';
+        pop.innerHTML = `
+            <div class="funds-pop-row"><b>预交费用</b><span>¥ ${Number(f.prepay || 0).toFixed(2)}</span></div>
+            <div class="funds-pop-row"><b>已用费用</b><span>¥ ${Number(f.used || 0).toFixed(2)}</span></div>
+            <div class="funds-pop-row"><b>可透支</b><span>¥ ${Number(f.overdraft || 0).toFixed(2)}</span></div>
+            <div class="funds-pop-row funds-pop-bal"><b>可用余额</b><span class="${bal < 0 ? 'neg' : ''}">¥ ${bal.toFixed(2)}</span></div>
+            ${bal < 0 ? '<div class="funds-pop-note">预缴金不足，请提醒患者补交费用（检验/检查可开，药房摆药将被拦截）</div>' : ''}`;
+        document.body.appendChild(pop);
+        const rect = anchor.getBoundingClientRect();
+        const x = Math.max(8, Math.min(rect.left, window.innerWidth - pop.offsetWidth - 8));
+        pop.style.left = x + 'px';
+        const belowY = rect.bottom + 6;
+        pop.style.top = (belowY + pop.offsetHeight > window.innerHeight - 8)
+            ? Math.max(8, rect.top - pop.offsetHeight - 6) + 'px' : belowY + 'px';
+    }).catch(() => {});
+};
+
+PatientContext.hideFunds = function() {
+    const pop = document.getElementById('funds-pop');
+    if (pop) pop.remove();
 };
