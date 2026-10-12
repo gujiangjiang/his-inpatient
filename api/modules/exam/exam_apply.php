@@ -1,10 +1,10 @@
 <?php
-// api/modules/exam/exam_apply.php - 检查申请: 生成检查申请单 + 对应医嘱 (带时间戳)
+// api/modules/exam/exam_apply.php - 检查申请: 生成检查申请单 + 对应医嘱
+// 说明: 申请类自动生成的医嘱一律直接提交 (pending 待护士核对), 无草稿态
 Auth::requireRole(['admin', 'doctor']);
 $user = Auth::user();
 $patientId = (int)Validator::get('patient_id', 0);
 $itemIds = Validator::get('item_ids', []);
-$submit = (int)Validator::get('submit', 0);
 if (!$patientId || !is_array($itemIds) || !count($itemIds)) Response::error('缺少患者或检查项目');
 
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
@@ -17,7 +17,8 @@ $ph = implode(',', array_fill(0, count($ids), '?'));
 $items = DB::select("SELECT * FROM exam_catalog WHERE is_active = 1 AND id IN ($ph) ORDER BY sort_no, id", $ids);
 if (!$items) Response::error('未找到可用的检查项目');
 
-$status = $submit ? 'pending' : 'draft';
+// 申请类医嘱默认直接提交, 待护士核对 (无草稿)
+$status = 'pending';
 $now = DateHelper::now();
 $base = (int)DB::selectOne("SELECT COUNT(*) as c FROM exam_reports")['c'];
 $pdo = DB::getPDO();
@@ -69,4 +70,4 @@ Response::success([
     'orders' => count($orderIds),
     'report_ids' => $reportIds,
     'order_ids' => $orderIds,
-], '已生成 ' . count($items) . ' 条检查医嘱');
+], '已提交 ' . count($items) . ' 条检查医嘱（待护士核对）');
