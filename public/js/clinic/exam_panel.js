@@ -13,6 +13,12 @@ const ExamPanel = {
         this.selected = [];
         this.cat = '';
         this.kw = '';
+        // 预缴金不足提醒 (检查可正常开具, 仅提示)
+        AjaxLoader.api('patients/funds?patient_id=' + this.patientId, { silent: true }).then(f => {
+            if (f.data && Number(f.data.balance) < 0) {
+                Dom.toast('患者预缴金不足（可用余额 ¥' + Number(f.data.balance).toFixed(2) + '），请提醒患者补交', 'error');
+            }
+        }).catch(() => {});
         const c = await AjaxLoader.api('exam/catalog', { silent: true });
         this.catalog = c.data || [];
         this.source = c.source || 'local';
