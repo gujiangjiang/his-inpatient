@@ -33,6 +33,8 @@ if (PHP_SAPI !== 'cli' && PHP_SAPI !== 'cli-server') {
             ini_set('session.cookie_secure', 1);
         }
         ini_set('session.cookie_path', '/');
+        // 会话有效期 12 小时 (PHP 默认 gc_maxlifetime 24 分钟过短, 长时间不操作即掉线 401)
+        ini_set('session.gc_maxlifetime', 43200);
         session_name('HIS_SESSION');
     }
 }

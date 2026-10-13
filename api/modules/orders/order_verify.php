@@ -1,6 +1,6 @@
 <?php
 // api/modules/orders/order_verify.php
-$roles = ['admin', 'doctor'];
+$roles = ['admin', 'doctor', 'nurse'];
 Auth::requireRole($roles);
 $data = Validator::all();
 $id = Validator::get('id');
