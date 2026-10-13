@@ -25,19 +25,29 @@ async function loadChecklist() {
     const result = await AjaxLoader.api('nurse/order-list', {silent:true});
     const tbody = document.getElementById('checklist-body');
     tbody.innerHTML = '';
-    (result.data || []).forEach(o => {
+    const rows = result.data || [];
+    if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state">暂无待核查/待执行医嘱</div></td></tr>';
+        return;
+    }
+    rows.forEach(o => {
+        let act;
+        if (o.status === 'pending') {
+            act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_verify(${o.id})">核查</button>`;
+        } else if (o.category === 'medication' && !o.dispensed_id) {
+            act = '<span class="fs-12 text-muted">待发药后执行</span>';
+        } else {
+            act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_execute(${o.id})">执行</button>`;
+        }
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${Format.escape(o.patient_name||'')}</td>
-            <td>${Format.escape('')}</td>
+            <td>${Format.escape(o.bed_no||'')}</td>
             <td>${Format.escape(o.content||'')}</td>
-            <td>${Format.escape('')}</td>
-            <td>${Format.escape(o.order_type||'')}</td>
+            <td>${Format.escape(o.department_name||'')}</td>
+            <td>${Format.escape(o.category === 'medication' ? '药品' : '医嘱')}</td>
             <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
-            <td>
-                <button class="btn btn-small btn-success" onclick="nurse_checklist_verify(${o.id})">核查</button>
-                <button class="btn btn-small" onclick="nurse_checklist_execute(${o.id})">执行</button>
-            </td>
+            <td>${act}</td>
         `;
         tbody.appendChild(tr);
     });
