@@ -179,5 +179,18 @@
     flex-shrink: 0;
 }
 .dp-name { color: #303133; }
+
+/* 通用 ICD 选择器浮层 (固定定位, 不被模态框裁剪) */
+.icd-pop {
+    position: fixed;
+    z-index: 2400;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
+    overflow: hidden;
+}
+.icd-pop-res { max-height: 240px; overflow-y: auto; }
+.icd-pop .diag-pop-item:last-child { border-bottom: none; }
 .diag-pop-form { margin-top: 8px; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
 .diag-pop-empty { color: #b0b8c4; font-size: 13px; padding: 4px 2px; }

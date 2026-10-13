@@ -237,7 +237,7 @@ function showAdmissionForm() {
         } },
         { text: '取消', type: 'default' }
     ]);
-    setTimeout(function() { IcdSearch.init('admission_diagnosis', 'admission_icd_code', 'admission_diagnosis'); }, 100);
+    setTimeout(function() { IcdPicker.bind(document.getElementById('admission_diagnosis'), { codeEl: document.getElementById('admission_icd_code') }); }, 100);
 }
 
 function patients_edit(id) {
@@ -293,7 +293,7 @@ function showPatientForm(p) {
         } },
         { text: '取消', type: 'default' }
     ]);
-    setTimeout(function() { IcdSearch.init('admission_diagnosis', 'admission_icd_code', 'admission_diagnosis'); }, 100);
+    setTimeout(function() { IcdPicker.bind(document.getElementById('admission_diagnosis'), { codeEl: document.getElementById('admission_icd_code') }); }, 100);
 }
 
 </script>

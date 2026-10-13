@@ -113,7 +113,7 @@ async function doctor_emr_admission_init() {
     });
 
     // ICD-10 搜索初始化
-    IcdSearch.init('admission_diagnosis', 'admission_icd_code');
+    IcdPicker.bind(document.getElementById('admission_diagnosis'), { codeEl: document.getElementById('admission_icd_code') });
 }
 
 async function loadPatientInfo(patientId) {

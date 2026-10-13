@@ -41,6 +41,7 @@ class Asset {
         '/js/core/rich_editor.js',
         '/js/core/template_picker.js',
         '/js/core/icd_search.js',
+        '/js/core/icd_picker.js',
         '/js/core/pdf_generator.js',
         '/js/core/print_helper.js',
         '/js/core/patient_context.js',
