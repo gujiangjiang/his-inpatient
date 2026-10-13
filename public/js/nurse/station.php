@@ -42,8 +42,20 @@ async function nurse_station_load() {
     });
 }
 
-async function nurse_station_detail(patientId) {
-    const r = await AjaxLoader.api('nurse/order-list?patient_id=' + patientId, { silent: true });
+var _nsdPatientId = null;
+
+function nurse_station_detail(patientId) {
+    _nsdPatientId = patientId;
+    Dom.modal('患者详情', '<div id="nsd-box"><div class="empty-state">加载中…</div></div>');
+    nurse_station_detail_reload();
+}
+
+/* 就地刷新详情弹窗 (核查/执行后无需刷新页面) */
+async function nurse_station_detail_reload() {
+    if (!_nsdPatientId) return;
+    const r = await AjaxLoader.api('nurse/order-list?patient_id=' + _nsdPatientId, { silent: true });
+    const box = document.getElementById('nsd-box');
+    if (!box) return;
     const rows = r.data || [];
     const catLabel = c => c === 'medication' ? '药品' : '医嘱';
     const actHtml = o => {
@@ -65,16 +77,17 @@ async function nurse_station_detail(patientId) {
                 <td>${actHtml(o)}</td>
             </tr>`).join('')
         : '<tr><td colspan="5"><div class="empty-state">暂无待办医嘱</div></td></tr>';
-    Dom.modal('患者详情', `
+    box.innerHTML = `
         <table class="table">
             <thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>${body}</tbody>
-        </table>`);
+        </table>`;
 }
 
 async function nurse_station_verify(orderId) {
     await AjaxLoader.api('orders/verify', { method: 'POST', data: { id: orderId } });
     Dom.toast('已核查', 'success');
+    await nurse_station_detail_reload();
     nurse_station_load();
 }
 
@@ -82,6 +95,7 @@ async function nurse_station_execute(orderId) {
     const result = await AjaxLoader.api('nurse/nursing-action', { method: 'POST', data: { order_id: orderId, action: 'execute' } });
     if (result.status === 'success') {
         Dom.toast('执行成功', 'success');
+        await nurse_station_detail_reload();
         nurse_station_load();
     }
 }
