@@ -13,7 +13,13 @@ if (!$name || !$gender || !$birthDate || !$departmentId || !$wardId) {
     Response::error('请填写完整患者信息');
 }
 
-$nursingLevel = Validator::get('nursing_level', '3');
+$id = isset($data['id']) && $data['id'] ? $data['id'] : null;
+
+// 护理等级由医生护理医嘱决定; 编辑未显式提供时保留原值 (新建默认三级)
+$nursingLevel = Validator::get('nursing_level', '');
+if ($nursingLevel === '' || $nursingLevel === null) {
+    $nursingLevel = $id ? (string)(DB::selectOne("SELECT nursing_level FROM patients WHERE id = ?", [$id])['nursing_level'] ?? '3') : '3';
+}
 $feeType = Validator::get('fee_type', '');
 $allergyHistory = Validator::get('allergy_history', '');
 $vteCaprini = Validator::get('vte_caprini', '');
@@ -27,7 +33,6 @@ if ($currentUser['role'] === 'doctor' && !can_access_department($currentUser, $d
 }
 
 $pdo = DB::getPDO();
-$id = isset($data['id']) && $data['id'] ? $data['id'] : null;
 
 if ($id) {
     $existingFunds = DB::selectOne("SELECT prepay_fee, overdraft_limit FROM patients WHERE id = ?", [$id]);

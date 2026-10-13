@@ -213,7 +213,32 @@ async function patients_wall_enter(id) {
 }
 
 /* ==== 入院登记 / 编辑 / 出院 (沿用原有逻辑) ==== */
-function patients_new() { showPatientForm({}); }
+function patients_new() { showAdmissionForm(); }
+
+/* 入院登记 (第一步: 身份与诊断; 提交后进入收住院弹窗选科/病区/床位) */
+function showAdmissionForm() {
+    var content = '<form id="admission-form"><div class="form-grid">' +
+        Dom.formField({ name: 'name', label: '姓名', type: 'text' }, '') +
+        Dom.formField({ name: 'gender', label: '性别', type: 'select', options: [{ label: '男', value: 'male' }, { label: '女', value: 'female' }] }, '') +
+        Dom.formField({ name: 'birth_date', label: '出生日期', type: 'date' }, '') +
+        Dom.formField({ name: 'id_card', label: '身份证号', type: 'text' }, '') +
+        '<div class="form-group colspan-2"><label class="form-label">初步诊断</label>' +
+        '<input type="text" name="admission_diagnosis" id="admission_diagnosis" class="form-control" placeholder="搜索 ICD-10 诊断（可留空后续补充）"></div>' +
+        '<input type="hidden" name="admission_icd_code" id="admission_icd_code" value="">' +
+        '</div></form>';
+    Dom.modal('入院登记', content, [
+        { text: '登记', type: 'primary', onclick: function() {
+            var data = {};
+            new FormData(document.getElementById('admission-form')).forEach(function(v, k) { data[k] = v; });
+            if (!data.name) { Dom.toast('请输入姓名', 'error'); return; }
+            if (!data.gender) { Dom.toast('请选择性别', 'error'); return; }
+            if (!data.birth_date) { Dom.toast('请选择出生日期', 'error'); return; }
+            AdmitPanel.open(data);
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+    setTimeout(function() { IcdSearch.init('admission_diagnosis', 'admission_icd_code', 'admission_diagnosis'); }, 100);
+}
 
 function patients_edit(id) {
     var p = _wallPatients.find(function(x) { return x.id == id; });
@@ -236,8 +261,6 @@ function showPatientForm(p) {
     var wardHtml = '<option value="">请选择</option>';
     _wallWardList.forEach(function(w) { wardHtml += '<option value="' + w.id + '"' + (p.ward_id == w.id ? ' selected' : '') + '>' + Format.escape(w.name) + '</option>'; });
 
-    var nursingOpts = [['special', '特级护理'], ['1', '一级护理'], ['2', '二级护理'], ['3', '三级护理']]
-        .map(function(o) { return '<option value="' + o[0] + '"' + (String(p.nursing_level) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
     var feeOpts = ['', '职工医保', '居民医保', '自费', '新农合']
         .map(function(f) { return '<option value="' + f + '"' + (p.fee_type === f ? ' selected' : '') + '>' + (f || '请选择') + '</option>'; }).join('');
 
@@ -252,7 +275,6 @@ function showPatientForm(p) {
         '<input type="hidden" name="admission_icd_code" id="admission_icd_code" value="' + Format.escape(p.admission_icd_code || '') + '">' +
         '<div class="form-group"><label class="form-label">科室</label><select name="department_id" class="form-control">' + deptHtml + '</select></div>' +
         '<div class="form-group"><label class="form-label">病区</label><select name="ward_id" class="form-control">' + wardHtml + '</select></div>' +
-        '<div class="form-group"><label class="form-label">护理等级</label><select name="nursing_level" class="form-control">' + nursingOpts + '</select></div>' +
         '<div class="form-group"><label class="form-label">费别</label><select name="fee_type" class="form-control">' + feeOpts + '</select></div>' +
         Dom.formField({ name: 'allergy_history', label: '过敏史', type: 'text' }, p.allergy_history || '') +
         Dom.formField({ name: 'bed_no', label: '床号', type: 'text' }, p.bed_no || '') +

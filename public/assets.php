@@ -46,6 +46,7 @@ class Asset {
         '/js/core/patient_context.js',
         '/js/core/patient_switcher.js',
         '/js/core/patient_quick_switch.js',
+        '/js/patients/admit_panel.js',
         '/js/orders/order_quickadd.js',
         '/js/orders/order_actions.js',
         '/js/orders/order_detail.js',
