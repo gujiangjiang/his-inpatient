@@ -4,7 +4,7 @@
         <button type="button" class="os-tool" onclick="OrderStation.openMedication(event)">＋ 药品<span class="key">F9</span></button>
         <button type="button" class="os-tool" onclick="OrderStation.openNonmedication(event)">＋ 非药品<span class="key">F8</span></button>
         <span class="os-sep"></span>
-        <button type="button" class="os-tool os-tool-success" onclick="OrderStation.submitSelected()">提交<span class="key">F2</span></button>
+        <button type="button" class="os-tool os-tool-success" onclick="OrderStation.submitAllDrafts()">提交<span class="key">F2</span></button>
         <button type="button" class="os-tool os-tool-danger" onclick="OrderStation.stopAllLong()">长期全停<span class="key">F4</span></button>
         <button type="button" class="os-tool" onclick="OrderStation.refresh(true)">刷新<span class="key">F5</span></button>
         <span class="os-sep"></span>
@@ -182,7 +182,7 @@ var OrderStation = {
             }
             if (e.key === 'F9') { e.preventDefault(); this.openMedication(); }
             else if (e.key === 'F8') { e.preventDefault(); this.openNonmedication(); }
-            else if (e.key === 'F2') { e.preventDefault(); this.submitSelected(); }
+            else if (e.key === 'F2') { e.preventDefault(); this.submitAllDrafts(); }
             else if (e.key === 'F4') { e.preventDefault(); this.stopAllLong(); }
             else if (e.key === 'F5') { e.preventDefault(); this.refresh(); }
         };
@@ -543,7 +543,12 @@ var OrderStation = {
             { text: '取消', type: 'default' }
         ]);
     },
-    submitSelected() { OrderActions.submitSelected(); },
+    /* 提交按钮: 默认提交该患者全部草稿医嘱 (无需勾选) */
+    async submitAllDrafts() {
+        await AjaxLoader.api('orders/submit', { method: 'POST', data: { patient_id: this.patientId } });
+        Dom.toast('已提交全部草稿医嘱', 'success');
+        this.refresh();
+    },
     batchDelete() { OrderActions.batchDelete(); },
     stopAllLong() { OrderActions.stopAllLong(); },
     openSetPicker() { OrderActions.openSetPicker(); }
