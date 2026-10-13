@@ -156,6 +156,7 @@ const AdmitPanel = {
 
     async submit() {
         const i = this.info;
+        if (!i.admission_diagnosis) { Dom.toast('初步诊断不能为空（将作为门急诊诊断）', 'error'); return; }
         const bed = this.beds.find(b => Number(b.id) === Number(this.pickedBed)) || {};
         const r = await AjaxLoader.api('patients/save', { method: 'POST', data: {
             name: i.name,
@@ -169,6 +170,15 @@ const AdmitPanel = {
             bed_no: bed.bed_no || ''
         }});
         if (r.status === 'success') {
+            // 初步诊断默认为「门(急)诊诊断」 (诊断页该分类必填不为空)
+            try {
+                await AjaxLoader.api('emr/diagnosis-save', { method: 'POST', data: {
+                    patient_id: r.data.id,
+                    category: 'emergency',
+                    name: i.admission_diagnosis,
+                    icd_code: i.admission_icd_code || ''
+                }});
+            } catch (e) { /* 已提示, 不阻断收住 */ }
             Dom.toast('患者已收住入院', 'success');
             if (this.overlay && this.overlay.parentNode) this.overlay.remove();
             if (typeof patients_wall_load === 'function') patients_wall_load();

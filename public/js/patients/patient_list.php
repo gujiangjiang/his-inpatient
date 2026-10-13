@@ -222,8 +222,8 @@ function showAdmissionForm() {
         Dom.formField({ name: 'gender', label: '性别', type: 'select', options: [{ label: '男', value: 'male' }, { label: '女', value: 'female' }] }, '') +
         Dom.formField({ name: 'birth_date', label: '出生日期', type: 'date' }, '') +
         Dom.formField({ name: 'id_card', label: '身份证号', type: 'text' }, '') +
-        '<div class="form-group colspan-2"><label class="form-label">初步诊断</label>' +
-        '<input type="text" name="admission_diagnosis" id="admission_diagnosis" class="form-control" placeholder="搜索 ICD-10 诊断（可留空后续补充）"></div>' +
+        '<div class="form-group colspan-2"><label class="form-label">初步诊断 <span style="color:#e5484d">*</span></label>' +
+        '<input type="text" name="admission_diagnosis" id="admission_diagnosis" class="form-control" placeholder="搜索 ICD-10 诊断（必填，将作为门急诊诊断）"></div>' +
         '<input type="hidden" name="admission_icd_code" id="admission_icd_code" value="">' +
         '</div></form>';
     Dom.modal('入院登记', content, [
@@ -233,6 +233,7 @@ function showAdmissionForm() {
             if (!data.name) { Dom.toast('请输入姓名', 'error'); return; }
             if (!data.gender) { Dom.toast('请选择性别', 'error'); return; }
             if (!data.birth_date) { Dom.toast('请选择出生日期', 'error'); return; }
+            if (!data.admission_diagnosis || !data.admission_diagnosis.trim()) { Dom.toast('请填写初步诊断（必填，将作为门急诊诊断）', 'error'); return; }
             AdmitPanel.open(data);
         } },
         { text: '取消', type: 'default' }
