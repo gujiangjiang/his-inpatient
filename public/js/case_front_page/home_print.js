@@ -1,17 +1,22 @@
 // public/js/case_front_page/home_print.js - 病案首页打印: 版式 CSS / 预览 / 打印 (预览与打印同一份文档)
 Object.assign(CaseHome, {
-    /* 打印文档 (预览 iframe 与打印窗口使用同一份, 保证一模一样) */
-    documentHtml(withScript) {
-        const script = withScript ? '<script>window.addEventListener("load", function () { window.print(); });<\/script>' : '';
+    /* 打印文档 (预览 iframe 与打印窗口使用同一份, 保证一模一样)
+       mode: 'print' 自动打印 | 'preview' 自适应缩放预览 */
+    documentHtml(mode) {
+        const printScript = '<script>window.addEventListener("load", function () { window.print(); });<\/script>';
+        const fitScript = '<script>function cfFit(){var d=document.documentElement;d.style.zoom=1;' +
+            'var w=d.clientWidth;d.style.zoom=Math.min(1,w/796);}' +
+            'window.addEventListener("load",cfFit);window.addEventListener("resize",cfFit);<\/script>';
+        const script = mode === 'preview' ? fitScript : (mode === 'print' ? printScript : '');
         return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>住院病案首页</title>
 <style>${this.printCss()}</style></head><body>${this.buildPage1()}${this.buildPage2()}${script}</body></html>`;
     },
 
     print() {
-        PrintHelper.printDocument(this.documentHtml(true));
+        PrintHelper.printDocument(this.documentHtml('print'));
     },
 
-    /* 打印预览: iframe 内渲染与打印完全相同的文档 */
+    /* 打印预览: iframe 内渲染与打印完全相同的文档 (仅按 iframe 宽度等比缩放显示) */
     preview() {
         const overlay = Dom.modal('住院病案首页 · 打印预览', '<iframe class="cf-preview-frame" id="cf-preview-frame"></iframe>', [
             { text: '打印', type: 'primary', onclick: () => this.print() },
@@ -19,7 +24,14 @@ Object.assign(CaseHome, {
         ]);
         overlay.querySelector('.modal').classList.add('modal-cf-preview');
         const frame = overlay.querySelector('#cf-preview-frame');
-        frame.srcdoc = this.documentHtml(false);
+        frame.srcdoc = this.documentHtml('preview');
+    },
+
+    /* 行内对齐表格 (底层全表格: 无边框, 定宽列, 内容长短不影响其它列) */
+    rt(cells) {
+        const cols = cells.map(c => `<col style="width:${c[0]}%">`).join('');
+        const tds = cells.map(c => `<td>${c[1]}</td>`).join('');
+        return `<table class="cf-rt"><colgroup>${cols}</colgroup><tbody><tr>${tds}</tr></tbody></table>`;
     },
 
     /* 值: 纯文本; 空值为空串 */
@@ -71,7 +83,15 @@ body { background: #e9edf2; }
 @media screen { body { padding: 12px 0; } .cf-page { box-shadow: 0 2px 14px rgba(0,0,0,.22); } }
 @media print { body { background: #fff; padding: 0 !important; } .cf-page { margin: 0 auto; box-shadow: none; } }
 .cf-v { color: #1a1a1a; font-weight: 600; }
+.cf-dict { font-size: 7.4pt; }
 .cf-num { color: #1a1a1a; }
+.cf-ul {
+    display: inline-block; min-width: 14mm; border-bottom: .7pt solid #000;
+    text-align: center; padding: 0 .6mm; line-height: 1.3; color: #1a1a1a;
+}
+table.cf-rt { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.cf-rt > tbody > tr > td { border: none; padding: 0 0 0 1.6mm; vertical-align: middle; }
+table.cf-rt > tbody > tr > td:first-child { padding-left: 0; }
 .cf-fill-line {
     display: inline-block; min-width: 32mm; border-bottom: .7pt solid #000;
     text-align: center; padding: 0 1mm; line-height: 1.34; font-weight: 600; color: #1a1a1a;
@@ -99,26 +119,26 @@ table.cf1 tr.cf-line > td { height: 7.15mm; }
 table.cf1 tr.cf-topline > td { border-top: .8pt solid #000; }
 table.cf1 tr.cf-diagrow > td { padding: 0; }
 table.cf-diag { width: 100%; border-collapse: collapse; table-layout: fixed; }
-table.cf-diag th, table.cf-diag td { border: .8pt solid #000; padding: .3mm 1.4mm; height: 7.35mm; vertical-align: middle; }
+table.cf-diag th, table.cf-diag td { border: .8pt solid #000; padding: .3mm 1.4mm; height: 7.3mm; vertical-align: middle; }
 table.cf-diag th { height: 7.15mm; font-weight: 400; text-align: center; }
-.cf-note { font-size: 8.2pt; }
+.cf-note { font-size: 7.8pt; }
 .cf-patho .cf-prow { display: flex; justify-content: space-between; }
 .cf-patho .cf-prow > span { width: 50%; }
 /* ===== 首页(二) ===== */
 table.cf2 { width: 100%; border-collapse: collapse; table-layout: fixed; }
-table.cf2 > tbody > tr > td { border: .8pt solid #000; padding: .55mm 1.4mm; height: 7.3mm; vertical-align: middle; }
+table.cf2 > tbody > tr > td { border: .8pt solid #000; padding: .55mm 1.4mm; height: 7.25mm; vertical-align: middle; }
 table.cf2 td.cf-nest { padding: 0; }
-table.cf2 td.cf-note-r { font-size: 8.4pt; line-height: 1.45; }
+table.cf2 td.cf-note-r { font-size: 7.8pt; line-height: 1.5; }
 table.cf-op { width: 100%; border-collapse: collapse; table-layout: fixed; }
-table.cf-op th, table.cf-op td { border: .8pt solid #000; padding: .3mm .8mm; height: 7.2mm; text-align: center; vertical-align: middle; font-weight: 400; }
+table.cf-op th, table.cf-op td { border: .8pt solid #000; padding: .3mm .8mm; height: 7.15mm; text-align: center; vertical-align: middle; font-weight: 400; }
 table.cf-op th { font-size: 8.6pt; line-height: 1.25; }
-.cf-feebox { padding: .8mm 1.4mm !important; }
-.cf-fee-line { line-height: 5.85mm; white-space: nowrap; }
+.cf-feebox { padding: .6mm 1.4mm !important; }
+.cf-fee-line { line-height: 5.3mm; white-space: nowrap; }
 .cf-fee-line .cf-indent { display: inline-block; width: 7mm; }
-.cf-foot-note { font-size: 9pt; line-height: 1.5; margin-top: 1mm; padding: 0 1mm; }
+.cf-foot-note { font-size: 7.8pt; line-height: 1.5; margin-top: .8mm; padding: 0 1mm; }
 .cf-tc { text-align: center; }
 /* ===== 预览 ===== */
-.modal-cf-preview { max-width: 880px; width: 96%; }
+.modal-cf-preview { max-width: 960px; width: 96%; }
 .cf-preview-frame { width: 100%; height: calc(100vh - 230px); min-height: 460px; border: 0; background: #e9edf2; }
 `;
     },
