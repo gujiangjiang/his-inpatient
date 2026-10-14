@@ -20,45 +20,10 @@ function patient_admitted_at($patientId) {
     return $row ? $row['created_at'] : null;
 }
 
-/** 项目库价格映射 (药品/检验/检查: 名称 → 价格, 单次加载) */
-function catalog_price_maps() {
-    static $maps = null;
-    if ($maps !== null) return $maps;
-    $maps = ['drug' => [], 'lab' => [], 'exam' => []];
-    if (DB::table('drug_catalog')) {
-        foreach (DB::select("SELECT name, price FROM drug_catalog") as $r) $maps['drug'][$r['name']] = (float)$r['price'];
-    }
-    if (DB::table('lab_catalog')) {
-        foreach (DB::select("SELECT name, price FROM lab_catalog") as $r) $maps['lab'][$r['name']] = (float)$r['price'];
-    }
-    if (DB::table('exam_catalog')) {
-        foreach (DB::select("SELECT name, price FROM exam_catalog") as $r) $maps['exam'][$r['name']] = (float)$r['price'];
-    }
-    return $maps;
-}
-
-/**
- * 已用费用自动计算: 有效医嘱 (已提交及以后) 按项目库价格累计
- * 说明: 收费标准 (数量/折扣/退费) 后续接入收费功能后完善
- */
+/** 已用费用自动计算: 有效医嘱 (已提交及以后) 按项目库价格累计, 与首页费用口径一致 */
 function patient_used_fee($patientId) {
-    $rows = DB::select(
-        "SELECT content, category FROM orders WHERE patient_id = ? AND status NOT IN ('draft', 'invalid')",
-        [$patientId]
-    );
-    if (!$rows) return 0.0;
-    $maps = catalog_price_maps();
-    $total = 0.0;
-    foreach ($rows as $o) {
-        $name = (string)$o['content'];
-        if ($o['category'] === 'medication') {
-            if (isset($maps['drug'][$name])) $total += $maps['drug'][$name];
-        } else {
-            if (isset($maps['lab'][$name])) $total += $maps['lab'][$name];
-            elseif (isset($maps['exam'][$name])) $total += $maps['exam'][$name];
-        }
-    }
-    return round($total, 2);
+    $fee = patient_fee_breakdown($patientId);
+    return $fee['fee_total'];
 }
 
 /**
@@ -77,22 +42,15 @@ function attach_patient_funds(array &$patients) {
         $idList = array_keys($ids);
         $ph = implode(',', array_fill(0, count($idList), '?'));
         $rows = DB::select(
-            "SELECT patient_id, content, category FROM orders WHERE patient_id IN ($ph) AND status NOT IN ('draft', 'invalid')",
+            "SELECT patient_id, content, category, billing_flags FROM orders WHERE patient_id IN ($ph) AND status NOT IN ('draft', 'invalid')",
             $idList
         );
-        $maps = catalog_price_maps();
+        $maps = fee_catalog_maps();
         foreach ($rows as $o) {
-            $name = (string)$o['content'];
-            $price = 0.0;
-            if ($o['category'] === 'medication') {
-                $price = $maps['drug'][$name] ?? 0.0;
-            } elseif (isset($maps['lab'][$name])) {
-                $price = $maps['lab'][$name];
-            } elseif (isset($maps['exam'][$name])) {
-                $price = $maps['exam'][$name];
-            }
+            if (mb_strpos((string)($o['billing_flags'] ?? ''), '不计价') !== false) continue;
+            $meta = fee_order_meta($o['content'], $o['category'], $maps);
             $pid = (int)$o['patient_id'];
-            $used[$pid] = ($used[$pid] ?? 0.0) + $price;
+            $used[$pid] = ($used[$pid] ?? 0.0) + $meta['price'];
         }
     }
     foreach ($patients as &$p) {
