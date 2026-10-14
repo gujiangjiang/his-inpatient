@@ -2,7 +2,7 @@
 <div class="page-head flex-between">
     <div>
         <h3 class="page-title">住院病案首页</h3>
-        <p class="page-desc">结构化病案首页（编辑 / 打印正反两页）</p>
+        <p class="page-desc">结构化病案首页（诊断/费用/出入院自动抓取，A4 正反两页打印预览）</p>
     </div>
     <div>
         <button class="btn btn-primary" onclick="CaseHome.save()">保存</button>
