@@ -6,6 +6,7 @@
     </div>
     <div>
         <button class="btn btn-primary" onclick="CaseHome.save()">保存</button>
+        <button class="btn" onclick="CaseHome.preview()">打印预览</button>
         <button class="btn" onclick="CaseHome.print()">打印首页</button>
         <button class="btn" onclick="case_front_page_main_init()">刷新</button>
     </div>

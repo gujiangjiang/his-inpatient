@@ -31,5 +31,13 @@ const PrintHelper = {
 <script>window.onload = function () { window.print(); };<\/script>
 </body></html>`);
         win.document.close();
+    },
+
+    /* 打印完整 HTML 文档 (与预览 iframe 使用同一份文档, 保证一模一样) */
+    printDocument(docHtml) {
+        const win = window.open('', '_blank', 'width=900,height=1000');
+        if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
+        win.document.write(docHtml);
+        win.document.close();
     }
 };
