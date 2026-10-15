@@ -80,6 +80,8 @@ function getRoutes() {
         'orders/copy' => ['orders/order_copy.php', ['admin', 'doctor']],
         'orders/invalidate' => ['orders/order_invalidate.php', ['admin', 'doctor']],
         'orders/stop' => ['orders/order_stop.php', ['admin', 'doctor']],
+        'orders/rx-list' => ['orders/rx_list.php', ['admin', 'doctor']],
+        'orders/rx-void' => ['orders/rx_void.php', ['admin', 'doctor']],
         'orders/batch-delete' => ['orders/order_batch_delete.php', ['admin', 'doctor']],
         'orders/set-list' => ['orders/set_list.php', ['admin', 'doctor']],
         'orders/set-save' => ['orders/set_save.php', ['admin', 'doctor']],

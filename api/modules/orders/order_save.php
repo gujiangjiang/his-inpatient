@@ -48,6 +48,11 @@ $groupRate = Validator::get('usage_rate', '');
 $startDate = Validator::get('start_date', DateHelper::now());
 $endDate = Validator::get('end_date', '');
 $notes = Validator::get('notes', '');
+// 处方号: 同一次开方归入同一处方 (毁方/列表按方归集), 前端可传, 缺省自动生成
+$rxNo = (string)Validator::get('rx_no', '');
+if ($rxNo === '' && $notes === '处方') {
+    $rxNo = 'RX' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+}
 $status = $submit ? 'pending' : 'draft';
 $userId = Auth::user()['id'];
 $now = DateHelper::now();
@@ -57,9 +62,9 @@ $pdo->beginTransaction();
 try {
     $sql = "INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period,
                 order_no, content, category, status, drug_id, dosage, dosage_unit, base_dosage, usage_name, usage_rate,
-                freq_code, freq_detail, billing_flags, group_seq, sort_no, start_date, end_date, notes,
+                freq_code, freq_detail, billing_flags, group_seq, sort_no, start_date, end_date, notes, rx_no,
                 created_by, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     $stmt = $pdo->prepare($sql);
 
     // 成组规则: 仅多药品且未显式禁用成组 (处方等多药品独立开具时前端传 group=0)
@@ -92,7 +97,7 @@ try {
             $item['usage_name'] ?? $groupUsage, $item['usage_rate'] ?? $groupRate,
             $freqCode, $freqDetail,
             $item['billing_flags'] ?? '', $i, 0,
-            $item['start_date'] ?? $startDate, $endDate, $notes,
+            $item['start_date'] ?? $startDate, $endDate, $notes, $rxNo,
             $userId, $now, $now
         ]);
         $id = $pdo->lastInsertId();

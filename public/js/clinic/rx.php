@@ -24,6 +24,7 @@
 <script>
 var _rxPriceMap = {};
 var _rxSource = 'local';
+var _rxGroups = [];
 
 async function clinic_rx_init() {
     document.getElementById('main-app').style.display = 'flex';
@@ -39,53 +40,90 @@ async function clinic_rx_init() {
     });
 }
 
+/* 处方整体状态: 有一个待核对即待核对, 依次降级 */
+function _rxStatus(items) {
+    const has = s => items.some(i => i.status === s);
+    if (has('pending')) return 'pending';
+    if (has('verified')) return 'verified';
+    if (has('executing')) return 'executing';
+    if (has('completed')) return 'completed';
+    if (has('stopped')) return 'stopped';
+    return 'invalid';
+}
+
 function clinic_rx_load() {
     const p = PatientContext.current();
     if (!p) return;
     Promise.all([
-        AjaxLoader.api('orders/list?patient_id=' + p.id + '&per_page=500', { silent: true }),
+        AjaxLoader.api('orders/rx-list?patient_id=' + p.id, { silent: true }),
         AjaxLoader.api('rx/catalog', { silent: true })
     ]).then(([or, cr]) => {
         _rxSource = cr.source || 'local';
         _rxPriceMap = {};
         (cr.data || []).forEach(d => { _rxPriceMap[d.name] = Number(d.price || 0); });
-        const roots = (or.data || []).filter(o => o.category === 'medication' || o.order_type === 'medication');
+        // 按处方号归集 (历史无处方号的行按开方时间归集)
+        const map = {};
+        (or.data || []).forEach(o => {
+            const key = o.rx_no || ('L' + (o.created_at || '') + '|' + (o.start_date || ''));
+            if (!map[key]) map[key] = { rx_no: o.rx_no || '', created_at: o.created_at || o.start_date || '', items: [] };
+            map[key].items.push(o);
+        });
+        _rxGroups = Object.keys(map).map(k => map[k]);
         const notice = document.getElementById('rx-notice');
-        if (!roots.length) {
+        if (!_rxGroups.length) {
             notice.innerHTML = '<div class="empty-state">暂无处方，点击右上角「新方」开具</div>';
             document.getElementById('rx-body').innerHTML = '';
             return;
         }
         notice.innerHTML = '';
-        document.getElementById('rx-body').innerHTML = roots.map((o, i) => {
-            const subs = o.sub_orders || [];
-            const items = [o].concat(subs);
-            const title = subs.length ? (o.content + ' 等 ' + items.length + ' 项') : o.content;
+        document.getElementById('rx-body').innerHTML = _rxGroups.map((g, i) => {
+            const n = g.items.length;
+            const title = n > 1 ? (g.items[0].content + ' 等 ' + n + ' 项') : g.items[0].content;
             let total = 0;
-            items.forEach(it => { total += (_rxPriceMap[it.content] || 0); });
-            const del = o.status === 'draft'
-                ? `<button class="btn btn-small btn-danger" onclick="clinic_rx_delete(${o.id})">删除</button>` : '';
+            g.items.forEach(it => { total += (_rxPriceMap[it.content] || 0); });
+            const st = _rxStatus(g.items);
+            const canVoid = g.items.some(it => ['pending', 'verified', 'executing'].includes(it.status));
+            const drafts = g.items.filter(it => it.status === 'draft');
+            const acts = [];
+            if (canVoid) acts.push(`<button class="btn btn-small btn-danger" onclick="clinic_rx_void(${i})">毁方</button>`);
+            if (drafts.length) acts.push(`<button class="btn btn-small" onclick="clinic_rx_delete(${i})">删除</button>`);
             return `<tr>
                 <td>${i + 1}</td>
                 <td>${Format.escape(title)}</td>
-                <td>${items.length}</td>
-                <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
-                <td>${Format.escape(o.start_date || o.created_at || '')}</td>
+                <td>${n}</td>
+                <td><span class="badge ${Format.orderStatusClass(st)}">${Format.orderStatus(st)}</span></td>
+                <td>${Format.escape(g.created_at)}</td>
                 <td>¥${total.toFixed(2)}</td>
-                <td>${del}</td>
+                <td>${acts.join(' ')}</td>
             </tr>`;
         }).join('');
     }).catch(() => {});
 }
 
-function clinic_rx_delete(rootId) {
-    const p = PatientContext.current();
-    Dom.modal('删除处方', '<p>删除该处方（整组草稿医嘱）？</p>', [
+/* 毁方: 整方作废 (护士未核对也可毁方), 作废后同步护士站 */
+function clinic_rx_void(idx) {
+    const g = _rxGroups[idx];
+    if (!g) return;
+    Dom.modal('毁方确认', '<p>确认毁方？该处方（' + g.items.length + ' 项）将整方作废，作废记录同步护士站。</p>', [
+        { text: '毁方', type: 'danger', onclick: async function() {
+            const data = g.rx_no ? { rx_no: g.rx_no } : { ids: g.items.map(it => it.id) };
+            const r = await AjaxLoader.api('orders/rx-void', { method: 'POST', data: data });
+            if (r.status === 'success') {
+                Dom.toast('已毁方，医嘱已作废', 'success');
+                clinic_rx_load();
+            }
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+}
+
+function clinic_rx_delete(idx) {
+    const g = _rxGroups[idx];
+    if (!g) return;
+    const ids = g.items.filter(it => it.status === 'draft').map(it => it.id);
+    if (!ids.length) return;
+    Dom.modal('删除处方', '<p>删除该处方草稿医嘱？</p>', [
         { text: '删除', type: 'danger', onclick: async function() {
-            const or = await AjaxLoader.api('orders/list?patient_id=' + p.id + '&per_page=500', { silent: true });
-            const root = (or.data || []).find(o => o.id == rootId);
-            if (!root) return;
-            const ids = [root.id].concat((root.sub_orders || []).map(s => s.id));
             await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: ids } });
             Dom.toast('已删除', 'success');
             clinic_rx_load();
