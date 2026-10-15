@@ -11,6 +11,8 @@ if (!$orderId || !$action) Response::error('请选择医嘱和执行动作');
 $pdo = DB::getPDO();
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$orderId]);
 if (!$order) Response::error('医嘱不存在');
+// 仅已核对医嘱可执行 (待核对/待作废/待停止/作废/停止均不可执行)
+if ($order['status'] !== 'verified') Response::error('仅已核对医嘱可执行');
 
 $pdo->beginTransaction();
 try {
