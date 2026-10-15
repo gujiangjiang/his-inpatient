@@ -59,6 +59,7 @@ async function nurse_station_detail_reload() {
     const rows = r.data || [];
     const catLabel = c => c === 'medication' ? '药品' : '医嘱';
     const actHtml = o => {
+        if (o.status === 'invalid') return '<span class="fs-12 text-muted">已毁方作废</span>';
         if (o.status === 'pending') {
             return `<button class="btn btn-small btn-success" onclick="nurse_station_verify(${o.id})">核查</button>`;
         }
@@ -69,7 +70,7 @@ async function nurse_station_detail_reload() {
     };
     const body = rows.length
         ? rows.map(o => `
-            <tr>
+            <tr class="${o.status === 'invalid' ? 'os-txt-invalid' : ''}">
                 <td>${Format.escape(o.content)}</td>
                 <td>${catLabel(o.category)}</td>
                 <td>${Format.escape([o.usage_name, o.freq_code].filter(Boolean).join(' · '))}</td>

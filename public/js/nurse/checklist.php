@@ -32,7 +32,9 @@ async function loadChecklist() {
     }
     rows.forEach(o => {
         let act;
-        if (o.status === 'pending') {
+        if (o.status === 'invalid') {
+            act = '<span class="fs-12 text-muted">已毁方作废</span>';
+        } else if (o.status === 'pending') {
             act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_verify(${o.id})">核查</button>`;
         } else if (o.category === 'medication' && !o.dispensed_id) {
             act = '<span class="fs-12 text-muted">待发药后执行</span>';
@@ -40,6 +42,7 @@ async function loadChecklist() {
             act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_execute(${o.id})">执行</button>`;
         }
         const tr = document.createElement('tr');
+        if (o.status === 'invalid') tr.className = 'os-txt-invalid';
         tr.innerHTML = `
             <td>${Format.escape(o.patient_name||'')}</td>
             <td>${Format.escape(o.bed_no||'')}</td>
