@@ -62,7 +62,9 @@ try {
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     $stmt = $pdo->prepare($sql);
 
-    $isGroup = count($items) > 1 && $category === 'medication'; // 仅药品成组, 非药品逐条独立
+    // 成组规则: 仅多药品且未显式禁用成组 (处方等多药品独立开具时前端传 group=0)
+    $allowGroup = (int)Validator::get('group', 1) !== 0;
+    $isGroup = count($items) > 1 && $category === 'medication' && $allowGroup;
     $mainId = null;
     $ids = [];
     foreach ($items as $i => $item) {

@@ -247,12 +247,14 @@ var RxPanel = {
             };
         });
         // 处方直接提交 (待护士核对), 医嘱备注「处方」以便医嘱列表识别来源
+        // group:0 - 处方内多个药品为独立医嘱, 不成组 (不显示成组括号与组头用法)
         const r = await AjaxLoader.api('orders/save', { method: 'POST', data: {
             patient_id: this.patientId,
             order_period: 'temp',
             category: 'medication',
             items: items,
             submit: 1,
+            group: 0,
             notes: '处方'
         }});
         if (r.status === 'success') {
