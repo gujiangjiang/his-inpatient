@@ -217,6 +217,51 @@
 .os-cell-editable { cursor: pointer; }
 .os-cell-editable:hover { background: #f7fbfb; }
 
+/* 行内编辑悬浮选择器 (途径/频次/执行时间) */
+.os-pick {
+    position: fixed;
+    z-index: 2400;
+    width: 200px;
+    background: #fff;
+    border: 1px solid #d9dde3;
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, .22);
+    padding: 8px;
+    box-sizing: border-box;
+}
+.os-pick-head { display: flex; align-items: center; gap: 6px; }
+.os-pick-search {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid #dbe3ec;
+    border-radius: 7px;
+    padding: 5px 8px;
+    font-size: 12.5px;
+    outline: none;
+    background: #fff;
+}
+.os-pick-search:focus { border-color: #1aa3a3; }
+.os-pick-clear {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 7px;
+    background: #f2f5fa;
+    color: #909399;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.os-pick-clear:hover { background: #ffecec; color: #f56c6c; }
+.os-pick-list { max-height: 208px; overflow-y: auto; margin-top: 6px; }
+.os-pick-item { padding: 6px 10px; font-size: 13px; border-radius: 7px; cursor: pointer; color: #303133; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.os-pick-item:hover,
+.os-pick-item.cursor { background: #f0fbfb; }
+.os-pick-item.active { color: #1aa3a3; font-weight: 600; }
+.os-pick-item.os-pick-empty { color: #b0b8c4; }
+
 /* 悬浮详情框打开时高亮对应医嘱组 */
 .os-row-selected td { background: #f5fbfb; }
 /* 组高亮左侧色条仅画在组首列 (勾选列 rowspan 覆盖整组), 避免子医嘱行首格(内容格)凭空多出选中色条 */

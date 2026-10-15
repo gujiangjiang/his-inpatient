@@ -397,86 +397,62 @@ var OrderStation = {
     },
 
     /**
-     * 行内编辑途径/频次/执行时间 (仅草稿, 变更即实时保存)
+     * 行内编辑途径/频次/执行时间 (仅草稿, 悬浮列表选择, 变更即实时保存)
+     * 不替换单元格内容; 列表首项 「-」 清空, 搜索栏右侧 × 一键清空
      */
+    USAGE_OPTIONS: ['', '静脉输液', '静脉滴注', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护'],
+
     editCell(kind, rootId, event) {
         if (event) event.stopPropagation();
-        const td = event && event.currentTarget ? event.currentTarget : null;
-        if (!td || td.querySelector('select,input')) return;
         const root = this.groups.find(g => g.id == rootId);
         if (!root || root.status !== 'draft') return;
         if ((kind === 'freq' || kind === 'detail') && root.order_period === 'temp') {
             Dom.toast('临时医嘱无频次/执行时间', 'info');
             return;
         }
-        const orig = td.innerHTML;
-        let done = false;
-        const restore = () => { if (!done) { done = true; td.innerHTML = orig; } };
-        const commit = async (fields) => {
-            done = true;
-            try {
-                await AjaxLoader.api('orders/update', { method: 'POST', data: Object.assign({ id: rootId }, fields) });
-                Dom.toast('已实时保存', 'success');
-                this.refresh();
-            } catch (e) { td.innerHTML = orig; }
-        };
-
         if (kind === 'usage' || kind === 'freq') {
             const isUsage = kind === 'usage';
-            const freqs = this.FREQS;
-            const values = isUsage
-                ? ['', '静脉输液', '静脉滴注', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护']
-                : freqs.map(f => f[0]);
-            const labels = isUsage ? values : freqs.map(f => f[1]);
-            const current = isUsage ? (root.usage_name || '') : (root.freq_code || root.frequency || '');
-            // 当前值不在选项内 (如项目库同步的非常用途径) 时保留为可选项, 避免编辑丢失
-            if (isUsage && current && values.indexOf(current) === -1) values.splice(1, 0, current);
-            td.innerHTML = '<select class="os-cell-select">' + values.map((v, i) =>
-                `<option value="${v}" ${v === current ? 'selected' : ''}>${labels[i] || v || '-'}</option>`).join('') + '</select>';
-            const sel = td.querySelector('select');
-            const useSpicker = typeof SelectPicker !== 'undefined';
-            if (useSpicker) {
-                SelectPicker.attach(sel, { small: true });
-                SelectPicker.open(sel);
+            let options;
+            let current;
+            if (isUsage) {
+                const values = this.USAGE_OPTIONS.slice();
+                current = root.usage_name || '';
+                // 当前值不在选项内 (如项目库同步的非常用途径) 时保留为可选项, 避免编辑丢失
+                if (current && values.indexOf(current) === -1) values.splice(1, 0, current);
+                options = values.map(v => [v, v]);
             } else {
-                sel.focus();
+                current = root.freq_code || root.frequency || '';
+                options = this.FREQS.map(f => [f[0], f[1]]);
             }
-            sel.addEventListener('change', () => {
-                if (isUsage) {
-                    commit({ usage_name: sel.value });
-                } else {
-                    // 修改频次: 清空原执行时间并按新频次自动重设 (无对应映射则保持空白)
-                    commit({ freq_code: sel.value, freq_detail: this.autoFreqDetail(sel.value) });
+            CellPicker.open({
+                options: options,
+                current: current,
+                placeholder: isUsage ? '搜索途径…' : '搜索频次…',
+                onPick: (val) => {
+                    if (isUsage) this.commitCell(rootId, { usage_name: val });
+                    else this.commitCell(rootId, { freq_code: val, freq_detail: this.autoFreqDetail(val) });
                 }
-            });
-            if (useSpicker) {
-                sel.addEventListener('spicker-cancel', () => { done = true; td.innerHTML = orig; });
-            } else {
-                sel.addEventListener('blur', () => setTimeout(restore, 150));
-            }
-            sel.addEventListener('keydown', e => { if (e.key === 'Escape') { done = true; td.innerHTML = orig; } });
+            }, event);
         } else {
-            td.innerHTML = `<input class="os-cell-input" value="${Format.escape(root.freq_detail || '')}" placeholder="如 07-16">`;
-            const input = td.querySelector('input');
-            input.focus();
-            input.addEventListener('keydown', e => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    done = true;
-                    if (input.value.trim() !== (root.freq_detail || '')) commit({ freq_detail: input.value.trim() });
-                    else restore();
-                } else if (e.key === 'Escape') {
-                    done = true;
-                    td.innerHTML = orig;
+            CellPicker.open({
+                type: 'input',
+                current: root.freq_detail || '',
+                placeholder: '如 07-16, 回车保存',
+                onPick: (val) => {
+                    const v = (val || '').trim();
+                    if (v !== (root.freq_detail || '')) this.commitCell(rootId, { freq_detail: v });
                 }
-            });
-            input.addEventListener('blur', () => setTimeout(() => {
-                if (done) return;
-                done = true;
-                if (input.value.trim() !== (root.freq_detail || '')) commit({ freq_detail: input.value.trim() });
-                else td.innerHTML = orig;
-            }, 150));
+            }, event);
         }
+    },
+
+    /* 行内编辑提交 (变更即保存) */
+    async commitCell(rootId, fields) {
+        try {
+            await AjaxLoader.api('orders/update', { method: 'POST', data: Object.assign({ id: rootId }, fields) });
+            Dom.toast('已实时保存', 'success');
+            this.refresh();
+        } catch (e) { /* 已提示 */ }
     },
 
     timeText(o) {
