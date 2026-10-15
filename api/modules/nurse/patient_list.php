@@ -27,7 +27,7 @@ if ($rows) {
     foreach ($rows as $r) $ids[] = (int)$r['id'];
     $ph = implode(',', array_fill(0, count($ids), '?'));
     $pending = [];
-    foreach (DB::select("SELECT patient_id, COUNT(*) c FROM orders WHERE patient_id IN ($ph) AND status = 'pending' GROUP BY patient_id", $ids) as $r) {
+    foreach (DB::select("SELECT patient_id, COUNT(*) c FROM orders WHERE patient_id IN ($ph) AND status IN ('pending','invalid_pending','stop_pending') GROUP BY patient_id", $ids) as $r) {
         $pending[(int)$r['patient_id']] = (int)$r['c'];
     }
     $undispensed = [];

@@ -44,6 +44,8 @@ async function clinic_rx_init() {
 function _rxStatus(items) {
     const has = s => items.some(i => i.status === s);
     if (has('pending')) return 'pending';
+    if (has('invalid_pending')) return 'invalid_pending';
+    if (has('stop_pending')) return 'stop_pending';
     if (has('verified')) return 'verified';
     if (has('executing')) return 'executing';
     if (has('completed')) return 'completed';

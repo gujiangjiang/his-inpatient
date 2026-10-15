@@ -12,12 +12,14 @@ $pdo = DB::getPDO();
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
 
-// 状态机校验
+// 状态机校验 (与 order_verify 一致: 开单/停止/作废均需护士确认)
 $validTransition = [
     'draft' => ['pending'],
-    'pending' => ['verified', 'draft', 'stopped'],
-    'verified' => ['executing', 'completed', 'invalid', 'stopped'],
-    'executing' => ['completed', 'stopped'],
+    'pending' => ['verified', 'draft', 'invalid_pending'],
+    'invalid_pending' => ['invalid'],
+    'stop_pending' => ['stopped'],
+    'verified' => ['executing', 'completed', 'invalid_pending', 'stop_pending'],
+    'executing' => ['completed', 'invalid_pending', 'stop_pending'],
     'completed' => [],
     'stopped' => [],
     'invalid' => []

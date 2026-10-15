@@ -1,5 +1,5 @@
 <?php
-// api/modules/orders/rx_void.php - 毁方 (整方作废, 护士未核对也可毁方)
+// api/modules/orders/rx_void.php - 毁方申请 (整方提交作废, 待护士确认后正式作废)
 Auth::requireRole(['admin', 'doctor']);
 $rxNo = (string)Validator::get('rx_no', '');
 $ids = Validator::get('ids');
@@ -19,19 +19,18 @@ $voidIds = [];
 foreach ($rows as $r) {
     if (in_array($r['status'], ['pending', 'verified', 'executing'])) $voidIds[] = (int)$r['id'];
 }
-if (!$voidIds) Response::error('该处方已作废或已完成，无需毁方');
+if (!$voidIds) Response::error('该处方已毁方或已作废，无需重复操作');
 
 $ph = implode(',', array_fill(0, count($voidIds), '?'));
 $pdo = DB::getPDO();
 $pdo->beginTransaction();
 try {
-    DB::execute("UPDATE orders SET status = 'invalid', updated_at = ? WHERE id IN ($ph)",
-        array_merge([DateHelper::now()], $voidIds));
-    // 已发药/摆药记录同步作废
-    DB::execute("UPDATE dispensing_records SET status = 'invalid' WHERE order_id IN ($ph)", $voidIds);
+    // 转 待作废 (黄色+删除线), 护士确认后正式作废
+    DB::execute("UPDATE orders SET status = 'invalid_pending', updated_at = ? WHERE id IN ($ph)", array_merge([DateHelper::now()], $voidIds));
     $pdo->commit();
     Response::success(['count' => count($voidIds)]);
 } catch (Exception $e) {
     $pdo->rollback();
     Response::error('毁方失败：' . $e->getMessage());
 }
+
