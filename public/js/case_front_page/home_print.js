@@ -46,6 +46,18 @@ Object.assign(CaseHome, {
         return (x === '' || x === undefined || x === null) ? '—' : Format.escape(String(x));
     },
 
+    /* 下划线占位值: 固定最小宽度, 居中, 空值显示 — (仍有下划线) */
+    ub(k, min) {
+        const x = this.data[k];
+        const v = (x === '' || x === undefined || x === null) ? '—' : Format.escape(String(x));
+        return `<span class="cf-ub" style="min-width:${min}mm">${v}</span>`;
+    },
+
+    /* 下划线占位中文时间 (空值 —) */
+    ubCn(k, min) {
+        return `<span class="cf-ub" style="min-width:${min}mm">${this.fmtCn(k)}</span>`;
+    },
+
     /* 勾选/编码方框: 有值显示值, 无值空框 */
     bx(k) {
         const x = this.data[k];
@@ -84,6 +96,11 @@ body { background: #e9edf2; }
 @media print { body { background: #fff; padding: 0 !important; } .cf-page { margin: 0 auto; box-shadow: none; } }
 .cf-v { color: #1a1a1a; font-weight: 600; }
 .cf-dict { font-size: 7.4pt; }
+.cf-ub {
+    display: inline-block; box-shadow: inset 0 -1px 0 #000; text-align: center;
+    padding: 0 1mm; line-height: 1.22; color: #1a1a1a; font-weight: 600;
+    max-width: 100%;
+}
 .cf-num { color: #1a1a1a; }
 .cf-ul {
     display: inline-block; min-width: 14mm; border-bottom: .7pt solid #000;
