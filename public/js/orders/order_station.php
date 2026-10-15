@@ -325,9 +325,15 @@ var OrderStation = {
                 const editUsage = editable ? ` onclick="OrderStation.editCell('usage', ${root.id}, event)" title="点击修改途径"` : '';
                 const editFreq = (editable && !isTemp) ? ` onclick="OrderStation.editCell('freq', ${root.id}, event)" title="点击修改频次"` : '';
                 const editDetail = (editable && !isTemp) ? ` onclick="OrderStation.editCell('detail', ${root.id}, event)" title="点击修改执行时间"` : '';
-                html += `<td class="os-col-usage ${usageCls}"${span}${editUsage}>${this.usageText(root, o)}</td>`;
-                html += `<td class="os-col-freq"${span}${editFreq} title="${isTemp ? '临时医嘱无频次' : ''}">${Format.escape(root.freq_code || root.frequency || '')}</td>`;
-                html += `<td class="os-col-freqdetail"${span}${editDetail} title="${isTemp ? '临时医嘱无执行时间' : ''}">${Format.escape(root.freq_detail || '')}</td>`;
+                // 草稿未填写途径/频次时显示红色斜体占位 (提示可点击, 提交后自动隐藏)
+                const hasUsage = !!(root.usage_name || root.usage_rate);
+                const usageHtml = (editable && !hasUsage) ? '<span class="os-ph">【途径】</span>' : this.usageText(root, o);
+                const freqVal = root.freq_code || root.frequency || '';
+                const freqHtml = (editable && !isTemp && !freqVal) ? '<span class="os-ph">【频次】</span>' : Format.escape(freqVal);
+                const editCls = editable ? ' os-cell-editable' : '';
+                html += `<td class="os-col-usage ${usageCls}${editCls}"${span}${editUsage}>${usageHtml}</td>`;
+                html += `<td class="os-col-freq${editCls}"${span}${editFreq} title="${isTemp ? '临时医嘱无频次' : ''}">${freqHtml}</td>`;
+                html += `<td class="os-col-freqdetail${editCls}"${span}${editDetail} title="${isTemp ? '临时医嘱无执行时间' : ''}">${Format.escape(root.freq_detail || '')}</td>`;
                 html += `<td class="os-col-doctor"${span}>${Format.escape(root.creator_name || '')}</td>`;
                 html += `<td class="os-col-op"${span}><button type="button" class="os-op-btn" onclick="OrderActions.show(${root.id}, event)" title="操作">${svgIcon('common/actions/more', 16)}</button></td>`;
             }
@@ -419,10 +425,12 @@ var OrderStation = {
             const isUsage = kind === 'usage';
             const freqs = this.FREQS;
             const values = isUsage
-                ? ['', '静脉输液', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护']
+                ? ['', '静脉输液', '静脉滴注', '静脉注射', '口服', '皮下注射', '肌肉注射', '外用', '雾化吸入', '护理', '测量', '饮食', '陪护']
                 : freqs.map(f => f[0]);
             const labels = isUsage ? values : freqs.map(f => f[1]);
             const current = isUsage ? (root.usage_name || '') : (root.freq_code || root.frequency || '');
+            // 当前值不在选项内 (如项目库同步的非常用途径) 时保留为可选项, 避免编辑丢失
+            if (isUsage && current && values.indexOf(current) === -1) values.splice(1, 0, current);
             td.innerHTML = '<select class="os-cell-select">' + values.map((v, i) =>
                 `<option value="${v}" ${v === current ? 'selected' : ''}>${labels[i] || v || '-'}</option>`).join('') + '</select>';
             const sel = td.querySelector('select');
