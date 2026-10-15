@@ -58,10 +58,17 @@ const CaseHome = {
         return (x === '' || x === undefined || x === null) ? '' : String(x);
     },
 
+    /* 选项显示文本: 编辑态去掉预置编号 (如 "1 男" → "男", "0 未知的性别" → "未知的性别") */
+    optText(label) {
+        return String(label === undefined || label === null ? '' : label)
+            .replace(/^\s*\d+\s*[.、]\s*/, '')
+            .replace(/^\s*\d+\s+/, '');
+    },
+
     optLabel(f, v) {
         const opts = typeof f.o === 'string' ? (CaseHomeFields[f.o] || []) : (f.o || []);
         const hit = opts.find(o => String(o[0]) === String(v));
-        return hit ? hit[1] : String(v || '');
+        return hit ? this.optText(hit[1]) : String(v || '');
     },
 
     fieldHtml(f) {
@@ -76,7 +83,7 @@ const CaseHome = {
         if (f.t === 'select') {
             const opts = (typeof f.o === 'string' ? CaseHomeFields[f.o] : f.o) || [];
             const html = opts.map(o =>
-                `<option value="${o[0]}" ${v === String(o[0]) ? 'selected' : ''}>${Format.escape(o[1])}</option>`).join('');
+                `<option value="${o[0]}" ${v === String(o[0]) ? 'selected' : ''}>${Format.escape(this.optText(o[1]))}</option>`).join('');
             return `<div class="form-group cf-span-${span}"><label class="form-label">${label}</label>
                 <select class="form-control" data-cf="${f.k}">${html}</select></div>`;
         }
@@ -114,7 +121,7 @@ const CaseHome = {
 
     selectHtml(attrs, opts, v) {
         return `<select class="form-control" ${attrs}>${opts.map(o =>
-            `<option value="${o[0]}" ${String(v || '') === String(o[0]) ? 'selected' : ''}>${Format.escape(o[1])}</option>`).join('')}</select>`;
+            `<option value="${o[0]}" ${String(v || '') === String(o[0]) ? 'selected' : ''}>${Format.escape(this.optText(o[1]))}</option>`).join('')}</select>`;
     },
 
     /* 手术: 自动取自手术管理 */
