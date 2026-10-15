@@ -125,6 +125,9 @@
 .badge-verified { background: #409eff; color: #fff; }
 .badge-executing { background: #2fb344; color: #fff; }
 .badge-completed { background: #909399; color: #fff; }
+.badge-draft { background: #79bbff; color: #fff; }
+.badge-invalid { background: #f56c6c; color: #fff; }
+.badge-stopped { background: #909399; color: #fff; }
 .badge-critical { background: #e5484d; color: #fff; }
 .badge-default { background: #f1f5f9; color: #64748b; }
 .badge-info { background: #409eff; color: #fff; }
