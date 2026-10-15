@@ -122,6 +122,8 @@
     line-height: 1.6;
 }
 .badge-pending { background: #e6a23c; color: #fff; }
+.badge-invalid_pending { background: #e6a23c; color: #fff; }
+.badge-stop_pending { background: #e6a23c; color: #fff; }
 .badge-verified { background: #409eff; color: #fff; }
 .badge-executing { background: #2fb344; color: #fff; }
 .badge-completed { background: #909399; color: #fff; }

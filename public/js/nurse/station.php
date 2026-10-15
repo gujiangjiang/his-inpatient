@@ -59,7 +59,13 @@ async function nurse_station_detail_reload() {
     const rows = r.data || [];
     const catLabel = c => c === 'medication' ? '药品' : '医嘱';
     const actHtml = o => {
-        if (o.status === 'invalid') return '<span class="fs-12 text-muted">已毁方作废</span>';
+        if (o.status === 'invalid') return '<span class="fs-12 text-muted">已作废</span>';
+        if (o.status === 'invalid_pending') {
+            return `<button class="btn btn-small btn-danger" onclick="nurse_station_confirm(${o.id}, 'invalid')">确认作废</button>`;
+        }
+        if (o.status === 'stop_pending') {
+            return `<button class="btn btn-small btn-danger" onclick="nurse_station_confirm(${o.id}, 'stopped')">确认停止</button>`;
+        }
         if (o.status === 'pending') {
             return `<button class="btn btn-small btn-success" onclick="nurse_station_verify(${o.id})">核查</button>`;
         }
@@ -68,9 +74,11 @@ async function nurse_station_detail_reload() {
         }
         return `<button class="btn btn-small btn-success" onclick="nurse_station_execute(${o.id})">执行</button>`;
     };
+    const rowCls = o => o.status === 'invalid' ? 'os-txt-invalid'
+        : (o.status === 'invalid_pending' ? 'os-txt-invalid_pending' : (o.status === 'stop_pending' ? 'os-txt-stop_pending' : ''));
     const body = rows.length
         ? rows.map(o => `
-            <tr class="${o.status === 'invalid' ? 'os-txt-invalid' : ''}">
+            <tr class="${rowCls(o)}">
                 <td>${Format.escape(o.content)}</td>
                 <td>${catLabel(o.category)}</td>
                 <td>${Format.escape([o.usage_name, o.freq_code].filter(Boolean).join(' · '))}</td>
@@ -99,5 +107,13 @@ async function nurse_station_execute(orderId) {
         await nurse_station_detail_reload();
         nurse_station_load();
     }
+}
+
+/* 确认作废 / 确认停止 (医生申请后由护士确认生效) */
+async function nurse_station_confirm(orderId, status) {
+    await AjaxLoader.api('orders/verify', { method: 'POST', data: { id: orderId, status: status } });
+    Dom.toast(status === 'invalid' ? '已确认作废' : '已确认停止', 'success');
+    await nurse_station_detail_reload();
+    nurse_station_load();
 }
 </script>

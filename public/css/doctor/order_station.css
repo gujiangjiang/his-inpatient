@@ -174,12 +174,15 @@
 .os-tag-bujijia { color: #909399; border: 1px solid #c0c4cc; background: #f4f4f5; }
 .os-tag-yufang { color: #2fb344; border: 1px solid #2fb344; }
 
-/* 医嘱状态文字配色: 已核对(默认黑) / 待核对黄 / 草稿蓝 / 作废红 / 停止灰 */
+/* 医嘱状态文字配色: 已核对(默认黑) / 待核对·待作废·待停止(黄) / 草稿蓝 / 作废红删除线 / 停止灰 */
 .os-txt-draft > td { color: #409eff; }
 .os-txt-pending > td { color: #e6a23c; }
+.os-txt-invalid_pending > td { color: #e6a23c; text-decoration: line-through; }
+.os-txt-stop_pending > td { color: #e6a23c; }
 .os-txt-invalid > td { color: #f56c6c; text-decoration: line-through; }
 .os-txt-stopped > td { color: #909399; }
 .os-txt-stopped .os-period,
+.os-txt-invalid_pending .os-period,
 .os-txt-invalid .os-period { opacity: .6; }
 
 /* 新开医嘱定位闪烁 (整组) */

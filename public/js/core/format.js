@@ -30,6 +30,8 @@ const Format = {
         const map = {
             draft: '草稿',
             pending: '待核对',
+            invalid_pending: '待作废',
+            stop_pending: '待停止',
             verified: '已核对',
             executing: '执行中',
             completed: '已完成',

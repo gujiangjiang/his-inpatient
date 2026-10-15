@@ -9,17 +9,18 @@ const OrderActions = {
     show(rootId, event) {
         const root = this.find(rootId);
         if (!root) return;
-        const isAuto = root.is_auto_generated == 1; // 申请类自动医嘱: 不由医嘱站提交/删除/复制 (经申请页面管理)
+        const isAuto = root.is_auto_generated == 1; // 申请类自动医嘱: 由医嘱站提交/删除/复制受控, 但支持作废
         const items = [];
         if (root.status === 'draft' && !isAuto) {
             items.push(['提交', () => this.submit([root])]);
             items.push(['删除', () => this.removeDraft(root)]);
         } else {
-            // 停止: 仅长期医嘱 (临时医嘱无停止概念)
+            // 停止: 仅长期医嘱 (临时医嘱无停止概念); 待核对/已核对/执行中均可申请停止, 护士确认后生效
             if (['pending', 'verified', 'executing'].includes(root.status) && root.order_period === 'long') {
                 items.push(['停止', () => this.stop(root)]);
             }
-            if (['verified', 'executing'].includes(root.status)) {
+            // 作废: 待核对/已核对/执行中均可申请 (检验/检查等自动医嘱同样支持), 护士确认后正式作废
+            if (['pending', 'verified', 'executing'].includes(root.status)) {
                 items.push(['作废', () => this.invalidate(root)]);
             }
             if (!isAuto) {
@@ -124,7 +125,7 @@ const OrderActions = {
         if (!roots.length) { Dom.toast('请先勾选医嘱', 'error'); return; }
         const stoppable = roots.filter(r => r.order_period === 'long' && ['pending', 'verified', 'executing'].includes(r.status));
         if (!stoppable.length) { Dom.toast('所选医嘱中没有可停止的长期医嘱', 'error'); return; }
-        Dom.modal('批量停止', `<p>确认批量停止 ${stoppable.length} 组长期医嘱？</p>`, [
+        Dom.modal('批量停止', `<p>确认对 ${stoppable.length} 组长期医嘱提交停止申请？（护士确认后生效）</p>`, [
             { text: '确认停止', type: 'danger', onclick: async () => {
                 let ok = 0;
                 for (const r of stoppable) {
@@ -133,7 +134,7 @@ const OrderActions = {
                         ok++;
                     } catch (e) { /* 继续 */ }
                 }
-                Dom.toast('已停止 ' + ok + ' 组长期医嘱', 'success');
+                Dom.toast('已提交 ' + ok + ' 组停止申请，待护士确认', 'success');
                 OrderStation.refresh();
             } },
             { text: '取消', type: 'default' }
@@ -157,10 +158,10 @@ const OrderActions = {
     },
 
     stop(root) {
-        Dom.modal('停止医嘱', '<p>停止「' + Format.escape(root.content) + '」？</p>', [
-            { text: '停止', type: 'danger', onclick: async () => {
+        Dom.modal('停止医嘱', '<p>停止「' + Format.escape(root.content) + '」？停止申请将提交护士确认，确认后医嘱停止。</p>', [
+            { text: '申请停止', type: 'danger', onclick: async () => {
                 await AjaxLoader.api('orders/stop', { method: 'POST', data: { id: root.id } });
-                Dom.toast('已停止', 'success');
+                Dom.toast('已提交停止申请，待护士确认', 'success');
                 OrderStation.refresh();
             } },
             { text: '取消', type: 'default' }
@@ -168,10 +169,10 @@ const OrderActions = {
     },
 
     stopAllLong() {
-        Dom.modal('长期全停', '<p>将停止该患者全部<b>长期</b>医嘱（待核对/已核对/执行中），确定继续？</p>', [
+        Dom.modal('长期全停', '<p>将对全部<b>长期</b>医嘱（待核对/已核对/执行中）提交停止申请，待护士确认后生效，确定继续？</p>', [
             { text: '确认全停', type: 'danger', onclick: async () => {
                 const r = await AjaxLoader.api('orders/stop', { method: 'POST', data: { patient_id: OrderStation.patientId } });
-                Dom.toast('已停止 ' + (r.data.stopped || 0) + ' 条长期医嘱', 'success');
+                Dom.toast('已提交 ' + (r.data.stopping || 0) + ' 条长期医嘱停止申请', 'success');
                 OrderStation.refresh();
             } },
             { text: '取消', type: 'default' }
@@ -179,10 +180,10 @@ const OrderActions = {
     },
 
     invalidate(root) {
-        Dom.modal('作废医嘱', '<p>作废「' + Format.escape(root.content) + '」？作废后不可恢复。</p>', [
-            { text: '确认作废', type: 'danger', onclick: async () => {
+        Dom.modal('作废医嘱', '<p>作废「' + Format.escape(root.content) + '」？作废申请将提交护士确认，确认后医嘱作废。</p>', [
+            { text: '申请作废', type: 'danger', onclick: async () => {
                 await AjaxLoader.api('orders/invalidate', { method: 'POST', data: { id: root.id } });
-                Dom.toast('已作废', 'success');
+                Dom.toast('已提交作废申请，待护士确认', 'success');
                 OrderStation.refresh();
             } },
             { text: '取消', type: 'default' }

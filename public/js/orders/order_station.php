@@ -41,9 +41,9 @@
         <span class="os-filter-group">
             状态
             <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="" checked onchange="OrderStation.setFilter('status', '')">全部</label>
-            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="draft,pending,verified,executing,completed,stopped" onchange="OrderStation.setFilter('status', 'draft,pending,verified,executing,completed,stopped')">医嘱本</label>
-            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="invalid" onchange="OrderStation.setFilter('status', 'invalid')">作废</label>
-            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="stopped" onchange="OrderStation.setFilter('status', 'stopped')">停止</label>
+            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="draft,pending,invalid_pending,stop_pending,verified,executing,completed,stopped" onchange="OrderStation.setFilter('status', 'draft,pending,invalid_pending,stop_pending,verified,executing,completed,stopped')">医嘱本</label>
+            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="invalid,invalid_pending" onchange="OrderStation.setFilter('status', 'invalid,invalid_pending')">作废</label>
+            <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="stopped,stop_pending" onchange="OrderStation.setFilter('status', 'stopped,stop_pending')">停止</label>
             <label class="os-filter-radio"><input type="radio" name="os-status-filter" value="draft" onchange="OrderStation.setFilter('status', 'draft')">待完成</label>
         </span>
     </div>
@@ -302,7 +302,7 @@ var OrderStation = {
         rows.forEach((o, i) => {
             const first = i === 0;
             const span = first ? ` rowspan="${size}"` : '';
-            const statusCls = { draft: ' os-txt-draft', pending: ' os-txt-pending', invalid: ' os-txt-invalid', stopped: ' os-txt-stopped' }[o.status] || '';
+            const statusCls = { draft: ' os-txt-draft', pending: ' os-txt-pending', invalid_pending: ' os-txt-invalid_pending', stop_pending: ' os-txt-stop_pending', invalid: ' os-txt-invalid', stopped: ' os-txt-stopped' }[o.status] || '';
             const openLink = ` onclick="OrderDetail.open(${o.id}, ${root.id}, event)" title="点击查看医嘱详情"`;
             html += `<tr data-oid="${o.id}" data-root="${root.id}" class="${first ? 'os-group-start' : ''}${statusCls}${editable ? ' os-row-editable' : ''}">`;
             if (first) {

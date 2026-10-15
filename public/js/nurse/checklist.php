@@ -33,7 +33,11 @@ async function loadChecklist() {
     rows.forEach(o => {
         let act;
         if (o.status === 'invalid') {
-            act = '<span class="fs-12 text-muted">已毁方作废</span>';
+            act = '<span class="fs-12 text-muted">已作废</span>';
+        } else if (o.status === 'invalid_pending') {
+            act = `<button class="btn btn-small btn-danger" onclick="nurse_checklist_confirm(${o.id}, 'invalid')">确认作废</button>`;
+        } else if (o.status === 'stop_pending') {
+            act = `<button class="btn btn-small btn-danger" onclick="nurse_checklist_confirm(${o.id}, 'stopped')">确认停止</button>`;
         } else if (o.status === 'pending') {
             act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_verify(${o.id})">核查</button>`;
         } else if (o.category === 'medication' && !o.dispensed_id) {
@@ -43,6 +47,8 @@ async function loadChecklist() {
         }
         const tr = document.createElement('tr');
         if (o.status === 'invalid') tr.className = 'os-txt-invalid';
+        else if (o.status === 'invalid_pending') tr.className = 'os-txt-invalid_pending';
+        else if (o.status === 'stop_pending') tr.className = 'os-txt-stop_pending';
         tr.innerHTML = `
             <td>${Format.escape(o.patient_name||'')}</td>
             <td>${Format.escape(o.bed_no||'')}</td>
@@ -62,6 +68,13 @@ function nurse_checklist_refresh() {
 
 async function nurse_checklist_verify(orderId) {
     await AjaxLoader.api('orders/verify', {method:'POST',data:{id:orderId}});
+    loadChecklist();
+}
+
+/* 确认作废 / 确认停止 (医生申请后由护士确认生效) */
+async function nurse_checklist_confirm(orderId, status) {
+    await AjaxLoader.api('orders/verify', {method:'POST',data:{id:orderId, status: status}});
+    Dom.toast(status === 'invalid' ? '已确认作废' : '已确认停止', 'success');
     loadChecklist();
 }
 
