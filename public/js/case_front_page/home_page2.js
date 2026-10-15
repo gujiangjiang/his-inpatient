@@ -87,7 +87,7 @@ Object.assign(CaseHome, {
             [24, `<span class="cf-dict">4.非医嘱离院　5.死亡　9.其他</span>`],
         ])}</td></tr>
         <tr><td colspan="2">是否有出院31天内再住院计划 ${this.bx('readmit_plan')} <span class="cf-dict">1.无 2.有</span>　　目的：<span class="cf-fill-line" style="min-width:56mm">${this.fn('readmit_purpose', '')}</span></td></tr>
-        <tr><td colspan="2">颅脑损伤患者昏迷时间：入院前 <span class="cf-num">${this.vd('coma_in_d')}</span> 天 <span class="cf-num">${this.vd('coma_in_h')}</span> 小时 <span class="cf-num">${this.vd('coma_in_m')}</span> 分钟　　入院后 <span class="cf-num">${this.vd('coma_after_d')}</span> 天 <span class="cf-num">${this.vd('coma_after_h')}</span> 小时 <span class="cf-num">${this.vd('coma_after_m')}</span> 分钟</td></tr>
+        <tr><td colspan="2">颅脑损伤患者昏迷时间：入院前 ${this.ub('coma_in_d', 9)} 天 ${this.ub('coma_in_h', 9)} 小时 ${this.ub('coma_in_m', 9)} 分钟　　入院后 ${this.ub('coma_after_d', 9)} 天 ${this.ub('coma_after_h', 9)} 小时 ${this.ub('coma_after_m', 9)} 分钟</td></tr>
         <tr><td colspan="2" class="cf-feebox">${this.feeLinesHtml()}</td></tr>
         <tr><td colspan="2" class="cf-nest">${this.icuTableHtml()}</td></tr>
         <tr><td colspan="2">${this.rt([

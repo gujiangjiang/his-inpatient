@@ -13,11 +13,13 @@ Object.assign(CaseHome, {
     },
 
     print() {
+        this.collect();
         PrintHelper.printDocument(this.documentHtml('print'));
     },
 
     /* 打印预览: iframe 内渲染与打印完全相同的文档 (仅按 iframe 宽度等比缩放显示) */
     preview() {
+        this.collect();
         const overlay = Dom.modal('住院病案首页 · 打印预览', '<iframe class="cf-preview-frame" id="cf-preview-frame"></iframe>', [
             { text: '打印', type: 'primary', onclick: () => this.print() },
             { text: '关闭', type: 'default' },
@@ -69,13 +71,15 @@ Object.assign(CaseHome, {
         return (x === '' || x === undefined || x === null) ? (fallback === undefined ? '—' : fallback) : Format.escape(String(x));
     },
 
-    /* 中文日期时间: 2026-10-07 08:31 → 2026年10月7日8时31分 */
+    /* 中文日期时间: 2026-10-07 08:31 → 2026年10月07日08时31分 (整点省略分) */
     fmtCn(k) {
         const x = this.data[k];
         if (!x) return '—';
         const m = String(x).match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):?(\d{2})?/);
         if (!m) return Format.escape(String(x));
-        return (+m[1]) + '年' + (+m[2]) + '月' + (+m[3]) + '日' + (+m[4]) + '时' + (m[5] ? (+m[5]) + '分' : '');
+        let s = m[1] + '年' + m[2] + '月' + m[3] + '日' + m[4] + '时';
+        if (m[5] && +m[5] > 0) s += m[5] + '分';
+        return s;
     },
 
     printCss() {

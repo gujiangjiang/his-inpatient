@@ -67,8 +67,8 @@ Object.assign(CaseHome, {
         ])}</td></tr>
         <tr class="cf-line"><td>身份证件不详的具体原因 ${this.bx('id_unknown_reason')} <span class="cf-dict">1.三无人员 2.新生儿未办理 3.无完全民事行为能力 4.意识障碍 9.其他</span>　<span class="cf-ub" style="min-width:44mm">&nbsp;</span></td></tr>
         <tr class="cf-line"><td>${this.rt([
-            [46, `出生地 ${this.ub('birth_prov', 12)} 省（区、市） ${this.ub('birth_city', 12)} 市 ${this.ub('birth_county', 12)} 县`],
-            [30, `籍贯 ${this.ub('native_prov', 12)} 省（区、市） ${this.ub('native_city', 12)} 市`],
+            [46, `出生地 ${this.ub('birth_prov', 12)} 省(区、市) ${this.ub('birth_city', 12)} 市 ${this.ub('birth_county', 12)} 县`],
+            [30, `籍贯 ${this.ub('native_prov', 12)} 省(区、市) ${this.ub('native_city', 12)} 市`],
             [24, `民族 ${this.ub('nation', 14)}`],
         ])}</td></tr>
         <tr class="cf-line"><td>${this.rt([
@@ -76,12 +76,12 @@ Object.assign(CaseHome, {
             [71, `婚姻 ${this.bx('marriage')} <span class="cf-dict">1.未婚 2.已婚 3.丧偶 4.离婚 9.其他</span>`],
         ])}</td></tr>
         <tr class="cf-line"><td>${this.rt([
-            [63, `现住址 ${this.ub('addr_prov', 12)} 省（区、市） ${this.ub('addr_city', 12)} 市 ${this.ub('addr_county', 12)} 县 ${this.ub('addr_detail', 30)}`],
+            [63, `现住址 ${this.ub('addr_prov', 12)} 省(区、市) ${this.ub('addr_city', 12)} 市 ${this.ub('addr_county', 12)} 县 ${this.ub('addr_detail', 30)}`],
             [20, `电话 ${this.ub('phone', 22)}`],
             [17, `邮编 ${this.ub('zip', 16)}`],
         ])}</td></tr>
         <tr class="cf-line"><td>${this.rt([
-            [78, `户口地址 ${this.ub('hukou_prov', 12)} 省（区、市） ${this.ub('hukou_city', 12)} 市 ${this.ub('hukou_county', 12)} 县 ${this.ub('hukou_detail', 30)}`],
+            [78, `户口地址 ${this.ub('hukou_prov', 12)} 省(区、市) ${this.ub('hukou_city', 12)} 市 ${this.ub('hukou_county', 12)} 县 ${this.ub('hukou_detail', 30)}`],
             [22, `邮编 ${this.ub('hukou_zip', 16)}`],
         ])}</td></tr>
         <tr class="cf-line"><td>${this.rt([
@@ -135,21 +135,21 @@ Object.assign(CaseHome, {
             [50, `Rh ${this.bx('rh')} <span class="cf-dict">1.阴 2.阳 3.不详 4.未查</span>`],
         ])}</td></tr>
         <tr class="cf-line cf-topline"><td>${this.rt([
-            [29, `科主任 ${this.ub('chief_physician', 14)}`],
-            [26, `主任（副主任）医师 ${this.ub('director_physician', 14)}`],
-            [20, `主治医师 ${this.ub('attending_physician', 14)}`],
-            [25, `住院医师 ${this.ub('resident_physician', 14)}`],
+            [29, `科主任 ${this.ub('chief_physician', 18)}`],
+            [26, `主任（副主任）医师 ${this.ub('director_physician', 18)}`],
+            [20, `主治医师 ${this.ub('attending_physician', 18)}`],
+            [25, `住院医师 ${this.ub('resident_physician', 18)}`],
         ])}</td></tr>
         <tr class="cf-line cf-topline"><td>${this.rt([
-            [29, `责任护士 ${this.ub('charge_nurse', 14)}`],
-            [26, `进修医师 ${this.ub('trainee', 14)}`],
-            [20, `实习医师 ${this.ub('intern', 14)}`],
-            [25, `编码员 ${this.ub('coder', 14)}`],
+            [29, `责任护士 ${this.ub('charge_nurse', 18)}`],
+            [26, `进修医师 ${this.ub('trainee', 18)}`],
+            [20, `实习医师 ${this.ub('intern', 18)}`],
+            [25, `编码员 ${this.ub('coder', 18)}`],
         ])}</td></tr>
         <tr class="cf-line cf-topline"><td>${this.rt([
             [27, `病案质量 ${this.bx('case_quality')} <span class="cf-dict">1.甲 2.乙 3.丙</span>`],
-            [22, `质控医师 ${this.ub('qc_physician', 16)}`],
-            [23, `质控护士 ${this.ub('qc_nurse', 16)}`],
+            [22, `质控医师 ${this.ub('qc_physician', 18)}`],
+            [23, `质控护士 ${this.ub('qc_nurse', 18)}`],
             [28, `质控日期 ${this.ub('qc_date', 20)}`],
         ])}</td></tr>
     </tbody></table>
