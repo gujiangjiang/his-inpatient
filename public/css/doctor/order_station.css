@@ -260,7 +260,7 @@
 .os-pick-item:hover,
 .os-pick-item.cursor { background: #f0fbfb; }
 .os-pick-item.active { color: #1aa3a3; font-weight: 600; }
-.os-pick-item.os-pick-empty { color: #b0b8c4; }
+.os-pick-none { padding: 8px 10px; color: #b0b8c4; font-size: 12.5px; }
 
 /* 悬浮详情框打开时高亮对应医嘱组 */
 .os-row-selected td { background: #f5fbfb; }

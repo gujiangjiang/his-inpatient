@@ -52,7 +52,7 @@ const CellPicker = {
         document.addEventListener('keydown', this.esc);
     },
 
-    /** 列表渲染: 首项固定 「-」 清空, 其余按搜索词过滤, 当前值高亮 */
+    /** 列表渲染: 按搜索词过滤, 当前值高亮 (清空请点击搜索栏右侧 ×) */
     renderList(kw) {
         kw = (kw || '').trim().toLowerCase();
         const opts = this.options.filter(o => o[0] !== '' && (!kw
@@ -60,9 +60,8 @@ const CellPicker = {
             || String(o[0]).toLowerCase().includes(kw)));
         this.items = opts;
         this.cursor = -1;
-        const rows = [`<div class="os-pick-item os-pick-empty${this.current === '' ? ' active' : ''}" data-v="">-</div>`]
-            .concat(opts.map(o => `<div class="os-pick-item${String(o[0]) === String(this.current) ? ' active' : ''}" data-v="${Format.escape(String(o[0]))}">${Format.escape(o[1] || o[0])}</div>`));
-        this.panel.querySelector('.os-pick-list').innerHTML = rows.join('');
+        const rows = opts.map(o => `<div class="os-pick-item${String(o[0]) === String(this.current) ? ' active' : ''}" data-v="${Format.escape(String(o[0]))}">${Format.escape(o[1] || o[0])}</div>`);
+        this.panel.querySelector('.os-pick-list').innerHTML = rows.join('') || '<div class="os-pick-none">无匹配</div>';
         this.panel.querySelectorAll('.os-pick-item').forEach(el => {
             el.addEventListener('click', () => this.pick(el.dataset.v));
         });
@@ -73,8 +72,7 @@ const CellPicker = {
             e.preventDefault();
             if (this.mode === 'input') { this.pick(this.panel.querySelector('.os-pick-search').value); return; }
             if (this.cursor >= 0 && this.items[this.cursor]) { this.pick(this.items[this.cursor][0]); return; }
-            const visible = this.panel.querySelectorAll('.os-pick-item');
-            if (visible.length === 2) this.pick(visible[1].dataset.v);
+            if (this.items.length === 1) this.pick(this.items[0][0]);
             return;
         }
         if (this.mode !== 'list') return;
