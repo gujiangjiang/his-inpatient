@@ -1,13 +1,11 @@
 // public/js/case_front_page/home_print.js - 病案首页打印: 版式 CSS / 预览 / 打印 (预览与打印同一份文档)
 Object.assign(CaseHome, {
     /* 打印文档 (预览 iframe 与打印窗口使用同一份, 保证一模一样)
-       mode: 'print' 自动打印 | 'preview' 自适应缩放预览 */
+       mode: 'print' 自动打印 | 'preview'/'' 仅渲染 */
     documentHtml(mode) {
-        const printScript = '<script>window.addEventListener("load", function () { window.print(); });<\/script>';
-        const fitScript = '<script>function cfFit(){var d=document.documentElement;d.style.zoom=1;' +
-            'var w=d.clientWidth;d.style.zoom=Math.min(1,w/796);}' +
-            'window.addEventListener("load",cfFit);window.addEventListener("resize",cfFit);<\/script>';
-        const script = mode === 'preview' ? fitScript : (mode === 'print' ? printScript : '');
+        const script = mode === 'print'
+            ? '<script>window.addEventListener("load", function () { window.print(); });<\/script>'
+            : '';
         return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>住院病案首页</title>
 <style>${this.printCss()}</style></head><body>${this.buildPage1()}${this.buildPage2()}${script}</body></html>`;
     },
@@ -17,16 +15,31 @@ Object.assign(CaseHome, {
         PrintHelper.printDocument(this.documentHtml('print'));
     },
 
-    /* 打印预览: iframe 内渲染与打印完全相同的文档 (仅按 iframe 宽度等比缩放显示) */
+    /* 打印预览: iframe 以 100% 原尺寸渲染 (与打印一致), 再用 transform 整体等比缩小显示
+       (不用 zoom 缩放排版, 避免边框按设备像素取整导致线条相对变粗) */
     preview() {
         this.collect();
-        const overlay = Dom.modal('住院病案首页 · 打印预览', '<iframe class="cf-preview-frame" id="cf-preview-frame"></iframe>', [
+        const overlay = Dom.modal('住院病案首页 · 打印预览', '<div class="cf-preview-scale" id="cf-preview-scale"><iframe class="cf-preview-frame" id="cf-preview-frame" scrolling="no"></iframe></div>', [
             { text: '打印', type: 'primary', onclick: () => this.print() },
             { text: '关闭', type: 'default' },
         ]);
         overlay.querySelector('.modal').classList.add('modal-cf-preview');
+        const wrap = overlay.querySelector('#cf-preview-scale');
         const frame = overlay.querySelector('#cf-preview-frame');
+        const fit = () => {
+            const avail = wrap.clientWidth || 820;
+            const s = Math.min(1, avail / 794);
+            const doc = frame.contentDocument;
+            const h = doc ? Math.max(doc.documentElement.scrollHeight, 2280) : 2280;
+            frame.style.width = '794px';
+            frame.style.height = h + 'px';
+            frame.style.transform = 'scale(' + s + ')';
+            frame.style.transformOrigin = 'top left';
+            wrap.style.height = Math.ceil(h * s) + 'px';
+        };
+        frame.addEventListener('load', fit);
         frame.srcdoc = this.documentHtml('preview');
+        setTimeout(fit, 120);
     },
 
     /* 行内对齐表格 (底层全表格: 无边框, 定宽列, 内容长短不影响其它列) */
@@ -160,7 +173,8 @@ table.cf-op th { font-size: 8.6pt; line-height: 1.25; }
 .cf-tc { text-align: center; }
 /* ===== 预览 ===== */
 .modal-cf-preview { max-width: 960px; width: 96%; }
-.cf-preview-frame { width: 100%; height: calc(100vh - 230px); min-height: 460px; border: 0; background: #e9edf2; }
+.cf-preview-scale { position: relative; width: 100%; overflow: hidden; }
+.cf-preview-frame { position: absolute; top: 0; left: 0; width: 794px; height: 2280px; border: 0; background: #e9edf2; }
 `;
     },
 });
