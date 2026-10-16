@@ -116,12 +116,12 @@ function admin_integrations_auditClear() {
 }
 
 function admin_integrations_push() {
-    Dom.modal('推送字典确认', '<p>将把 HIS 药品目录、处置项目、检验/检查项目名推送到门诊一体化系统（门诊侧新增项需管理员审核后启用）。</p>', [
+    Dom.modal('推送字典确认', '<p>将把 HIS 处置项目、检验/检查项目名推送到门诊一体化系统（门诊侧新增项需管理员审核后启用）。HIS 药品目录属中心药房，与门诊药房不是一个药房，不同步。</p>', [
         { text: '推送', type: 'primary', onclick: async function() {
             const r = await AjaxLoader.api('admin/integration-push-catalog', { method: 'POST' });
             if (r.status === 'success') {
                 const c = r.data.counts;
-                Dom.toast('推送完成：药品 ' + c.drugs + ' · 处置 ' + c.disposal_items + ' · 检验 ' + c.lab_items + ' · 检查 ' + c.exam_items, 'success');
+                Dom.toast('推送完成：处置 ' + c.disposal_items + ' · 检验 ' + c.lab_items + ' · 检查 ' + c.exam_items, 'success');
             }
         } },
         { text: '取消', type: 'default' }
