@@ -101,14 +101,9 @@ body { background: #e9edf2; }
 .cf-v { color: #1a1a1a; font-weight: 600; }
 .cf-dict { font-size: 7.4pt; }
 .cf-ub {
-    display: inline-block; position: relative; text-align: center;
+    display: inline-block; text-align: center;
     padding: 0 1mm; line-height: 1.22; color: #1a1a1a; font-weight: 600;
-    max-width: 100%;
-}
-/* 下划线用绝对定位真实边框 (打印/PDF 稳定, 盒阴影会在 PDF 导出时出现左右竖线) */
-.cf-ub::after {
-    content: ''; position: absolute; left: 0; right: 0; bottom: -0.1mm;
-    height: 0; border-bottom: .7pt solid #000;
+    max-width: 100%; border-bottom: .7pt solid #000;
 }
 .cf-num { color: #1a1a1a; }
 .cf-ul {
