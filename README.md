@@ -42,7 +42,7 @@ npm run start           # 启动开发服务器 (http://127.0.0.1:8000)
 
 ```bash
 npm run dev             # 启动 FrankenPHP 服务器 (http://0.0.0.0:9095)
-npm run server          # 检测 9095 服务器, 不存在则自动启动 (AI 每次改完代码后必须执行)
+npm run server          # 检测 9095 服务器, 不存在则自动启动 (仅启用本地测试模式时, 见 AGENT.md)
 ```
 
 **手动初始化**:
