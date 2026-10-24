@@ -20,6 +20,11 @@
   执行 `npm run server`（端口 9095 约定不变）；补充 macOS / Linux / Windows 运行时
   选择表（系统 php 或 FrankenPHP 官方安装方式）；`README.md` 同步去掉「AI 每次
   改完代码后必须执行」表述
+- **部署文档整理**：新增 `docs/DEPLOY.md` 部署指南（宝塔面板 / Nginx / Apache），
+  覆盖 Web 根指向 `public/`、`/api/*` 单入口兜底、宝塔 `error_page 404` 与
+  「防跨站攻击(open_basedir)」处理、`data/` 目录权限、内网 `download-libs` 与
+  常见问题排查；`docs/nginx.conf.example` 修正为单入口架构（原内容为旧版
+  index.html + `/api/index.php` 方案，与实际代码不符）；`README.md` 目录树同步
 
 ## [0.22.2] - 2026-10-16
 

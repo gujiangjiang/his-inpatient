@@ -68,7 +68,7 @@ npm run lint            # 或: ~/.local/bin/frankenphp php-cli tools/lint/php-li
 ├── start.sh                # 启动脚本
 ├── package.json            # npm 脚本
 ├── AGENT.md                # 开发规范
-├── docs/CHANGELOG.md       # 变更日志
+├── docs/                   # 文档 (CHANGELOG 变更日志 / DEPLOY 部署指南 / nginx.conf.example 配置示例)
 ├── data/                   # 运行时数据 (hospital.sqlite, icd10.sqlite) [.gitignore]
 ├── api/                    # 后端 API
 │   ├── index.php           # 统一路由入口
