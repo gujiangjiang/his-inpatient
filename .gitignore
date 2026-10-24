@@ -6,6 +6,7 @@ data/*.sqlite
 public/uploads/
 .vly-run/
 .env
+.agent-local-server.conf
 *.sql~
 *.log
 .DS_Store
