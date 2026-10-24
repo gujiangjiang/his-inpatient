@@ -1,34 +1,68 @@
-# Nginx 配置示例 (生产环境)
-# 将 public/ 作为 Web 根目录
+# ============================================================
+# 医院住院一体化系统（HIS）— Nginx 配置示例（生产环境）
+# ============================================================
+# 使用方法：
+#   1. 将本文件复制为站点配置（如 /etc/nginx/conf.d/his.conf）
+#   2. 修改 server_name 为实际域名、root 为项目 public 目录
+#   3. 重启 Nginx：nginx -s reload
+#
+# 架构说明（务必先读）：
+#   - public/index.php 是唯一入口：/api/* 由其在内部转发到项目根的
+#     api/index.php，其余路径输出 SPA 外壳。
+#   - 因此「所有不存在的路径」（含 /api/*）都必须兜底到 /index.php，
+#     不能指向 /api/index.php（api/ 目录位于 Web 根之外）。
+#   - app 数据（data/、api/）位于 Web 根之外，天然不可通过 URL 访问。
+#
+# 宝塔面板部署要点（open_basedir / 伪静态 / 404 页）见 docs/DEPLOY.md。
+# ============================================================
 
 server {
     listen 80;
-    server_name his.local;
+    server_name his.example.com;
+
+    # Web 根目录指向 public（唯一 Web 入口）
     root /path/to/HIS/public;
-    
-    index index.html;
-    
-    # SPA 路由: 非 API 请求返回 index.html
+    index index.php;
+
+    charset utf-8;
+
+    # 上传大小限制（患者照片 / 病历附件等，按需调整）
+    client_max_body_size 20m;
+
+    # ---------- 静态资源缓存 ----------
+    location ~* \.(js|css|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf)$ {
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
+    # ---------- 主路由：所有动态请求（含 /api/*）兜底到唯一入口 ----------
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files $uri $uri/ /index.php?$query_string;
     }
-    
-    # API 路由代理到 FrankenPHP Worker
-    # 需要配置文件: public/worker.php (FrankenPHP Worker 模式)
-    location /api/ {
-        # FrankenPHP Worker 模式
-        # frankenphp-worker: script='api/worker.php'; env=APP_ENV
-        try_files $uri /api/index.php$is_args$args;
+
+    # ---------- PHP-FPM ----------
+    location ~ \.php$ {
+        try_files $uri =404;
+        include fastcgi_params;
+        fastcgi_pass 127.0.0.1:9000;      # 按实际 PHP-FPM 监听地址修改
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_param SCRIPT_NAME $fastcgi_script_name;
+        fastcgi_index index.php;
+        fastcgi_read_timeout 120;
     }
-    
-    # 静态资源缓存
-    location ~* \.(js|css|png|jpg|gif|ico|woff2)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
+
+    # ---------- 双保险：禁止访问敏感路径（正常均位于 Web 根之外） ----------
+    location ~ ^/(data|\.git|\.env) {
+        deny all;
+        return 404;
     }
-    
-    # 隐藏敏感文件
-    location ~ /\.(?!well-known) {
+
+    # ---------- 隐藏文件 ----------
+    location ~ /\. {
         deny all;
     }
+
+    # 访问日志 / 错误日志（按需开启）
+    # access_log /var/log/nginx/his.access.log;
+    # error_log  /var/log/nginx/his.error.log;
 }
