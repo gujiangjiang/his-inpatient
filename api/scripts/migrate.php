@@ -6,30 +6,8 @@ require_once __DIR__ . '/../core/migration.php';
 require_once __DIR__ . '/../core/helpers/time_helper.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 
-$pdo = DB::getPDO();
-$migration = new Migration();
-$migration->enableForeignKeys();
-
-$migrationDir = __DIR__ . '/../migrations/php';
-$migrationFiles = glob($migrationDir . '/*.php');
-sort($migrationFiles);
-
-$applied = 0;
-foreach ($migrationFiles as $file) {
-    $migrationFn = require $file;
-    if (!is_array($migrationFn) || !isset($migrationFn['version']) || !isset($migrationFn['up'])) {
-        continue;
-    }
-    $version = $migrationFn['version'];
-    if ($migration->isMigrated($version)) {
-        continue;
-    }
-    $migrationFn['up']($migration);
-    $migration->recordMigration($version);
-    echo "迁移 {$version} 完成: " . $migrationFn['description'] . "\n";
-    $applied++;
-}
-
+DB::getPDO();   // 建立连接（失败时给出统一错误）
+$applied = Migration::runAll();
 if ($applied === 0) {
     echo "无待执行的迁移。\n";
 } else {

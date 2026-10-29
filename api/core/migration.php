@@ -209,4 +209,28 @@ class Migration {
         $check = DB::selectOne("SELECT version FROM migrations WHERE version = ?", [$version]);
         return $check !== false;
     }
+
+    /**
+     * 执行全部未完成迁移（setup 脚本 / migrate 脚本 / 初始化向导共用，单一实现）。
+     * @param string|null $dir 迁移目录（缺省 api/migrations/php）
+     * @return int 本次执行的迁移数
+     */
+    public static function runAll($dir = null) {
+        $m = new self();
+        $m->enableForeignKeys();
+        $dir = $dir !== null ? $dir : dirname(__DIR__) . '/migrations/php';
+        $files = glob($dir . '/*.php');
+        if (!$files) return 0;
+        sort($files);
+        $applied = 0;
+        foreach ($files as $file) {
+            $fn = require $file;
+            if (!is_array($fn) || !isset($fn['version']) || !isset($fn['up'])) continue;
+            if ($m->isMigrated($fn['version'])) continue;
+            $fn['up']($m);
+            $m->recordMigration($fn['version']);
+            $applied++;
+        }
+        return $applied;
+    }
 }

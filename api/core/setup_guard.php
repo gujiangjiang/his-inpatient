@@ -21,8 +21,9 @@ class SetupGuard {
         if (!$isSetup) {
             $path = trim($_SERVER['REQUEST_URI'], '/');
             $path = preg_replace('#\?.*$#', '', $path);
-            // 允许初始化相关接口
-            $allowed = ['auth/setup-status', 'auth/setup', 'auth/login'];
+            // 允许初始化相关接口（旧单步 auth/setup + 多步 setup/* 向导）
+            $allowed = ['auth/setup-status', 'auth/setup', 'auth/login',
+                'setup/status', 'setup/database', 'setup/migrate', 'setup/site', 'setup/admin', 'setup/finish'];
             $isAllowed = false;
             foreach ($allowed as $a) {
                 if (strpos($path, 'api/' . $a) === 0) {

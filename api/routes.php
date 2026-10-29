@@ -10,6 +10,14 @@ function getRoutes() {
         'auth/setup-status' => ['auth/setup_status.php', []],
         'auth/setup' => ['auth/setup.php', []],
 
+        // 初始化向导（多步：环境检测 → 数据库 → 迁移 → 站点信息 → 管理员 → 完成）
+        'setup/status' => ['setup/status.php', []],
+        'setup/database' => ['setup/database.php', []],
+        'setup/migrate' => ['setup/migrate.php', []],
+        'setup/site' => ['setup/site.php', []],
+        'setup/admin' => ['setup/admin.php', []],
+        'setup/finish' => ['setup/finish.php', []],
+
         // 后台管理
         'admin/department-list' => ['admin/department_list.php', ['admin', 'doctor', 'nurse']],
         'admin/department-save' => ['admin/department_save.php', ['admin']],

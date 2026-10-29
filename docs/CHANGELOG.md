@@ -42,6 +42,13 @@
   本地墙钟）；值格式校验防误伤；`--db=` 副本演练模式不改动实际存储模式；
   迁移 022 目录种子时间改经 `DateHelper::now()`（新装 UTC 口径正确）
 - 内部 API 输出漏斗豁免键：`planned_at`（会诊计划时间为业务本地时间，展示原样）
+- **多步初始化向导（后端）**：`setup/status`（环境检测：PHP 版本/pdo 驱动/data
+  可写 + 阶段断点续填）、`setup/database`（连接探测含 SQLite 建表探针 → 写入
+  config.db：数据库连接 + `time.storage=utc` 全新安装即 UTC）、`setup/migrate`
+  （执行全部迁移，幂等）、`setup/site`（医院名称/机构代码/全站时区 → config.db
+  timezone）、`setup/admin`（管理员创建，已有管理员拒绝重建）、`setup/finish`
+  （置 setup_completed）；阶段守卫防跳步、完成后全向导关闭防重放；SetupGuard
+  白名单与路由登记；`Migration::runAll()` 抽取（setup/migrate 脚本与向导共用单一实现）
 
 ### 变更
 - 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /
