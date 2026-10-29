@@ -128,7 +128,7 @@ Response::success([
         'stay_days' => $stayDays,
         'allergy' => empty($patient['allergy_history']) ? '1' : '2',
         'allergy_drugs' => (string)($patient['allergy_history'] ?? ''),
-        'diagnose_date' => ($dischargeRows ? substr((string)($dischargeRows[0]['created_at'] ?? ''), 0, 10) : ''),
+        'diagnose_date' => ($dischargeRows ? TimeHelper::localDate($dischargeRows[0]['created_at'] ?? '') : ''),
         'injury_reason' => $external ? (string)$external['name'] : '',
         'injury_code' => $external ? (string)$external['icd_code'] : '',
         'pathology_diagnosis' => $pathology ? (string)$pathology['name'] : '',

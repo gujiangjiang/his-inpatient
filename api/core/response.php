@@ -2,6 +2,9 @@
 // api/core/response.php - 统一 JSON 响应
 class Response {
     public static function json($data, $code = 200) {
+        // 内部 API 输出漏斗：数组中 *_at / *_time 键统一按站点时区换算为显示串
+        // （TimeHelper::localize 递归；local 模式恒等。未加载时原样输出兜底）
+        if (class_exists('TimeHelper')) $data = TimeHelper::localize($data);
         http_response_code($code);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($data, JSON_UNESCAPED_UNICODE);

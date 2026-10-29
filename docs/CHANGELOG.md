@@ -21,6 +21,11 @@
   localDate()/dayRange()` 均按站点时区；双模式过渡（config.db `time.storage`，
   local 模式全部行为与旧版逐字节一致）；`DateHelper` 全量委托 TimeHelper
   （now/today/format），全部入口（api/public/scripts）接线
+- **内部 API 输出漏斗**：`Response::json` 统一经 `TimeHelper::localize` 递归换算
+  （`*_at/*_time` 键 → 站点时区显示串；业务日期不转换；local 模式恒等）——
+  「接入的 API 自动时区转换后给前端显示」单点落地；case_front_page 自动填充
+  的 `diagnose_date` 由 substr 截取改为 `TimeHelper::localDate()`（UTC 存储下
+  业务日按站点时区归属）
 
 ### 变更
 - 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /
