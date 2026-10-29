@@ -1,19 +1,35 @@
 <?php
 // api/config.php
-date_default_timezone_set('Asia/Shanghai'); // 统一时区 (修复 PHP 默认 UTC 导致时间相差 8 小时)
-define('APP_VERSION', '0.22.3');
+
+// ---------- 基础路径（其余配置依赖） ----------
 define('BASE_DIR', dirname(__DIR__));
 define('DATA_DIR', BASE_DIR . '/data');
-define('DB_PATH', DATA_DIR . '/hospital.sqlite');
+
+// ---------- 基础设施配置库（config.db） ----------
+// 数据库连接、全站时区等「最底层」配置独立于业务库存放（参考门诊一体化系统）；
+// 未生成 config.db 时全部回退下方默认值，旧部署行为完全不变。
+require_once __DIR__ . '/core/config_db.php';
+
+// 全站时区：config.db（初始化向导设置）优先；缺省/非法回退 Asia/Shanghai
+// （统一时区，避免 PHP 默认 UTC 导致时间相差 8 小时）
+date_default_timezone_set(ConfigDB::timezone('Asia/Shanghai'));
+
+define('APP_VERSION', '0.23.0');
 define('ICD_DB_PATH', DATA_DIR . '/icd10.sqlite');
 
-// 数据库驱动配置
-define('DB_TYPE', 'sqlite');
+// ---------- 数据库驱动配置（config.db 优先，否则常量默认） ----------
+$__dbType = strtolower(trim((string)ConfigDB::get('db.type', 'sqlite')));
+if (!in_array($__dbType, array('sqlite', 'mysql', 'postgresql'), true)) $__dbType = 'sqlite';
+$__dbPath = trim((string)ConfigDB::get('db.path', ''));
+if ($__dbPath === '') $__dbPath = DATA_DIR . '/hospital.sqlite';
+if (strpos($__dbPath, '/') !== 0) $__dbPath = DATA_DIR . '/' . $__dbPath;   // 相对路径按 data/ 展开
+define('DB_PATH', $__dbPath);
+define('DB_TYPE', $__dbType);
 define('DB_DSN', 'sqlite:' . DB_PATH);
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'his');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', (string)ConfigDB::get('db.host', '127.0.0.1'));
+define('DB_NAME', (string)ConfigDB::get('db.name', 'his'));
+define('DB_USER', (string)ConfigDB::get('db.user', 'root'));
+define('DB_PASS', (string)ConfigDB::get('db.pass', ''));
 
 // 会话 Cookie 策略
 function isSecureRequest() {

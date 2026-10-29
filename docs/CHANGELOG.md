@@ -4,6 +4,21 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.23.0] - 2026-10-29
+
+### 新增
+- **基础设施配置库 `data/config.db`（参考门诊一体化系统）**：数据库连接（sqlite/
+  mysql/postgresql 驱动与参数）、全站时区等「最底层」配置独立于业务库存放；
+  `api/config.php` 引导时优先读取——未生成 config.db 时回退原常量默认值，旧部署
+  行为完全不变；SQLite Magic Header 严格校验，损坏文件自动备份
+  `.corrupt.[时间戳]` 并优雅降级为默认配置（严禁 500）；全站时区由 config.db
+  统一驱动（`date_default_timezone_set`，缺省/非法回退 Asia/Shanghai）——
+  为后续「初始化向导设置时区 + UTC 存储」奠定基础设施
+
+### 变更
+- 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /
+  `package.json` 三处同步）
+
 ## [0.22.3] - 2026-10-17
 
 ### 修复
