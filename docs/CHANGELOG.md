@@ -55,6 +55,11 @@
   阶段断点续填（刷新后自动回到未完成步骤）、完成后自动登录进入系统；
   旧单步表单移除（`auth/setup` 端点保留兼容）；新增
   `public/js/login/setup_wizard.js`（Assets.php 登记）与向导样式
+- **外部接口 UTC 契约（推送载荷）**：门诊开单推送 `order.created_at` 改为
+  `TimeHelper::isoUtc()` 输出标准 UTC（ISO 8601 带 Z），入队即冻结；发送前
+  兼容升级前旧载荷（纯墙钟串自动按本地墙钟归一为 UTC ISO）——对外接口不再
+  受本系统时区设置影响；对方（门诊）时间消费注释同步契约（strtotime 精确解析
+  后按本系统站点时区显示）
 
 ### 变更
 - 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /

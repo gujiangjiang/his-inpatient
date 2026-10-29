@@ -77,7 +77,7 @@ function opd_order_push_payload($bizType, array $report) {
             'item_name' => (string)$report['exam_type'],
             'category' => $category,
             'price' => $cat ? (float)$cat['price'] : 0,
-            'created_at' => (string)$report['created_at'],
+            'created_at' => TimeHelper::isoUtc($report['created_at']),   // 对外接口契约：标准 UTC（ISO 8601 带 Z）
         ];
     } else {
         $cat = DB::selectOne("SELECT price, category FROM lab_catalog WHERE name = ? LIMIT 1", [(string)$report['exam_name']]);
@@ -87,7 +87,7 @@ function opd_order_push_payload($bizType, array $report) {
             'item_name' => (string)$report['exam_name'],
             'category' => $cat ? (string)$cat['category'] : '',
             'price' => $cat ? (float)$cat['price'] : 0,
-            'created_at' => (string)$report['created_at'],
+            'created_at' => TimeHelper::isoUtc($report['created_at']),   // 对外接口契约：标准 UTC（ISO 8601 带 Z）
         ];
     }
 
@@ -128,6 +128,11 @@ function opd_order_push_process($limit = 20, $force = false) {
     foreach ($rows as $row) {
         $res['processed']++;
         $payload = json_decode((string)$row['payload'], true);
+        // 兼容升级前入队的旧载荷：时间若为「纯墙钟串」（无 T/Z/偏移）→ 按本地墙钟换算为 UTC ISO
+        if (is_array($payload) && isset($payload['order']['created_at'])
+            && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', (string)$payload['order']['created_at'])) {
+            $payload['order']['created_at'] = TimeHelper::isoUtc(TimeHelper::fromLocal($payload['order']['created_at']));
+        }
         if (!is_array($payload)) {
             DB::update('integration_order_pushes', [
                 'status' => 'failed',

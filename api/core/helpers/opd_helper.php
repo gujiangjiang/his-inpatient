@@ -187,7 +187,9 @@ function opd_his_push_orders($payload) {
     return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => $json['msg'] ?? ('HTTP ' . $code)];
 }
 
-/** ISO 时间 → Y-m-d H:i */
+/** 对方系统（门诊）时间 → 本系统站点时区显示（Y-m-d H:i）。
+ *  三系统契约：外部接口时间一律标准 UTC（ISO 8601 带 Z/偏移）；
+ *  strtotime 精确解析时间点后按本系统站点时区渲染展示。 */
 function opd_fmt_datetime($iso) {
     if (!$iso) return '';
     $ts = strtotime((string)$iso);
