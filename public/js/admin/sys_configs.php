@@ -6,9 +6,23 @@
 
 <div id="syscfg-groups"></div>
 
+<div class="card">
+    <div class="card-header">时间与时区</div>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">全站时区（显示口径）</label>
+            <select class="form-control" id="syscfg-tz"></select>
+            <div class="hint">存储与对外接口均为标准 UTC；此处仅决定全站显示时间</div>
+        </div>
+    </div>
+    <button class="btn btn-primary" onclick="admin_sys_configs_saveTz()">保存</button>
+</div>
+
 <script>
 var _syscfgList = [];
 var _SYS_GROUP_LABELS = { system: '系统信息', interface: '接口参数', clinic: '临床参数' };
+var _SYS_TZ_COMMON = ['Asia/Shanghai', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Taipei',
+    'Asia/Tokyo', 'Asia/Singapore', 'America/New_York', 'Europe/London', 'UTC'];
 
 async function admin_sys_configs_init() {
     document.getElementById('main-app').style.display = 'flex';
@@ -16,6 +30,23 @@ async function admin_sys_configs_init() {
     const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     loadConfigs();
+    loadTimezone();
+}
+
+async function loadTimezone() {
+    const r = await AjaxLoader.api('admin/timezone-get', { silent: true });
+    const sel = document.getElementById('syscfg-tz');
+    if (!sel || !r.data) return;
+    let html = '<optgroup label="常用">' + _SYS_TZ_COMMON.map(t => `<option value="${t}">${t}</option>`).join('') + '</optgroup>';
+    html += '<optgroup label="全部时区">' + (r.data.timezones || []).map(t => `<option value="${t}">${t}</option>`).join('') + '</optgroup>';
+    sel.innerHTML = html;
+    sel.value = r.data.timezone || 'Asia/Shanghai';
+}
+
+async function admin_sys_configs_saveTz() {
+    const tz = document.getElementById('syscfg-tz').value;
+    await AjaxLoader.api('admin/timezone-save', { method: 'POST', data: { timezone: tz } });
+    Dom.toast('时区已保存，全站显示已按新时区换算', 'success');
 }
 
 async function loadConfigs() {
