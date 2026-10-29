@@ -19,8 +19,8 @@ if ($id) {
     if (!in_array($order['status'], $stoppable)) Response::error('当前状态不可停止');
     // 仅长期医嘱可停止
     if ($order['order_period'] !== 'long') Response::error('仅长期医嘱可停止, 临时医嘱可作废或删除');
-    // 停止时间不能早于开具时间
-    if (!empty($order['start_date']) && strtotime($now) < strtotime($order['start_date'])) {
+    // 停止时间不能早于开具时间（start_date 为本地墙钟业务时间，两模式一致比较）
+    if (!empty($order['start_date']) && strtotime(TimeHelper::nowLocal()) < strtotime($order['start_date'])) {
         Response::error('停止时间不能早于开具时间');
     }
 } else {

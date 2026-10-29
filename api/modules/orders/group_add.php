@@ -38,6 +38,7 @@ foreach ($members as $m) {
 }
 $userId = Auth::user()['id'];
 $now = DateHelper::now();
+$nowLocal = TimeHelper::nowLocal();   // 业务日期时间字段（start_date 等）按本地墙钟
 $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
 
 DB::execute("UPDATE orders SET is_group_main = 1, updated_at = ? WHERE id = ?", [$now, $root['id']]);
@@ -53,7 +54,7 @@ DB::execute(
         $item['drug_id'] ?? null, $item['dosage'] ?? '', $item['dosage_unit'] ?? '', $item['base_dosage'] ?? '',
         $root['usage_name'] ?? '', $root['usage_rate'] ?? '',
         '', '', $item['billing_flags'] ?? '',
-        $seq, 0, $root['start_date'] ?: $now, $userId, $now, $now
+        $seq, 0, $root['start_date'] ?: $nowLocal, $userId, $now, $now
     ]
 );
 Response::success(['id' => DB::getPDO()->lastInsertId(), 'root_id' => $root['id']]);

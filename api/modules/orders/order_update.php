@@ -31,8 +31,10 @@ foreach ($fields as $f) {
         if ($f === 'order_period' && !in_array($v, ['long', 'temp'])) continue;
         // 开嘱时间不能早于患者入科时间
         if ($f === 'start_date' && trim((string)$v) !== '') {
+            // 入科时间为存储时间列，模式感知换算后与本地墙钟开嘱时间比较
             $admittedAt = patient_admitted_at($order['patient_id']);
-            if ($admittedAt && strtotime($v) < strtotime($admittedAt)) {
+            $admittedTs = TimeHelper::ts($admittedAt);
+            if ($admittedTs !== null && strtotime($v) < $admittedTs) {
                 Response::error('开嘱时间不能早于患者入科时间');
             }
         }

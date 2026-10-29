@@ -26,6 +26,14 @@
   「接入的 API 自动时区转换后给前端显示」单点落地；case_front_page 自动填充
   的 `diagnose_date` 由 substr 截取改为 `TimeHelper::localDate()`（UTC 存储下
   业务日按站点时区归属）
+- **业务日期时间与存储时间列的边界统一（防 UTC 换算错位）**：新增
+  `TimeHelper::nowLocal()`——长期医嘱起止 `start_date`、会诊开始等业务时间字段
+  一律按「本地墙钟」存取（不随存储模式换算，展示原样、无需转换）；相应写入点
+  （order_save 默认值、lab_apply/exam_apply/consult_save/group_add 自动开单）
+  与停止校验（order_stop/order_status）全部改用本地墙钟口径；与存储列
+  （`patient_admissions.created_at` 收治时间、`discharged_at` 出院时间）比较处
+  统一经 `TimeHelper::ts()` 模式感知换算（order_save/order_update 开嘱校验、
+  首页住院天数计算）——utc 模式下不再出现 8 小时边界错位
 
 ### 变更
 - 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /

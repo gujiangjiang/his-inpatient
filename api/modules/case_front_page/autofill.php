@@ -49,8 +49,8 @@ $dischargeTime = $discharge ? (string)($discharge['discharged_at'] ?? '') : '';
 // 住院天数 (入院 → 出院/当前)
 $stayDays = 1;
 if (!empty($patient['admission_date'])) {
-    $st = strtotime((string)$patient['admission_date']);
-    $en = $dischargeTime ? strtotime($dischargeTime) : time();
+    $st = strtotime((string)$patient['admission_date']);          // 入院日期：业务日（本地）
+    $en = $dischargeTime ? TimeHelper::ts($dischargeTime) : time();  // 出院时间：存储时间列（模式感知）
     if ($st && $en) $stayDays = max(1, (int)ceil(($en - $st) / 86400));
 }
 

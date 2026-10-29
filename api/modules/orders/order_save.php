@@ -45,7 +45,7 @@ if (!$admittedAt) Response::error('患者尚未入科（未指派主管医师）
 $groupId = Validator::get('group_id');   // 组级用法 (前端组容器)
 $groupUsage = Validator::get('usage_name', '');
 $groupRate = Validator::get('usage_rate', '');
-$startDate = Validator::get('start_date', DateHelper::now());
+$startDate = Validator::get('start_date', TimeHelper::nowLocal());   // 业务日期时间：本地墙钟
 $endDate = Validator::get('end_date', '');
 $notes = Validator::get('notes', '');
 // 处方号: 同一次开方归入同一处方 (毁方/列表按方归集), 前端可传, 缺省自动生成
@@ -73,9 +73,10 @@ try {
     $mainId = null;
     $ids = [];
     foreach ($items as $i => $item) {
-        // 开嘱时间不能早于患者入科时间
+        // 开嘱时间不能早于患者入科时间（入科时间为存储时间列，模式感知换算后比较）
         $itemStart = $item['start_date'] ?? $startDate;
-        if ($itemStart && strtotime($itemStart) < strtotime($admittedAt)) {
+        $admittedTs = TimeHelper::ts($admittedAt);
+        if ($itemStart && $admittedTs !== null && strtotime($itemStart) < $admittedTs) {
             $pdo->rollback();
             Response::error('开嘱时间不能早于患者入科时间');
         }

@@ -20,6 +20,7 @@ if (!$items) Response::error('未找到可用的检查项目');
 // 申请类医嘱默认直接提交, 待护士核对 (无草稿)
 $status = 'pending';
 $now = DateHelper::now();
+$nowLocal = TimeHelper::nowLocal();   // 业务日期时间字段（start_date 等）按本地墙钟
 $base = (int)DB::selectOne("SELECT COUNT(*) as c FROM exam_reports")['c'];
 $pdo = DB::getPDO();
 $opdPush = ['processed' => 0, 'success' => 0, 'failed' => 0];
@@ -53,7 +54,7 @@ try {
             'status' => $status,
             'is_auto_generated' => 1,
             'notes' => $it['dept'] ?? '',
-            'start_date' => $now,
+            'start_date' => $nowLocal,
             'created_by' => $user['id'],
             'created_at' => $now,
             'updated_at' => $now,

@@ -32,6 +32,7 @@ $fromDeptName = $fromDeptId
     ? (string)(DB::selectOne("SELECT name FROM departments WHERE id = ?", [$fromDeptId])['name'] ?? '')
     : '';
 $now = DateHelper::now();
+$nowLocal = TimeHelper::nowLocal();   // 业务日期时间字段（start_date 等）按本地墙钟
 $content = '请' . $toDept['name'] . '会诊';
 
 $pdo = DB::getPDO();
@@ -49,7 +50,7 @@ try {
         'status' => 'pending',
         'is_auto_generated' => 1,
         'notes' => $purpose,
-        'start_date' => $now,
+        'start_date' => $nowLocal,
         'created_by' => $user['id'],
         'created_at' => $now,
         'updated_at' => $now,
