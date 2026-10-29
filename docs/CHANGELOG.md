@@ -49,6 +49,12 @@
   timezone）、`setup/admin`（管理员创建，已有管理员拒绝重建）、`setup/finish`
   （置 setup_completed）；阶段守卫防跳步、完成后全向导关闭防重放；SetupGuard
   白名单与路由登记；`Migration::runAll()` 抽取（setup/migrate 脚本与向导共用单一实现）
+- **多步初始化向导（前端）**：登录页内嵌六步向导（环境/数据库/初始化/站点/
+  管理员/完成），步骤条 + 面板切换、环境检测状态点列表（不通过禁用下一步）、
+  数据库类型切换（SQLite 路径 / MySQL/PG 连接参数）、时区下拉（常用置顶 + 全量）、
+  阶段断点续填（刷新后自动回到未完成步骤）、完成后自动登录进入系统；
+  旧单步表单移除（`auth/setup` 端点保留兼容）；新增
+  `public/js/login/setup_wizard.js`（Assets.php 登记）与向导样式
 
 ### 变更
 - 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /

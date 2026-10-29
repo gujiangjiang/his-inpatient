@@ -118,11 +118,12 @@ Auth.check({ silent: true }).then(loggedIn => {
             handleHashChange();
         }
     } else {
-        // 检查是否已初始化
+        // 检查是否已初始化（未初始化 → 多步初始化向导）
         AjaxLoader.api('auth/setup-status', { silent: true }).then(result => {
             if (result.status === 'success' && !result.data.setup_completed) {
                 document.getElementById('login-box').style.display = 'none';
                 document.getElementById('setup-wizard').style.display = 'block';
+                SetupWizard.init();
             } else {
                 showLogin();
             }
@@ -153,34 +154,4 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     });
 });
 
-// 初始化向导
-document.getElementById('setup-btn').addEventListener('click', function() {
-    const hospitalName = document.querySelector('[name="hospital_name"]').value;
-    const hospitalCode = document.querySelector('[name="hospital_code"]').value;
-    const username = document.querySelector('[name="username"]').value;
-    const password = document.querySelector('[name="password"]').value;
-    const password2 = document.querySelector('[name="password2"]').value;
-
-    if (!hospitalName || !hospitalCode || !username || !password || !password2) {
-        Dom.toast('请填写完整信息', 'error');
-        return;
-    }
-    if (password !== password2) {
-        Dom.toast('两次密码不一致', 'error');
-        return;
-    }
-
-    AjaxLoader.api('auth/setup', {
-        method: 'POST',
-        data: { hospital_name: hospitalName, hospital_code: hospitalCode, username, password, password2 }
-    }).then(result => {
-        if (result.status === 'success') {
-            Dom.toast('初始化完成', 'success');
-            setTimeout(() => {
-                Auth.login(username, password).then(() => {
-                    window.location.hash = 'admin/departments';
-                });
-            }, 1000);
-        }
-    });
-});
+// 初始化向导逻辑见 setup_wizard.js（多步：环境→数据库→初始化→站点→管理员→完成）

@@ -56,23 +56,70 @@ require_once __DIR__ . '/assets.php';
             </div>
             <div id="setup-wizard" style="display:none">
                 <h2 class="login-setup-title">系统初始化</h2>
-                <div class="setup-form">
-                    <div class="form-group">
-                        <input type="text" name="hospital_name" placeholder="医院名称" required>
+                <div class="wizard-steps" id="wizard-steps">
+                    <span class="wizard-step" data-step="env">环境</span>
+                    <span class="wizard-step" data-step="database">数据库</span>
+                    <span class="wizard-step" data-step="migrate">初始化</span>
+                    <span class="wizard-step" data-step="site">站点</span>
+                    <span class="wizard-step" data-step="admin">管理员</span>
+                    <span class="wizard-step" data-step="finish">完成</span>
+                </div>
+                <div class="wizard-body">
+                    <!-- ① 环境检测 -->
+                    <div class="wizard-pane" data-pane="env" style="display:none">
+                        <ul class="wizard-check" id="wz-env"></ul>
+                        <button type="button" class="login-btn" id="wz-env-next">下一步</button>
                     </div>
-                    <div class="form-group">
-                        <input type="text" name="hospital_code" placeholder="组织机构代码" required>
+                    <!-- ② 数据库配置 -->
+                    <div class="wizard-pane" data-pane="database" style="display:none">
+                        <div class="form-group">
+                            <label class="login-label">数据库类型</label>
+                            <select id="wz-db-type" class="wizard-input">
+                                <option value="sqlite">SQLite（内置文件，推荐）</option>
+                                <option value="mysql">MySQL / MariaDB</option>
+                                <option value="postgresql">PostgreSQL</option>
+                            </select>
+                        </div>
+                        <div class="form-group wz-db-sqlite">
+                            <input type="text" id="wz-db-path" placeholder="数据文件路径">
+                        </div>
+                        <div class="wz-db-sql" style="display:none">
+                            <div class="form-group"><input type="text" id="wz-db-host" placeholder="主机（如 127.0.0.1）"></div>
+                            <div class="form-group"><input type="text" id="wz-db-name" placeholder="数据库名"></div>
+                            <div class="form-group"><input type="text" id="wz-db-user" placeholder="用户名"></div>
+                            <div class="form-group"><input type="password" id="wz-db-pass" placeholder="密码"></div>
+                        </div>
+                        <button type="button" class="login-btn" id="wz-db-submit">保存并测试连接</button>
                     </div>
-                    <div class="form-group">
-                        <input type="text" name="username" placeholder="管理员用户名" required>
+                    <!-- ③ 数据库初始化 -->
+                    <div class="wizard-pane" data-pane="migrate" style="display:none">
+                        <p class="wizard-hint" id="wz-migrate-hint">将创建全部业务数据表（幂等，可重复执行）。</p>
+                        <button type="button" class="login-btn" id="wz-migrate-submit">开始初始化</button>
+                        <button type="button" class="wizard-sub-link" id="wz-migrate-next" style="display:none">下一步</button>
                     </div>
-                    <div class="form-group">
-                        <input type="password" name="password" placeholder="管理员密码" required>
+                    <!-- ④ 站点信息 -->
+                    <div class="wizard-pane" data-pane="site" style="display:none">
+                        <div class="form-group"><input type="text" id="wz-site-name" placeholder="医院名称"></div>
+                        <div class="form-group"><input type="text" id="wz-site-code" placeholder="组织机构代码"></div>
+                        <div class="form-group">
+                            <label class="login-label">全站时区</label>
+                            <select id="wz-site-tz" class="wizard-input"></select>
+                        </div>
+                        <p class="wizard-hint">存储与对外接口均为标准 UTC；此处仅决定全站显示时区。</p>
+                        <button type="button" class="login-btn" id="wz-site-submit">保存</button>
                     </div>
-                    <div class="form-group">
-                        <input type="password" name="password2" placeholder="重复密码" required>
+                    <!-- ⑤ 管理员账号 -->
+                    <div class="wizard-pane" data-pane="admin" style="display:none">
+                        <div class="form-group"><input type="text" id="wz-admin-user" placeholder="管理员用户名（3-32 位字母/数字/下划线）"></div>
+                        <div class="form-group"><input type="password" id="wz-admin-pass" placeholder="密码（至少 6 位）"></div>
+                        <div class="form-group"><input type="password" id="wz-admin-pass2" placeholder="重复密码"></div>
+                        <button type="button" class="login-btn" id="wz-admin-submit">创建管理员</button>
                     </div>
-                    <button type="button" id="setup-btn" class="login-btn">完成初始化</button>
+                    <!-- ⑥ 完成 -->
+                    <div class="wizard-pane" data-pane="finish" style="display:none">
+                        <p class="wizard-hint" id="wz-finish-hint">全部配置已完成，点击进入系统。</p>
+                        <button type="button" class="login-btn" id="wz-finish-submit">完成初始化并进入系统</button>
+                    </div>
                 </div>
             </div>
             <div class="login-foot">仅限授权医疗机构内部使用</div>
