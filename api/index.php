@@ -6,6 +6,7 @@ require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/response.php';
 require_once __DIR__ . '/core/validator.php';
 require_once __DIR__ . '/core/setup_guard.php';
+require_once __DIR__ . '/core/helpers/time_helper.php';
 require_once __DIR__ . '/core/helpers/date_helper.php';
 require_once __DIR__ . '/core/helpers/array_helper.php';
 require_once __DIR__ . '/core/helpers/string_helper.php';

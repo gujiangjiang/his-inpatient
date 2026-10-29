@@ -14,6 +14,13 @@
   `.corrupt.[时间戳]` 并优雅降级为默认配置（严禁 500）；全站时区由 config.db
   统一驱动（`date_default_timezone_set`，缺省/非法回退 Asia/Shanghai）——
   为后续「初始化向导设置时区 + UTC 存储」奠定基础设施
+- **时间与时区统一助手 `TimeHelper`（UTC 存储 / 站点时区显示 / 对外 UTC 契约）**：
+  三系统统一口径——存储一律 UTC（`now()` 模式感知唯一写入来源）、全站显示经
+  `local()/localize()` 按站点时区换算、对外接口 `isoUtc()` 输出 ISO 8601 带 Z
+  （不受站点时区影响）、入站 `fromUtc()` 按 UTC 解析落库；业务日 `today()/
+  localDate()/dayRange()` 均按站点时区；双模式过渡（config.db `time.storage`，
+  local 模式全部行为与旧版逐字节一致）；`DateHelper` 全量委托 TimeHelper
+  （now/today/format），全部入口（api/public/scripts）接线
 
 ### 变更
 - 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /

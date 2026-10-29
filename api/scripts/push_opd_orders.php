@@ -6,6 +6,7 @@
 // （npm run migrate）创建队列表。
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/db.php';
+require_once __DIR__ . '/../core/helpers/time_helper.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 require_once __DIR__ . '/../core/helpers/opd_helper.php';
 require_once __DIR__ . '/../core/helpers/opd_order_push.php';

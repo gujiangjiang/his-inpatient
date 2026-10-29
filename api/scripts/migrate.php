@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/../core/migration.php';
+require_once __DIR__ . '/../core/helpers/time_helper.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 
 $pdo = DB::getPDO();

@@ -2,6 +2,7 @@
 // api/scripts/seed_demo_orders.php - 医嘱工作站演示数据 (幂等, 无医嘱时导入)
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/db.php';
+require_once __DIR__ . '/../core/helpers/time_helper.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 
 $pdo = DB::getPDO();

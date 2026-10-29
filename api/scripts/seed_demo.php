@@ -2,6 +2,7 @@
 // api/scripts/seed_demo.php - 演示数据（幂等）
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/db.php';
+require_once __DIR__ . '/../core/helpers/time_helper.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 
 $pdo = DB::getPDO();
