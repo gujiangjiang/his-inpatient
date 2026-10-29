@@ -48,6 +48,26 @@
   `php tools/lint/php-lint.php`；否则 `~/.local/bin/frankenphp php-cli tools/lint/php-lint.php`
   （即 `npm run lint`）
 
+## 时间与时区铁律（三系统统一契约：HIS / 门诊一体化 / PACS）
+
+- **存储一律标准 UTC**：写入唯一来源 `TimeHelper::now()` / `DateHelper::now()`
+  （模式感知；`config.db` `time.storage`，local 仅存量兼容过渡）；全套助手在
+  `api/core/helpers/time_helper.php`。
+- **显示按站点时区**：内部 API 响应经 `Response` 输出漏斗
+  `TimeHelper::localize()` 自动换算 `*_at/_time` 键（业务日期 `*_date` 不转换；
+  `planned_at` 等业务本地时间豁免）；前端零改动。
+- **对外接口时间为标准 UTC**（`TimeHelper::isoUtc()`，ISO 8601 带 Z），不受本
+  系统时区设置影响；入站外部时间经 `fromUtc()` 按 UTC 解析落库。
+- **业务日期时间字段**（长期医嘱 `start_date`、会诊 `planned_at` 等）按「本地
+  墙钟」存取、展示原样，不随存储模式换算；分日归属统一
+  `TimeHelper::today()/localDate()/dayRange()`。
+- **时区设置**：初始化向导（新装）或 系统设置 → 时间与时区（现有部署），
+  存 `config.db`（独立于业务库）；业务日期列与快照类单据不受影响。
+- **禁止**：`NOW()`/`CURRENT_TIMESTAMP`/`date()` 直写存储时间列；新增表时间列
+  不设数据库默认时间（插入显式传 `DateHelper::now()`）。
+- **存量库 UTC 化**：`php api/scripts/tz_migrate.php plan|convert|rollback`
+  （整库自动备份 + JSON 清单 + `--db=` 副本演练）；升级后自检对照见 CHANGELOG。
+
 ## 数据库迁移规范
 - 使用 `api/migrations/php/` 中的 PHP 迁移文件 (001_core.php, 002_department.php, ...)
 - 每个迁移文件返回数组: `version`, `description`, `up` (回调函数)
