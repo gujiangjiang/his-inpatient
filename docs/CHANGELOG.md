@@ -34,6 +34,14 @@
   （`patient_admissions.created_at` 收治时间、`discharged_at` 出院时间）比较处
   统一经 `TimeHelper::ts()` 模式感知换算（order_save/order_update 开嘱校验、
   首页住院天数计算）——utc 模式下不再出现 8 小时边界错位
+- **存量库 UTC 迁移工具 `api/scripts/tz_migrate.php`**：`plan`（只读预演：逐列
+  行数与抽样对照）/ `convert`（整库自动备份 → 逐列转换 → JSON 清单 →
+  `time.storage` 置 utc）/ `rollback`（按清单精确还原 + 回切 local）；
+  转换列以实库 PRAGMA 扫描（`_at/_time` 结尾）；排除业务语义列
+  （`lab_catalog.report_time` 文本标签、`consultations.planned_at` 用户选择的
+  本地墙钟）；值格式校验防误伤；`--db=` 副本演练模式不改动实际存储模式；
+  迁移 022 目录种子时间改经 `DateHelper::now()`（新装 UTC 口径正确）
+- 内部 API 输出漏斗豁免键：`planned_at`（会诊计划时间为业务本地时间，展示原样）
 
 ### 变更
 - 版本号 0.22.3 → 0.23.0（README 徽章 / `api/config.php` APP_VERSION /

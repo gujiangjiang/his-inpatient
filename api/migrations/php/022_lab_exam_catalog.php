@@ -48,7 +48,7 @@ return [
             foreach ($rows as $r) {
                 $m->execute(
                     "INSERT INTO lab_catalog (name, specimen, dept, price, report_time, note, category, is_active, sort_no, created_at) VALUES (?,?,?,?,?,?,?,1,?,?)",
-                    [$r[0], $r[1], $r[2], $r[3], $r[4], $r[5], $r[6], $i++, date('Y-m-d H:i:s')]
+                    [$r[0], $r[1], $r[2], $r[3], $r[4], $r[5], $r[6], $i++, DateHelper::now()]
                 );
             }
         }
@@ -95,7 +95,7 @@ return [
             foreach ($rows as $r) {
                 $m->execute(
                     "INSERT INTO exam_catalog (name, category, sub_category, dept, price, is_active, sort_no, created_at) VALUES (?,?,?,?,?,1,?,?)",
-                    [$r[0], $r[1], $r[2], $r[3], $r[4], $i++, date('Y-m-d H:i:s')]
+                    [$r[0], $r[1], $r[2], $r[3], $r[4], $i++, DateHelper::now()]
                 );
             }
         }

@@ -121,10 +121,15 @@ class TimeHelper {
 
     /* ==================== 内部 API 输出漏斗 ==================== */
 
+    /** 漏斗豁免键：用户选择的业务本地时间字段（按本地墙钟存取，不做存储 UTC 换算、展示原样） */
+    private static $localBizKeys = array(
+        'planned_at' => true,   // 会诊计划时间（datetime-local 用户输入）
+    );
+
     /**
      * 递归本地化：数组中所有 *_at / *_time 键值经 local() 换算为站点时区显示串。
      * 供 Response 统一调用——「接入的 API 自动时区转换后给前端显示」。
-     * 非时间键、空值、不可解析值一律原样保留。
+     * 豁免键（$localBizKeys 业务本地时间）、非时间键、空值、不可解析值一律原样保留。
      */
     public static function localize($data) {
         if (!is_array($data)) return $data;
@@ -132,7 +137,7 @@ class TimeHelper {
         foreach ($data as $k => $v) {
             if (is_array($v)) {
                 $out[$k] = self::localize($v);
-            } elseif (is_string($k) && preg_match('/_at$|_time$/', $k)) {
+            } elseif (is_string($k) && !isset(self::$localBizKeys[$k]) && preg_match('/_at$|_time$/', $k)) {
                 $out[$k] = self::local($v);
             } else {
                 $out[$k] = $v;
