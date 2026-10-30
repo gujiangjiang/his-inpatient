@@ -14,7 +14,7 @@ require_once __DIR__ . '/core/config_db.php';
 // （统一时区，避免 PHP 默认 UTC 导致时间相差 8 小时）
 date_default_timezone_set(ConfigDB::timezone('Asia/Shanghai'));
 
-define('APP_VERSION', '0.23.0');
+define('APP_VERSION', '0.23.1');
 define('ICD_DB_PATH', DATA_DIR . '/icd10.sqlite');
 
 // ---------- 数据库驱动配置（config.db 优先，否则常量默认） ----------
