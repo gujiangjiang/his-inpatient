@@ -229,29 +229,45 @@ var OrderStation = {
         if (!this.patientId) return;
         const keepPages = Math.max(1, this.pageCount || 1);
         try {
-            const r = await this.fetchGroupsPage(1);
-            if (!r) return;
-            this.groups = r.data || [];
-            this.pageCount = 1;
-            this.total = r.pagination ? Number(r.pagination.total) : this.groups.length;
+            // 并行重取已加载页（此前逐页串行 await + 每页整表重渲染：开一条医嘱要等 N 个来回）
+            const results = await Promise.all(
+                Array.from({ length: keepPages }, (_, i) => this.fetchGroupsPage(i + 1))
+            );
+            const first = results[0];
+            if (!first) return;
+            let groups = first.data || [];
+            let pageCount = 1;
+            let total = first.pagination ? Number(first.pagination.total) : groups.length;
+            for (let p = 2; p <= keepPages; p++) {
+                const rp = results[p - 1];
+                if (!rp || !rp.data || !rp.data.length) break;
+                groups = groups.concat(rp.data);
+                pageCount = p;
+                if (rp.pagination) total = Number(rp.pagination.total);
+            }
+            // 新开医嘱定位：列表按 id 升序、新医嘱在末尾，可能落在已加载页之外；
+            // 继续顺序补齐后续页直到命中或触底（通常最多再补 1 页）
+            if (focusId && !groups.some(g => Number(g.id) === Number(focusId)) && groups.length < total) {
+                for (let p = pageCount + 1; groups.length < total; p++) {
+                    const rp = await this.fetchGroupsPage(p);
+                    if (!rp || !rp.data || !rp.data.length) break;
+                    groups = groups.concat(rp.data);
+                    pageCount = p;
+                    if (rp.pagination) total = Number(rp.pagination.total);
+                    if (groups.some(g => Number(g.id) === Number(focusId))) break;
+                }
+            }
+            this.groups = groups;
+            this.pageCount = pageCount;
+            this.total = total;
             this.selected.clear();
             this._hoverRoot = null; // 重渲染后重置悬停组标记
             // 保留当前滚动位置 (仅新开医嘱才定位滚动, 其余操作不跳动)
             const wrap = document.querySelector('.os-table-wrap');
             const scrollTop = wrap ? wrap.scrollTop : 0;
-            this.render();
+            this.render();          // 全部页合并后一次渲染（原先每补一页渲染一次）
             if (wrap) wrap.scrollTop = scrollTop;
             if (focusId) this.focusOrder(focusId);
-            // 后台补齐此前已加载的页数 (刷新后保持浏览数据量与滚动位置)
-            for (let p = 2; p <= keepPages; p++) {
-                const rp = await this.fetchGroupsPage(p);
-                if (!rp || !rp.data || !rp.data.length) break;
-                this.groups = this.groups.concat(rp.data);
-                this.pageCount = p;
-                if (rp.pagination) this.total = Number(rp.pagination.total);
-                this.render();
-                if (wrap) wrap.scrollTop = scrollTop;
-            }
             if (this._scroll) ScrollLoad.check(this._scroll);
             if (feedback) Dom.toast('已刷新 ' + Format.shortTime(new Date()) + ' · 共 ' + this.groups.length + ' 组医嘱', 'success');
         } catch (e) { /* 已提示 */ }
