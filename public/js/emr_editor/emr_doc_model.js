@@ -126,10 +126,11 @@
   });
 
   /* ---------- 遍历 ---------- */
-  /** 深度遍历正文块: fn(block) 返回 false 可中断 */
+  /** 深度遍历正文块: fn(block, container, index) 返回 false 可中断 */
   M.walk = (blocks, fn) => {
-    for (const b of blocks) {
-      if (fn(b) === false) return false;
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (fn(b, blocks, i) === false) return false;
       if (b.t === 'tbl') {
         for (const r of b.rows) for (const c of r.cells) {
           if (M.walk(c.blocks, fn) === false) return false;
