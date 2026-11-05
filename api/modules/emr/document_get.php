@@ -18,5 +18,6 @@ if (!$doc) Response::error('文书不存在', 404);
 // 解析 JSON 字段
 $doc['doc_meta'] = json_decode($doc['doc_meta'] ?? '{}', true) ?: [];
 $doc['sections'] = json_decode($doc['sections'] ?? '[]', true) ?: [];
+$doc['doc_json'] = $doc['doc_json'] ? (json_decode($doc['doc_json'], true) ?: null) : null;
 
 Response::success($doc);

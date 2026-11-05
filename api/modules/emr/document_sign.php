@@ -36,6 +36,12 @@ try {
     $pdo->prepare("UPDATE emr_documents SET doc_meta = ? WHERE id = ?")
         ->execute([json_encode($meta, JSON_UNESCAPED_UNICODE), $id]);
 
+    // 签名固化为不可变版本 (字处理编辑器文档)
+    if (!empty($doc['doc_json'])) {
+        $pdo->prepare("INSERT INTO emr_document_versions (doc_id, doc_json, content_html, action, created_by, created_at) VALUES (?,?,?, 'sign', ?, ?)")
+            ->execute([$id, $doc['doc_json'], $doc['content_html'] ?? '', $userId, $now]);
+    }
+
     $pdo->commit();
     Response::success([
         'id' => $id,
