@@ -199,14 +199,14 @@ async function emr_openDocument(docId) {
 }
 
 async function openWordDoc(doc, signed) {
-    const schema = await loadSchema(doc.template_id);
-    const guard = schema ? EmrDoc.collectGuard(schema.body || []) : null;
     applyPageCss(doc.doc_json.page);
     _emrEditMode = !signed;
     _emrEditor = EmrEditor.create({
         container: document.getElementById('emr-editor-canvas'),
         doc: doc.doc_json,
-        guard: guard || EmrDoc.collectGuard(doc.doc_json.body || []),
+        /* 守卫取文书自身固定键: 模板可能在建文书后被改, 用文书自身键保证结构稳定;
+           服务端保存时仍按模板 schema 做最终一致性校验 */
+        guard: EmrDoc.collectGuard(doc.doc_json.body || []),
         patientInfo: buildPatientInfo(),
         readonly: signed,
         onChange: scheduleAutoSave,
@@ -215,12 +215,6 @@ async function openWordDoc(doc, signed) {
     syncToolbar(signed, true);
     document.getElementById('emr-doc-sections').style.display = 'none';
     document.getElementById('emr-editor-scroll').style.display = 'block';
-}
-
-async function loadSchema(templateId) {
-    if (!templateId) return null;
-    const r = await AjaxLoader.api('emr/template-get?id=' + templateId, { silent: true });
-    return parseSchema(r.data && r.data.schema_json);
 }
 
 function updateEditorStatus(chars, dirty) {
