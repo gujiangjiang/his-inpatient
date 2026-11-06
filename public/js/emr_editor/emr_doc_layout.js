@@ -135,8 +135,14 @@
         if (!rest.classList.contains('p') || rest.textContent.length <= 0) { break; }
         const off = findSplitOffset(rest, Math.max(24, remaining));
         const [pb, pa] = splitParaEl(rest, off);
-        if (pb.textContent.length) { cur.els.push(pb); cur.h += pb.offsetHeight; }
-        rest = pa.textContent.length ? pa : null;
+        if (pb.textContent.length) {
+          cur.els.push(pb); cur.h += pb.offsetHeight;
+          rest = pa.textContent.length ? pa : null;
+        } else {
+          /* 拆分未取得进展: 整段放入当前页, 交由 overflow:hidden 裁切, 防止死循环 */
+          cur.els.push(rest); cur.h += rh;
+          rest = null;
+        }
       }
       return;
     }

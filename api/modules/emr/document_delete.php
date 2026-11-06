@@ -11,5 +11,14 @@ if ($doc['status'] === 'signed') {
     Response::error('文书已签名锁定, 禁止删除', 403);
 }
 
-DB::delete('emr_documents', 'id = ?', [$id]);
-Response::success();
+$pdo = DB::getPDO();
+$pdo->beginTransaction();
+try {
+    $pdo->prepare("DELETE FROM emr_document_versions WHERE doc_id = ?")->execute([$id]);
+    DB::delete('emr_documents', 'id = ?', [$id]);
+    $pdo->commit();
+    Response::success();
+} catch (Exception $e) {
+    $pdo->rollback();
+    Response::error('删除失败: ' . $e->getMessage());
+}
