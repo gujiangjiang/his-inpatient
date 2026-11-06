@@ -5,7 +5,7 @@
         <div class="emr-tree-header">病历文书</div>
         <div id="emr-category-tree" class="emr-category-tree"></div>
     </div>
-    <!-- 二级主视图: 字处理病历编辑区 -->
+    <!-- 二级主视图: 字处理病历编辑区 (类 Word 整页画布) -->
     <div class="emr-editor-pane">
         <div id="emr-editor-empty" class="emr-editor-empty">
             <p>请从左侧选择病历文书，或点击分类后的 <b>＋</b> 从模板新建</p>
@@ -42,7 +42,6 @@
             </div>
             <div id="emr-editor-status" class="emr-statusbar"><span class="emr-sb-saved">已保存</span></div>
             <div id="emr-signature-footer" class="emr-signature-footer" style="display:none"></div>
-            <div id="emr-doc-sections" class="emr-doc-sections" style="display:none"></div>
         </div>
     </div>
 </div>
@@ -52,9 +51,7 @@ var _emrCategories = [];
 var _emrDocs = [];
 var _emrCurrentDoc = null;
 var _emrEditMode = true;
-var _emrEditor = null;       // EmrEditor 实例 (word 模式)
-var _emrSectionsHist = [];   // 旧结构化模式撤销栈
-var _emrSectionsHistIdx = -1;
+var _emrEditor = null;       // EmrEditor 实例
 var _emrAutoSaveTimer = null;
 var _emrPatient = null;
 
@@ -126,6 +123,12 @@ async function emr_openTemplatePicker(categoryId) {
     ]);
 }
 
+function parseSchema(json) {
+    if (!json) return null;
+    try { const o = JSON.parse(json); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
+}
+
+/** 始终以字处理 word 文档新建 (旧 sections 模板自动转换) */
 async function emr_createFromTemplate(templateId, categoryId) {
     const tr = await AjaxLoader.api('emr/template-get?id=' + templateId, { silent: true });
     const template = tr.data;
@@ -133,37 +136,34 @@ async function emr_createFromTemplate(templateId, categoryId) {
     const schema = parseSchema(template.schema_json);
     if (!schema) { Dom.toast('模板 schema 异常', 'error'); return; }
 
-    const data = { patient_id: _emrPatient.id, category_id: categoryId, template_id: templateId, title: template.name, doc_meta: {} };
-    if (schema.mode === 'word') {
-        const doc = EmrDoc.fromSchema(schema);
-        doc.title = template.name;
-        data.doc_json = JSON.stringify(doc);
-        data.content_html = EmrPrint.buildHTML(doc, buildPatientInfo());
-    } else {
-        data.sections = (schema.sections || []).map(s => ({
-            key: s.key, title: s.title, type: s.type || 'textarea',
-            required: !!s.required, slot: s.slot || '', content: ''
-        }));
-    }
-    const r = await AjaxLoader.api('emr/document-save', { method: 'POST', data: data });
+    const doc = (schema.mode === 'word')
+        ? EmrDoc.fromSchema(schema)
+        : EmrDoc.fromSections(schema.sections || [], template.name);
+    doc.title = template.name;
+    const meta = { guard: EmrDoc.collectGuard(doc.body) };
+    let contentHtml = '';
+    try { contentHtml = EmrPrint.buildHTML(doc, buildPatientInfo()); } catch (e) { console.error('打印快照生成失败', e); }
+
+    const r = await AjaxLoader.api('emr/document-save', { method: 'POST', data: {
+        patient_id: _emrPatient.id, category_id: categoryId, template_id: templateId,
+        title: template.name, doc_meta: meta,
+        doc_json: JSON.stringify(doc), content_html: contentHtml
+    }});
     Dom.toast('已新建草稿文书', 'success');
     await loadDocuments();
     renderCategoryTree();
     emr_openDocument(r.data.id);
 }
 
-function parseSchema(json) {
-    if (!json) return null;
-    try { const o = JSON.parse(json); return o && typeof o === 'object' ? o : null; } catch (e) { return null; }
-}
-
+/* ================= 患者信息 / 页面参数 ================= */
 function buildPatientInfo() {
     const p = _emrPatient || PatientContext.current();
     if (!p) return {};
     const age = p.birth_date ? Math.max(0, new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
     return {
         name: p.name || '', gender: Format.gender(p.gender), age: String(age),
-        admission_no: p.admission_no || '', ward_name: p.ward_name || '', bed_no: p.bed_no || ''
+        department: p.department_name || '', ward_name: p.ward_name || '',
+        bed_no: p.bed_no || '', admission_no: p.admission_no || ''
     };
 }
 
@@ -175,13 +175,13 @@ function applyPageCss(page) {
     el.style.setProperty('--emr-mr', px(p.mr, 68));
     el.style.setProperty('--emr-mt', px(p.mt, 62));
     el.style.setProperty('--emr-mb', px(p.mb, 56));
-    el.style.setProperty('--emr-hh', px(p.header_h, 52));
+    el.style.setProperty('--emr-hh', px(p.header_h, 72));
     el.style.setProperty('--emr-font', p.font || '仿宋_GB2312, FangSong, SimSun, serif');
     el.style.setProperty('--emr-size', px(p.sz, 12));
     el.style.setProperty('--emr-line', String(p.line || 1.5));
 }
 
-/* ================= 打开文书 ================= */
+/* ================= 打开文书 (统一字处理编辑器) ================= */
 async function emr_openDocument(docId) {
     let r;
     try {
@@ -193,34 +193,42 @@ async function emr_openDocument(docId) {
     const doc = r.data;
     _emrCurrentDoc = doc;
     if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
-    _emrSectionsHist = []; _emrSectionsHistIdx = -1;
 
     document.getElementById('emr-editor-empty').style.display = 'none';
     document.getElementById('emr-editor').style.display = 'flex';
     document.getElementById('emr-doc-title').value = doc.title || '';
 
-    const signed = doc.status === 'signed';
-    if (doc.doc_json) await openWordDoc(doc, signed);
-    else openSectionsDoc(doc, signed);
+    // 兜底: 旧数据未转换时 (迁移 038 正常已处理), 客户端转换后按字处理打开, 保存时落库
+    if (!doc.doc_json) {
+        doc.doc_json = EmrDoc.fromSections(doc.sections || [], doc.title);
+        doc.doc_meta = doc.doc_meta || {};
+        if (!doc.doc_meta.guard) doc.doc_meta.guard = EmrDoc.collectGuard(doc.doc_json.body);
+    }
+    openWordDoc(doc, doc.status === 'signed');
 }
 
-async function openWordDoc(doc, signed) {
+function openWordDoc(doc, signed) {
     applyPageCss(doc.doc_json.page);
     _emrEditMode = !signed;
+    const metaGuard = doc.doc_meta && doc.doc_meta.guard && Array.isArray(doc.doc_meta.guard.fx) ? doc.doc_meta.guard : null;
     _emrEditor = EmrEditor.create({
         container: document.getElementById('emr-editor-canvas'),
         doc: doc.doc_json,
-        /* 守卫取文书自身固定键: 模板可能在建文书后被改, 用文书自身键保证结构稳定;
-           服务端保存时仍按模板 schema 做最终一致性校验 */
-        guard: EmrDoc.collectGuard(doc.doc_json.body || []),
+        guard: metaGuard || EmrDoc.collectGuard(doc.doc_json.body || []),
         patientInfo: buildPatientInfo(),
         readonly: signed,
         onChange: scheduleAutoSave,
         onStatus: updateEditorStatus
     });
-    syncToolbar(signed, true);
-    document.getElementById('emr-doc-sections').style.display = 'none';
-    document.getElementById('emr-editor-scroll').style.display = 'block';
+    syncToolbar(signed);
+    const sig = document.getElementById('emr-signature-footer');
+    if (signed) {
+        sig.style.display = 'block';
+        sig.innerHTML = '医师签名：' + Format.escape(doc.signer_name || '医师') + '　' + Format.datetime(doc.signed_at);
+    } else {
+        sig.style.display = 'none';
+        sig.innerHTML = '';
+    }
 }
 
 function updateEditorStatus(chars, dirty) {
@@ -229,106 +237,65 @@ function updateEditorStatus(chars, dirty) {
         + '<span class="emr-sb-count">字数 ' + chars + '</span>';
 }
 
-function syncToolbar(signed, isWord) {
-    const locked = signed || !_emrEditMode;
-    ['btn-bold', 'btn-italic', 'btn-underline', 'btn-strike', 'btn-align-l', 'btn-align-c', 'btn-align-r', 'btn-align-j', 'btn-undo', 'btn-redo', 'btn-save', 'btn-template', 'btn-sign'].forEach(id => {
+function syncToolbar(signed) {
+    ['btn-bold', 'btn-italic', 'btn-underline', 'btn-strike',
+     'btn-align-l', 'btn-align-c', 'btn-align-r', 'btn-align-j',
+     'btn-undo', 'btn-redo', 'btn-save', 'btn-template'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.disabled = locked || !isWord;
+        if (el) el.disabled = signed;
     });
-    document.getElementById('btn-print').disabled = !isWord;
-    document.getElementById('btn-versions').disabled = false;
     document.getElementById('btn-sign').disabled = signed;
+    document.getElementById('btn-print').disabled = false;
+    document.getElementById('btn-versions').disabled = false;
     const statusEl = document.getElementById('emr-doc-status');
     statusEl.textContent = signed ? '已签名 · 只读锁定' : '草稿 · 可编辑';
     statusEl.className = 'emr-doc-status ' + (signed ? 'signed' : 'draft');
 }
 
-/* ================= 旧结构化文书 (兼容) ================= */
-function openSectionsDoc(doc, signed) {
-    _emrEditMode = !signed;
-    document.getElementById('emr-editor-scroll').style.display = 'none';
-    document.getElementById('emr-doc-sections').style.display = 'block';
-    syncToolbar(signed, false);
-    renderSections(doc, signed);
-}
-
-function renderSections(doc, signed) {
-    const container = document.getElementById('emr-doc-sections');
-    container.innerHTML = '';
-    const sections = doc.sections || [];
-    if (sections.length === 0) { container.innerHTML = '<div class="emr-section-empty">该文书无结构化段落</div>'; return; }
-    sections.forEach(s => {
-        const sec = document.createElement('div');
-        sec.className = 'emr-section' + (s.required ? ' required' : '');
-        const editable = !signed && _emrEditMode;
-        let bodyHtml = '';
-        if (s.type === 'textarea') {
-            bodyHtml = editable
-                ? '<textarea class="emr-section-input" data-key="' + Format.escape(s.key) + '" rows="4" placeholder="' + Format.escape(s.slot || '') + '">' + Format.escape(s.content || '') + '</textarea>'
-                : '<div class="emr-section-render">' + Format.escape(s.content || '') + '</div>';
-        } else {
-            bodyHtml = editable
-                ? '<input type="text" class="emr-section-input" data-key="' + Format.escape(s.key) + '" value="' + Format.escape(s.content || '') + '">'
-                : '<div class="emr-section-render">' + Format.escape(s.content || '') + '</div>';
-        }
-        sec.innerHTML = '<div class="emr-section-title">' + Format.escape(s.title) + (s.required ? ' <span class="required-mark">*</span>' : '') + '</div>' + bodyHtml;
-        container.appendChild(sec);
-    });
-    const sig = document.getElementById('emr-signature-footer');
-    if (signed) {
-        sig.style.display = 'block';
-        sig.innerHTML = '医师签名：' + Format.escape(doc.signer_name || '医师') + '　' + Format.datetime(doc.signed_at);
-    } else { sig.style.display = 'none'; sig.innerHTML = ''; }
-}
-
-function collectSections() {
-    const sections = JSON.parse(JSON.stringify(_emrCurrentDoc.sections || []));
-    document.querySelectorAll('#emr-doc-sections .emr-section-input').forEach(input => {
-        const s = sections.find(x => x.key === input.dataset.key);
-        if (s) s.content = input.value;
-    });
-    return sections;
-}
-
-function renderSectionsHtml(sections) {
-    let html = '<div class="emr-print-doc">';
-    sections.forEach(s => {
-        html += '<div class="emr-print-section"><div class="emr-print-title">' + Format.escape(s.title) + '</div><div class="emr-print-content">' + Format.escape(s.content || '') + '</div></div>';
-    });
-    html += '</div>';
-    return html;
-}
-
 /* ================= 保存 ================= */
 async function emr_saveDraft() {
-    if (!_emrCurrentDoc || _emrCurrentDoc.status === 'signed') return;
+    if (!_emrCurrentDoc) return;
+    if (_emrCurrentDoc.status === 'signed') { Dom.toast('文书已签名锁定, 禁止修改', 'error'); return; }
+    if (!_emrEditor) { Dom.toast('编辑器未就绪', 'error'); return; }
     clearTimeout(_emrAutoSaveTimer);
-    const data = {
-        id: _emrCurrentDoc.id,
-        patient_id: _emrPatient.id,
-        category_id: _emrCurrentDoc.category_id,
-        template_id: _emrCurrentDoc.template_id,
-        title: document.getElementById('emr-doc-title').value,
-        doc_meta: _emrCurrentDoc.doc_meta
-    };
-    if (_emrEditor) {
-        _emrEditor.getDoc().title = data.title;
-        data.doc_json = JSON.stringify(_emrEditor.getDoc());
-        data.content_html = _emrEditor.buildPrintHTML();
-    } else {
-        data.sections = collectSections();
-        data.content_html = renderSectionsHtml(data.sections);
+
+    const title = document.getElementById('emr-doc-title').value;
+    const doc = _emrEditor.getDoc();
+    doc.title = title;
+    const meta = Object.assign({}, _emrCurrentDoc.doc_meta || {});
+    if (!meta.guard) meta.guard = EmrDoc.collectGuard(doc.body);
+
+    let contentHtml = '';
+    try {
+        contentHtml = _emrEditor.buildPrintHTML();
+    } catch (e) {
+        console.error('打印快照生成失败', e);
+        Dom.toast('打印快照生成失败: ' + (e && e.message ? e.message : e), 'error');
     }
-    const r = await AjaxLoader.api('emr/document-save', { method: 'POST', data: data });
-    _emrCurrentDoc.id = r.data.id;
-    if (_emrEditor) _emrEditor.markSaved();
-    else updateEditorStatus(0, false);
-    Dom.toast('草稿已保存', 'success');
-    loadDocuments().then(renderCategoryTree);
+
+    try {
+        const r = await AjaxLoader.api('emr/document-save', { method: 'POST', data: {
+            id: _emrCurrentDoc.id,
+            patient_id: _emrPatient.id,
+            category_id: _emrCurrentDoc.category_id,
+            template_id: _emrCurrentDoc.template_id,
+            title: title,
+            doc_meta: meta,
+            doc_json: JSON.stringify(doc),
+            content_html: contentHtml
+        }});
+        _emrCurrentDoc.id = r.data.id;
+        _emrCurrentDoc.doc_meta = meta;
+        _emrEditor.markSaved();
+        Dom.toast('草稿已保存', 'success');
+        loadDocuments().then(renderCategoryTree);
+    } catch (e) {
+        console.error('保存失败', e); /* AjaxLoader 已弹出错误提示 */
+    }
 }
 
 function scheduleAutoSave() {
-    if (!_emrEditMode || !_emrEditor || _emrCurrentDoc.status === 'signed') return;
+    if (!_emrEditMode || !_emrEditor || !_emrCurrentDoc || _emrCurrentDoc.status === 'signed') return;
     clearTimeout(_emrAutoSaveTimer);
     _emrAutoSaveTimer = setTimeout(emr_saveDraft, 8000);
 }
@@ -353,24 +320,15 @@ function emr_signDoc() {
 
 function emr_printDoc() {
     if (!_emrCurrentDoc) return;
-    if (_emrEditor) {
-        if (_emrCurrentDoc.status === 'signed' && _emrCurrentDoc.content_html) {
-            PrintHelper.printDocument(_emrCurrentDoc.content_html);
-        } else {
-            _emrEditor.print();
-        }
+    if (_emrCurrentDoc.status === 'signed' && _emrCurrentDoc.content_html) {
+        PrintHelper.printDocument(_emrCurrentDoc.content_html); // 签名固化快照
         return;
     }
-    const printHtml = '<html><head><title>' + Format.escape(_emrCurrentDoc.title || '病历') + '</title>' +
-        '<style>.emr-print-doc{font-family:仿宋_GB2312,SimSun,serif;font-size:14px;line-height:1.5;padding:20px}.emr-print-section{margin-bottom:12px}.emr-print-title{font-weight:bold;margin-bottom:4px}.emr-print-content{text-indent:2em}</style>' +
-        '</head><body>' + renderSectionsHtml(collectSections()) +
-        (_emrCurrentDoc.status === 'signed' ? '<div style="text-align:right;margin-top:30px">医师签名：' + Format.escape(_emrCurrentDoc.signer_name || '') + '　' + Format.datetime(_emrCurrentDoc.signed_at) + '</div>' : '') +
-        '</body></html>';
-    PrintHelper.printDocument(printHtml);
+    if (_emrEditor) _emrEditor.print();
 }
 
 function emr_saveAsTemplate() {
-    if (!_emrEditor) { Dom.toast('仅字处理文书可存为模板', 'error'); return; }
+    if (!_emrEditor) { Dom.toast('请先打开文书', 'error'); return; }
     const cat = _emrCategories.find(c => c.id == _emrCurrentDoc.category_id);
     const content = '<div class="form-group"><label class="form-label">模板名称</label><input type="text" id="tpl-name" class="form-control" value="' + Format.escape(_emrCurrentDoc.title || '病历') + '模板"></div>';
     Dom.modal('存为模板', content, [
@@ -414,32 +372,9 @@ function emr_restoreVersion(versionId) {
     ]);
 }
 
-/* ================= 撤销/重做 (兼容旧结构) ================= */
-function emr_snapshotSections() {
-    const snap = JSON.stringify(collectSections());
-    _emrSectionsHist = _emrSectionsHist.slice(0, _emrSectionsHistIdx + 1);
-    _emrSectionsHist.push(snap);
-    _emrSectionsHistIdx = _emrSectionsHist.length - 1;
-}
-function emr_undo() {
-    if (_emrEditor) { _emrEditor.undo(); return; }
-    if (_emrSectionsHistIdx <= 0) return;
-    _emrSectionsHistIdx--;
-    applySectionsSnapshot(_emrSectionsHist[_emrSectionsHistIdx]);
-}
-function emr_redo() {
-    if (_emrEditor) { _emrEditor.redo(); return; }
-    if (_emrSectionsHistIdx >= _emrSectionsHist.length - 1) return;
-    _emrSectionsHistIdx++;
-    applySectionsSnapshot(_emrSectionsHist[_emrSectionsHistIdx]);
-}
-function applySectionsSnapshot(snap) {
-    _emrCurrentDoc.sections = JSON.parse(snap);
-    document.querySelectorAll('#emr-doc-sections .emr-section-input').forEach(input => {
-        const s = _emrCurrentDoc.sections.find(x => x.key === input.dataset.key);
-        if (s) input.value = s.content || '';
-    });
-}
+/* ================= 撤销/重做 ================= */
+function emr_undo() { if (_emrEditor) _emrEditor.undo(); }
+function emr_redo() { if (_emrEditor) _emrEditor.redo(); }
 
 /* ================= 右键菜单 / 删除 ================= */
 function emr_showContextMenu(e, doc) {
@@ -491,9 +426,6 @@ function bindToolbar() {
     bind('btn-sign', emr_signDoc);
     document.getElementById('emr-doc-title').addEventListener('input', () => {
         if (_emrEditor) _emrEditor.getDoc().title = document.getElementById('emr-doc-title').value;
-    });
-    document.getElementById('emr-doc-sections').addEventListener('input', () => {
-        if (_emrCurrentDoc && _emrCurrentDoc.status !== 'signed') emr_snapshotSections();
     });
 }
 

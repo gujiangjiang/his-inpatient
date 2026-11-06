@@ -113,17 +113,39 @@
   /* ---------- 页面与默认文档 ---------- */
   M.DEFAULT_PAGE = {
     paper: 'A4', mt: 62, mb: 56, ml: 68, mr: 68,
-    header_h: 52, footer_h: 44,
+    header_h: 72, footer_h: 44,
     font: '仿宋_GB2312, FangSong, SimSun, serif', sz: 12, line: 1.5,
   };
+  /** 标准患者信息栏 (与页眉同排展示) */
+  M.DEFAULT_INFO_FIELDS = [['姓名', 'name'], ['性别', 'gender'], ['科别', 'department'], ['病区', 'ward_name'], ['年龄', 'age'], ['床号', 'bed_no'], ['住院号', 'admission_no']];
   /** 由模板 schema (word 模式) 生成空白文档 */
   M.fromSchema = (schema) => ({
     v: 1,
     title: schema.title || '',
     page: Object.assign({}, M.DEFAULT_PAGE, schema.page || {}),
-    header: Object.assign({ hospital: '', doc_name: '', info_fields: [] }, schema.header || {}),
+    header: Object.assign({ hospital: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
     body: JSON.parse(JSON.stringify(schema.body && schema.body.length ? schema.body : [M.para()])),
   });
+  /** 旧结构化 sections → word 文档 (兜底转换; 算法与服务端迁移 038 一致) */
+  M.fromSections = (sections, title) => {
+    const body = [];
+    (sections || []).forEach((s) => {
+      if (!s || !s.title) return;
+      const key = s.key || ('sec_' + body.length);
+      const ph = s.slot || ('请输入' + s.title);
+      const runs = [M.fx(key, s.title + '：'), M.slot(key + '_val', ph)];
+      if (s.content) runs.push(M.text(String(s.content)));
+      body.push(M.para(runs));
+    });
+    if (!body.length) body.push(M.para());
+    return {
+      v: 1,
+      title: title || '',
+      page: Object.assign({}, M.DEFAULT_PAGE),
+      header: { hospital: '', doc_name: title || '', info_fields: M.DEFAULT_INFO_FIELDS },
+      body: body,
+    };
+  };
 
   /* ---------- 遍历 ---------- */
   /** 深度遍历正文块: fn(block, container, index) 返回 false 可中断 */
