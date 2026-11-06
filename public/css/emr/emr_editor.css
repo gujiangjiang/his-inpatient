@@ -3,6 +3,7 @@
 /* 滚动容器 + A4 画布 */
 .emr-editor-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   background: #e8eaee;
   padding: 10px;
@@ -125,3 +126,9 @@
 .emr-toolbar .fmt-btn.fmt-i { font-style: italic; font-family: serif; }
 .emr-toolbar .fmt-btn.fmt-u { text-decoration: underline; }
 .emr-toolbar .fmt-btn.fmt-s { text-decoration: line-through; }
+.emr-toolbar .emr-tb-sep { width: 1px; height: 18px; background: #dcdfe0; margin: 0 4px; align-self: center; }
+.emr-toolbar .emr-tb-spacer { flex: 1; }
+
+/* 版本历史列表 */
+.emr-version-list { max-height: 300px; overflow-y: auto; }
+.emr-version-list .ctx-item { border-bottom: 1px solid #f0f2f5; }
