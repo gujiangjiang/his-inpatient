@@ -39,6 +39,12 @@ if ($docJson !== null && $docJson !== '') {
 
 $contentHtml = Validator::get('content_html', '');
 
+// 数据库结构守卫 (正常由 SchemaGuard 自动迁移, 此处为兜底): 缺列时给出明确指引而非原始 SQL 报错
+$mig = new Migration();
+if (!$mig->hasColumn('emr_documents', 'doc_json')) {
+    Response::error('数据库未升级: 请执行数据库迁移 (npm run migrate 或 php api/scripts/migrate.php)', 409);
+}
+
 $pdo->beginTransaction();
 try {
     if ($id) {

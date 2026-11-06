@@ -16,6 +16,7 @@ require_once __DIR__ . '/../api/core/helpers/array_helper.php';
 require_once __DIR__ . '/../api/core/helpers/string_helper.php';
 require_once __DIR__ . '/../api/core/helpers/upload_helper.php';
 require_once __DIR__ . '/../api/core/migration.php';
+require_once __DIR__ . '/../api/core/schema_guard.php';
 
 // 路由分发
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -26,9 +27,20 @@ if ($uri === '') $uri = '/';
 if (strpos($uri, '/api/') === 0) {
     // 移除路由前缀
     $_SERVER['REQUEST_URI'] = $uri;
-    
+
+    // API 必须输出纯净 JSON: 警告/异常不得混入响应体
+    ini_set('display_errors', '0');
+    set_exception_handler(function ($e) {
+        error_log('[API] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+        if (!headers_sent()) http_response_code(500);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['status' => 'error', 'message' => '服务器内部错误', 'data' => null], JSON_UNESCAPED_UNICODE);
+        exit;
+    });
+
     Auth::init();
     SetupGuard::guard();
+    SchemaGuard::ensure();
     
     $apiUri = preg_replace('#^/api/#', '', $uri);
     $apiUri = preg_replace('#\?.*$#', '', $apiUri);

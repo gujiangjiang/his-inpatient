@@ -19,12 +19,26 @@ require_once __DIR__ . '/core/helpers/opd_helper.php';
 require_once __DIR__ . '/core/helpers/opd_order_push.php';
 require_once __DIR__ . '/core/helpers/catalog_sync.php';
 require_once __DIR__ . '/core/migration.php';
+require_once __DIR__ . '/core/schema_guard.php';
 require_once __DIR__ . '/routes.php';
+
+// API 必须输出纯净 JSON: 警告/异常不得混入响应体 (否则前端 JSON.parse 报 Unexpected token '<')
+ini_set('display_errors', '0');
+set_exception_handler(function ($e) {
+    error_log('[API] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+    if (!headers_sent()) http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['status' => 'error', 'message' => '服务器内部错误', 'data' => null], JSON_UNESCAPED_UNICODE);
+    exit;
+});
 
 Auth::init();
 
 // 初始化守卫
 SetupGuard::guard();
+
+// 部署自愈: 自动补齐未应用的数据库迁移 (升级后首个请求即生效)
+SchemaGuard::ensure();
 
 // 路由分发
 $apiUri = preg_replace('#^/api/#', '', $_SERVER['REQUEST_URI']);
