@@ -61,6 +61,55 @@ if (!$check) {
         ->execute([json_encode($admissionSchema, JSON_UNESCAPED_UNICODE), $admissionCategory['id'], $check['id']]);
 }
 
+// === 入院记录字处理模板 (word 模式: 固定抬头 + 固定标签/填写槽) ===
+$wordSections = [
+    ['主诉：', 'chief_complaint', '患者主诉症状及持续时间'],
+    ['现病史：', 'present_illness', '请输入现病史'],
+    ['既往史：', 'past_history', '请输入既往史'],
+    ['个人史：', 'personal_history', '请输入个人史'],
+    ['婚育史：', 'marriage_history', '请输入婚育史'],
+    ['家族史：', 'family_history', '请输入家族史'],
+    ['体格检查：', 'physical_exam', '请输入体格检查'],
+    ['辅助检查：', 'aux_exam', '请输入辅助检查'],
+    ['初步诊断：', 'initial_diagnosis', '请输入初步诊断'],
+    ['治疗意见：', 'treatment_plan', '请输入治疗意见'],
+];
+$wordBody = [];
+$wordBody[] = ['t' => 'p', 'pPr' => ['align' => 'center'], 'rPr' => ['sz' => 14, 'b' => true], 'runs' => [['t' => 'text', 'text' => '入 院 记 录']]];
+foreach ($wordSections as $i => $ws) {
+    $wordBody[] = [
+        't' => 'p',
+        'pPr' => ['ind' => 24],
+        'runs' => [
+            ['t' => 'fx', 'key' => $ws[1], 'text' => $ws[0]],
+            ['t' => 'slot', 'key' => $ws[1] . '_val', 'ph' => $ws[2]],
+        ],
+    ];
+}
+$wordSchema = [
+    'mode' => 'word',
+    'title' => '入院记录',
+    'page' => ['paper' => 'A4', 'mt' => 62, 'mb' => 56, 'ml' => 68, 'mr' => 68, 'header_h' => 72, 'footer_h' => 44,
+        'font' => '仿宋_GB2312, FangSong, SimSun, serif', 'sz' => 12, 'line' => 1.5],
+    'header' => [
+        'hospital' => '某某市人民医院',
+        'doc_name' => '入院记录',
+        'info_fields' => [
+            ['姓名', 'name'], ['性别', 'gender'], ['年龄', 'age'],
+            ['住院号', 'admission_no'], ['病区', 'ward_name'], ['床号', 'bed_no'],
+        ],
+    ],
+    'body' => $wordBody,
+];
+$checkWord = $pdo->query("SELECT id FROM emr_templates WHERE name = '入院记录(字处理)'")->fetch();
+if (!$checkWord) {
+    $pdo->prepare("INSERT INTO emr_templates (name, record_type, schema_json, category_id, usage_count, created_at) VALUES ('入院记录(字处理)', 'admission', ?, ?, 0, ?)")
+        ->execute([json_encode($wordSchema, JSON_UNESCAPED_UNICODE), $admissionCategory['id'], DateHelper::now()]);
+} else {
+    $pdo->prepare("UPDATE emr_templates SET schema_json = ?, category_id = ? WHERE id = ?")
+        ->execute([json_encode($wordSchema, JSON_UNESCAPED_UNICODE), $admissionCategory['id'], $checkWord['id']]);
+}
+
 // === 医生科室授权 ===
 $doctor1 = DB::selectOne("SELECT id, department_id FROM users WHERE username = 'doctor1'");
 $doctor2 = DB::selectOne("SELECT id, department_id FROM users WHERE username = 'doctor2'");
@@ -100,4 +149,4 @@ if (!$chk->fetch()) {
 
 $pdo->commit();
 echo "结构化病历种子数据导入完成。\n";
-echo "分类: " . count($categories) . " 个, 入院记录模板已就绪, 指派/授权已生成。\n";
+echo "分类: " . count($categories) . " 个, 入院记录模板(结构化/字处理)已就绪, 指派/授权已生成。\n";
