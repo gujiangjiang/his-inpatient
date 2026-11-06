@@ -1,4 +1,6 @@
-// public/js/core/rich_editor.js - Quill.js 唯一入口
+// public/js/core/rich_editor.js - 无第三方依赖的简易编辑器 (自研)
+// 说明: 全站已改用自研「病历字处理编辑器」(public/js/emr_editor/);
+// 本组件仅保留给旧版页面兜底使用, 提供与既有调用方一致的 API (基于原生 textarea)。
 const RichEditor = {
     editors: {},
 
@@ -8,66 +10,35 @@ const RichEditor = {
             console.error('RichEditor: element not found:', elementId);
             return null;
         }
-
-        // 检测 CDN 是否可用
-        if (typeof Quill === 'undefined') {
-            // 降级为 textarea
-            const ta = document.createElement('textarea');
-            ta.id = elementId;
-            ta.name = el.getAttribute('name') || elementId;
-            ta.value = content;
-            ta.rows = 8;
-            ta.className = 'form-control';
-            el.parentNode.replaceChild(ta, el);
-            return {
-                getDelta: () => ({ ops: ta.value ? [{ insert: ta.value }] : [] }),
-                getHTML: () => ta.value,
-                setHTML: (html) => { ta.value = html; },
-                setText: (text) => { ta.value = text; },
-                getContent: () => ta.value
-            };
+        let ta = this.editors[elementId];
+        if (ta && document.body.contains(ta)) {
+            if (content) ta.value = String(content);
+            return this._wrap(ta);
         }
+        ta = document.createElement('textarea');
+        ta.id = elementId;
+        ta.name = el.getAttribute('name') || elementId;
+        ta.rows = 8;
+        ta.className = 'form-control';
+        el.parentNode.replaceChild(ta, el);
+        if (content) ta.value = String(content);
+        this.editors[elementId] = ta;
+        return this._wrap(ta);
+    },
 
-        const quill = new Quill('#' + elementId, {
-            theme: 'snow',
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                    [{ 'indent': '-1' }, { 'indent': '+1' }],
-                    [{ 'align': [] }],
-                    ['link', 'image'],
-                    ['clean']
-                ]
-            }
-        });
-
-        if (content) {
-            try {
-                quill.setContents(JSON.parse(content));
-            } catch (e) {
-                quill.clipboard.dangerouslyPasteHTML(content);
-            }
-        }
-
-        this.editors[elementId] = quill;
+    _wrap(ta) {
         return {
-            getDelta: () => JSON.stringify(quill.getContents()),
-            getHTML: () => quill.root.innerHTML,
-            setHTML: (html) => quill.clipboard.dangerouslyPasteHTML(html),
-            setText: (text) => quill.setText(text),
-            getContent: () => quill.root.innerHTML
+            getDelta: () => JSON.stringify({ ops: ta.value ? [{ insert: ta.value }] : [] }),
+            getHTML: () => ta.value,
+            setHTML: (html) => { ta.value = html; },
+            setText: (text) => { ta.value = text; },
+            getContent: () => ta.value,
+            root: ta
         };
     },
 
-    getDelta(elementId) {
-        const editor = this.editors[elementId];
-        return editor ? editor.getDelta() : null;
-    },
-
     getHTML(elementId) {
-        const editor = this.editors[elementId];
-        return editor ? editor.getHTML() : null;
+        const ta = this.editors[elementId];
+        return ta ? ta.value : null;
     }
 };

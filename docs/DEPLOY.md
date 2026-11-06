@@ -79,8 +79,7 @@ server {
 
 ### 内网（无外网）部署
 
-先在有外网的机器上（或部署前）执行 `npm run download-libs`，将 Quill.js /
-html2pdf.js 下载到 `public/lib/`；未下载时页面会回退 CDN，内网将加载失败。
+全站前端零第三方依赖（编辑器/打印均为自研），离线环境可直接部署，无需下载前端库。
 
 ## 三、Apache 配置（宝塔 Apache 环境同理）
 
@@ -104,5 +103,4 @@ RewriteRule ^ /index.php [L,QSA]
 | 错误日志出现 `open() ".../public/404.html" failed` | 宝塔默认 404 页指向不存在的文件 | 注释 `error_page 404 /404.html;` |
 | 500 / 白屏，日志出现 `open_basedir restriction in effect` | 防跨站攻击限制在 `public` | 关闭「防跨站攻击」或将其路径改为项目根 |
 | 安装向导可打开但初始化失败 | `data/` 不可写 | `chown -R www:www` 项目目录 |
-| 页面样式 / 图表异常 | `public/lib/` 未下载且无外网 | 执行 `npm run download-libs` 后同步到服务器 |
 | 数据库连接失败 | 未开启 SQLite 扩展 | 宝塔 PHP 设置中开启 `pdo_sqlite` / `sqlite3` |

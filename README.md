@@ -9,8 +9,8 @@
 - **后端**: PHP 7.x，无框架
 - **数据库**: SQLite（默认） / MySQL / PostgreSQL
 - **前端**: 原生 JS/CSS SPA
-- **富文本**: 病历字处理编辑器（自研，借鉴 Quire/Word 模型：纯 JSON 文档模型 + 固定抬头/固定标签/填写槽 + 自动分页打印）；传统页兼容 Quill.js (本地优先 / CDN fallback)
-- **PDF**: html2pdf.js (本地优先 / CDN fallback)
+- **病历编辑器**: 自研字处理编辑器（借鉴 Quire/Word 模型：纯 JSON 文档模型 + 固定抬头/固定标签/填写槽 + 自动分页打印），**全站零第三方前端库**
+- **PDF**: 浏览器打印（打印对话框可选「另存为 PDF」，分页与打印件完全一致）
 
 ## 核心技术特性
 
@@ -22,22 +22,14 @@
 
 ## 内网部署
 
-在无外网访问的内网环境中部署前，先下载前端依赖库到本地：
-
-```bash
-npm run download-libs   # 下载 Quill.js + html2pdf.js 到 public/lib/
-```
-
-下载完成后，应用将优先使用本地文件；若本地文件缺失，对应功能自动降级
-（Quill 富文本 → 普通文本域；html2pdf → 浏览器打印）且不再产生资源 404；
-病历字处理编辑器不依赖这些第三方库，缺失时不受影响。
+全站前端零第三方依赖（编辑器/打印均为自研），内网离线环境可直接部署，无需下载任何前端库。
 
 ## 快速开始
 
-**全自动初始化** (下载依赖 + 初始化数据库 + 导入 ICD-10 + 生成演示数据):
+**全自动初始化** (初始化数据库 + 导入 ICD-10 + 生成演示数据):
 
 ```bash
-npm run init            # 下载 libs + 初始化数据库 + 导入 ICD-10 + 生成演示数据
+npm run init            # 初始化数据库 + 导入 ICD-10 + 生成演示数据
 npm run start           # 启动开发服务器 (http://127.0.0.1:8000)
 ```
 
@@ -51,7 +43,6 @@ npm run server          # 检测 9095 服务器, 不存在则自动启动 (仅�
 **手动初始化**:
 
 ```bash
-npm run download-libs   # (可选) 下载前端依赖库到本地用于内网部署
 npm run setup           # 初始化数据库
 npm run import-icd10    # 导入 ICD-10 编码
 npm run seed            # 生成演示数据
@@ -79,10 +70,9 @@ npm run lint            # 或: ~/.local/bin/frankenphp php-cli tools/lint/php-li
 │   ├── core/               # 核心类 (DB, Auth, Response, Validator, SetupGuard)
 │   ├── migrations/         # 三方言迁移 (sqlite/mysql/postgresql)
 │   ├── modules/            # 接口实现 (9 个模块)
-│   └── scripts/            # CLI 脚本 (setup, import_icd10, seed, migrate, download_libs)
+│   └── scripts/            # CLI 脚本 (setup, import_icd10, seed, migrate)
 └── public/                 # 前端 (Web 根目录)
     ├── index.php           # 唯一入口 (SPA 壳 + /api/ 路由)
-    ├── lib/                # 第三方库 (Quill.js, html2pdf.js) - 由 download-libs 生成
     ├── css/                # 样式 (core, login, doctor)
     ├── js/                 # JS + PHP 页面片段
     │   ├── core/           # 公共单例 (Format/AjaxLoader/Auth/Dom/...)

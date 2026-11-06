@@ -10,7 +10,6 @@
 class Asset {
     /** 样式表 (按顺序加载) */
     public static $css = [
-        '/lib/quill/quill.snow.css',
         '/css/core/reset.css',
         '/css/core/layout.css',
         '/css/core/datetime_picker.css',
@@ -25,10 +24,8 @@ class Asset {
         '/css/clinic/clinic.css',
     ];
 
-    /** 脚本 (按顺序加载: 公共单例 → 图标桥 → 组件 → 登录) */
+    /** 脚本 (按顺序加载: 公共单例 → 图标桥 → 组件 → 登录; 无第三方库, 全部自研) */
     public static $js = [
-        '/lib/quill/quill.min.js',
-        '/lib/html2pdf/html2pdf.bundle.min.js',
         '/js/core/app.js',
         '/icons/js.php',
         '/js/core/format.js',
