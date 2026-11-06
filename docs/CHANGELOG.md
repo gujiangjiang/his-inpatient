@@ -4,6 +4,25 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.24.1] - 2026-11-06
+
+### 修复
+- **新版本部署后未执行数据库迁移导致病历模块报错**（点击文书无响应 / 模板新建
+  `table emr_documents has no column named doc_json`）：
+  1. 新增请求级自动迁移守卫 `api/core/schema_guard.php`：系统初始化完成后，
+     首个 API 请求自动比对迁移目录最大版本与 `migrations` 表已应用版本，落后则
+     加锁执行 `Migration::runAll()`（`api/index.php` 与 `public/worker.php` 均已接入），
+     升级部署无需再手动执行迁移脚本，验证：035 旧库首个请求即自动补齐到 037；
+  2. `emr/document-save` 增加表结构兜底校验：缺列时返回 409 与明确迁移指引，
+     替代原始 SQL 报错；
+  3. `emr/document-get` 对 `doc_json` 空值/缺列防御，避免 PHP 警告混入 JSON。
+- **前端 `Unexpected token '<'`（JSON 解析失败）**：`/api/*` 统一关闭错误直出并将
+  未捕获异常转为 JSON 500（警告/异常 HTML 不再混入响应体）。
+- **本地第三方库缺失产生资源 404**：`public/assets.php` 对 `/lib/` 资源做存在性
+  判断，缺失时跳过输出，页面自动降级（Quill 富文本 → 普通文本域、html2pdf →
+  浏览器打印）；README 同步修正降级说明（原「CDN 回退」描述与实现不符）。
+- **病历工作站打开文书静默失败**：`emr_openDocument` 失败时弹出错误提示而非无响应。
+
 ## [0.24.0] - 2026-11-06
 
 ### 新增

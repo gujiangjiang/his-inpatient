@@ -2,7 +2,7 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.24.0-blue)
+![version](https://img.shields.io/badge/version-0.24.1-blue)
 
 ## 技术栈
 
@@ -28,7 +28,9 @@
 npm run download-libs   # 下载 Quill.js + html2pdf.js 到 public/lib/
 ```
 
-下载完成后，应用将优先使用本地文件；若本地文件缺失或加载失败，自动回退为 CDN。
+下载完成后，应用将优先使用本地文件；若本地文件缺失，对应功能自动降级
+（Quill 富文本 → 普通文本域；html2pdf → 浏览器打印）且不再产生资源 404；
+病历字处理编辑器不依赖这些第三方库，缺失时不受影响。
 
 ## 快速开始
 
