@@ -183,7 +183,13 @@ function applyPageCss(page) {
 
 /* ================= 打开文书 ================= */
 async function emr_openDocument(docId) {
-    const r = await AjaxLoader.api('emr/document-get?id=' + docId, { silent: true });
+    let r;
+    try {
+        r = await AjaxLoader.api('emr/document-get?id=' + docId, { silent: true });
+    } catch (e) {
+        Dom.toast('打不开文书: ' + (e && e.message ? e.message : '未知错误'), 'error');
+        return;
+    }
     const doc = r.data;
     _emrCurrentDoc = doc;
     if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }

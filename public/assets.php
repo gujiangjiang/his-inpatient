@@ -75,9 +75,15 @@ class Asset {
         '/js/login/setup_wizard.js',
     ];
 
+    /** /lib/ 本地第三方库缺失时跳过 (页面自动降级: Quill→文本域 / html2pdf→浏览器打印), 避免 404 噪音 */
+    private static function missingLib($path) {
+        return strpos($path, '/lib/') === 0 && !is_file(dirname(__FILE__) . $path);
+    }
+
     /** 输出 <link> 标签 */
     public static function css() {
         foreach (self::$css as $href) {
+            if (self::missingLib($href)) continue;
             echo '    <link rel="stylesheet" href="' . htmlspecialchars($href, ENT_QUOTES) . '?v=' . APP_VERSION . '">' . "\n";
         }
     }
@@ -85,6 +91,7 @@ class Asset {
     /** 输出 <script> 标签 */
     public static function js() {
         foreach (self::$js as $src) {
+            if (self::missingLib($src)) continue;
             echo '<script src="' . htmlspecialchars($src, ENT_QUOTES) . '?v=' . APP_VERSION . '"></script>' . "\n";
         }
     }
