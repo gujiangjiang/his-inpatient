@@ -1,0 +1,127 @@
+/* ===== 病历字处理编辑器 (Word 风格 A4 画布) ===== */
+
+/* 滚动容器 + A4 画布 */
+.emr-editor-scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: #e8eaee;
+  padding: 10px;
+}
+.emr-editor-page {
+  width: 794px; /* A4 @96dpi */
+  max-width: 100%;
+  margin: 14px auto;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 0 1px #d5d8dd;
+  min-height: 640px;
+}
+.emr-page-readonly { cursor: default; }
+
+/* 固定抬头 */
+.emr-head-wrap {
+  padding: calc(var(--emr-mt, 83px) + var(--emr-hh, 69px)) var(--emr-mr, 91px) 0 var(--emr-ml, 91px);
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.emr-hos {
+  font-size: 20pt;
+  font-weight: bold;
+  letter-spacing: 4px;
+  line-height: 1.4;
+}
+.emr-docname {
+  font-size: 16pt;
+  font-weight: bold;
+  letter-spacing: 3px;
+  line-height: 1.5;
+}
+.emr-infobar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2px 20px;
+  margin-top: 8px;
+  padding: 6px 4px;
+  border-top: 1.5px solid #000;
+  border-bottom: 1.5px solid #000;
+  font-size: 11pt;
+}
+.emr-hf b { font-weight: normal; margin-right: 4px; }
+.emr-hf-val { border-bottom: 1px dotted #888; }
+
+/* 正文编辑区 */
+.emr-body {
+  padding: 0 var(--emr-mr, 91px) calc(var(--emr-mb, 75px)) var(--emr-ml, 91px);
+  font-family: var(--emr-font, '仿宋_GB2312', 'FangSong', 'SimSun', serif);
+  font-size: var(--emr-size, 16px);
+  line-height: var(--emr-line, 1.5);
+  outline: none;
+  min-height: 560px;
+  white-space: normal;
+}
+.emr-body .p { margin: 0 0 8px; }
+.emr-body .pc { white-space: pre-wrap; overflow-wrap: break-word; }
+
+/* 固定标签 / 填写槽 (原子项, 不可编辑选中) */
+.emr-fx {
+  font-weight: bold;
+  user-select: none;
+  -webkit-user-select: none;
+  color: #000;
+}
+.emr-slot {
+  user-select: none;
+  -webkit-user-select: none;
+  color: #8a8f99;
+  border-bottom: 1px dashed #b8bcc6;
+  padding: 0 6px;
+  cursor: text;
+  min-width: 3em;
+  display: inline-block;
+}
+.emr-slot[data-key] { font-style: normal; }
+.emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
+
+/* 制表位 / 表格 */
+.emr-tab { white-space: pre; }
+.emr-tbl {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 6px 0;
+}
+.emr-tbl td {
+  border: 0.5pt solid #333;
+  padding: 4px 6px;
+  vertical-align: top;
+}
+
+/* 隐藏测量容器 (分页引擎) */
+.emr-measure { contain: layout style; }
+
+/* 状态栏 */
+.emr-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  border-top: 1px solid #e4e7ed;
+  background: #fafafa;
+  font-size: 12px;
+  color: #606266;
+  flex: none;
+}
+.emr-statusbar .emr-sb-dirty { color: #e6a23c; font-weight: 600; }
+.emr-statusbar .emr-sb-saved { color: #67c23a; font-weight: 600; }
+.emr-statusbar .emr-sb-count { margin-left: auto; }
+
+/* 格式工具条按钮 */
+.emr-toolbar .fmt-btn {
+  min-width: 30px;
+  padding: 3px 7px;
+  font-size: 13px;
+}
+.emr-toolbar .fmt-btn.fmt-b { font-weight: bold; }
+.emr-toolbar .fmt-btn.fmt-i { font-style: italic; font-family: serif; }
+.emr-toolbar .fmt-btn.fmt-u { text-decoration: underline; }
+.emr-toolbar .fmt-btn.fmt-s { text-decoration: line-through; }
