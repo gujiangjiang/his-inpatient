@@ -32,6 +32,11 @@
     if (p.align) s.push('text-align:' + p.align);
     if (p.ind) s.push('text-indent:' + pt(p.ind));
     if (p.sp) s.push('line-height:' + p.sp);
+    if (p.borders) {
+      if (p.borders.top) s.push('border-top:1px solid #000');
+      if (p.borders.bottom) s.push('border-bottom:1px solid #000');
+      if (p.borders.top || p.borders.bottom) s.push('padding:4px 0', 'margin:10px 0 6px');
+    }
     return s.join(';');
   };
 
