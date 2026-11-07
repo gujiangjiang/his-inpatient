@@ -54,8 +54,7 @@ $wordBody = [
     $P([$slot('special_exam_val', '请输入专科检查')]),
     $secHead('辅助检查'),
     $P([$slot('aux_exam_val', '请输入辅助检查')]),
-    $P([$fx('initial_diagnosis', '初步诊断：'), $slot('initial_diagnosis_val', '请输入初步诊断')]),
-    $P([$fx('treatment_plan', '治疗意见：'), $slot('treatment_plan_val', '请输入治疗意见')]),
+    $P([$fx('initial_diagnosis', '初步诊断：'), $dyn('initial_diagnosis_value', '')], ['align' => 'right']),
     $P([$fx('sign_line', '医师签名：'), $slot('sign_line_val', '（上级签名，没有则不显示）/（下级签名）')], ['align' => 'right']),
 ];
 

@@ -218,7 +218,8 @@ function openWordDoc(doc, signed) {
         patientInfo: buildPatientInfo(),
         readonly: signed,
         onChange: scheduleAutoSave,
-        onStatus: updateEditorStatus
+        onStatus: updateEditorStatus,
+        diagSync: fetchAdmissionDiagText
     });
     syncToolbar(signed);
     const sig = document.getElementById('emr-signature-footer');
@@ -229,6 +230,14 @@ function openWordDoc(doc, signed) {
         sig.style.display = 'none';
         sig.innerHTML = '';
     }
+}
+
+/** 一键同步诊断: 取左侧「诊断」模块的入院诊断 (category=admission) 拼为文本; 无则提示 */
+async function fetchAdmissionDiagText() {
+    const r = await AjaxLoader.api('emr/diagnosis-list?patient_id=' + _emrPatient.id, { silent: true });
+    const rows = (r.data || []).filter(x => x.category === 'admission');
+    if (!rows.length) { Dom.toast('诊断中暂无入院诊断，请先在左侧「诊断」中添加', 'error'); return null; }
+    return rows.map((x, i) => rows.length > 1 ? (i + 1) + '.' + x.name : x.name).join('；');
 }
 
 function updateEditorStatus(chars, dirty) {

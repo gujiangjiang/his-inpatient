@@ -74,7 +74,8 @@
           O.assertGuard(inst.doc.body, inst.guard);
         }, beforePos);
       } catch (e) {
-        if (e.code === 'protected') Dom.toast(e.message, 'error');
+        console.error('编辑事务失败', e);
+        if (e && e.message) Dom.toast(e.message, 'error');
         renderBody(); /* 历史已回滚, 重建 DOM */
         return;
       }
@@ -241,15 +242,39 @@
     };
 
     const onClick = (e) => {
+      /* 初步诊断行: 点击一键同步诊断 (来源: 左侧「诊断」的入院诊断, 不允许手改) */
+      const pEl = e.target.closest && e.target.closest('.p');
+      if (pEl && pEl.querySelector('.emr-dyn-sync')) {
+        e.preventDefault();
+        if (inst.readonly || !opts.diagSync) return;
+        Promise.resolve(opts.diagSync()).then((text) => {
+          if (text == null) return;
+          inst.setDyn('initial_diagnosis_value', String(text));
+        }).catch(() => {});
+        return;
+      }
       const slot = e.target.closest && e.target.closest('.emr-slot');
       if (!slot) return;
       e.preventDefault();
-      const pEl = slot.closest('.p');
-      const info = inst.index.get(+pEl.dataset.pid);
+      const sp = slot.closest('.p');
+      const info = inst.index.get(+sp.dataset.pid);
       if (!info) return;
       const o = (+slot.dataset.o) + 1;
       inst.bodyEl.focus();
       C.restore(inst.bodyEl, { p: info.p, o, cont: info.cont });
+    };
+
+    /** 写入动态只读项 (如 初步诊断同步) */
+    inst.setDyn = (key, text) => {
+      const sel = C.rangeToModel(inst.bodyEl, inst.index);
+      const pos = sel ? sel.a : null;
+      apply('同步', () => {
+        const p = O.findParaWithItem(inst.doc.body, 'dyn', key);
+        if (!p) { const err = new Error('缺少字段: ' + key); err.code = 'nodyn'; throw err; }
+        O.setDynTextIn(p, key, text);
+        O.assertGuard(inst.doc.body, inst.guard);
+        return pos;
+      });
     };
 
     const on = (el, type, fn) => {
