@@ -70,6 +70,13 @@
           : '<span class="emr-slot" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');
         continue;
       }
+      if (it.t === 'dyn') {
+        const sync = it.key === 'initial_diagnosis_value';
+        out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
+          + ' data-o="' + o + '" data-n="1" contenteditable="false"'
+          + (sync ? ' title="点击同步诊断（来源：左侧诊断 → 入院诊断）"' : '') + '>' + esc(it.text) + '</span>');
+        continue;
+      }
       if (it.t === 'tab') {
         out.push('<span class="emr-tab" data-item="tab" data-o="' + o + '" data-n="1">\t</span>');
         continue;

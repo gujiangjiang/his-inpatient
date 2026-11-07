@@ -84,6 +84,18 @@
 .emr-slot[data-key] { font-style: normal; }
 .emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
 
+/* 动态只读项 (BMI/签名/诊断): 普通显示; 诊断同步项可点击 */
+.emr-dyn { user-select: none; -webkit-user-select: none; }
+.emr-dyn:empty { min-width: 3em; display: inline-block; }
+.emr-dyn-sync {
+  cursor: pointer;
+  border-bottom: 1px dashed #3385ff;
+  color: #1a56b0;
+  padding: 0 4px;
+}
+.emr-dyn-sync:hover { background: #eef4ff; }
+.emr-dyn-sync:empty::before { content: '点击同步诊断'; color: #8aa8d8; }
+
 /* 制表位 / 表格 */
 .emr-tab { white-space: pre; }
 .emr-tbl {

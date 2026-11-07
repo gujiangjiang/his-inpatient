@@ -203,6 +203,36 @@
     else p.pPr[key] = val;
   };
 
+  /* ---------- 动态只读项 dyn (BMI 自动计算 / 签名 / 诊断同步) ---------- */
+  /** 取段内某 slot 之后紧邻的文本值 (到下一个保护项或段尾) */
+  O.valueAfterSlot = (p, key) => {
+    let on = false, s = '';
+    for (const it of p.runs) {
+      if (on) {
+        if (M.isProtected(it)) break;
+        if (it.t === 'text') s += it.text;
+      } else if (it.t === 'slot' && it.key === key) on = true;
+    }
+    return s;
+  };
+  /** 设置包含指定项的段落内 dyn 的文本; 返回是否命中 */
+  O.setDynTextIn = (p, key, text) => {
+    for (const it of p.runs) {
+      if (it.t === 'dyn' && it.key === key) { it.text = String(text || ''); return true; }
+    }
+    return false;
+  };
+  /** 在全文中查找包含某项 (t+key) 的段落 */
+  O.findParaWithItem = (body, t, key) => {
+    let hit = null;
+    M.walk(body, (b) => {
+      if (hit) return false;
+      if (b.t === 'p' && b.runs.some((it) => it.t === t && it.key === key)) hit = b;
+      return true;
+    });
+    return hit;
+  };
+
   /* ---------- 守卫校验 (事务后) ---------- */
   /** 事务后校验: 固定元素键集合必须与模板完全一致; 不一致抛错触发回滚 */
   O.assertGuard = (body, guard) => {
