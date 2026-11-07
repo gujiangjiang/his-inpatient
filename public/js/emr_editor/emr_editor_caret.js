@@ -5,17 +5,17 @@
   'use strict';
   const C = (window.EmrCaret = {});
 
-  /** 单子节点占模型位: 元素按 data-o/data-n; 裸文本节点按文本长度(仅浏览器临时态) */
-  const spanEnd = (child) => {
+  /** 单子节点占模型位长度: 元素按 data-n; 裸文本节点按文本长度(仅浏览器临时态) */
+  const spanLen = (child) => {
     if (child.nodeType === 3) return child.textContent.length;
-    return (+child.dataset.o || 0) + (+child.dataset.n || 0);
+    return (+child.dataset.n || 0);
   };
-
   /** DOM 点 → 模型偏移 */
   C.domToOffset = (pc, startNode, startOffset) => {
     if (startNode === pc) {
+      /* pc 直接子节点间的位置: 累加子节点长度 (不能累加结束偏移) */
       let off = 0;
-      for (let i = 0; i < Math.min(startOffset, pc.childNodes.length); i++) off += spanEnd(pc.childNodes[i]);
+      for (let i = 0; i < Math.min(startOffset, pc.childNodes.length); i++) off += spanLen(pc.childNodes[i]);
       return off;
     }
     let acc = 0;
