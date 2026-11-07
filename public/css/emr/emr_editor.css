@@ -18,9 +18,9 @@
 }
 .emr-page-readonly { cursor: default; }
 
-/* 固定抬头 */
+/* 固定抬头 (页边距收窄: 默认上 40pt / 左右 36pt) */
 .emr-head-wrap {
-  padding: calc(var(--emr-mt, 83px) + var(--emr-hh, 69px)) var(--emr-mr, 91px) 0 var(--emr-ml, 91px);
+  padding: var(--emr-mt, 53px) var(--emr-mr, 48px) 0 var(--emr-ml, 48px);
   text-align: center;
   user-select: none;
   -webkit-user-select: none;
@@ -51,9 +51,9 @@
 .emr-hf b { font-weight: normal; margin-right: 4px; }
 .emr-hf-val { border-bottom: 1px dotted #888; }
 
-/* 正文编辑区 */
+/* 正文编辑区 (顶部为页眉与正文的间隔) */
 .emr-body {
-  padding: 0 var(--emr-mr, 91px) calc(var(--emr-mb, 75px)) var(--emr-ml, 91px);
+  padding: var(--emr-hh, 21px) var(--emr-mr, 48px) calc(var(--emr-mb, 48px)) var(--emr-ml, 48px);
   font-family: var(--emr-font, '仿宋_GB2312', 'FangSong', 'SimSun', serif);
   font-size: var(--emr-size, 16px);
   line-height: var(--emr-line, 1.5);

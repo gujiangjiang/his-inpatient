@@ -171,11 +171,11 @@ function applyPageCss(page) {
     const el = document.getElementById('emr-editor-page');
     const p = page || {};
     const px = (v, dflt) => ((v == null ? dflt : v) * 96 / 72) + 'px';
-    el.style.setProperty('--emr-ml', px(p.ml, 68));
-    el.style.setProperty('--emr-mr', px(p.mr, 68));
-    el.style.setProperty('--emr-mt', px(p.mt, 62));
-    el.style.setProperty('--emr-mb', px(p.mb, 56));
-    el.style.setProperty('--emr-hh', px(p.header_h, 72));
+    el.style.setProperty('--emr-ml', px(p.ml, 36));
+    el.style.setProperty('--emr-mr', px(p.mr, 36));
+    el.style.setProperty('--emr-mt', px(p.mt, 40));
+    el.style.setProperty('--emr-mb', px(p.mb, 36));
+    el.style.setProperty('--emr-hh', px(p.header_h, 16));
     el.style.setProperty('--emr-font', p.font || '仿宋_GB2312, FangSong, SimSun, serif');
     el.style.setProperty('--emr-size', px(p.sz, 12));
     el.style.setProperty('--emr-line', String(p.line || 1.5));

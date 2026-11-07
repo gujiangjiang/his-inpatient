@@ -61,7 +61,7 @@ $wordBody = [
 $wordSchema = [
     'mode' => 'word',
     'title' => '入院记录',
-    'page' => ['paper' => 'A4', 'mt' => 62, 'mb' => 56, 'ml' => 68, 'mr' => 68, 'header_h' => 72, 'footer_h' => 44,
+    'page' => ['paper' => 'A4', 'mt' => 40, 'mb' => 36, 'ml' => 36, 'mr' => 36, 'header_h' => 16, 'footer_h' => 40,
         'font' => '仿宋_GB2312, FangSong, SimSun, serif', 'sz' => 12, 'line' => 1.5],
     'header' => [
         'hospital' => $hospital,

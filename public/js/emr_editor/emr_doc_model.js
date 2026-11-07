@@ -112,8 +112,8 @@
 
   /* ---------- 页面与默认文档 ---------- */
   M.DEFAULT_PAGE = {
-    paper: 'A4', mt: 62, mb: 56, ml: 68, mr: 68,
-    header_h: 72, footer_h: 44,
+    paper: 'A4', mt: 40, mb: 36, ml: 36, mr: 36,   /* Word「窄」边距 ≈1.27cm */
+    header_h: 16, footer_h: 40,                     /* header_h = 页眉与正文间隔 */
     font: '仿宋_GB2312, FangSong, SimSun, serif', sz: 12, line: 1.5,
   };
   /** 标准患者信息栏 (与页眉同排展示) */
