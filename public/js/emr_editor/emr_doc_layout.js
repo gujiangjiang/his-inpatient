@@ -9,19 +9,19 @@
   const PX = 96 / 72     /* px per pt */;
   const PAPER = { A4: [595.3, 841.9], A5: [419.55, 595.3], Letter: [612, 792] };
 
-  /** 页面尺寸/正文区 (pt → px) */
+  /** 页面尺寸 (pt → px); 正文区 top/height 在 paginate 里按页眉实际高度动态计算 */
   L.dim = (page) => {
     const [pw, ph] = PAPER[page.paper] || PAPER.A4;
     const w = pw * PX, h = ph * PX;
-    const mt = (page.mt || 62) * PX, mb = (page.mb || 56) * PX;
-    const ml = (page.ml || 68) * PX, mr = (page.mr || 68) * PX;
-    const hh = (page.header_h || 52) * PX, fh = (page.footer_h || 44) * PX;
-    const bodyLeft = ml, bodyTop = mt + hh;
+    const mt = (page.mt || 40) * PX, mb = (page.mb || 36) * PX;
+    const ml = (page.ml || 36) * PX, mr = (page.mr || 36) * PX;
+    const gap = (page.header_h != null ? page.header_h : 16) * PX; /* 页眉与正文间隔 */
+    const fh = (page.footer_h || 40) * PX;
     return {
-      w, h, ml, mr, mt, mb, headerH: hh, footerH: fh,
-      bodyLeft, bodyTop,
+      w, h, ml, mr, mt, mb, gap, headerH: 0, footerH: fh,
+      bodyLeft: ml, bodyTop: mt,
       bodyW: w - ml - mr,
-      bodyH: h - mt - mb - hh - fh,
+      bodyH: h - mt - mb - fh,
     };
   };
 
@@ -167,7 +167,13 @@
       + 'font-size:' + (doc.page.sz || 12) * PX + 'px;line-height:' + (doc.page.line || 1.5) + ';'
       + 'white-space:pre-wrap;overflow-wrap:break-word;';
     document.body.appendChild(meas);
-    meas.innerHTML = R.blocksToHTML(doc.body);
+    meas.innerHTML = R.headerToHTML(doc.header, patientInfo) + R.blocksToHTML(doc.body);
+
+    /* 页眉实际高度动态测量: 正文从页眉下方 + 间隔开始, 避免信息栏与正文重叠 */
+    const headEl = meas.querySelector('.emr-page-head');
+    const headH = headEl ? headEl.offsetHeight : 0;
+    d.bodyTop = d.mt + headH + d.gap;
+    d.bodyH = d.h - d.mb - d.footerH - d.bodyTop;
 
     const headerHTML = R.headerToHTML(doc.header, patientInfo);
     const pages = [];
@@ -182,6 +188,7 @@
     let cur = newPage();
 
     for (const el of [...meas.children]) {
+      if (el === headEl) continue; /* 页眉不参与正文分页 */
       placeBlock(el, cur, d.bodyH, d.bodyW);
       while (cur.overflow.length) {
         const next = cur.overflow.shift();
