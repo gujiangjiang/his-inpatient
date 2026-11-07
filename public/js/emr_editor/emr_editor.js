@@ -18,6 +18,7 @@
 
     /* ---------- 归一化: 补齐块 id (模板/迁移数据可能缺失, 渲染与光标映射必需) ---------- */
     M.ensureIds(inst.doc.body || []);
+    if (!inst.readonly) O.recalcBmi(inst.doc.body); /* 打开即校正 BMI */
 
     /* ---------- DOM 搭建 ---------- */
     inst.container.innerHTML = '<div class="emr-head-wrap"></div>'
@@ -67,7 +68,11 @@
       const beforePos = selNow && selNow.a;
       let pos = null;
       try {
-        H.tx(label, () => { pos = fn(); }, beforePos);
+        H.tx(label, () => {
+          pos = fn();
+          O.recalcBmi(inst.doc.body);          /* 派生项自动重算 (BMI) */
+          O.assertGuard(inst.doc.body, inst.guard);
+        }, beforePos);
       } catch (e) {
         if (e.code === 'protected') Dom.toast(e.message, 'error');
         renderBody(); /* 历史已回滚, 重建 DOM */

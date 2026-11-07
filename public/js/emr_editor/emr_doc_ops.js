@@ -233,6 +233,23 @@
     return hit;
   };
 
+  /** BMI 自动计算: 由身高(cm)/体重(kg)槽位值重算 → dyn(vital_bmi_value); 任一缺失则清空 */
+  O.recalcBmi = (body) => {
+    const bPara = O.findParaWithItem(body, 'dyn', 'vital_bmi_value');
+    if (!bPara) return;
+    const hPara = O.findParaWithItem(body, 'slot', 'vital_height_val');
+    const wPara = O.findParaWithItem(body, 'slot', 'vital_weight_val');
+    const num = (s) => {
+      const m = String(s || '').replace(/[^\d.]/g, '');
+      const v = parseFloat(m);
+      return isFinite(v) && v > 0 ? v : 0;
+    };
+    const h = hPara ? num(O.valueAfterSlot(hPara, 'vital_height_val')) : 0;
+    const w = wPara ? num(O.valueAfterSlot(wPara, 'vital_weight_val')) : 0;
+    const val = (h > 0 && w > 0) ? (w / Math.pow(h / 100, 2)).toFixed(1) : '';
+    O.setDynTextIn(bPara, 'vital_bmi_value', val);
+  };
+
   /* ---------- 守卫校验 (事务后) ---------- */
   /** 事务后校验: 固定元素键集合必须与模板完全一致; 不一致抛错触发回滚 */
   O.assertGuard = (body, guard) => {

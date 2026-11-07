@@ -35,6 +35,7 @@ if ($hospital === '') $hospital = '医院名称';
 $P = function (array $runs, array $pPr = []) { return ['t' => 'p', 'pPr' => $pPr, 'runs' => $runs]; };
 $fx = function ($key, $text) { return ['t' => 'fx', 'key' => $key, 'text' => $text]; };
 $slot = function ($key, $ph) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph]; };
+$dyn = function ($key, $text = '') { return ['t' => 'dyn', 'key' => $key, 'text' => $text]; };
 $secHead = function ($text) { return ['t' => 'p', 'pPr' => ['align' => 'center', 'borders' => ['top' => true]], 'rPr' => ['b' => true, 'sz' => 13], 'runs' => [['t' => 'text', 'text' => $text]]]; };
 $sp = ['t' => 'text', 'text' => "\u{3000}\u{3000}"];
 
@@ -47,7 +48,7 @@ $wordBody = [
     $P([$fx('family_history', '家族史：'), $slot('family_history_val', '请输入家族史')]),
     $secHead('体格检查'),
     $P([$fx('vital_temp', '体温：'), $slot('vital_temp_val', '℃'), $sp, $fx('vital_hr', '心率：'), $slot('vital_hr_val', '次/分'), $sp, $fx('vital_bp', '血压：'), $slot('vital_bp_val', 'mmHg')]),
-    $P([$fx('vital_height', '身高：'), $slot('vital_height_val', 'cm'), $sp, $fx('vital_weight', '体重：'), $slot('vital_weight_val', 'kg'), $sp, $fx('vital_bmi', 'BMI：'), $slot('vital_bmi_val', '')]),
+    $P([$fx('vital_height', '身高：'), $slot('vital_height_val', 'cm'), $sp, $fx('vital_weight', '体重：'), $slot('vital_weight_val', 'kg'), $sp, $fx('vital_bmi', 'BMI：'), $dyn('vital_bmi_value', '')]),
     $P([$slot('physical_exam_val', '请输入体格检查')]),
     $secHead('专科检查'),
     $P([$slot('special_exam_val', '请输入专科检查')]),
