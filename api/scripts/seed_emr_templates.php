@@ -55,7 +55,7 @@ $wordBody = [
     $secHead('辅助检查'),
     $P([$slot('aux_exam_val', '请输入辅助检查')]),
     $P([$fx('initial_diagnosis', '初步诊断：'), $dyn('initial_diagnosis_value', '')], ['align' => 'right']),
-    $P([$fx('sign_line', '医师签名：'), $slot('sign_line_val', '（上级签名，没有则不显示）/（下级签名）')], ['align' => 'right']),
+    $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']),
 ];
 
 $wordSchema = [
