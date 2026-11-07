@@ -118,14 +118,31 @@
   };
   /** 标准患者信息栏 (与页眉同排展示) */
   M.DEFAULT_INFO_FIELDS = [['姓名', 'name'], ['性别', 'gender'], ['科别', 'department'], ['病区', 'ward_name'], ['年龄', 'age'], ['床号', 'bed_no'], ['住院号', 'admission_no']];
-  /** 由模板 schema (word 模式) 生成空白文档 */
+  /** 由模板 schema (word 模式) 生成空白文档 (补齐块 id) */
   M.fromSchema = (schema) => ({
     v: 1,
     title: schema.title || '',
     page: Object.assign({}, M.DEFAULT_PAGE, schema.page || {}),
-    header: Object.assign({ hospital: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
-    body: JSON.parse(JSON.stringify(schema.body && schema.body.length ? schema.body : [M.para()])),
+    header: Object.assign({}, { hospital: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
+    body: M.ensureIds(JSON.parse(JSON.stringify(schema.body && schema.body.length ? schema.body : [M.para()]))),
   });
+  /** 为缺失 id 的块/行/单元格补齐 id (模板 JSON / 迁移数据可能未带 id; 编辑器渲染映射必需) */
+  M.ensureIds = (blocks) => {
+    for (const b of blocks) {
+      if (!b || typeof b !== 'object') continue;
+      if (b.id == null) b.id = M.nid();
+      if (b.t === 'tbl') {
+        for (const r of (b.rows || [])) {
+          if (r.id == null) r.id = M.nid();
+          for (const c of (r.cells || [])) {
+            if (c.id == null) c.id = M.nid();
+            M.ensureIds(c.blocks || []);
+          }
+        }
+      }
+    }
+    return blocks;
+  };
   /** 旧结构化 sections → word 文档 (兜底转换; 算法与服务端迁移 038 一致) */
   M.fromSections = (sections, title) => {
     const body = [];

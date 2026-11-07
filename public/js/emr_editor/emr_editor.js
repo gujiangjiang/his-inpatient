@@ -16,6 +16,9 @@
       dirty: false, _handlers: [],
     };
 
+    /* ---------- 归一化: 补齐块 id (模板/迁移数据可能缺失, 渲染与光标映射必需) ---------- */
+    M.ensureIds(inst.doc.body || []);
+
     /* ---------- DOM 搭建 ---------- */
     inst.container.innerHTML = '<div class="emr-head-wrap"></div>'
       + '<div class="emr-body" contenteditable="' + (inst.readonly ? 'false' : 'true') + '"></div>';

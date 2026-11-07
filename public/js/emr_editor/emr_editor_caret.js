@@ -85,9 +85,14 @@
     return { pc, rel: pc.childNodes.length };
   };
   const apply = (r, method, pt) => {
-    if (pt.tn) r[method](pt.tn, pt.rel);
-    else if (pt.el) (pt.after ? r[method + 'After'] : r[method + 'Before'])(pt.el);
-    else r[method](pt.pc, pt.rel);
+    if (pt.tn) { r[method](pt.tn, pt.rel); return; }
+    if (pt.el) {
+      /* 不能用三元提取方法再调用: 会丢失 Range 接收者导致 Illegal invocation */
+      if (pt.after) r[method + 'After'](pt.el);
+      else r[method + 'Before'](pt.el);
+      return;
+    }
+    r[method](pt.pc, pt.rel);
   };
 
   /** 模型位置 → DOM Range (a 必给, b 缺省为光标) */
