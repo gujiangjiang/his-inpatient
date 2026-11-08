@@ -16,20 +16,15 @@
   };
   const infoOf = (blocks, p) => O.ctx(blocks).find((x) => x.p === p) || null;
 
-  /** 光标贴靠保护项: 若 offset 落在保护项起点, 推进到其后 (新内容一律落到固定元素之后) */
-  const clampAfterProtected = (p, o) => {
-    const loc = M.locate(p, o);
-    const it = p.runs[loc.i];
-    if (it && M.isProtected(it) && loc.off === 0) return loc.start + M.ilen(it);
-    return o;
-  };
-
   /* ---------- 插入 ---------- */
+  /* 注意: 不能在插入时把「位于固定项起点的光标」强行推到其后 —— 该位置同时也是
+     前一槽位的结束边界(如体征行: 槽位后紧邻下一个固定标签), 推移会导致输入错位;
+     固定项的删除保护由 deleteRange/守卫校验负责, 插入边界无需额外钳制 */
   /** 在 pos 插入文本; 返回新光标位置 */
   O.insertTextAt = (pos, text, rPr) => {
     if (!text) return pos;
     const p = pos.p;
-    let o = clampAfterProtected(p, pos.o);
+    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
     const i = M.splitAt(p, o);
     const it = M.text(text, M.cloneR(rPr || p.rPr || {}));
     p.runs.splice(i, 0, it);
@@ -40,7 +35,7 @@
   /** 在 pos 插入 tab (制表); 返回新位置 */
   O.insertTabAt = (pos) => {
     const p = pos.p;
-    let o = clampAfterProtected(p, pos.o);
+    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
     const i = M.splitAt(p, o);
     p.runs.splice(i, 0, M.item('tab'));
     return { p, o: o + 1 };
