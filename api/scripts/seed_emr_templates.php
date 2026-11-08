@@ -24,7 +24,7 @@ foreach ($categories as $c) {
         ->execute([$c[0], $c[1], $c[2], DateHelper::now()]);
 }
 
-// === 入院记录字处理模板 (word 模式: 类 Word 整页排版, 固定标签/填写槽) ===
+// === 内置住院病历模板 (字处理 word 模式, 定义见 emr_template_defs.php) ===
 $hospital = '';
 try {
     $h = DB::selectOne("SELECT config_value FROM system_config WHERE config_key = 'hospital_name'");
@@ -32,71 +32,35 @@ try {
 } catch (Exception $e) { /* 忽略 */ }
 if ($hospital === '') $hospital = '医院名称';
 
-$P = function (array $runs, array $pPr = []) { return ['t' => 'p', 'pPr' => $pPr, 'runs' => $runs]; };
-$fx = function ($key, $text) { return ['t' => 'fx', 'key' => $key, 'text' => $text]; };
-$slot = function ($key, $ph) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph]; };
-$dyn = function ($key, $text = '') { return ['t' => 'dyn', 'key' => $key, 'text' => $text]; };
-$secHead = function ($text) { return ['t' => 'p', 'pPr' => ['align' => 'center', 'borders' => ['top' => true]], 'rPr' => ['b' => true, 'sz' => 13], 'runs' => [['t' => 'text', 'text' => $text]]]; };
-$sp = ['t' => 'text', 'text' => "\u{3000}\u{3000}"];
-
-$wordBody = [
-    $P([$fx('chief_complaint', '主诉：'), $slot('chief_complaint_val', '患者主诉症状及持续时间')]),
-    $P([$fx('present_illness', '现病史：'), $slot('present_illness_val', '请输入现病史')]),
-    $P([$fx('past_history', '既往史：'), $slot('past_history_val', '请输入既往史')]),
-    $P([$fx('personal_history', '个人史：'), $slot('personal_history_val', '请输入个人史')]),
-    $P([$fx('marriage_history', '婚育史：'), $slot('marriage_history_val', '请输入婚育史')]),
-    $P([$fx('family_history', '家族史：'), $slot('family_history_val', '请输入家族史')]),
-    $secHead('体格检查'),
-    $P([$fx('vital_temp', '体温：'), $slot('vital_temp_val', '℃'), $sp, $fx('vital_hr', '心率：'), $slot('vital_hr_val', '次/分'), $sp, $fx('vital_bp', '血压：'), $slot('vital_bp_val', 'mmHg')]),
-    $P([$fx('vital_height', '身高：'), $slot('vital_height_val', 'cm'), $sp, $fx('vital_weight', '体重：'), $slot('vital_weight_val', 'kg'), $sp, $fx('vital_bmi', 'BMI：'), $dyn('vital_bmi_value', '')]),
-    $P([$slot('physical_exam_val', '请输入体格检查')]),
-    $secHead('专科检查'),
-    $P([$slot('special_exam_val', '请输入专科检查')]),
-    $secHead('辅助检查'),
-    $P([$slot('aux_exam_val', '请输入辅助检查')]),
-    $P([$fx('initial_diagnosis', '初步诊断：'), $dyn('initial_diagnosis_value', '')], ['align' => 'right']),
-    $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']),
-];
-
-$wordSchema = [
-    'mode' => 'word',
-    'title' => '入院记录',
-    'page' => ['paper' => 'A4', 'mt' => 40, 'mb' => 36, 'ml' => 36, 'mr' => 36, 'header_h' => 16, 'footer_h' => 40,
-        'font' => '仿宋_GB2312, FangSong, SimSun, serif', 'sz' => 12, 'line' => 1.5],
-    'header' => [
-        'hospital' => $hospital,
-        'doc_name' => '入院记录',
-        'info_fields' => [
-            ['姓名', 'name'], ['性别', 'gender'], ['科别', 'department'], ['病区', 'ward_name'],
-            ['年龄', 'age'], ['床号', 'bed_no'], ['住院号', 'admission_no'],
-        ],
-    ],
-    'body' => $wordBody,
-];
-
-$admissionCategory = $pdo->query("SELECT id FROM emr_categories WHERE code = 'admission'")->fetch();
-$check = $pdo->query("SELECT id FROM emr_templates WHERE name = '常规入院记录'")->fetch();
-if (!$check) {
-    $pdo->prepare("INSERT INTO emr_templates (name, record_type, schema_json, category_id, usage_count, created_at) VALUES ('常规入院记录', 'admission', ?, ?, 0, ?)")
-        ->execute([json_encode($wordSchema, JSON_UNESCAPED_UNICODE), $admissionCategory['id'], DateHelper::now()]);
-} else {
-    $pdo->prepare("UPDATE emr_templates SET schema_json = ?, category_id = ? WHERE id = ?")
-        ->execute([json_encode($wordSchema, JSON_UNESCAPED_UNICODE), $admissionCategory['id'], $check['id']]);
+// 清理早期版本种子产生的测试模板: 先解除文书引用(文书自有守卫, 不依赖模板), 再删除
+$legacyRows = DB::select("SELECT id, name FROM emr_templates WHERE name IN ('常规入院记录','入院记录(字处理)') OR name LIKE '%(字处理)%' OR name LIKE '%测试%'");
+foreach ($legacyRows as $t) {
+    $pdo->prepare("UPDATE emr_documents SET template_id = NULL WHERE template_id = ?")->execute([$t['id']]);
+    $pdo->prepare("DELETE FROM emr_templates WHERE id = ?")->execute([$t['id']]);
 }
 
-// 早期版本创建的同义模板 '入院记录(字处理)': 无文书引用则删除, 有引用则同步为新设计
-$checkWord = $pdo->query("SELECT id FROM emr_templates WHERE name = '入院记录(字处理)'")->fetch();
-if ($checkWord) {
-    $ref = $pdo->prepare("SELECT COUNT(*) AS n FROM emr_documents WHERE template_id = ?");
-    $ref->execute([$checkWord['id']]);
-    $refRow = $ref->fetch();
-    if ((int)$refRow['n'] === 0) {
-        $pdo->prepare("DELETE FROM emr_templates WHERE id = ?")->execute([$checkWord['id']]);
+$defsFn = require __DIR__ . '/emr_template_defs.php';
+$defs = $defsFn($hospital);
+foreach ($defs as $d) {
+    list($name, $recordType, $catCode, $schema) = $d;
+    $cat = DB::selectOne("SELECT id FROM emr_categories WHERE code = ?", [$catCode]);
+    if (!$cat) continue;
+    $json = json_encode($schema, JSON_UNESCAPED_UNICODE);
+    $check = $pdo->prepare("SELECT id FROM emr_templates WHERE name = ?");
+    $check->execute([$name]);
+    $row = $check->fetch();
+    if ($row) {
+        $pdo->prepare("UPDATE emr_templates SET schema_json = ?, category_id = ?, record_type = ? WHERE id = ?")
+            ->execute([$json, $cat['id'], $recordType, $row['id']]);
     } else {
-        $pdo->prepare("UPDATE emr_templates SET schema_json = ?, category_id = ? WHERE id = ?")
-            ->execute([json_encode($wordSchema, JSON_UNESCAPED_UNICODE), $admissionCategory['id'], $checkWord['id']]);
+        $pdo->prepare("INSERT INTO emr_templates (name, record_type, schema_json, category_id, usage_count, created_at) VALUES (?,?,?,?,0,?)")
+            ->execute([$name, $recordType, $json, $cat['id'], DateHelper::now()]);
     }
 }
+if ($legacyRows) {
+    echo "已清理测试模板: " . implode(', ', array_map(function ($x) { return $x['name']; }, $legacyRows)) . "\n";
+}
+echo "内置模板: " . implode(', ', array_map(function ($d) { return $d[0]; }, $defs)) . "\n";
 
 // === 医生科室授权 ===
 $doctor1 = DB::selectOne("SELECT id, department_id FROM users WHERE username = 'doctor1'");
