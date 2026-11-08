@@ -252,6 +252,41 @@
       el.classList.add('emr-slot-active');
     };
 
+    /* 下拉选项弹层 (填写槽 opts) */
+    let choiceBox = null;
+    const closeChoice = () => {
+      if (choiceBox) { choiceBox.remove(); choiceBox = null; }
+      document.removeEventListener('mousedown', onDocDown, true);
+      document.removeEventListener('keydown', onChoiceKey, true);
+    };
+    const onDocDown = (ev) => { if (choiceBox && !choiceBox.contains(ev.target)) closeChoice(); };
+    const onChoiceKey = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); closeChoice(); } };
+    const openChoice = (slotEl, options, onPick) => {
+      closeChoice();
+      const box = document.createElement('div');
+      box.className = 'emr-choice';
+      const r = slotEl.getBoundingClientRect();
+      box.style.left = Math.round(r.left) + 'px';
+      box.style.top = Math.round(r.bottom + 2) + 'px';
+      options.forEach((opt) => {
+        const item = document.createElement('div');
+        item.className = 'emr-choice-item';
+        item.textContent = opt;
+        item.addEventListener('mousedown', (ev) => {
+          ev.preventDefault(); ev.stopPropagation();
+          closeChoice();
+          onPick(opt);
+        });
+        box.appendChild(item);
+      });
+      document.body.appendChild(box);
+      choiceBox = box;
+      setTimeout(() => {
+        document.addEventListener('mousedown', onDocDown, true);
+        document.addEventListener('keydown', onChoiceKey, true);
+      }, 0);
+    };
+
     const onClick = (e) => {
       /* 初步诊断行: 点击一键同步诊断 (来源: 左侧「诊断」的入院诊断, 不允许手改) */
       const pEl = e.target.closest && e.target.closest('.p');
@@ -272,9 +307,23 @@
       const info = inst.index.get(+sp.dataset.pid);
       if (!info) return;
       if (inst.readonly) return;
-      const o = (+slot.dataset.o) + 1;
+      const o = +slot.dataset.o;
+      const loc = M.locate(info.p, o);
+      const item = info.p.runs[loc.i];
+      /* 带选项的填写槽: 弹出下拉选项, 选择即填入(替换旧值) */
+      if (item && item.t === 'slot' && Array.isArray(item.opts) && item.opts.length) {
+        deactivateSlot();
+        openChoice(slot, item.opts, (val) => {
+          apply('选择', () => {
+            O.setSlotValue(info.p, item.key, val);
+            O.assertGuard(inst.doc.body, inst.guard);
+            return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+          });
+        });
+        return;
+      }
       inst.bodyEl.focus();
-      C.restore(inst.bodyEl, { p: info.p, o, cont: info.cont });
+      C.restore(inst.bodyEl, { p: info.p, o: o + 1, cont: info.cont });
       activateSlot(slot);
     };
 

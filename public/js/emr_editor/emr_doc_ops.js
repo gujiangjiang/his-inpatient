@@ -236,6 +236,18 @@
     }
     return s;
   };
+  /** 设置槽位值: 清除槽位后到下一个保护项之间的旧值, 写入新文本 (下拉选项/外部回填用) */
+  O.setSlotValue = (p, key, text) => {
+    const runs = p.runs;
+    const idx = runs.findIndex((it) => it.t === 'slot' && it.key === key);
+    if (idx < 0) return false;
+    let end = idx + 1;
+    while (end < runs.length && !M.isProtected(runs[end])) end++;
+    const repl = text ? [M.text(String(text))] : [];
+    runs.splice(idx + 1, end - (idx + 1), ...repl);
+    return true;
+  };
+
   /** 设置包含指定项的段落内 dyn 的文本; 返回是否命中 */
   O.setDynTextIn = (p, key, text) => {
     for (const it of p.runs) {

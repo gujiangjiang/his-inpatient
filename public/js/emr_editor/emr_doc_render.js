@@ -65,9 +65,10 @@
       }
       if (it.t === 'slot') {
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
+        const cls = 'emr-slot' + (Array.isArray(it.opts) && it.opts.length ? ' emr-slot-sel' : '');
         out.push(filled
-          ? '<span class="emr-slot" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>'
-          : '<span class="emr-slot" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');
+          ? '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>'
+          : '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');
         continue;
       }
       if (it.t === 'dyn') {

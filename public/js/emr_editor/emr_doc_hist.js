@@ -11,7 +11,7 @@
 
   H.bind = (get, set) => { H.get = get; H.set = set; };
 
-  H.snap = () => JSON.parse(JSON.stringify(H.get()));
+  H.snap = () => JSON.stringify(H.get());  /* 快照为 JSON 字符串 (undoOne/redoOne 按字符串还原) */
 
   /** 执行一个事务: run() 修改模型; 失败回滚并上抛, 供调用方提示"受保护内容不可修改" */
   H.tx = function (label, run, pos) {
@@ -22,7 +22,7 @@
       run();
       after = H.snap();
     } catch (e) {
-      H.set(before); /* 回滚到事务前 */
+      H.set(JSON.parse(before)); /* 回滚到事务前 */
       throw e;
     }
     H.push(label, before, after, pos);

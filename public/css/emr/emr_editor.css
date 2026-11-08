@@ -85,6 +85,33 @@
 .emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
 .emr-slot-active { color: transparent !important; } /* 点击激活: 占位文字隐去(背景提示), 光标落在字段内 */
 
+/* 下拉选项槽: 点击弹出选项 (是否/婚姻状况/民族等) */
+.emr-slot-sel { cursor: pointer; background: #f5f8ff; }
+.emr-slot-sel::after {
+  content: '';
+  display: inline-block;
+  margin-left: 5px;
+  vertical-align: 1px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #8aa8d8;
+}
+/* 下拉弹层 */
+.emr-choice {
+  position: fixed;
+  z-index: 4000;
+  min-width: 110px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #c9d4e6;
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  padding: 3px 0;
+}
+.emr-choice-item { padding: 6px 14px; font-size: 13px; color: #303133; cursor: pointer; white-space: nowrap; }
+.emr-choice-item:hover { background: #eef4ff; }
+
 /* 动态只读项 (BMI/签名/诊断): 普通显示; 诊断同步项可点击 */
 .emr-dyn { user-select: none; -webkit-user-select: none; }
 .emr-dyn:empty { min-width: 3em; display: inline-block; }
