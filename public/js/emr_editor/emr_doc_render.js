@@ -32,6 +32,8 @@
     if (p.align) s.push('text-align:' + p.align);
     if (p.ind) s.push('text-indent:' + pt(p.ind));
     if (p.sp) s.push('line-height:' + p.sp);
+    /* flex: 'between' = 弹性行: 字段居中且两侧对齐 (体征行等) */
+    if (p.flex === 'between') s.push('display:flex', 'justify-content:space-between', 'align-items:baseline', 'gap:10px', 'padding:0 2px');
     if (p.borders) {
       if (p.borders.top) s.push('border-top:1px solid #000');
       if (p.borders.bottom) s.push('border-bottom:1px solid #000');
