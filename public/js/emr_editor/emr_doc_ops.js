@@ -93,7 +93,8 @@
   /** 段内是否含保护项 */
   const hasProtected = (p) => p.runs.some(M.isProtected);
 
-  /** 删除 [a,b) (同段或跨段); 返回折叠后光标 */
+  /** 删除 [a,b) (同段或跨段); 返回折叠后光标
+   *  跨段合并规则: 空段不吞并内容段 —— 保留有内容段落的段落格式(对齐等), 只删除空段 */
   O.deleteRange = (a, b) => {
     if (a.p === b.p) {
       const lo = Math.min(a.o, b.o), hi = Math.max(a.o, b.o);
@@ -101,28 +102,35 @@
       M.normalize(a.p);
       return { p: a.p, o: lo, cont: a.cont };
     }
-    /* 跨段: 中间整段不可含固定元素 */
+    /* 跨段: 中间整段不可含固定元素或内容 */
     const paras = O.ctx(a.cont);
     const ia = paras.findIndex((x) => x.p === a.p);
     const ib = paras.findIndex((x) => x.p === b.p);
     for (let k = ia + 1; k < ib; k++) {
-      if (hasProtected(paras[k].p)) {
+      if (hasProtected(paras[k].p) || paras[k].p.runs.length) {
         const e = new Error('该区域包含固定元素, 不可整段删除');
         e.code = 'protected'; throw e;
       }
     }
     eraseInPara(a.p, a.o, M.plen(a.p));
     eraseInPara(b.p, 0, b.o);
-    /* 移除中间段落 */
-    for (let k = ib - 1; k > ia; k--) {
-      const item = paras[k];
-      item.cont.splice(item.i, 1);
+    M.normalize(a.p);
+    M.normalize(b.p);
+    const contA = paras[ia], contB = paras[ib];
+    /* b 已空: 只删 b, 保留 a (a 的格式不变) */
+    if (!b.p.runs.length) {
+      contB.cont.splice(contB.i, 1);
+      return { p: a.p, o: a.o, cont: a.cont };
     }
-    /* 合并 a.p 与 b.p 剩余内容 (保护项随 run 迁移, 顺序不变) */
+    /* a 已空: 只删 a, 保留 b (保留 b 的段落格式: 右对齐等) */
+    if (!a.p.runs.length) {
+      contA.cont.splice(contA.i, 1);
+      return { p: b.p, o: 0, cont: b.cont };
+    }
+    /* 双方均有内容: 合并进左侧段落 (保护项随 run 迁移, 顺序不变) */
     const tail = b.p.runs.slice();
     a.p.runs = a.p.runs.concat(tail);
-    const contB = infoOf(b.cont, b.p);
-    if (contB) contB.cont.splice(contB.i, 1);
+    contB.cont.splice(contB.i, 1);
     M.normalize(a.p);
     return { p: a.p, o: a.o, cont: a.cont };
   };
@@ -135,12 +143,17 @@
     if (!info || info.i === 0) return pos;
     const prev = paras[info.i - 1].p;
     if (hasProtected(prev)) {
+      /* 当前段为空 (如槽位行后回车产生的空行): 只删空段, 不影响固定段 */
+      if (!pos.p.runs.length) {
+        const cur = paras[info.i];
+        cur.cont.splice(cur.i, 1);
+        return { p: prev, o: M.plen(prev), cont: pos.cont };
+      }
       const e = new Error('上一段含固定元素, 不可整段删除');
       e.code = 'protected'; throw e;
     }
     const end = { p: prev, o: M.plen(prev), cont: pos.cont };
-    const merged = O.deleteRange(end, pos);
-    return merged;
+    return O.deleteRange(end, pos);
   };
 
   /** Delete: 删光标后一个字符 */
@@ -151,6 +164,14 @@
     if (!info || info.i >= paras.length - 1) return pos;
     const next = paras[info.i + 1].p;
     if (hasProtected(next)) {
+      /* 当前段为空: 只删空段, 不动固定段 */
+      if (!pos.p.runs.length) {
+        const cur = paras[info.i];
+        cur.cont.splice(cur.i, 1);
+        const prevInfo = info.i > 0 ? paras[info.i - 1] : null;
+        if (prevInfo) return { p: prevInfo.p, o: M.plen(prevInfo.p), cont: pos.cont };
+        return { p: next, o: 0, cont: pos.cont };
+      }
       const e = new Error('下一段含固定元素, 不可整段删除');
       e.code = 'protected'; throw e;
     }
