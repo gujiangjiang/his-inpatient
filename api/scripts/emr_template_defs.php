@@ -14,6 +14,9 @@ return function ($hospital) {
         return $P([$fx($key, $label), $slot($key . '_val', $ph !== '' ? $ph : ('请输入' . rtrim($label, '：')))]);
     };
     $sig = function () use ($fx, $dyn, $P) { return $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']); };
+    /* 12 项患者信息表单元格助手 (label|value|label|value, 无边框) */
+    $cText = function ($text, $w) { return ['tcPr' => ['w' => $w], 'blocks' => [['t' => 'p', 'runs' => [['t' => 'text', 'text' => $text]]]]]; };
+    $cItem = function ($item, $w) { return ['tcPr' => ['w' => $w], 'blocks' => [['t' => 'p', 'runs' => [$item]]]]; };
 
     $page = ['paper' => 'A4', 'mt' => 40, 'mb' => 36, 'ml' => 36, 'mr' => 36, 'header_h' => 16, 'footer_h' => 40,
         'font' => '仿宋_GB2312, FangSong, SimSun, serif', 'sz' => 12, 'line' => 1.5];
@@ -32,15 +35,29 @@ return function ($hospital) {
     $YESNO = ['无', '有'];
 
     /** 入院记录正文 (通用) */
-    $admissionBody = function () use ($fx, $slot, $sel, $dyn, $head, $row, $line, $P, $sig, $NATION, $MARRIAGE, $OCCUPATION, $TELLER, $YESNO) {
+    $admissionBody = function () use ($fx, $slot, $sel, $dyn, $head, $row, $line, $P, $sig, $cText, $cItem, $NATION, $MARRIAGE, $OCCUPATION, $TELLER, $YESNO) {
         $body = [];
-        $body[] = $row([$fx('nation', '民族：'), $sel('nation_val', '请选择', $NATION),
-            $fx('marriage', '婚姻状况：'), $sel('marriage_val', '请选择', $MARRIAGE)]);
-        $body[] = $row([$fx('birthplace', '出生地：'), $slot('birthplace_val', '请输入出生地'),
-            $fx('occupation', '职业：'), $sel('occupation_val', '请选择', $OCCUPATION)]);
-        $body[] = $row([$fx('admission_date', '入院日期：'), $slot('admission_date_val', '请输入'),
-            $fx('record_date', '记录日期：'), $slot('record_date_val', '请输入'),
-            $fx('history_teller', '病史陈述者：'), $sel('history_teller_val', '请选择', $TELLER)]);
+        /* 患者信息 12 项 (两列: 左 姓名/性别/年龄/婚姻/籍贯/民族, 右 职业/单位/住址/病史陈述者/入院日期/记录日期)
+           编辑状态下与病案首页单项同步 (未手动修改过的字段自动更新, 手动修改并保存后停止同步) */
+        $body[] = [
+            't' => 'tbl',
+            'tblPr' => ['plain' => true],
+            'grid' => [44, 172, 78, 229.3],
+            'rows' => [
+                ['cells' => [$cText('姓名：', 44), $cItem($slot('p_name_val', '请输入姓名'), 172),
+                    $cText('职业：', 78), $cItem($sel('p_occupation_val', '请选择职业', $OCCUPATION), 229.3)]],
+                ['cells' => [$cText('性别：', 44), $cItem($sel('p_gender_val', '请选择性别', ['男', '女']), 172),
+                    $cText('单位：', 78), $cItem($slot('p_workunit_val', '请输入工作单位'), 229.3)]],
+                ['cells' => [$cText('年龄：', 44), $cItem($slot('p_age_val', '请输入年龄'), 172),
+                    $cText('住址：', 78), $cItem($slot('p_address_val', '请输入住址'), 229.3)]],
+                ['cells' => [$cText('婚姻：', 44), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 172),
+                    $cText('病史陈述者：', 78), $cItem($sel('p_teller_val', '请选择', $TELLER), 229.3)]],
+                ['cells' => [$cText('籍贯：', 44), $cItem($slot('p_native_val', '请输入籍贯'), 172),
+                    $cText('入院日期：', 78), $cItem($slot('p_admitdate_val', '请输入'), 229.3)]],
+                ['cells' => [$cText('民族：', 44), $cItem($sel('p_nation_val', '请选择民族', $NATION), 172),
+                    $cText('记录日期：', 78), $cItem($slot('p_recorddate_val', '请输入'), 229.3)]],
+            ],
+        ];
         $body[] = $line('主诉：', 'chief_complaint', '主要症状（或体征）及持续时间');
         $body[] = $line('现病史：', 'present_illness', '发病情况、症状特点及演变、伴随症状、诊疗经过、一般情况变化等（按时间顺序）');
         $body[] = $line('既往史：', 'past_history', '既往健康状况、疾病史、预防接种史等');

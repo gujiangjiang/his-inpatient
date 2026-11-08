@@ -312,7 +312,51 @@
       }, 0);
     };
 
+    /** 弹层选择/日期: 把选项写入槽位 (供空槽点击与已填值改选共用) */
+    const applySlotChoice = (info, key, o, val) => {
+      apply('选择', () => {
+        O.setSlotValue(info.p, key, val);
+        O.assertGuard(inst.doc.body, inst.guard);
+        return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+      });
+    };
+    const applySlotDate = (info, key, o, val) => {
+      apply('日期', () => {
+        O.setSlotValue(info.p, key, val);
+        O.assertGuard(inst.doc.body, inst.guard);
+        return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+      });
+    };
+
     const onClick = (e) => {
+      /* 点击选项/日期槽的已填值文本: 重新弹层改选 (枚举字段以选择为准) */
+      const span = e.target.closest && e.target.closest('.pc > span');
+      if (span && !span.dataset.item && !inst.readonly) {
+        const ppEl = span.closest('.p');
+        const info2 = ppEl ? inst.index.get(+ppEl.dataset.pid) : null;
+        if (info2) {
+          const before = +span.dataset.o - 1;
+          if (before >= 0) {
+            const loc2 = M.locate(info2.p, before);
+            const prev = info2.p.runs[loc2.i];
+            if (prev && prev.t === 'slot') {
+              if (Array.isArray(prev.opts) && prev.opts.length) {
+                e.preventDefault();
+                deactivateSlot();
+                openChoice(span, prev.opts, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
+                return;
+              }
+              if (opts.datePickers && opts.datePickers[prev.key]) {
+                e.preventDefault();
+                deactivateSlot();
+                const cur = O.valueAfterSlot(info2.p, prev.key).trim();
+                const opened = openDatePicker(span, opts.datePickers[prev.key], cur, (val) => applySlotDate(info2, prev.key, +span.dataset.o - 1, val));
+                if (opened) return;
+              }
+            }
+          }
+        }
+      }
       /* 初步诊断行: 点击一键同步诊断 (来源: 左侧「诊断」的入院诊断, 不允许手改) */
       const pEl = e.target.closest && e.target.closest('.p');
       if (pEl && pEl.querySelector('.emr-dyn-sync')) {

@@ -48,6 +48,8 @@
       '.emr-fx { font-weight: bold; }',
       '.emr-tbl { border-collapse: collapse; width: 100%; margin: 6px 0; }',
       '.emr-tbl td { border: 0.5pt solid #000; padding: 4px 6px; vertical-align: top; }',
+      '.emr-tbl-plain { margin: 2px 0 6px; }',
+      '.emr-tbl-plain td { border: none !important; padding: 1px 6px 1px 0; vertical-align: top; }',
     ].join('\n');
 
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(doc.title || '病历') + '</title>'

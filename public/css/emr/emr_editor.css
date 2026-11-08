@@ -144,6 +144,9 @@
   padding: 4px 6px;
   vertical-align: top;
 }
+/* 无边框信息表 (患者信息 12 项等) */
+.emr-tbl-plain { margin: 2px 0 6px; }
+.emr-tbl-plain td { border: none; padding: 1px 6px 1px 0; vertical-align: top; }
 
 /* 隐藏测量容器 (分页引擎) */
 .emr-measure { contain: layout style; }

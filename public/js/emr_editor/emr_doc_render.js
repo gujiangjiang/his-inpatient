@@ -118,7 +118,8 @@
             }
             return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks) + '</td>';
           }).join('') + '</tr>').join('');
-        out.push('<table class="emr-tbl" style="width:' + (grid.length ? pt(grid.reduce((a, x) => a + x, 0)) : '100%') + '">' + cells + '</table>');
+        const cls = 'emr-tbl' + (b.tblPr && b.tblPr.plain ? ' emr-tbl-plain' : '');
+        out.push('<table class="' + cls + '" style="width:' + (grid.length ? pt(grid.reduce((a, x) => a + x, 0)) : '100%') + '">' + cells + '</table>');
       }
     }
     return out.join('');

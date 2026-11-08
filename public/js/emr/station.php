@@ -137,6 +137,8 @@ async function emr_createFromTemplate(templateId, categoryId) {
         ? EmrDoc.fromSchema(schema)
         : EmrDoc.fromSections(schema.sections || [], template.name);
     doc.title = template.name;
+    /* 记录日期 = 创建本入院记录的时间 (可点击修改; 不参与首页同步) */
+    EmrOps.setSlotValueByKey(doc.body, 'p_recorddate_val', emrNowStamp());
     const meta = { guard: EmrDoc.collectGuard(doc.body) };
     let contentHtml = '';
     try { contentHtml = EmrPrint.buildHTML(doc, buildPatientInfo()); } catch (e) { console.error('打印快照生成失败', e); }
@@ -200,12 +202,68 @@ async function emr_openDocument(docId) {
         doc.doc_meta = doc.doc_meta || {};
         if (!doc.doc_meta.guard) doc.doc_meta.guard = EmrDoc.collectGuard(doc.doc_json.body);
     }
-    openWordDoc(doc, doc.status === 'signed');
+    await openWordDoc(doc, doc.status === 'signed');
 }
 
-function openWordDoc(doc, signed) {
+/* ================= 病案首页单项同步 (仅编辑状态; 已签名=法律快照不动) ================= */
+/** 时间戳 'YYYY-MM-DD HH:mm' */
+function emrNowStamp() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+/** 取日期部分 'YYYY-MM-DD' */
+function emrYMD(v) {
+    if (!v) return '';
+    const m = String(v).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : String(v).slice(0, 10);
+}
+const CASE_SYNC = {
+    p_name_val: (c, p) => c.name || (p && p.name) || '',
+    p_gender_val: (c, p) => ({ '1': '男', '2': '女' }[c.gender]) || (p && p.gender === 'male' ? '男' : p && p.gender === 'female' ? '女' : (p && (p.gender === '男' || p.gender === '女') ? p.gender : '')),
+    p_age_val: (c, p) => {
+        if (c.age_y) return String(c.age_y);
+        if (p && p.birth_date) { const a = new Date().getFullYear() - new Date(p.birth_date).getFullYear(); return a > 0 ? String(a) : ''; }
+        return '';
+    },
+    p_marriage_val: (c) => ({ '1': '未婚', '2': '已婚', '3': '丧偶', '4': '离异' }[c.marriage] || ''),
+    p_native_val: (c) => [c.native_prov, c.native_city].filter(x => x && String(x).trim()).join(''),
+    p_nation_val: (c) => c.nation || '',
+    p_occupation_val: (c) => c.occupation || '',
+    p_workunit_val: (c) => c.work_unit || '',
+    p_address_val: (c) => [c.addr_prov, c.addr_city, c.addr_county, c.addr_detail].filter(x => x && String(x).trim()).join(''),
+    p_admitdate_val: (c, p) => emrYMD((p && p.admission_date) || c.admit_time || ''),
+    /* p_teller_val: 无首页来源, 不参与同步 */
+    /* p_recorddate_val: 建档时间, 由创建流程写入, 可点选修改 */
+};
+/** 入院录编辑状态: 未手动修改过的同步字段自动取病案首页最新值 (空值回退占位; 单向仅读) */
+async function syncFromFrontPage(doc) {
+    let hasKey = false;
+    for (const k in CASE_SYNC) { if (EmrOps.findParaWithItem(doc.body, 'slot', k)) { hasKey = true; break; } }
+    if (!hasKey) return;
+    let c = {};
+    try {
+        const r = await AjaxLoader.api('case/get?admission_no=' + encodeURIComponent(_emrPatient.admission_no), { silent: true });
+        c = (r.data && r.data.data) || {};
+    } catch (e) { c = {}; }
+    for (const key in CASE_SYNC) {
+        const p = EmrOps.findParaWithItem(doc.body, 'slot', key);
+        if (!p) continue;
+        const it = p.runs.find(x => x.t === 'slot' && x.key === key);
+        if (!it || it.manual) continue;
+        const val = CASE_SYNC[key](c, _emrPatient);
+        if (val === undefined) continue;
+        EmrOps.setSlotValueByKey(doc.body, key, val || '');
+    }
+}
+
+async function openWordDoc(doc, signed) {
     applyPageCss(doc.doc_json.page);
     _emrEditMode = !signed;
+    /* 编辑状态: 患者信息与病案首页单项同步 (已签名=快照, 不动) */
+    if (!signed && doc.doc_json && Array.isArray(doc.doc_json.body)) {
+        try { await syncFromFrontPage(doc.doc_json); } catch (e) { console.error('病案首页同步失败', e); }
+    }
     const metaGuard = doc.doc_meta && doc.doc_meta.guard && Array.isArray(doc.doc_meta.guard.fx) ? doc.doc_meta.guard : null;
     _emrEditor = EmrEditor.create({
         container: document.getElementById('emr-editor-canvas'),
@@ -215,7 +273,8 @@ function openWordDoc(doc, signed) {
         readonly: signed,
         onChange: scheduleAutoSave,
         onStatus: updateEditorStatus,
-        diagSync: fetchAdmissionDiagText
+        diagSync: fetchAdmissionDiagText,
+        datePickers: { p_recorddate_val: 'datetime', p_admitdate_val: 'date' }
     });
     syncToolbar(signed);
     const sig = document.getElementById('emr-signature-footer');
