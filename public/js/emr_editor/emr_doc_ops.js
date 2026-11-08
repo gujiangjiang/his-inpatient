@@ -243,6 +243,23 @@
     return true;
   };
 
+  /** 标记光标位置前方最近槽位为「已手动修改」(manual:true) —— 首页同步规则: 手动改过并保存的字段停止自动更新 */
+  O.markManualAround = (p, o) => {
+    let last = null, pos = 0;
+    for (const it of p.runs) {
+      if (pos >= o) break;
+      if (it.t === 'slot') last = it;
+      pos += M.ilen(it);
+    }
+    if (last) last.manual = true;
+  };
+  /** 按 key 在全文设置槽位值 (模型级, 不触发撤销; 首页自动同步用) */
+  O.setSlotValueByKey = (body, key, text) => {
+    const p = O.findParaWithItem(body, 'slot', key);
+    if (!p) return false;
+    return O.setSlotValue(p, key, text);
+  };
+
   /** 设置包含指定项的段落内 dyn 的文本; 返回是否命中 */
   O.setDynTextIn = (p, key, text) => {
     for (const it of p.runs) {

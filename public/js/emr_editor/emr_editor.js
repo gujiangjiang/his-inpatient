@@ -71,6 +71,8 @@
         H.tx(label, () => {
           pos = fn();
           O.recalcBmi(inst.doc.body);          /* 派生项自动重算 (BMI) */
+          /* 用户编辑 ⇒ 光标前方最近填写槽记为手动修改 (诊断同步除外; 自动填充不经此处) */
+          if (label !== '同步' && pos) O.markManualAround(pos.p, pos.o);
           O.assertGuard(inst.doc.body, inst.guard);
         }, beforePos);
       } catch (e) {
@@ -261,6 +263,29 @@
     };
     const onDocDown = (ev) => { if (choiceBox && !choiceBox.contains(ev.target)) closeChoice(); };
     const onChoiceKey = (ev) => { if (ev.key === 'Escape') { ev.preventDefault(); closeChoice(); } };
+
+    /* 日期类填写槽: 借全局 DateTimePicker (core/datetime_picker.js) 弹出选择框 */
+    let dtpInput = null;
+    const openDatePicker = (slotEl, type, current, onPick) => {
+      if (typeof window.DateTimePicker === 'undefined') return false;
+      if (dtpInput) { dtpInput.remove(); dtpInput = null; }
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.dataset.dtpicker = type; /* 'date' | 'datetime' */
+      inp.value = current || '';
+      inp.style.cssText = 'position:fixed;opacity:0;width:1px;height:1px;pointer-events:none;border:0;padding:0;margin:0;';
+      const r = slotEl.getBoundingClientRect();
+      inp.style.left = Math.round(r.left) + 'px';
+      inp.style.top = Math.round(r.bottom) + 'px';
+      document.body.appendChild(inp);
+      dtpInput = inp;
+      let done = false;
+      const finish = () => { if (!done) { done = true; if (dtpInput === inp) dtpInput = null; inp.remove(); } };
+      inp.addEventListener('change', () => { const v = inp.value; finish(); if (v) onPick(v); });
+      try { window.DateTimePicker.open(inp); } catch (e) { finish(); return false; }
+      setTimeout(finish, 300000); /* 兜底清理 */
+      return true;
+    };
     const openChoice = (slotEl, options, onPick) => {
       closeChoice();
       const box = document.createElement('div');
@@ -321,6 +346,20 @@
           });
         });
         return;
+      }
+      /* 日期类填写槽: 弹出日期时间选择框 */
+      if (item && item.t === 'slot' && opts.datePickers && opts.datePickers[item.key]) {
+        deactivateSlot();
+        const cur = O.valueAfterSlot(info.p, item.key).trim();
+        const opened = openDatePicker(slot, opts.datePickers[item.key], cur, (val) => {
+          apply('日期', () => {
+            O.setSlotValue(info.p, item.key, val);
+            O.assertGuard(inst.doc.body, inst.guard);
+            return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+          });
+        });
+        if (opened) return;
+        /* 无选择器组件时退化为普通输入 */
       }
       inst.bodyEl.focus();
       C.restore(inst.bodyEl, { p: info.p, o: o + 1, cont: info.cont });
