@@ -83,6 +83,7 @@
 }
 .emr-slot[data-key] { font-style: normal; }
 .emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
+.emr-slot-active { color: transparent !important; } /* 点击激活: 占位文字隐去(背景提示), 光标落在字段内 */
 
 /* 动态只读项 (BMI/签名/诊断): 普通显示; 诊断同步项可点击 */
 .emr-dyn { user-select: none; -webkit-user-select: none; }

@@ -241,11 +241,23 @@
       });
     };
 
+    /* 占位符激活: 点击后隐藏占位文字(背景提示), 光标落在字段内; 点别处恢复 */
+    let activeSlot = null;
+    const deactivateSlot = () => {
+      if (activeSlot) { activeSlot.classList.remove('emr-slot-active'); activeSlot = null; }
+    };
+    const activateSlot = (el) => {
+      deactivateSlot();
+      activeSlot = el;
+      el.classList.add('emr-slot-active');
+    };
+
     const onClick = (e) => {
       /* 初步诊断行: 点击一键同步诊断 (来源: 左侧「诊断」的入院诊断, 不允许手改) */
       const pEl = e.target.closest && e.target.closest('.p');
       if (pEl && pEl.querySelector('.emr-dyn-sync')) {
         e.preventDefault();
+        deactivateSlot();
         if (inst.readonly || !opts.diagSync) return;
         Promise.resolve(opts.diagSync()).then((text) => {
           if (text == null) return;
@@ -254,14 +266,16 @@
         return;
       }
       const slot = e.target.closest && e.target.closest('.emr-slot');
-      if (!slot) return;
+      if (!slot) { deactivateSlot(); return; }
       e.preventDefault();
       const sp = slot.closest('.p');
       const info = inst.index.get(+sp.dataset.pid);
       if (!info) return;
+      if (inst.readonly) return;
       const o = (+slot.dataset.o) + 1;
       inst.bodyEl.focus();
       C.restore(inst.bodyEl, { p: info.p, o, cont: info.cont });
+      activateSlot(slot);
     };
 
     /** 写入动态只读项 (如 初步诊断同步) */
@@ -287,6 +301,9 @@
     on(inst.bodyEl, 'compositionend', onCompositionEnd);
     on(inst.bodyEl, 'paste', onPaste);
     on(inst.bodyEl, 'click', onClick);
+    on(inst.bodyEl, 'blur', () => deactivateSlot());
+    /* 病历 Word 样式区域内禁用鼠标右键菜单 (避免原生菜单干扰编辑与粘贴) */
+    on(inst.container, 'contextmenu', (e) => e.preventDefault());
 
     /* ---------- 对外 ---------- */
     inst.getDoc = () => inst.doc;
