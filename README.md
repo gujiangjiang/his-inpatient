@@ -2,7 +2,7 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.24.3-blue)
+![version](https://img.shields.io/badge/version-0.24.4-blue)
 
 ## 技术栈
 
@@ -90,6 +90,8 @@ npm run lint            # 或: ~/.local/bin/frankenphp php-cli tools/lint/php-li
 - `nurse` - 护士工作站
 - `pharmacist` - 药房工作站
 - `lab_tech` - 检验/检查工作站
+
+- **内置住院病历模板**: 入院记录×4（入院记录/再次或多次入院记录/24小时内入出院记录/24小时内入院死亡记录）、病程记录（日常查房/上级医师查房）、出院记录；枚举字段下拉选择（民族/婚姻状况/职业/病史陈述者/无有类）；种子自动清理旧测试模板
 
 ### 演示账号
 
