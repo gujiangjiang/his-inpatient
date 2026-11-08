@@ -108,19 +108,6 @@
 .emr-doc-status.draft { color: #e6a23c; }
 .emr-doc-status.signed { color: #67c23a; }
 
-/* 文书标题 */
-.emr-doc-header { padding: 12px 14px 4px; }
-.emr-doc-title-input {
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid #dcdfe0;
-    font-size: 18px;
-    font-weight: 600;
-    padding: 6px 2px;
-    outline: none;
-    color: #303133;
-}
-
 /* 结构化段落 (A4 仿真排版) */
 .emr-doc-sections {
     flex: 1;

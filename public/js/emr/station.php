@@ -32,9 +32,6 @@
                 <button type="button" class="btn btn-small btn-primary" id="btn-sign">医师签名</button>
                 <span id="emr-doc-status" class="emr-doc-status"></span>
             </div>
-            <div class="emr-doc-header">
-                <input type="text" id="emr-doc-title" class="emr-doc-title-input" placeholder="文书标题">
-            </div>
             <div id="emr-editor-scroll" class="emr-editor-scroll">
                 <div class="emr-editor-page" id="emr-editor-page">
                     <div id="emr-editor-canvas"></div>
@@ -196,7 +193,6 @@ async function emr_openDocument(docId) {
 
     document.getElementById('emr-editor-empty').style.display = 'none';
     document.getElementById('emr-editor').style.display = 'flex';
-    document.getElementById('emr-doc-title').value = doc.title || '';
 
     // 兜底: 旧数据未转换时 (迁移 038 正常已处理), 客户端转换后按字处理打开, 保存时落库
     if (!doc.doc_json) {
@@ -268,7 +264,7 @@ async function emr_saveDraft() {
     if (!_emrEditor) { Dom.toast('编辑器未就绪', 'error'); return; }
     clearTimeout(_emrAutoSaveTimer);
 
-    const title = document.getElementById('emr-doc-title').value;
+    const title = _emrCurrentDoc.title || '病历';
     const doc = _emrEditor.getDoc();
     doc.title = title;
     const meta = Object.assign({}, _emrCurrentDoc.doc_meta || {});
@@ -433,9 +429,6 @@ function bindToolbar() {
     bind('btn-template', emr_saveAsTemplate);
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
-    document.getElementById('emr-doc-title').addEventListener('input', () => {
-        if (_emrEditor) _emrEditor.getDoc().title = document.getElementById('emr-doc-title').value;
-    });
 }
 
 bindToolbar();
