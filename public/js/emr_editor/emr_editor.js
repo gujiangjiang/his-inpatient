@@ -350,7 +350,7 @@
     on(inst.bodyEl, 'compositionend', onCompositionEnd);
     on(inst.bodyEl, 'paste', onPaste);
     on(inst.bodyEl, 'click', onClick);
-    on(inst.bodyEl, 'blur', () => deactivateSlot());
+    on(inst.bodyEl, 'blur', () => { deactivateSlot(); inst.composing = false; });
     /* 病历 Word 样式区域内禁用鼠标右键菜单 (避免原生菜单干扰编辑与粘贴) */
     on(inst.container, 'contextmenu', (e) => e.preventDefault());
 

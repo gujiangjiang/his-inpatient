@@ -83,7 +83,15 @@
 }
 .emr-slot[data-key] { font-style: normal; }
 .emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
-.emr-slot-active { color: transparent !important; } /* 点击激活: 占位文字隐去(背景提示), 光标落在字段内 */
+/* 点击激活: 占位槽整体收拢为 0 宽 —— 光标紧贴标签, 不再停留在大段占位空白的最右侧 */
+.emr-slot-active {
+  color: transparent !important;
+  font-size: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  border-bottom: none !important;
+  background: transparent !important;
+}
 
 /* 下拉选项槽: 点击弹出选项 (是否/婚姻状况/民族等) */
 .emr-slot-sel { cursor: pointer; background: #f5f8ff; }
