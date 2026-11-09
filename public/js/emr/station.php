@@ -326,6 +326,11 @@ async function emr_saveDraft() {
     const title = _emrCurrentDoc.title || '病历';
     const doc = _emrEditor.getDoc();
     doc.title = title;
+    /* 入院日期为日期语义: 保存前统一裁掉时间部分 (记录日期保留日期时间) */
+    const admitCur = EmrOps.valueAfterSlot(EmrOps.findParaWithItem(doc.body, 'slot', 'p_admitdate_val') || { runs: [] }, 'p_admitdate_val');
+    if (admitCur && /\d{1,2}:\d{2}/.test(admitCur)) {
+        EmrOps.setSlotValueByKey(doc.body, 'p_admitdate_val', emrYMD(admitCur));
+    }
     const meta = Object.assign({}, _emrCurrentDoc.doc_meta || {});
     if (!meta.guard) meta.guard = EmrDoc.collectGuard(doc.body);
 

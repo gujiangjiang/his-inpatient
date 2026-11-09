@@ -190,7 +190,12 @@
     const onBeforeInput = (e) => {
       const t = e.inputType;
       if (inst.readonly) { e.preventDefault(); return; }
-      if (inst.composing) { if (t === 'insertCompositionText') return; e.preventDefault(); return; }
+      if (inst.composing) {
+        if (t === 'insertCompositionText') return; /* 组合输入中: 交给浏览器 */
+        /* 组合已结束但状态残留(部分浏览器/输入法失焦不触发 compositionend):
+           按正常输入处理, 避免后续所有输入被吞 */
+        inst.composing = false;
+      }
       if (t === 'insertText' || t === 'insertTranspose' || t === 'insertReplacementText') { e.preventDefault(); inst.insertText(e.data || ''); return; }
       if (t === 'insertParagraph') { e.preventDefault(); inst.enter(); return; }
       if (t === 'insertLineBreak') { e.preventDefault(); inst.lineBreak(); return; }
@@ -328,6 +333,34 @@
       });
     };
 
+    /* 点击兜底: 若浏览器默认行为未能把焦点/光标放进正文(个别浏览器在 cE=false 邻位失效),
+       按点击坐标用 caretRangeFromPoint 恢复编辑态 —— 保证「点击已输入文字」永远可编辑 */
+    const onMouseDown = (e) => {
+      if (inst.readonly || e.button !== 0) return;
+      const t = e.target;
+      if (t.closest && (t.closest('.emr-slot') || t.closest('.emr-dyn'))) return;
+      const x = e.clientX, y = e.clientY;
+      setTimeout(() => {
+        if (!inst.bodyEl.isConnected) return;
+        if (document.activeElement === inst.bodyEl) return;               /* 原生已生效 */
+        if (document.querySelector('.emr-choice') || document.querySelector('.dtp')) return; /* 弹层打开中 */
+        inst.bodyEl.focus();
+        let range = null;
+        try {
+          if (document.caretRangeFromPoint) range = document.caretRangeFromPoint(x, y);
+          else if (document.caretPositionFromPoint) {
+            const p = document.caretPositionFromPoint(x, y);
+            if (p) { range = document.createRange(); range.setStart(p.offsetNode, p.offset); range.collapse(true); }
+          }
+        } catch (err) { range = null; }
+        if (range && inst.bodyEl.contains(range.startContainer)) {
+          const s = window.getSelection();
+          s.removeAllRanges();
+          s.addRange(range);
+        }
+      }, 0);
+    };
+
     const onClick = (e) => {
       /* 点击选项/日期槽的已填值文本: 重新弹层改选 (枚举字段以选择为准) */
       const span = e.target.closest && e.target.closest('.pc > span');
@@ -433,6 +466,7 @@
     on(inst.bodyEl, 'compositionend', onCompositionEnd);
     on(inst.bodyEl, 'paste', onPaste);
     on(inst.bodyEl, 'click', onClick);
+    on(inst.bodyEl, 'mousedown', onMouseDown);
     on(inst.bodyEl, 'blur', () => { deactivateSlot(); inst.composing = false; });
     /* 病历 Word 样式区域内禁用鼠标右键菜单 (避免原生菜单干扰编辑与粘贴) */
     on(inst.container, 'contextmenu', (e) => e.preventDefault());
