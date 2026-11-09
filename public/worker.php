@@ -41,6 +41,8 @@ if (strpos($uri, '/api/') === 0) {
     Auth::init();
     SetupGuard::guard();
     SchemaGuard::ensure();
+    require_once __DIR__ . '/../api/core/emr_templates_guard.php';
+    EmrTemplatesGuard::ensure();
     
     $apiUri = preg_replace('#^/api/#', '', $uri);
     $apiUri = preg_replace('#\?.*$#', '', $apiUri);

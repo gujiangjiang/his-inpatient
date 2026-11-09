@@ -1,5 +1,5 @@
 <?php
-// api/scripts/emr_template_defs.php - 内置住院病历模板定义 (字处理 word 模式)
+// api/core/emr_template_defs.php - 内置住院病历模板定义 (字处理 word 模式)
 // 返回 function(string $hospital): array<[name, recordType, categoryCode, schema]>
 // 依据《病历书写基本规范》: 入院记录(4 类) / 病程记录 / 出院记录
 return function ($hospital) {

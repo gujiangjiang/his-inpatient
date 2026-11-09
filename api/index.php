@@ -40,6 +40,10 @@ SetupGuard::guard();
 // 部署自愈: 自动补齐未应用的数据库迁移 (升级后首个请求即生效)
 SchemaGuard::ensure();
 
+// 部署自愈: 自动生成/更新内置病历模板 (免 CLI/npm; 定义变更后自动重新落库)
+require_once __DIR__ . '/core/emr_templates_guard.php';
+EmrTemplatesGuard::ensure();
+
 // 路由分发
 $apiUri = preg_replace('#^/api/#', '', $_SERVER['REQUEST_URI']);
 $apiUri = preg_replace('#\?.*$#', '', $apiUri);

@@ -2,7 +2,9 @@
 // api/modules/emr/template_list.php
 $roles = ['admin', 'doctor'];
 Auth::requireRole($roles);
-$recordType = Validator::get('record_type', 'admission');
+/* record_type 仅在显式传入时过滤 (原默认 admission 导致按分类查询时
+   病程/沟通/出院等分类永远查不到模板) */
+$recordType = Validator::get('record_type');
 $categoryId = Validator::get('category_id');
 $structured = Validator::get('structured'); // 1 只取结构化模板(带schema_json)
 

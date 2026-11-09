@@ -1,6 +1,6 @@
 <?php
 // api/scripts/export_emr_templates.php - 导出内置病历模板为 JSON 文件 (docs/emr_templates/)
-// 与 seed 使用同一份定义 (emr_template_defs.php), 保证导出与系统内置一致
+// 与运行时同一份定义 (api/core/emr_template_defs.php), 保证导出与系统内置一致
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/../core/helpers/time_helper.php';
@@ -13,7 +13,7 @@ try {
 } catch (Exception $e) { /* 忽略 */ }
 if ($hospital === '') $hospital = '医院名称';
 
-$defsFn = require __DIR__ . '/emr_template_defs.php';
+$defsFn = require __DIR__ . '/../core/emr_template_defs.php';
 $defs = $defsFn($hospital);
 
 $dir = dirname(dirname(__DIR__)) . '/docs/emr_templates';

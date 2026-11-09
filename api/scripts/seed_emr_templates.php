@@ -24,43 +24,10 @@ foreach ($categories as $c) {
         ->execute([$c[0], $c[1], $c[2], DateHelper::now()]);
 }
 
-// === 内置住院病历模板 (字处理 word 模式, 定义见 emr_template_defs.php) ===
-$hospital = '';
-try {
-    $h = DB::selectOne("SELECT config_value FROM system_config WHERE config_key = 'hospital_name'");
-    if ($h) $hospital = (string)$h['config_value'];
-} catch (Exception $e) { /* 忽略 */ }
-if ($hospital === '') $hospital = '医院名称';
-
-// 清理早期版本种子产生的测试模板: 先解除文书引用(文书自有守卫, 不依赖模板), 再删除
-$legacyRows = DB::select("SELECT id, name FROM emr_templates WHERE name IN ('常规入院记录','入院记录(字处理)') OR name LIKE '%(字处理)%' OR name LIKE '%测试%'");
-foreach ($legacyRows as $t) {
-    $pdo->prepare("UPDATE emr_documents SET template_id = NULL WHERE template_id = ?")->execute([$t['id']]);
-    $pdo->prepare("DELETE FROM emr_templates WHERE id = ?")->execute([$t['id']]);
-}
-
-$defsFn = require __DIR__ . '/emr_template_defs.php';
-$defs = $defsFn($hospital);
-foreach ($defs as $d) {
-    list($name, $recordType, $catCode, $schema) = $d;
-    $cat = DB::selectOne("SELECT id FROM emr_categories WHERE code = ?", [$catCode]);
-    if (!$cat) continue;
-    $json = json_encode($schema, JSON_UNESCAPED_UNICODE);
-    $check = $pdo->prepare("SELECT id FROM emr_templates WHERE name = ?");
-    $check->execute([$name]);
-    $row = $check->fetch();
-    if ($row) {
-        $pdo->prepare("UPDATE emr_templates SET schema_json = ?, category_id = ?, record_type = ? WHERE id = ?")
-            ->execute([$json, $cat['id'], $recordType, $row['id']]);
-    } else {
-        $pdo->prepare("INSERT INTO emr_templates (name, record_type, schema_json, category_id, usage_count, created_at) VALUES (?,?,?,?,0,?)")
-            ->execute([$name, $recordType, $json, $cat['id'], DateHelper::now()]);
-    }
-}
-if ($legacyRows) {
-    echo "已清理测试模板: " . implode(', ', array_map(function ($x) { return $x['name']; }, $legacyRows)) . "\n";
-}
-echo "内置模板: " . implode(', ', array_map(function ($d) { return $d[0]; }, $defs)) . "\n";
+// === 内置住院病历模板 (与运行时自动落库同一逻辑: EmrTemplatesGuard::provision) ===
+require_once __DIR__ . '/../core/emr_templates_guard.php';
+$builtinNames = EmrTemplatesGuard::provision();
+echo "内置模板: " . implode(', ', $builtinNames) . "\n";
 
 // === 医生科室授权 ===
 $doctor1 = DB::selectOne("SELECT id, department_id FROM users WHERE username = 'doctor1'");
