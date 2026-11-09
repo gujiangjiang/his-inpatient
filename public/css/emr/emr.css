@@ -67,6 +67,7 @@
 .emr-doc-item:hover { background: #e9eef7; }
 .emr-doc-item.signed { color: #909399; }
 .emr-doc-title-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emr-doc-time { font-size: 11px; color: #a8abb2; flex-shrink: 0; }
 .emr-doc-status-tag { font-size: 11px; padding: 1px 6px; border-radius: 8px; }
 .emr-doc-status-tag.draft { background: #e6a23c22; color: #e6a23c; }
 .emr-doc-status-tag.signed { background: #67c23a22; color: #67c23a; }

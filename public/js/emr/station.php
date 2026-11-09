@@ -90,6 +90,7 @@ function renderCategoryTree() {
             const item = document.createElement('div');
             item.className = 'emr-doc-item' + (d.status === 'signed' ? ' signed' : '');
             item.innerHTML = '<span class="emr-doc-title-text">' + Format.escape(d.title || d.template_name || '未命名文书') + '</span>' +
+                '<span class="emr-doc-time">' + Format.escape(emrStamp(d.updated_at || d.created_at || '')) + '</span>' +
                 '<span class="emr-doc-status-tag ' + (d.status === 'signed' ? 'signed' : 'draft') + '">' + (d.status === 'signed' ? '已签名' : '草稿') + '</span>';
             item.onclick = () => emr_openDocument(d.id);
             item.oncontextmenu = (e) => { e.preventDefault(); emr_showContextMenu(e, d); };
