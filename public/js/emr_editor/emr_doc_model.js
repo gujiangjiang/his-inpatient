@@ -26,7 +26,7 @@
     return 1;
   };
   /* dyn = 动态只读项 (BMI 自动计算/签名自动填入/诊断同步), 与 fx 同为不可删除原子 */
-  M.isProtected = (it) => it.t === 'fx' || it.t === 'slot' || it.t === 'dyn';
+  M.isProtected = (it) => it.t === 'fx' || it.t === 'slot' || it.t === 'dyn' || it.t === 'ref';
   M.plen = (p) => { let n = 0; for (const it of p.runs) n += M.ilen(it); return n; };
 
   /** 定位 offset o 到项: {i(项下标), off(项内偏移), start(项起始)} */
@@ -93,7 +93,7 @@
         if (!b) continue;
         if (b.t === 'p') {
           for (const it of b.runs || []) {
-            if ((it.t === 'fx' || it.t === 'dyn') && it.key) guard.fx.push(it.key);
+            if ((it.t === 'fx' || it.t === 'dyn' || it.t === 'ref') && it.key) guard.fx.push(it.key);
             if (it.t === 'slot' && it.key) guard.slot.push(it.key);
           }
         } else if (b.t === 'tbl') {

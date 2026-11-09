@@ -54,23 +54,36 @@
   const runsToHTML = (p) => {
     const out = [];
     let pos = 0;
+    let afterSlot = false; /* 槽位后的文本 = 该字段的值: 编辑状态带下划线提示可编辑 */
     for (const it of p.runs) {
       const n = M.ilen(it);
       const o = pos; pos += n;
       if (it.t === 'text') {
-        if (it.text) out.push('<span data-o="' + o + '" data-n="' + n + '"' + (it.rPr && Object.keys(it.rPr).length ? ' style="' + R.rPrStyle(it.rPr) + '"' : '') + '>' + esc(it.text) + '</span>');
+        if (it.text) {
+          const cls = afterSlot ? ' class="emr-val"' : '';
+          const st = it.rPr && Object.keys(it.rPr).length ? ' style="' + R.rPrStyle(it.rPr) + '"' : '';
+          out.push('<span' + cls + ' data-o="' + o + '" data-n="' + n + '"' + st + '>' + esc(it.text) + '</span>');
+        }
         continue;
       }
+      if (M.isProtected(it) && it.t !== 'slot') afterSlot = false; /* fx/dyn/ref 结束值的范围 */
       if (it.t === 'fx') {
         out.push('<span class="emr-fx" data-item="fx" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.text) + '</span>');
         continue;
       }
       if (it.t === 'slot') {
+        afterSlot = true;
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
         const cls = 'emr-slot' + (Array.isArray(it.opts) && it.opts.length ? ' emr-slot-sel' : '');
         out.push(filled
           ? '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>'
           : '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');
+        continue;
+      }
+      if (it.t === 'ref') {
+        /* 字段引用 (自动调用其他文书的字段值, 如病程记录引用入院记录的【主诉】) */
+        out.push('<span class="emr-ref" data-item="ref" data-key="' + esc(it.key) + '"'
+          + ' data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.text || it.fb || '') + '</span>');
         continue;
       }
       if (it.t === 'dyn') {

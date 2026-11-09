@@ -37,7 +37,7 @@
                     <div id="emr-editor-canvas"></div>
                 </div>
             </div>
-            <div id="emr-editor-status" class="emr-statusbar"><span class="emr-sb-saved">已保存</span></div>
+            <div id="emr-editor-status" class="emr-statusbar"><span class="emr-sb-saved">已保存</span><span id="emr-save-state"></span></div>
             <div id="emr-signature-footer" class="emr-signature-footer" style="display:none"></div>
         </div>
     </div>
@@ -218,21 +218,33 @@ function emrYMD(v) {
     const m = String(v).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
     return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : String(v).slice(0, 10);
 }
-const CASE_SYNC = {
-    p_name_val: (c, p) => c.name || (p && p.name) || '',
-    p_gender_val: (c, p) => ({ '1': '男', '2': '女' }[c.gender]) || (p && p.gender === 'male' ? '男' : p && p.gender === 'female' ? '女' : (p && (p.gender === '男' || p.gender === '女') ? p.gender : '')),
-    p_age_val: (c, p) => {
+/** 日期+时间 'YYYY-MM-DD HH:mm' (无时间部分时仅日期) */
+function emrStamp(v) {
+    if (!v) return '';
+    const m = String(v).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2}))?/);
+    if (!m) return String(v);
+    const d = m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+    return m[4] != null ? d + ' ' + m[4].padStart(2, '0') + ':' + m[5].padStart(2, '0') : d;
+}
+/* 固化字段 (dyn 只读): 用户不可修改, 始终自动跟随病案首页 */
+const CASE_DYN = {
+    p_name: (c, p) => c.name || (p && p.name) || '',
+    p_gender: (c, p) => ({ '1': '男', '2': '女' }[c.gender]) || (p && p.gender === 'male' ? '男' : p && p.gender === 'female' ? '女' : (p && (p.gender === '男' || p.gender === '女') ? p.gender : '')),
+    p_age: (c, p) => {
         if (c.age_y) return String(c.age_y);
         if (p && p.birth_date) { const a = new Date().getFullYear() - new Date(p.birth_date).getFullYear(); return a > 0 ? String(a) : ''; }
         return '';
     },
+};
+/* 可改字段 (slot): 未手动修改时自动跟随首页; 手动修改并保存后冻结 */
+const CASE_SYNC = {
     p_marriage_val: (c) => ({ '1': '未婚', '2': '已婚', '3': '丧偶', '4': '离异' }[c.marriage] || ''),
     p_native_val: (c) => [c.native_prov, c.native_city].filter(x => x && String(x).trim()).join(''),
     p_nation_val: (c) => c.nation || '',
     p_occupation_val: (c) => c.occupation || '',
     p_workunit_val: (c) => c.work_unit || '',
     p_address_val: (c) => [c.addr_prov, c.addr_city, c.addr_county, c.addr_detail].filter(x => x && String(x).trim()).join(''),
-    p_admitdate_val: (c, p) => emrYMD((p && p.admission_date) || c.admit_time || ''),
+    p_admitdate_val: (c, p) => emrStamp((p && p.admission_date) || c.admit_time || ''),
     /* p_teller_val: 无首页来源, 不参与同步 */
     /* p_recorddate_val: 建档时间, 由创建流程写入, 可点选修改 */
 };
@@ -240,6 +252,7 @@ const CASE_SYNC = {
 async function syncFromFrontPage(doc) {
     let hasKey = false;
     for (const k in CASE_SYNC) { if (EmrOps.findParaWithItem(doc.body, 'slot', k)) { hasKey = true; break; } }
+    if (!hasKey) { for (const k in CASE_DYN) { if (EmrOps.findParaWithItem(doc.body, 'dyn', k)) { hasKey = true; break; } } }
     if (!hasKey) return;
     let c = {};
     try {
@@ -255,6 +268,27 @@ async function syncFromFrontPage(doc) {
         if (val === undefined) continue;
         EmrOps.setSlotValueByKey(doc.body, key, val || '');
     }
+    /* 固化字段: 无条件跟随首页 (不可手动修改) */
+    for (const key in CASE_DYN) {
+        if (!EmrOps.findParaWithItem(doc.body, 'dyn', key)) continue;
+        const val = CASE_DYN[key](c, _emrPatient);
+        if (val === undefined) continue;
+        EmrOps.setDynTextByKey(doc.body, key, val || '');
+    }
+}
+
+/** 字段引用解析: 【姓名】【主诉】等自动调用患者其他文书里的字段值 (仅编辑状态; 已签名=快照) */
+async function resolveRefFields(doc) {
+    const keys = [];
+    EmrDoc.walk(doc.body, (b) => {
+        if (b.t === 'p') for (const it of b.runs) if (it.t === 'ref' && it.key && keys.indexOf(it.key) < 0) keys.push(it.key);
+    });
+    if (!keys.length) return;
+    try {
+        const r = await AjaxLoader.api('emr/field-values?patient_id=' + _emrPatient.id, { silent: true });
+        const f = (r.data && r.data.fields) || {};
+        for (const k of keys) EmrOps.setRefTextByKey(doc.body, k, f[k] || '');
+    } catch (e) { console.error('字段引用解析失败', e); }
 }
 
 async function openWordDoc(doc, signed) {
@@ -263,6 +297,10 @@ async function openWordDoc(doc, signed) {
     /* 编辑状态: 患者信息与病案首页单项同步 (已签名=快照, 不动) */
     if (!signed && doc.doc_json && Array.isArray(doc.doc_json.body)) {
         try { await syncFromFrontPage(doc.doc_json); } catch (e) { console.error('病案首页同步失败', e); }
+    }
+    /* 编辑状态: 解析字段引用 (自动调用其他文书字段值) */
+    if (!signed && doc.doc_json && Array.isArray(doc.doc_json.body)) {
+        try { await resolveRefFields(doc.doc_json); } catch (e) { console.error('字段引用解析失败', e); }
     }
     const metaGuard = doc.doc_meta && doc.doc_meta.guard && Array.isArray(doc.doc_meta.guard.fx) ? doc.doc_meta.guard : null;
     _emrEditor = EmrEditor.create({
@@ -274,7 +312,7 @@ async function openWordDoc(doc, signed) {
         onChange: scheduleAutoSave,
         onStatus: updateEditorStatus,
         diagSync: fetchAdmissionDiagText,
-        datePickers: { p_recorddate_val: 'datetime', p_admitdate_val: 'date' }
+        datePickers: { p_recorddate_val: 'datetime', p_admitdate_val: 'datetime' }
     });
     syncToolbar(signed);
     const sig = document.getElementById('emr-signature-footer');
@@ -293,6 +331,15 @@ async function fetchAdmissionDiagText() {
     const rows = (r.data || []).filter(x => x.category === 'admission');
     if (!rows.length) { Dom.toast('诊断中暂无入院诊断，请先在左侧「诊断」中添加', 'error'); return null; }
     return rows.map((x, i) => rows.length > 1 ? (i + 1) + '.' + x.name : x.name).join('；');
+}
+
+/** 状态栏保存状态 (自动保存静默进行, 不再全屏加载遮罩) */
+function setSaveState(text, cls) {
+    const el = document.getElementById('emr-save-state');
+    if (!el) return;
+    el.textContent = text ? '· ' + text : '';
+    el.className = 'emr-sb-state ' + (cls || '');
+    el.title = cls === 'error' ? (el.dataset.msg || '') : '';
 }
 
 function updateEditorStatus(chars, dirty) {
@@ -317,20 +364,16 @@ function syncToolbar(signed) {
 }
 
 /* ================= 保存 ================= */
-async function emr_saveDraft() {
+async function emr_saveDraft(auto) {
     if (!_emrCurrentDoc) return;
-    if (_emrCurrentDoc.status === 'signed') { Dom.toast('文书已签名锁定, 禁止修改', 'error'); return; }
-    if (!_emrEditor) { Dom.toast('编辑器未就绪', 'error'); return; }
+    if (_emrCurrentDoc.status === 'signed') { if (!auto) Dom.toast('文书已签名锁定, 禁止修改', 'error'); return; }
+    if (!_emrEditor) { if (!auto) Dom.toast('编辑器未就绪', 'error'); return; }
     clearTimeout(_emrAutoSaveTimer);
+    const isAuto = !!auto;
 
     const title = _emrCurrentDoc.title || '病历';
     const doc = _emrEditor.getDoc();
     doc.title = title;
-    /* 入院日期为日期语义: 保存前统一裁掉时间部分 (记录日期保留日期时间) */
-    const admitCur = EmrOps.valueAfterSlot(EmrOps.findParaWithItem(doc.body, 'slot', 'p_admitdate_val') || { runs: [] }, 'p_admitdate_val');
-    if (admitCur && /\d{1,2}:\d{2}/.test(admitCur)) {
-        EmrOps.setSlotValueByKey(doc.body, 'p_admitdate_val', emrYMD(admitCur));
-    }
     const meta = Object.assign({}, _emrCurrentDoc.doc_meta || {});
     if (!meta.guard) meta.guard = EmrDoc.collectGuard(doc.body);
 
@@ -342,6 +385,7 @@ async function emr_saveDraft() {
         Dom.toast('打印快照生成失败: ' + (e && e.message ? e.message : e), 'error');
     }
 
+    setSaveState('保存中…', 'saving');
     try {
         const r = await AjaxLoader.api('emr/document-save', { method: 'POST', data: {
             id: _emrCurrentDoc.id,
@@ -352,21 +396,26 @@ async function emr_saveDraft() {
             doc_meta: meta,
             doc_json: JSON.stringify(doc),
             content_html: contentHtml
-        }});
+        }, silent: true }); /* 静默保存: 不弹全屏加载遮罩, 状态栏可见 */
         _emrCurrentDoc.id = r.data.id;
         _emrCurrentDoc.doc_meta = meta;
         _emrEditor.markSaved();
-        Dom.toast('草稿已保存', 'success');
+        setSaveState('已保存 ' + emrNowStamp().slice(11), 'saved');
+        if (!isAuto) Dom.toast('草稿已保存', 'success');
         loadDocuments().then(renderCategoryTree);
     } catch (e) {
-        console.error('保存失败', e); /* AjaxLoader 已弹出错误提示 */
+        console.error('保存失败', e);
+        const el = document.getElementById('emr-save-state');
+        if (el) el.dataset.msg = e && e.message || '';
+        setSaveState('保存失败', 'error');
+        if (!isAuto) Dom.toast('保存失败: ' + (e && e.message || e), 'error');
     }
 }
 
 function scheduleAutoSave() {
     if (!_emrEditMode || !_emrEditor || !_emrCurrentDoc || _emrCurrentDoc.status === 'signed') return;
     clearTimeout(_emrAutoSaveTimer);
-    _emrAutoSaveTimer = setTimeout(emr_saveDraft, 8000);
+    _emrAutoSaveTimer = setTimeout(() => emr_saveDraft(true), 8000);
 }
 
 /* ================= 签名 / 打印 / 版本 / 模板 ================= */
@@ -488,7 +537,7 @@ function bindToolbar() {
     bind('btn-align-j', () => _emrEditor && _emrEditor.setAlign('justify'));
     bind('btn-undo', emr_undo);
     bind('btn-redo', emr_redo);
-    bind('btn-save', emr_saveDraft);
+    bind('btn-save', () => emr_saveDraft(false));
     bind('btn-print', emr_printDoc);
     bind('btn-template', emr_saveAsTemplate);
     bind('btn-versions', emr_showVersions);

@@ -260,6 +260,25 @@
     return O.setSlotValue(p, key, text);
   };
 
+  /** 按 key 在全文中设置动态只读项 dyn 的文本 (首页同步用) */
+  O.setDynTextByKey = (body, key, text) => {
+    const p = O.findParaWithItem(body, 'dyn', key);
+    if (!p) return false;
+    return O.setDynTextIn(p, key, text);
+  };
+  /** 设置包含指定项的段落内 ref 的文本 (字段引用解析用); 返回是否命中 */
+  O.setRefTextIn = (p, key, text) => {
+    for (const it of p.runs) {
+      if (it.t === 'ref' && it.key === key) { it.text = String(text || ''); return true; }
+    }
+    return false;
+  };
+  /** 按 key 在全文设置字段引用 ref 的文本 */
+  O.setRefTextByKey = (body, key, text) => {
+    const p = O.findParaWithItem(body, 'ref', key);
+    if (!p) return false;
+    return O.setRefTextIn(p, key, text);
+  };
   /** 设置包含指定项的段落内 dyn 的文本; 返回是否命中 */
   O.setDynTextIn = (p, key, text) => {
     for (const it of p.runs) {

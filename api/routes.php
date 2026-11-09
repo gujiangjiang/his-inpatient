@@ -105,6 +105,7 @@ function getRoutes() {
         'emr/document-save' => ['emr/document_save.php', ['admin', 'doctor']],
         'emr/document-sign' => ['emr/document_sign.php', ['admin', 'doctor']],
         'emr/document-delete' => ['emr/document_delete.php', ['admin', 'doctor']],
+        'emr/field-values' => ['emr/field_values.php', ['admin', 'doctor', 'nurse']],
         'emr/version-list' => ['emr/version_list.php', ['admin', 'doctor']],
         'emr/version-restore' => ['emr/version_restore.php', ['admin', 'doctor']],
 
