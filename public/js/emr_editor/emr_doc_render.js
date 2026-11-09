@@ -119,7 +119,10 @@
             return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks) + '</td>';
           }).join('') + '</tr>').join('');
         const cls = 'emr-tbl' + (b.tblPr && b.tblPr.plain ? ' emr-tbl-plain' : '');
-        out.push('<table class="' + cls + '" style="width:' + (grid.length ? pt(grid.reduce((a, x) => a + x, 0)) : '100%') + '">' + cells + '</table>');
+        const st = [];
+        st.push('width:' + (grid.length ? pt(grid.reduce((a, x) => a + x, 0)) : '100%'));
+        if (b.tblPr && b.tblPr.center) st.push('margin-left:auto', 'margin-right:auto'); /* 整表居中, 内部单元格左对齐 */
+        out.push('<table class="' + cls + '" style="' + st.join(';') + '">' + cells + '</table>');
       }
     }
     return out.join('');

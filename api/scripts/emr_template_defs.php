@@ -41,21 +41,21 @@ return function ($hospital) {
            编辑状态下与病案首页单项同步 (未手动修改过的字段自动更新, 手动修改并保存后停止同步) */
         $body[] = [
             't' => 'tbl',
-            'tblPr' => ['plain' => true],
-            'grid' => [44, 172, 78, 229.3],
+            'tblPr' => ['plain' => true, 'center' => true],
+            'grid' => [40, 152, 72, 196],
             'rows' => [
-                ['cells' => [$cText('姓名：', 44), $cItem($slot('p_name_val', '请输入姓名'), 172),
-                    $cText('职业：', 78), $cItem($sel('p_occupation_val', '请选择职业', $OCCUPATION), 229.3)]],
-                ['cells' => [$cText('性别：', 44), $cItem($sel('p_gender_val', '请选择性别', ['男', '女']), 172),
-                    $cText('单位：', 78), $cItem($slot('p_workunit_val', '请输入工作单位'), 229.3)]],
-                ['cells' => [$cText('年龄：', 44), $cItem($slot('p_age_val', '请输入年龄'), 172),
-                    $cText('住址：', 78), $cItem($slot('p_address_val', '请输入住址'), 229.3)]],
-                ['cells' => [$cText('婚姻：', 44), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 172),
-                    $cText('病史陈述者：', 78), $cItem($sel('p_teller_val', '请选择', $TELLER), 229.3)]],
-                ['cells' => [$cText('籍贯：', 44), $cItem($slot('p_native_val', '请输入籍贯'), 172),
-                    $cText('入院日期：', 78), $cItem($slot('p_admitdate_val', '请输入'), 229.3)]],
-                ['cells' => [$cText('民族：', 44), $cItem($sel('p_nation_val', '请选择民族', $NATION), 172),
-                    $cText('记录日期：', 78), $cItem($slot('p_recorddate_val', '请输入'), 229.3)]],
+                ['cells' => [$cText('姓名：', 40), $cItem($slot('p_name_val', '请输入姓名'), 152),
+                    $cText('职业：', 72), $cItem($sel('p_occupation_val', '请选择职业', $OCCUPATION), 196)]],
+                ['cells' => [$cText('性别：', 40), $cItem($sel('p_gender_val', '请选择性别', ['男', '女']), 152),
+                    $cText('单位：', 72), $cItem($slot('p_workunit_val', '请输入工作单位'), 196)]],
+                ['cells' => [$cText('年龄：', 40), $cItem($slot('p_age_val', '请输入年龄'), 152),
+                    $cText('住址：', 72), $cItem($slot('p_address_val', '请输入住址'), 196)]],
+                ['cells' => [$cText('婚姻：', 40), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 152),
+                    $cText('病史陈述者：', 72), $cItem($sel('p_teller_val', '请选择', $TELLER), 196)]],
+                ['cells' => [$cText('籍贯：', 40), $cItem($slot('p_native_val', '请输入籍贯'), 152),
+                    $cText('入院日期：', 72), $cItem($slot('p_admitdate_val', '请输入'), 196)]],
+                ['cells' => [$cText('民族：', 40), $cItem($sel('p_nation_val', '请选择民族', $NATION), 152),
+                    $cText('记录日期：', 72), $cItem($slot('p_recorddate_val', '请输入'), 196)]],
             ],
         ];
         $body[] = $line('主诉：', 'chief_complaint', '主要症状（或体征）及持续时间');
@@ -147,6 +147,30 @@ return function ($hospital) {
         ];
     };
 
+    /** 首次病程记录 (病例特点 + 拟诊讨论 + 诊疗计划) */
+    $firstProgress = function () use ($line, $P, $fx, $dyn) {
+        return [
+            $line('病例特点：', 'case_feature', '主要临床特点归纳（症状、体征、辅助检查）'),
+            $line('诊断依据：', 'diag_basis', '拟诊讨论: 诊断依据'),
+            $line('鉴别诊断：', 'diff_diag', '需要鉴别的疾病及依据'),
+            $line('诊疗计划：', 'care_plan', '进一步检查与治疗计划'),
+            $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']),
+        ];
+    };
+
+    /** 医患沟通记录 */
+    $communicate = function () use ($row, $fx, $slot, $line, $P, $dyn) {
+        return [
+            $row([$fx('comm_date', '沟通时间：'), $slot('comm_date_val', '请输入'),
+                $fx('comm_place', '沟通地点：'), $slot('comm_place_val', '请输入')]),
+            $line('参加人员：', 'comm_people', '医师及患者（家属）参加人员'),
+            $line('沟通内容：', 'comm_content', '病情、诊疗方案、风险及注意事项等'),
+            $line('患者（家属）意见：', 'comm_opinion', '理解并同意 / 其他意见'),
+            $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']),
+            $P([$fx('sign_patient', '患者（家属）签名：'), $slot('sign_patient_val', '请输入')], ['align' => 'right']),
+        ];
+    };
+
     /** 出院记录 */
     $dischargeRecord = function () use ($row, $fx, $slot, $line, $P, $dyn) {
         return [
@@ -169,6 +193,8 @@ return function ($hospital) {
         ['24小时内入院死亡记录', 'admission', 'admission', $mk('24小时内入院死亡记录', $death24())],
         ['日常查房记录', 'progress', 'progress', $mk('日常查房记录', $dailyRound())],
         ['上级医师查房记录', 'progress', 'progress', $mk('上级医师查房记录', $seniorRound())],
+        ['首次病程记录', 'progress', 'progress', $mk('首次病程记录', $firstProgress())],
+        ['医患沟通记录', 'communication', 'communication', $mk('医患沟通记录', $communicate())],
         ['出院记录', 'discharge', 'discharge', $mk('出院记录', $dischargeRecord())],
     ];
 };
