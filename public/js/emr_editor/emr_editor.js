@@ -10,7 +10,7 @@
   const create = (opts) => {
     const inst = {
       container: opts.container, doc: opts.doc, guard: opts.guard || null,
-      patientInfo: opts.patientInfo || {}, readonly: !!opts.readonly,
+      patientInfo: opts.patientInfo || {}, readonly: !!opts.readonly, design: !!opts.design,
       onChange: opts.onChange || null, onStatus: opts.onStatus || null,
       bodyEl: null, index: new Map(), composing: false, composeStart: null,
       dirty: false, _handlers: [],
@@ -70,10 +70,12 @@
       try {
         H.tx(label, () => {
           pos = fn();
-          O.recalcBmi(inst.doc.body);          /* 派生项自动重算 (BMI) */
-          /* 用户编辑 ⇒ 光标前方最近填写槽记为手动修改 (诊断同步除外; 自动填充不经此处) */
-          if (label !== '同步' && pos) O.markManualAround(pos.p, pos.o);
-          O.assertGuard(inst.doc.body, inst.guard);
+          if (!inst.design) {
+            O.recalcBmi(inst.doc.body);          /* 派生项自动重算 (BMI) */
+            /* 用户编辑 ⇒ 光标前方最近填写槽记为手动修改 (诊断同步除外; 自动填充不经此处) */
+            if (label !== '同步' && pos) O.markManualAround(pos.p, pos.o);
+            O.assertGuard(inst.doc.body, inst.guard);
+          }
         }, beforePos);
       } catch (e) {
         console.error('编辑事务失败', e);
@@ -470,6 +472,31 @@
     on(inst.bodyEl, 'blur', () => { deactivateSlot(); inst.composing = false; });
     /* 病历 Word 样式区域内禁用鼠标右键菜单 (避免原生菜单干扰编辑与粘贴) */
     on(inst.container, 'contextmenu', (e) => e.preventDefault());
+
+    /* ---------- 设计模式插入 (模板制作) ---------- */
+    const posNow = () => {
+      const sel = C.rangeToModel(inst.bodyEl, inst.index);
+      if (sel) return sel.a;
+      const paras = O.ctx(inst.doc.body);
+      const p = paras.length ? paras[paras.length - 1].p : inst.doc.body[inst.doc.body.length - 1];
+      return { p, o: M.plen(p), cont: inst.doc.body };
+    };
+    inst.insertField = (label, opts) => {
+      apply('设计', () => O.insertFieldAt(posNow(), label, opts));
+    };
+    inst.insertRef = (key, fb) => {
+      apply('设计', () => O.insertRefAt(posNow(), key, fb));
+    };
+    inst.insertHeading = (text) => {
+      apply('设计', () => {
+        const pos = posNow();
+        const np = O.insertParaAt(pos);
+        np.p.pPr = Object.assign({}, np.p.pPr, { align: 'center', borders: { top: true } });
+        np.p.rPr = Object.assign({}, np.p.rPr, { b: true, sz: 13 });
+        np.p.runs = text ? [M.text(String(text))] : [];
+        return { p: np.p, o: (text ? String(text).length : 0), cont: np.cont };
+      });
+    };
 
     /* ---------- 对外 ---------- */
     inst.getDoc = () => inst.doc;

@@ -15,7 +15,7 @@
             <p>请从左侧选择病历文书，或点击分类后的 <b>＋</b> 从模板新建</p>
         </div>
         <div id="emr-editor" class="emr-editor" style="display:none">
-            <div class="emr-toolbar">
+            <div class="emr-toolbar" id="emr-toolbar">
                 <button type="button" class="btn btn-small fmt-btn fmt-b" id="btn-bold" title="加粗">B</button>
                 <button type="button" class="btn btn-small fmt-btn fmt-i" id="btn-italic" title="斜体">I</button>
                 <button type="button" class="btn btn-small fmt-btn fmt-u" id="btn-underline" title="下划线">U</button>
@@ -35,6 +35,16 @@
                 <button type="button" class="btn btn-small" id="btn-versions">版本</button>
                 <button type="button" class="btn btn-small btn-primary" id="btn-sign">医师签名</button>
                 <span id="emr-doc-status" class="emr-doc-status"></span>
+            </div>
+            <div class="emr-toolbar" id="emr-design-bar" style="display:none">
+                <span class="emr-design-name" id="emr-design-name"></span>
+                <button type="button" class="btn btn-small" id="btn-dsn-field">插入字段</button>
+                <button type="button" class="btn btn-small" id="btn-dsn-select">插入下拉字段</button>
+                <button type="button" class="btn btn-small" id="btn-dsn-heading">插入标题</button>
+                <button type="button" class="btn btn-small" id="btn-dsn-ref">插入引用</button>
+                <span class="emr-tb-spacer"></span>
+                <button type="button" class="btn btn-small btn-success" id="btn-dsn-save">保存模板</button>
+                <button type="button" class="btn btn-small" id="btn-dsn-exit">退出设计</button>
             </div>
             <div id="emr-editor-scroll" class="emr-editor-scroll">
                 <div class="emr-editor-page" id="emr-editor-page">
@@ -56,6 +66,7 @@ var _emrEditor = null;       // EmrEditor 实例
 var _emrAutoSaveTimer = null;
 var _emrPatient = null;
 var _emrQc = [];              // 质控提醒 [{cat, code, msg, hours}]
+var _emrDesign = null;        // 模板设计状态 {id, name, categoryId, recordType}
 var _emrCategories = _emrCategories || [];
 
 /* ================= 初始化 / 树 ================= */
@@ -447,6 +458,247 @@ async function openWordDoc(doc, signed) {
     }
 }
 
+/* ================= 模板管理 / 设计模式 (#7) ================= */
+/** 进入模板设计模式: 编辑器解锁 (可删除固定元素) + 插入工具 + 保存模板 */
+async function emr_enterTemplateDesign(tid, opts) {
+    opts = opts || {};
+    let tpl = null, schema = null;
+    if (tid) {
+        const tr = await AjaxLoader.api('emr/template-get?id=' + tid, { silent: true });
+        tpl = tr.data;
+        if (tpl) schema = parseSchema(tpl.schema_json);
+    }
+    if (!schema || schema.mode !== 'word') { Dom.toast('该模板不支持设计（仅字处理模板）', 'error'); return; }
+    _emrDesign = {
+        id: tid || null,
+        name: tpl ? tpl.name : (opts.name || '新模板'),
+        categoryId: tpl ? tpl.category_id : (opts.categoryId || null),
+        recordType: tpl ? tpl.record_type : (opts.recordType || 'admission')
+    };
+    if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
+    document.getElementById('emr-editor-empty').style.display = 'none';
+    document.getElementById('emr-editor').style.display = 'flex';
+    document.getElementById('emr-toolbar').style.display = 'none';
+    document.getElementById('emr-design-bar').style.display = 'flex';
+    document.getElementById('emr-design-name').textContent = '模板设计：' + _emrDesign.name;
+    applyPageCss(schema.page);
+    EmrOps.setDesignMode(true);
+    _emrEditor = EmrEditor.create({
+        container: document.getElementById('emr-editor-canvas'),
+        doc: EmrDoc.fromSchema(schema),
+        guard: null,
+        patientInfo: buildPatientInfo(),
+        design: true,
+        onChange: null,
+        onStatus: updateEditorStatus
+    });
+}
+
+function emr_exitTemplateDesign() {
+    EmrOps.setDesignMode(false);
+    _emrDesign = null;
+    if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
+    document.getElementById('emr-design-bar').style.display = 'none';
+    document.getElementById('emr-toolbar').style.display = '';
+    document.getElementById('emr-editor').style.display = 'none';
+    document.getElementById('emr-editor-empty').style.display = 'flex';
+}
+
+async function emr_saveTemplateDesign() {
+    if (!_emrDesign || !_emrEditor) return;
+    const doc = _emrEditor.getDoc();
+    doc.title = _emrDesign.name;
+    const schema = { mode: 'word', title: _emrDesign.name, page: doc.page, header: doc.header, body: doc.body };
+    const payload = {
+        name: _emrDesign.name,
+        record_type: _emrDesign.recordType,
+        content_delta: '{}', content_html: '',
+        schema_json: JSON.stringify(schema),
+        category_id: _emrDesign.categoryId
+    };
+    if (_emrDesign.id) payload.id = _emrDesign.id;
+    const r = await AjaxLoader.api('emr/template-save', { method: 'POST', data: payload });
+    if (!_emrDesign.id) _emrDesign.id = r.data.id;
+    _emrEditor.markSaved();
+    Dom.toast('模板已保存', 'success');
+}
+
+/** 设计工具: 插入字段 / 下拉字段 / 标题 / 引用 */
+function emr_dsnInsertField(withSelect) {
+    if (!_emrEditor) return;
+    const content = '<div class="form-group"><label class="form-label">字段名称（显示为固定标签）</label><input id="dsn-label" class="form-control" placeholder="如：职业史"></div>'
+        + (withSelect ? '<div class="form-group"><label class="form-label">下拉选项（用顿号/逗号分隔，可留空）</label><input id="dsn-opts" class="form-control" placeholder="如：无、有、不详"></div>' : '');
+    Dom.modal(withSelect ? '插入下拉字段' : '插入字段', content, [
+        { text: '插入', type: 'primary', onclick: function () {
+            const label = (document.getElementById('dsn-label').value || '').trim();
+            if (!label) { Dom.toast('请输入字段名称', 'error'); return; }
+            const select = withSelect ? (document.getElementById('dsn-opts').value || '').split(/[、，,;；]/).map(function (x) { return x.trim(); }).filter(Boolean) : null;
+            _emrEditor.insertField(label, select && select.length ? { select: select } : null);
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+}
+function emr_dsnInsertHeading() {
+    if (!_emrEditor) return;
+    const content = '<div class="form-group"><label class="form-label">标题文字</label><input id="dsn-h" class="form-control" placeholder="如：体格检查"></div>';
+    Dom.modal('插入标题', content, [
+        { text: '插入', type: 'primary', onclick: function () {
+            const t = (document.getElementById('dsn-h').value || '').trim();
+            if (!t) { Dom.toast('请输入标题文字', 'error'); return; }
+            _emrEditor.insertHeading(t);
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+}
+function emr_dsnInsertRef() {
+    if (!_emrEditor) return;
+    const content = '<div class="form-group"><label class="form-label">字段键（其他文书的字段标识）</label>'
+        + '<input id="dsn-ref" class="form-control" list="dsn-ref-list" placeholder="如：chief_complaint_val（主诉）">'
+        + '<datalist id="dsn-ref-list"><option value="p_name">姓名</option><option value="p_age">年龄</option><option value="p_gender">性别</option><option value="chief_complaint_val">主诉</option><option value="present_illness_val">现病史</option><option value="past_history_val">既往史</option><option value="special_exam_val">专科检查</option><option value="aux_exam_val">辅助检查</option><option value="vital_bmi_value">BMI</option></datalist></div>'
+        + '<div class="form-group"><label class="form-label">无值时的占位文字</label><input id="dsn-ref-fb" class="form-control" value="＿＿"></div>';
+    Dom.modal('插入字段引用', content, [
+        { text: '插入', type: 'primary', onclick: function () {
+            const k = (document.getElementById('dsn-ref').value || '').trim();
+            const fb = (document.getElementById('dsn-ref-fb').value || '＿＿').trim();
+            if (!k) { Dom.toast('请输入字段键', 'error'); return; }
+            _emrEditor.insertRef(k, fb);
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+}
+
+/** 模板管理弹窗: 本科室(可设计/删除) / 全院(按科室分组, 可复制到本科室) + 新建模板 */
+async function emr_openTemplateManager() {
+    const [r, cr] = await Promise.all([
+        AjaxLoader.api('emr/template-list?structured=1', { silent: true }),
+        AjaxLoader.api('emr/category-list', { silent: true })
+    ]);
+    const templates = r.data || [];
+    const cats = cr.data || [];
+    if (!templates.length && !cats.length) { Dom.toast('数据加载失败', 'error'); return; }
+    const myDeptId = Auth.user && Auth.user.department_id ? String(Auth.user.department_id) : null;
+    const myDeptName = (function () { const t = templates.find(function (x) { return String(x.department_id) === myDeptId; }); return t ? t.department_name : '本科室'; })();
+    const groups = new Map();
+    templates.forEach(function (t) {
+        const key = t.department_id == null ? '0' : String(t.department_id);
+        if (!groups.has(key)) groups.set(key, { name: t.department_name || '全院通用', items: [] });
+        groups.get(key).items.push(t);
+    });
+
+    function actHTML(t) {
+        const own = t.department_id != null && String(t.department_id) === myDeptId;
+        if (own) return '<span class="mini" data-a="design">设计</span><span class="mini danger" data-a="del">删除</span>';
+        return '<span class="mini" data-a="clone">复制到本科室</span>';
+    }
+    function itemHTML(t) {
+        return '<div class="emr-tpl-mitem" data-id="' + t.id + '"><span class="emr-tpl-mname">' + Format.escape(t.name) + '</span><span class="emr-tpl-mact">' + actHTML(t) + '</span></div>';
+    }
+    function mineHTML() {
+        const g = myDeptId ? groups.get(myDeptId) : null;
+        if (!g) return '<div class="emr-tpl-empty">本科室暂无模板：点击下方"新建模板"创建</div>';
+        return '<div class="emr-tpl-group"><div class="emr-tpl-ghead open"><span class="emr-tpl-gname">' + Format.escape(g.name) + '</span><span class="emr-tpl-gcount">' + g.items.length + '</span><span class="emr-tpl-gcaret"></span></div><div class="emr-tpl-gitems">' + g.items.map(itemHTML).join('') + '</div></div>';
+    }
+    function allHTML() {
+        return Array.from(groups.keys()).map(function (k) {
+            const g = groups.get(k);
+            const open = (k === '0' || k === myDeptId);
+            return '<div class="emr-tpl-group"><div class="emr-tpl-ghead' + (open ? ' open' : '') + '"><span class="emr-tpl-gname">' + Format.escape(g.name) + '</span><span class="emr-tpl-gcount">' + g.items.length + '</span><span class="emr-tpl-gcaret"></span></div><div class="emr-tpl-gitems"' + (open ? '' : ' style="display:none"') + '>' + g.items.map(itemHTML).join('') + '</div></div>';
+        }).join('');
+    }
+
+    const content = '<div class="emr-tpl-picker">'
+        + '<div class="emr-tpl-tabs"><span class="emr-tpl-tab active" data-tab="mine">本科室</span><span class="emr-tpl-tab" data-tab="all">全院</span></div>'
+        + '<div class="emr-tpl-list" id="emr-tpm-list">' + mineHTML() + '</div>'
+        + '<div class="emr-tpl-foot"><button type="button" class="btn btn-small btn-primary" id="emr-tpm-new">新建模板</button><span class="emr-tb-spacer"></span><button type="button" class="btn" id="emr-tpm-close">关闭</button></div>'
+        + '</div>';
+    const overlay = Dom.modal('病历模板管理', content, []);
+    const listEl = overlay.querySelector('#emr-tpm-list');
+
+    function bindList() {
+        listEl.querySelectorAll('.emr-tpl-ghead').forEach(function (h) {
+            h.addEventListener('click', function () {
+                const items = h.nextElementSibling;
+                const open = h.classList.toggle('open');
+                items.style.display = open ? '' : 'none';
+            });
+        });
+        listEl.querySelectorAll('.emr-tpl-mitem').forEach(function (it) {
+            it.querySelectorAll('.mini').forEach(function (a) {
+                a.addEventListener('click', async function () {
+                    const t = templates.find(function (x) { return String(x.id) === String(it.dataset.id); });
+                    if (!t) return;
+                    if (a.dataset.a === 'design') { overlay.remove(); emr_enterTemplateDesign(t.id); return; }
+                    if (a.dataset.a === 'del') {
+                        Dom.modal('删除模板', '<p>确认删除模板「' + Format.escape(t.name) + '」？引用该模板的文书不受影响（内容独立保存）。</p>', [
+                            { text: '删除', type: 'danger', onclick: async function () {
+                                await AjaxLoader.api('emr/template-delete?id=' + t.id, { method: 'POST' });
+                                Dom.toast('已删除', 'success');
+                                overlay.remove();
+                                emr_openTemplateManager();
+                            } },
+                            { text: '取消', type: 'default' }
+                        ]);
+                        return;
+                    }
+                    if (a.dataset.a === 'clone') {
+                        const tr = await AjaxLoader.api('emr/template-get?id=' + t.id, { silent: true });
+                        await AjaxLoader.api('emr/template-save', { method: 'POST', data: {
+                            name: t.name + '（本科室副本）', record_type: t.record_type,
+                            content_delta: '{}', content_html: '',
+                            schema_json: tr.data ? tr.data.schema_json : '{}',
+                            category_id: t.category_id
+                        }});
+                        Dom.toast('已复制到本科室', 'success');
+                        overlay.remove();
+                        emr_openTemplateManager();
+                    }
+                });
+            });
+        });
+    }
+    overlay.querySelectorAll('.emr-tpl-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            overlay.querySelectorAll('.emr-tpl-tab').forEach(function (x) { x.classList.remove('active'); });
+            tab.classList.add('active');
+            listEl.innerHTML = tab.dataset.tab === 'mine' ? mineHTML() : allHTML();
+            bindList();
+        });
+    });
+    bindList();
+    overlay.querySelector('#emr-tpm-close').addEventListener('click', function () { overlay.remove(); });
+    overlay.querySelector('#emr-tpm-new').addEventListener('click', function () {
+        const opts = cats.map(function (c) { return '<option value="' + c.id + '">' + Format.escape(c.name) + '</option>'; }).join('');
+        Dom.modal('新建模板', '<div class="form-group"><label class="form-label">模板名称</label><input id="emr-newtpl-name" class="form-control" placeholder="如：男性患者入院记录"></div>'
+            + '<div class="form-group"><label class="form-label">所属分类</label><select id="emr-newtpl-cat" class="form-control">' + opts + '</select></div>',
+            [
+                { text: '创建并设计', type: 'primary', onclick: async function () {
+                    const name = (document.getElementById('emr-newtpl-name').value || '').trim();
+                    const cid = document.getElementById('emr-newtpl-cat').value;
+                    if (!name) { Dom.toast('请输入模板名称', 'error'); return; }
+                    const cat = cats.find(function (c) { return String(c.id) === String(cid); });
+                    const skeleton = {
+                        mode: 'word', title: name,
+                        page: Object.assign({}, EmrDoc.DEFAULT_PAGE),
+                        header: { hospital: '', doc_name: name, info_fields: EmrDoc.DEFAULT_INFO_FIELDS },
+                        body: [
+                            EmrDoc.para([EmrDoc.text(name, { b: true, sz: 14 })], { align: 'center' }),
+                            EmrDoc.para([EmrDoc.fx('sign_line', '医师签名：'), EmrDoc.item('dyn', { key: 'sign_names', text: '' })], { align: 'right' })
+                        ]
+                    };
+                    const resp = await AjaxLoader.api('emr/template-save', { method: 'POST', data: {
+                        name: name, record_type: (cat && cat.code) || 'admission',
+                        content_delta: '{}', content_html: '',
+                        schema_json: JSON.stringify(skeleton),
+                        category_id: cat ? cat.id : null
+                    }});
+                    overlay.remove();
+                    emr_enterTemplateDesign(resp.data.id);
+                } },
+                { text: '取消', type: 'default' }
+            ]);
+    });
+}
+
 /** 质控提醒弹窗 */
 function emr_showQc(catId) {
     const items = _emrQc.filter(q => q.cat == catId);
@@ -763,6 +1015,22 @@ function bindToolbar() {
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
     bind('btn-discharge', emr_openDischarge);
+    bind('btn-template-mgr', emr_openTemplateManager);
+    bind('btn-dsn-field', function () { emr_dsnInsertField(false); });
+    bind('btn-dsn-select', function () { emr_dsnInsertField(true); });
+    bind('btn-dsn-heading', emr_dsnInsertHeading);
+    bind('btn-dsn-ref', emr_dsnInsertRef);
+    bind('btn-dsn-save', emr_saveTemplateDesign);
+    bind('btn-dsn-exit', function () {
+        if (_emrEditor && _emrEditor.isDirty && _emrEditor.isDirty()) {
+            Dom.modal('退出模板设计', '<p>存在未保存的修改，确定退出吗？</p>', [
+                { text: '退出', type: 'danger', onclick: emr_exitTemplateDesign },
+                { text: '取消', type: 'default' }
+            ]);
+            return;
+        }
+        emr_exitTemplateDesign();
+    });
 }
 
 bindToolbar();
