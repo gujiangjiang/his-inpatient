@@ -1,0 +1,187 @@
+{
+    "name": "24小时内入院死亡记录",
+    "record_type": "admission",
+    "category": "admission",
+    "schema": {
+        "mode": "word",
+        "title": "24小时内入院死亡记录",
+        "page": {
+            "paper": "A4",
+            "mt": 40,
+            "mb": 36,
+            "ml": 36,
+            "mr": 36,
+            "header_h": 16,
+            "footer_h": 40,
+            "font": "仿宋_GB2312, FangSong, SimSun, serif",
+            "sz": 12,
+            "line": 1.5
+        },
+        "header": {
+            "hospital": "淮海省人民医院",
+            "doc_name": "24小时内入院死亡记录",
+            "info_fields": [
+                [
+                    "姓名",
+                    "name"
+                ],
+                [
+                    "性别",
+                    "gender"
+                ],
+                [
+                    "科别",
+                    "department"
+                ],
+                [
+                    "病区",
+                    "ward_name"
+                ],
+                [
+                    "年龄",
+                    "age"
+                ],
+                [
+                    "床号",
+                    "bed_no"
+                ],
+                [
+                    "住院号",
+                    "admission_no"
+                ]
+            ]
+        },
+        "body": [
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "chief_complaint",
+                        "text": "主诉："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "chief_complaint_val",
+                        "ph": "主要症状（或体征）及持续时间"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "admission_condition",
+                        "text": "入院情况："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "admission_condition_val",
+                        "ph": "入院时病情、主要症状体征及检查结果"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "admission_diag",
+                        "text": "入院诊断："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "admission_diag_val",
+                        "ph": "入院时的诊断"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "course",
+                        "text": "诊疗经过："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "course_val",
+                        "ph": "重点记录抢救经过及抢救措施"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "death_time",
+                        "text": "死亡时间："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "death_time_val",
+                        "ph": "精确到分钟"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "death_cause",
+                        "text": "死亡原因："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "death_cause_val",
+                        "ph": "请输入死亡原因"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "death_diag",
+                        "text": "死亡诊断："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "death_diag_val",
+                        "ph": "请输入死亡诊断"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_line",
+                        "text": "医师签名："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "sign_names",
+                        "text": ""
+                    }
+                ]
+            }
+        ]
+    }
+}

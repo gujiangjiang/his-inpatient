@@ -1,0 +1,139 @@
+{
+    "name": "首次病程记录",
+    "record_type": "progress",
+    "category": "progress",
+    "schema": {
+        "mode": "word",
+        "title": "首次病程记录",
+        "page": {
+            "paper": "A4",
+            "mt": 40,
+            "mb": 36,
+            "ml": 36,
+            "mr": 36,
+            "header_h": 16,
+            "footer_h": 40,
+            "font": "仿宋_GB2312, FangSong, SimSun, serif",
+            "sz": 12,
+            "line": 1.5
+        },
+        "header": {
+            "hospital": "淮海省人民医院",
+            "doc_name": "首次病程记录",
+            "info_fields": [
+                [
+                    "姓名",
+                    "name"
+                ],
+                [
+                    "性别",
+                    "gender"
+                ],
+                [
+                    "科别",
+                    "department"
+                ],
+                [
+                    "病区",
+                    "ward_name"
+                ],
+                [
+                    "年龄",
+                    "age"
+                ],
+                [
+                    "床号",
+                    "bed_no"
+                ],
+                [
+                    "住院号",
+                    "admission_no"
+                ]
+            ]
+        },
+        "body": [
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "case_feature",
+                        "text": "病例特点："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "case_feature_val",
+                        "ph": "主要临床特点归纳（症状、体征、辅助检查）"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "diag_basis",
+                        "text": "诊断依据："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "diag_basis_val",
+                        "ph": "拟诊讨论: 诊断依据"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "diff_diag",
+                        "text": "鉴别诊断："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "diff_diag_val",
+                        "ph": "需要鉴别的疾病及依据"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "care_plan",
+                        "text": "诊疗计划："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "care_plan_val",
+                        "ph": "进一步检查与治疗计划"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_line",
+                        "text": "医师签名："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "sign_names",
+                        "text": ""
+                    }
+                ]
+            }
+        ]
+    }
+}

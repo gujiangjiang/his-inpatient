@@ -1,0 +1,1092 @@
+{
+    "name": "再次或多次入院记录",
+    "record_type": "admission",
+    "category": "admission",
+    "schema": {
+        "mode": "word",
+        "title": "再次或多次入院记录",
+        "page": {
+            "paper": "A4",
+            "mt": 40,
+            "mb": 36,
+            "ml": 36,
+            "mr": 36,
+            "header_h": 16,
+            "footer_h": 40,
+            "font": "仿宋_GB2312, FangSong, SimSun, serif",
+            "sz": 12,
+            "line": 1.5
+        },
+        "header": {
+            "hospital": "淮海省人民医院",
+            "doc_name": "再次或多次入院记录",
+            "info_fields": [
+                [
+                    "姓名",
+                    "name"
+                ],
+                [
+                    "性别",
+                    "gender"
+                ],
+                [
+                    "科别",
+                    "department"
+                ],
+                [
+                    "病区",
+                    "ward_name"
+                ],
+                [
+                    "年龄",
+                    "age"
+                ],
+                [
+                    "床号",
+                    "bed_no"
+                ],
+                [
+                    "住院号",
+                    "admission_no"
+                ]
+            ]
+        },
+        "body": [
+            {
+                "t": "tbl",
+                "tblPr": {
+                    "plain": true,
+                    "center": true
+                },
+                "grid": [
+                    40,
+                    152,
+                    72,
+                    196
+                ],
+                "rows": [
+                    {
+                        "cells": [
+                            {
+                                "tcPr": {
+                                    "w": 40
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "姓名："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 152
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_name_val",
+                                                "ph": "请输入姓名"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 72
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "职业："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 196
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_occupation_val",
+                                                "ph": "请选择职业",
+                                                "opts": [
+                                                    "工人",
+                                                    "农民",
+                                                    "学生",
+                                                    "教师",
+                                                    "职员",
+                                                    "军人",
+                                                    "自由职业",
+                                                    "退休",
+                                                    "无业",
+                                                    "其他"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "cells": [
+                            {
+                                "tcPr": {
+                                    "w": 40
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "性别："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 152
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_gender_val",
+                                                "ph": "请选择性别",
+                                                "opts": [
+                                                    "男",
+                                                    "女"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 72
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "单位："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 196
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_workunit_val",
+                                                "ph": "请输入工作单位"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "cells": [
+                            {
+                                "tcPr": {
+                                    "w": 40
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "年龄："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 152
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_age_val",
+                                                "ph": "请输入年龄"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 72
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "住址："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 196
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_address_val",
+                                                "ph": "请输入住址"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "cells": [
+                            {
+                                "tcPr": {
+                                    "w": 40
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "婚姻："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 152
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_marriage_val",
+                                                "ph": "请选择婚姻状况",
+                                                "opts": [
+                                                    "未婚",
+                                                    "已婚",
+                                                    "离异",
+                                                    "丧偶"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 72
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "病史陈述者："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 196
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_teller_val",
+                                                "ph": "请选择",
+                                                "opts": [
+                                                    "患者本人",
+                                                    "家属",
+                                                    "同事",
+                                                    "其他"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "cells": [
+                            {
+                                "tcPr": {
+                                    "w": 40
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "籍贯："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 152
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_native_val",
+                                                "ph": "请输入籍贯"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 72
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "入院日期："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 196
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_admitdate_val",
+                                                "ph": "请输入"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "cells": [
+                            {
+                                "tcPr": {
+                                    "w": 40
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "民族："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 152
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_nation_val",
+                                                "ph": "请选择民族",
+                                                "opts": [
+                                                    "汉族",
+                                                    "蒙古族",
+                                                    "回族",
+                                                    "藏族",
+                                                    "维吾尔族",
+                                                    "苗族",
+                                                    "彝族",
+                                                    "壮族",
+                                                    "布依族",
+                                                    "朝鲜族",
+                                                    "满族",
+                                                    "侗族",
+                                                    "瑶族",
+                                                    "白族",
+                                                    "土家族",
+                                                    "其他"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 72
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "text",
+                                                "text": "记录日期："
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "tcPr": {
+                                    "w": 196
+                                },
+                                "blocks": [
+                                    {
+                                        "t": "p",
+                                        "runs": [
+                                            {
+                                                "t": "slot",
+                                                "key": "p_recorddate_val",
+                                                "ph": "请输入"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "chief_complaint",
+                        "text": "主诉："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "chief_complaint_val",
+                        "ph": "主要症状（或体征）及持续时间"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "present_illness",
+                        "text": "现病史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "present_illness_val",
+                        "ph": "发病情况、症状特点及演变、伴随症状、诊疗经过、一般情况变化等（按时间顺序）"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "past_history",
+                        "text": "既往史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "past_history_val",
+                        "ph": "既往健康状况、疾病史、预防接种史等"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "flex": "between"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "infect_dis",
+                        "text": "传染病史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "infect_dis_val",
+                        "ph": "无\/有",
+                        "opts": [
+                            "无",
+                            "有"
+                        ]
+                    },
+                    {
+                        "t": "fx",
+                        "key": "surgery_hx",
+                        "text": "手术外伤史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "surgery_hx_val",
+                        "ph": "无\/有",
+                        "opts": [
+                            "无",
+                            "有"
+                        ]
+                    },
+                    {
+                        "t": "fx",
+                        "key": "transfusion",
+                        "text": "输血史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "transfusion_val",
+                        "ph": "无\/有",
+                        "opts": [
+                            "无",
+                            "有"
+                        ]
+                    },
+                    {
+                        "t": "fx",
+                        "key": "allergy",
+                        "text": "药物过敏史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "allergy_val",
+                        "ph": "无\/有\/不详",
+                        "opts": [
+                            "无",
+                            "有",
+                            "不详"
+                        ]
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "personal_history",
+                        "text": "个人史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "personal_history_val",
+                        "ph": "居住、生活、嗜好等"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "marital_history",
+                        "text": "婚育史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "marital_history_val",
+                        "ph": "婚姻、生育情况"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "menstrual_history",
+                        "text": "月经史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "menstrual_history_val",
+                        "ph": "女性患者填写（正常\/异常\/已绝经）"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "family_history",
+                        "text": "家族史："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "family_history_val",
+                        "ph": "家族中同类疾病等"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "center",
+                    "borders": {
+                        "top": true
+                    }
+                },
+                "rPr": {
+                    "b": true,
+                    "sz": 13
+                },
+                "runs": [
+                    {
+                        "t": "text",
+                        "text": "体格检查"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "flex": "between"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "vital_temp",
+                        "text": "体温："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "vital_temp_val",
+                        "ph": "℃"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "vital_pulse",
+                        "text": "脉搏："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "vital_pulse_val",
+                        "ph": "次\/分"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "vital_resp",
+                        "text": "呼吸："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "vital_resp_val",
+                        "ph": "次\/分"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "vital_bp",
+                        "text": "血压："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "vital_bp_val",
+                        "ph": "mmHg"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "flex": "between"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "vital_height",
+                        "text": "身高："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "vital_height_val",
+                        "ph": "cm"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "vital_weight",
+                        "text": "体重："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "vital_weight_val",
+                        "ph": "kg"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "vital_bmi",
+                        "text": "BMI："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "vital_bmi_value",
+                        "text": ""
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_general",
+                        "text": "一般情况："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_general_val",
+                        "ph": "发育、营养、神志、体位等"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_skin",
+                        "text": "皮肤、粘膜："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_skin_val",
+                        "ph": "请输入皮肤、粘膜"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_nodes",
+                        "text": "全身浅表淋巴结："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_nodes_val",
+                        "ph": "请输入全身浅表淋巴结"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_head",
+                        "text": "头部及其器官："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_head_val",
+                        "ph": "请输入头部及其器官"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_neck",
+                        "text": "颈部："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_neck_val",
+                        "ph": "请输入颈部"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_chest",
+                        "text": "胸部（胸廓、肺部、心脏、血管）："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_chest_val",
+                        "ph": "请输入胸部（胸廓、肺部、心脏、血管）"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_abdomen",
+                        "text": "腹部（肝、脾等）："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_abdomen_val",
+                        "ph": "请输入腹部（肝、脾等）"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_rectum",
+                        "text": "直肠肛门："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_rectum_val",
+                        "ph": "请输入直肠肛门"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_genital",
+                        "text": "外生殖器："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_genital_val",
+                        "ph": "请输入外生殖器"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_spine",
+                        "text": "脊柱、四肢："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_spine_val",
+                        "ph": "请输入脊柱、四肢"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "exam_nervous",
+                        "text": "神经系统："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "exam_nervous_val",
+                        "ph": "请输入神经系统"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "center",
+                    "borders": {
+                        "top": true
+                    }
+                },
+                "rPr": {
+                    "b": true,
+                    "sz": 13
+                },
+                "runs": [
+                    {
+                        "t": "text",
+                        "text": "专科情况"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "slot",
+                        "key": "special_exam_val",
+                        "ph": "根据专科需要记录专科特殊情况"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "center",
+                    "borders": {
+                        "top": true
+                    }
+                },
+                "rPr": {
+                    "b": true,
+                    "sz": 13
+                },
+                "runs": [
+                    {
+                        "t": "text",
+                        "text": "辅助检查"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "slot",
+                        "key": "aux_exam_val",
+                        "ph": "入院前与本次疾病相关的主要检查及结果（注明日期；外院检查注明机构名称）"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "initial_diagnosis",
+                        "text": "初步诊断："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "initial_diagnosis_value",
+                        "text": ""
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_line",
+                        "text": "医师签名："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "sign_names",
+                        "text": ""
+                    }
+                ]
+            }
+        ]
+    }
+}

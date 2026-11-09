@@ -1,0 +1,135 @@
+{
+    "name": "上级医师查房记录",
+    "record_type": "progress",
+    "category": "progress",
+    "schema": {
+        "mode": "word",
+        "title": "上级医师查房记录",
+        "page": {
+            "paper": "A4",
+            "mt": 40,
+            "mb": 36,
+            "ml": 36,
+            "mr": 36,
+            "header_h": 16,
+            "footer_h": 40,
+            "font": "仿宋_GB2312, FangSong, SimSun, serif",
+            "sz": 12,
+            "line": 1.5
+        },
+        "header": {
+            "hospital": "淮海省人民医院",
+            "doc_name": "上级医师查房记录",
+            "info_fields": [
+                [
+                    "姓名",
+                    "name"
+                ],
+                [
+                    "性别",
+                    "gender"
+                ],
+                [
+                    "科别",
+                    "department"
+                ],
+                [
+                    "病区",
+                    "ward_name"
+                ],
+                [
+                    "年龄",
+                    "age"
+                ],
+                [
+                    "床号",
+                    "bed_no"
+                ],
+                [
+                    "住院号",
+                    "admission_no"
+                ]
+            ]
+        },
+        "body": [
+            {
+                "t": "p",
+                "pPr": {
+                    "flex": "between"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "round_date",
+                        "text": "查房日期："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "round_date_val",
+                        "ph": "请输入"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "round_time",
+                        "text": "查房时间："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "round_time_val",
+                        "ph": "请输入"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "senior_opinion",
+                        "text": "上级医师查房意见："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "senior_opinion_val",
+                        "ph": "诊断依据、鉴别诊断及下一步诊疗意见"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "senior_exec",
+                        "text": "执行情况："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "senior_exec_val",
+                        "ph": "落实情况"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_line",
+                        "text": "医师签名："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "sign_names",
+                        "text": ""
+                    }
+                ]
+            }
+        ]
+    }
+}

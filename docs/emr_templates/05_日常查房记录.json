@@ -1,0 +1,135 @@
+{
+    "name": "日常查房记录",
+    "record_type": "progress",
+    "category": "progress",
+    "schema": {
+        "mode": "word",
+        "title": "日常查房记录",
+        "page": {
+            "paper": "A4",
+            "mt": 40,
+            "mb": 36,
+            "ml": 36,
+            "mr": 36,
+            "header_h": 16,
+            "footer_h": 40,
+            "font": "仿宋_GB2312, FangSong, SimSun, serif",
+            "sz": 12,
+            "line": 1.5
+        },
+        "header": {
+            "hospital": "淮海省人民医院",
+            "doc_name": "日常查房记录",
+            "info_fields": [
+                [
+                    "姓名",
+                    "name"
+                ],
+                [
+                    "性别",
+                    "gender"
+                ],
+                [
+                    "科别",
+                    "department"
+                ],
+                [
+                    "病区",
+                    "ward_name"
+                ],
+                [
+                    "年龄",
+                    "age"
+                ],
+                [
+                    "床号",
+                    "bed_no"
+                ],
+                [
+                    "住院号",
+                    "admission_no"
+                ]
+            ]
+        },
+        "body": [
+            {
+                "t": "p",
+                "pPr": {
+                    "flex": "between"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "round_date",
+                        "text": "记录日期："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "round_date_val",
+                        "ph": "请输入"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "round_time",
+                        "text": "记录时间："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "round_time_val",
+                        "ph": "请输入"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "round_change",
+                        "text": "病情变化及查体："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "round_change_val",
+                        "ph": "症状、体征变化及新出现的病情"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "round_plan",
+                        "text": "处理意见："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "round_plan_val",
+                        "ph": "检查、治疗及注意事项"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_line",
+                        "text": "医师签名："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "sign_names",
+                        "text": ""
+                    }
+                ]
+            }
+        ]
+    }
+}

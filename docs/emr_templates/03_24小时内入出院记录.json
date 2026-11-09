@@ -1,0 +1,187 @@
+{
+    "name": "24小时内入出院记录",
+    "record_type": "admission",
+    "category": "admission",
+    "schema": {
+        "mode": "word",
+        "title": "24小时内入出院记录",
+        "page": {
+            "paper": "A4",
+            "mt": 40,
+            "mb": 36,
+            "ml": 36,
+            "mr": 36,
+            "header_h": 16,
+            "footer_h": 40,
+            "font": "仿宋_GB2312, FangSong, SimSun, serif",
+            "sz": 12,
+            "line": 1.5
+        },
+        "header": {
+            "hospital": "淮海省人民医院",
+            "doc_name": "24小时内入出院记录",
+            "info_fields": [
+                [
+                    "姓名",
+                    "name"
+                ],
+                [
+                    "性别",
+                    "gender"
+                ],
+                [
+                    "科别",
+                    "department"
+                ],
+                [
+                    "病区",
+                    "ward_name"
+                ],
+                [
+                    "年龄",
+                    "age"
+                ],
+                [
+                    "床号",
+                    "bed_no"
+                ],
+                [
+                    "住院号",
+                    "admission_no"
+                ]
+            ]
+        },
+        "body": [
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "chief_complaint",
+                        "text": "主诉："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "chief_complaint_val",
+                        "ph": "主要症状（或体征）及持续时间"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "admission_condition",
+                        "text": "入院情况："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "admission_condition_val",
+                        "ph": "入院时病情、主要症状体征及检查结果"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "admission_diag",
+                        "text": "入院诊断："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "admission_diag_val",
+                        "ph": "入院时的诊断"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "course",
+                        "text": "诊疗经过："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "course_val",
+                        "ph": "住院期间诊疗经过"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "discharge_condition",
+                        "text": "出院情况："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "discharge_condition_val",
+                        "ph": "出院时病情、主要症状体征"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "discharge_diag",
+                        "text": "出院诊断："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "discharge_diag_val",
+                        "ph": "出院时的诊断"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "discharge_orders",
+                        "text": "出院医嘱："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "discharge_orders_val",
+                        "ph": "出院后用药、复诊等注意事项"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_line",
+                        "text": "医师签名："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "sign_names",
+                        "text": ""
+                    }
+                ]
+            }
+        ]
+    }
+}

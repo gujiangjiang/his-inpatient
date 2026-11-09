@@ -1,0 +1,169 @@
+{
+    "name": "医患沟通记录",
+    "record_type": "communication",
+    "category": "communication",
+    "schema": {
+        "mode": "word",
+        "title": "医患沟通记录",
+        "page": {
+            "paper": "A4",
+            "mt": 40,
+            "mb": 36,
+            "ml": 36,
+            "mr": 36,
+            "header_h": 16,
+            "footer_h": 40,
+            "font": "仿宋_GB2312, FangSong, SimSun, serif",
+            "sz": 12,
+            "line": 1.5
+        },
+        "header": {
+            "hospital": "淮海省人民医院",
+            "doc_name": "医患沟通记录",
+            "info_fields": [
+                [
+                    "姓名",
+                    "name"
+                ],
+                [
+                    "性别",
+                    "gender"
+                ],
+                [
+                    "科别",
+                    "department"
+                ],
+                [
+                    "病区",
+                    "ward_name"
+                ],
+                [
+                    "年龄",
+                    "age"
+                ],
+                [
+                    "床号",
+                    "bed_no"
+                ],
+                [
+                    "住院号",
+                    "admission_no"
+                ]
+            ]
+        },
+        "body": [
+            {
+                "t": "p",
+                "pPr": {
+                    "flex": "between"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "comm_date",
+                        "text": "沟通时间："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "comm_date_val",
+                        "ph": "请输入"
+                    },
+                    {
+                        "t": "fx",
+                        "key": "comm_place",
+                        "text": "沟通地点："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "comm_place_val",
+                        "ph": "请输入"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "comm_people",
+                        "text": "参加人员："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "comm_people_val",
+                        "ph": "医师及患者（家属）参加人员"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "comm_content",
+                        "text": "沟通内容："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "comm_content_val",
+                        "ph": "病情、诊疗方案、风险及注意事项等"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "comm_opinion",
+                        "text": "患者（家属）意见："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "comm_opinion_val",
+                        "ph": "理解并同意 \/ 其他意见"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_line",
+                        "text": "医师签名："
+                    },
+                    {
+                        "t": "dyn",
+                        "key": "sign_names",
+                        "text": ""
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": {
+                    "align": "right"
+                },
+                "runs": [
+                    {
+                        "t": "fx",
+                        "key": "sign_patient",
+                        "text": "患者（家属）签名："
+                    },
+                    {
+                        "t": "slot",
+                        "key": "sign_patient_val",
+                        "ph": "请输入"
+                    }
+                ]
+            }
+        ]
+    }
+}
