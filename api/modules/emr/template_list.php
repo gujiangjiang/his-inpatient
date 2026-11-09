@@ -8,12 +8,12 @@ $recordType = Validator::get('record_type');
 $categoryId = Validator::get('category_id');
 $structured = Validator::get('structured'); // 1 只取结构化模板(带schema_json)
 
-$sql = "SELECT * FROM emr_templates WHERE 1=1";
+$sql = "SELECT t.*, dep.name AS department_name FROM emr_templates t LEFT JOIN departments dep ON dep.id = t.department_id WHERE 1=1";
 $params = [];
-if ($recordType) { $sql .= " AND record_type = ?"; $params[] = $recordType; }
-if ($categoryId) { $sql .= " AND category_id = ?"; $params[] = $categoryId; }
-if ($structured) { $sql .= " AND schema_json IS NOT NULL AND schema_json != ''"; }
-$sql .= " ORDER BY usage_count DESC, created_at DESC";
+if ($recordType) { $sql .= " AND t.record_type = ?"; $params[] = $recordType; }
+if ($categoryId) { $sql .= " AND t.category_id = ?"; $params[] = $categoryId; }
+if ($structured) { $sql .= " AND t.schema_json IS NOT NULL AND t.schema_json != ''"; }
+$sql .= " ORDER BY t.usage_count DESC, t.created_at DESC";
 
 $templates = DB::select($sql, $params);
 // 解析 schema_json 供前端使用
