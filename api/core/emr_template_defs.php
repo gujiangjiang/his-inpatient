@@ -8,6 +8,8 @@ return function ($hospital) {
     $slot = function ($key, $ph) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph]; };
     $sel = function ($key, $ph, array $opts) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph, 'opts' => $opts]; };
     $dyn = function ($key, $text = '') { return ['t' => 'dyn', 'key' => $key, 'text' => $text]; };
+    /* 字段引用: 自动调用患者其他文书的字段值 (如【姓名】【年龄】【主诉】); fb 为无值时的占位提示 */
+    $ref = function ($key, $fb) { return ['t' => 'ref', 'key' => $key, 'fb' => $fb]; };
     $head = function ($text) { return ['t' => 'p', 'pPr' => ['align' => 'center', 'borders' => ['top' => true]], 'rPr' => ['b' => true, 'sz' => 13], 'runs' => [['t' => 'text', 'text' => $text]]]; };
     $row = function (array $runs) { return ['t' => 'p', 'pPr' => ['flex' => 'between'], 'runs' => $runs]; };
     $line = function ($label, $key, $ph = '') use ($fx, $slot, $P) {
@@ -44,11 +46,11 @@ return function ($hospital) {
             'tblPr' => ['plain' => true, 'center' => true],
             'grid' => [46, 204, 76, 174],
             'rows' => [
-                ['cells' => [$cText('姓名：', 46), $cItem($slot('p_name_val', '请输入姓名'), 204),
+                ['cells' => [$cText('姓名：', 46), $cItem($dyn('p_name', ''), 204),
                     $cText('职业：', 76), $cItem($sel('p_occupation_val', '请选择职业', $OCCUPATION), 174)]],
-                ['cells' => [$cText('性别：', 46), $cItem($sel('p_gender_val', '请选择性别', ['男', '女']), 204),
+                ['cells' => [$cText('性别：', 46), $cItem($dyn('p_gender', ''), 204),
                     $cText('单位：', 76), $cItem($slot('p_workunit_val', '请输入工作单位'), 174)]],
-                ['cells' => [$cText('年龄：', 46), $cItem($slot('p_age_val', '请输入年龄'), 204),
+                ['cells' => [$cText('年龄：', 46), $cItem($dyn('p_age', ''), 204),
                     $cText('住址：', 76), $cItem($slot('p_address_val', '请输入住址'), 174)]],
                 ['cells' => [$cText('婚姻：', 46), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 204),
                     $cText('病史陈述者：', 76), $cItem($sel('p_teller_val', '请选择', $TELLER), 174)]],
@@ -125,11 +127,14 @@ return function ($hospital) {
         ];
     };
 
-    /** 日常查房记录 */
-    $dailyRound = function () use ($row, $fx, $slot, $line, $P, $dyn) {
+    /** 日常查房记录 (示例: 字段引用自动调用入院记录中的【姓名】【年龄】【主诉】) */
+    $dailyRound = function () use ($row, $fx, $slot, $line, $P, $dyn, $ref) {
         return [
             $row([$fx('round_date', '记录日期：'), $slot('round_date_val', '请输入'),
                 $fx('round_time', '记录时间：'), $slot('round_time_val', '请输入')]),
+            $P([['t' => 'text', 'text' => '患者'], $ref('p_name', '＿＿＿'), ['t' => 'text', 'text' => '，'],
+                $ref('p_age', '＿＿'), ['t' => 'text', 'text' => '岁，因“'],
+                $ref('chief_complaint_val', '＿＿＿'), ['t' => 'text', 'text' => '”入院，今日查房。']]),
             $line('病情变化及查体：', 'round_change', '症状、体征变化及新出现的病情'),
             $line('处理意见：', 'round_plan', '检查、治疗及注意事项'),
             $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']),

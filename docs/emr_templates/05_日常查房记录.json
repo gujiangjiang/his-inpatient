@@ -85,6 +85,43 @@
                 "pPr": [],
                 "runs": [
                     {
+                        "t": "text",
+                        "text": "患者"
+                    },
+                    {
+                        "t": "ref",
+                        "key": "p_name",
+                        "fb": "＿＿＿"
+                    },
+                    {
+                        "t": "text",
+                        "text": "，"
+                    },
+                    {
+                        "t": "ref",
+                        "key": "p_age",
+                        "fb": "＿＿"
+                    },
+                    {
+                        "t": "text",
+                        "text": "岁，因“"
+                    },
+                    {
+                        "t": "ref",
+                        "key": "chief_complaint_val",
+                        "fb": "＿＿＿"
+                    },
+                    {
+                        "t": "text",
+                        "text": "”入院，今日查房。"
+                    }
+                ]
+            },
+            {
+                "t": "p",
+                "pPr": [],
+                "runs": [
+                    {
                         "t": "fx",
                         "key": "round_change",
                         "text": "病情变化及查体："
