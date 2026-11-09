@@ -94,8 +94,8 @@ function emrExtractKeys($body) {
             if (!is_array($b)) continue;
             if (($b['t'] ?? null) === 'p') {
                 foreach (($b['runs'] ?? []) as $it) {
-                    /* dyn (动态只读项: BMI/签名/诊断同步) 与 fx 同组守卫 */
-                    if ((($it['t'] ?? null) === 'fx' || ($it['t'] ?? null) === 'dyn') && isset($it['key'])) $keys['fx'][] = $it['key'];
+                    /* dyn (动态只读项: BMI/签名/诊断同步) 与 ref (字段引用) 同 fx 组守卫 */
+                    if ((($it['t'] ?? null) === 'fx' || ($it['t'] ?? null) === 'dyn' || ($it['t'] ?? null) === 'ref') && isset($it['key'])) $keys['fx'][] = $it['key'];
                     if (($it['t'] ?? null) === 'slot' && isset($it['key'])) $keys['slot'][] = $it['key'];
                 }
             } elseif (($b['t'] ?? null) === 'tbl') {
