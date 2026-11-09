@@ -140,6 +140,8 @@ async function emr_createFromTemplate(templateId, categoryId) {
     doc.title = template.name;
     /* 记录日期 = 创建本入院记录的时间 (可点击修改; 不参与首页同步) */
     EmrOps.setSlotValueByKey(doc.body, 'p_recorddate_val', emrNowStamp());
+    /* 字段引用: 仅在首次创建时自动调用一次 (保存即固化, 之后打开不再变化) */
+    try { await resolveRefFields(doc); } catch (e) { console.error('字段引用解析失败', e); }
     const meta = { guard: EmrDoc.collectGuard(doc.body) };
     let contentHtml = '';
     try { contentHtml = EmrPrint.buildHTML(doc, buildPatientInfo()); } catch (e) { console.error('打印快照生成失败', e); }
@@ -278,7 +280,9 @@ async function syncFromFrontPage(doc) {
     }
 }
 
-/** 字段引用解析: 【姓名】【主诉】等自动调用患者其他文书里的字段值 (仅编辑状态; 已签名=快照) */
+/** 字段引用解析: 【姓名】【主诉】等自动调用患者其他文书里的字段值
+ *  规则: 仅在【首次创建】文书时调用一次; 保存后即为固化快照, 再次打开不再变化
+ *  (如需重新取值: 删除该文书后重新创建) */
 async function resolveRefFields(doc) {
     const keys = [];
     EmrDoc.walk(doc.body, (b) => {
@@ -298,10 +302,6 @@ async function openWordDoc(doc, signed) {
     /* 编辑状态: 患者信息与病案首页单项同步 (已签名=快照, 不动) */
     if (!signed && doc.doc_json && Array.isArray(doc.doc_json.body)) {
         try { await syncFromFrontPage(doc.doc_json); } catch (e) { console.error('病案首页同步失败', e); }
-    }
-    /* 编辑状态: 解析字段引用 (自动调用其他文书字段值) */
-    if (!signed && doc.doc_json && Array.isArray(doc.doc_json.body)) {
-        try { await resolveRefFields(doc.doc_json); } catch (e) { console.error('字段引用解析失败', e); }
     }
     const metaGuard = doc.doc_meta && doc.doc_meta.guard && Array.isArray(doc.doc_meta.guard.fx) ? doc.doc_meta.guard : null;
     _emrEditor = EmrEditor.create({
