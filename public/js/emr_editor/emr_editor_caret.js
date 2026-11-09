@@ -45,7 +45,11 @@
     const pc = pEl.querySelector('.pc');
     const info = index.get(+pEl.dataset.pid);
     if (!info) return null;
-    const startNode = node === pc ? pc : (node.nodeType === 1 ? (node.closest('.pc') || pc) : node.parentElement) || pc;
+    /* 关键: 文本节点必须原样传入 (保留节点内相对偏移);
+       若传其父级 span, 相对偏移会丢失 → 光标读数恒为该段文字起点
+       (表现为: 按删除键光标跳回值开头、删不动文字) */
+    const startNode = node === pc ? pc
+      : (node.nodeType === 3 ? node : (node.nodeType === 1 ? (node.closest('.pc') || pc) : node) || pc);
     const o = C.domToOffset(pc, startNode, offset);
     return { p: info.p, o, cont: info.cont };
   };
