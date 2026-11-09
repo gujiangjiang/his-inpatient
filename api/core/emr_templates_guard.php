@@ -4,7 +4,7 @@
 // 无需在服务器执行任何命令 (无 npm / 无终端环境的部署同样生效)。
 // 变更内置模板定义后: 递增 VERSION, 下个请求自动重新落库 (按模板名更新, 既有文书不受影响)。
 class EmrTemplatesGuard {
-    const VERSION = '1'; /* 内置模板定义/版式变更时 +1 */
+    const VERSION = '2'; /* 内置模板定义/版式变更时 +1 */
     private static $checked = false;
 
     public static function ensure() {
