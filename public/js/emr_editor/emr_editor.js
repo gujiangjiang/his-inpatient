@@ -333,16 +333,16 @@
       });
     };
 
-    /* 点击兜底: 若浏览器默认行为未能把焦点/光标放进正文(个别浏览器在 cE=false 邻位失效),
-       按点击坐标用 caretRangeFromPoint 恢复编辑态 —— 保证「点击已输入文字」永远可编辑 */
+    /* 光标统一定位: 鼠标在正文按下时, 一律由我们按点击坐标放置光标与焦点
+       (caretRangeFromPoint 与浏览器命中测试同源) —— 不再依赖各浏览器的原生行为,
+       彻底规避「个别浏览器在 contenteditable=false 邻位不放置光标」导致的点击无效 */
     const onMouseDown = (e) => {
       if (inst.readonly || e.button !== 0) return;
       const t = e.target;
-      if (t.closest && (t.closest('.emr-slot') || t.closest('.emr-dyn'))) return;
+      if (t.closest && (t.closest('.emr-slot') || t.closest('.emr-dyn'))) return; /* 槽位/动态项走 click 逻辑 */
       const x = e.clientX, y = e.clientY;
       setTimeout(() => {
         if (!inst.bodyEl.isConnected) return;
-        if (document.activeElement === inst.bodyEl) return;               /* 原生已生效 */
         if (document.querySelector('.emr-choice') || document.querySelector('.dtp')) return; /* 弹层打开中 */
         inst.bodyEl.focus();
         let range = null;
