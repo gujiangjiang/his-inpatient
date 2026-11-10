@@ -151,7 +151,7 @@
 /* 无边框信息表 (患者信息 12 项等): 固定列宽 + 单行不换行, 以正中为左右分割线 */
 .emr-tbl-plain { margin: 2px 0 6px; table-layout: fixed; }
 .emr-tbl-plain td { border: none; padding: 1px 6px 1px 0; vertical-align: top; white-space: nowrap; }
-.emr-tbl-plain .emr-slot { display: inline; min-width: 0; } /* 行内化: 行高更紧凑 */
+.emr-tbl-plain .emr-slot:not(:empty) { display: inline; min-width: 0; } /* 行内化仅作用于占位态; 已填写槽保持 :empty 隐藏 */
 
 /* 隐藏测量容器 (分页引擎) */
 .emr-measure { contain: layout style; }
