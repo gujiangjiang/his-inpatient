@@ -667,16 +667,27 @@ async function emr_openTemplateManager() {
     bindList();
     overlay.querySelector('#emr-tpm-close').addEventListener('click', function () { overlay.remove(); });
     overlay.querySelector('#emr-tpm-new').addEventListener('click', function () {
-        const opts = cats.map(function (c) { return '<option value="' + c.id + '">' + Format.escape(c.name) + '</option>'; }).join('');
-        Dom.modal('新建模板', '<div class="form-group"><label class="form-label">模板名称</label><input id="emr-newtpl-name" class="form-control" placeholder="如：男性患者入院记录"></div>'
-            + '<div class="form-group"><label class="form-label">所属分类</label><select id="emr-newtpl-cat" class="form-control">' + opts + '</select></div>',
+        const catOpts = cats.map(function (c) { return '<option value="' + c.id + '">' + Format.escape(c.name) + '</option>'; }).join('');
+        function baseOpts(catId) {
+            const list = templates.filter(function (t) { return String(t.category_id) === String(catId); });
+            return '<option value="">空白模板（自由发挥）</option>' + list.map(function (t) {
+                return '<option value="' + t.id + '">' + Format.escape(t.name) + '（' + Format.escape(t.department_name || '全院通用') + '）</option>';
+            }).join('');
+        }
+        const firstCat = cats.length ? cats[0].id : '';
+        const sub = Dom.modal('新建模板',
+            '<div class="form-group"><label class="form-label">模板名称</label><input id="emr-newtpl-name" class="form-control" placeholder="如：男性患者入院记录"></div>'
+            + '<div class="form-group"><label class="form-label">所属分类</label><select id="emr-newtpl-cat" class="form-control">' + catOpts + '</select></div>'
+            + '<div class="form-group"><label class="form-label">基础模板</label><select id="emr-newtpl-base" class="form-control">' + baseOpts(firstCat) + '</select>'
+            + '<p class="emr-tpl-hint">可基于现有模板创建（如"入院记录"），在设计模式中自由增删修改，避免从头编写</p></div>',
             [
                 { text: '创建并设计', type: 'primary', onclick: async function () {
                     const name = (document.getElementById('emr-newtpl-name').value || '').trim();
                     const cid = document.getElementById('emr-newtpl-cat').value;
+                    const baseId = document.getElementById('emr-newtpl-base').value;
                     if (!name) { Dom.toast('请输入模板名称', 'error'); return; }
                     const cat = cats.find(function (c) { return String(c.id) === String(cid); });
-                    const skeleton = {
+                    let schema = {
                         mode: 'word', title: name,
                         page: Object.assign({}, EmrDoc.DEFAULT_PAGE),
                         header: { hospital: '', doc_name: name, info_fields: EmrDoc.DEFAULT_INFO_FIELDS },
@@ -685,17 +696,37 @@ async function emr_openTemplateManager() {
                             EmrDoc.para([EmrDoc.fx('sign_line', '医师签名：'), EmrDoc.item('dyn', { key: 'sign_names', text: '' })], { align: 'right' })
                         ]
                     };
+                    /* 以现有模板为底稿: 复制其版式/正文, 仅替换名称 (科室归属自动为本科室) */
+                    if (baseId) {
+                        try {
+                            const tr = await AjaxLoader.api('emr/template-get?id=' + baseId, { silent: true });
+                            const bs = parseSchema(tr.data && tr.data.schema_json);
+                            if (bs && bs.mode === 'word') {
+                                schema = {
+                                    mode: 'word', title: name, page: bs.page,
+                                    header: Object.assign({}, bs.header, { doc_name: name }),
+                                    body: bs.body
+                                };
+                            }
+                        } catch (e) { console.error('基础模板读取失败', e); }
+                    }
                     const resp = await AjaxLoader.api('emr/template-save', { method: 'POST', data: {
                         name: name, record_type: (cat && cat.code) || 'admission',
                         content_delta: '{}', content_html: '',
-                        schema_json: JSON.stringify(skeleton),
+                        schema_json: JSON.stringify(schema),
                         category_id: cat ? cat.id : null
                     }});
-                    overlay.remove();
                     emr_enterTemplateDesign(resp.data.id);
                 } },
                 { text: '取消', type: 'default' }
             ]);
+        /* 分类联动基础模板选项 */
+        const catSel = sub.querySelector('#emr-newtpl-cat');
+        catSel.addEventListener('change', function () {
+            const baseSel = sub.querySelector('#emr-newtpl-base');
+            baseSel.innerHTML = baseOpts(catSel.value);
+            if (window.SelectPicker) SelectPicker.refresh(baseSel);
+        });
     });
 }
 
