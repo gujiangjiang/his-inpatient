@@ -1,7 +1,7 @@
 <?php
 // api/modules/emr/discharge_check.php - 出院前校验
-// 拦截项: 未核对医嘱(草稿/待核/停止待核/作废待核) / 未完成检验(未采集或未出报告) /
-//        未完成检查(未出报告) / 未发放处方(药品医嘱已核对但无发药记录)
+// 拦截项: 未核对医嘱(草稿/待核/停止待核/作废待核) / 未发放处方(药品医嘱已核对但无发药记录=未扣费)
+// 提示项(不拦截): 未出结果的检验/检查 —— 住院开单即已扣费, 不要求出结果
 Auth::requireRole(['admin', 'doctor']);
 $patientId = (int)Validator::get('patient_id', 0);
 if (!$patientId) Response::error('缺少 patient_id');
@@ -30,11 +30,16 @@ $meds = DB::select(
      ORDER BY o.created_at ASC",
     [$patientId]
 );
-$ok = !count($orders) && !count($labs) && !count($exams) && !count($meds);
+/* 检验检查: 开单即已扣费, 未出结果不拦截出院, 仅作提示 */
+$info = [];
+if (count($labs)) $info[] = '存在未出结果的检验 ' . count($labs) . ' 项（开单即已扣费，不影响出院）';
+if (count($exams)) $info[] = '存在未出结果的检查 ' . count($exams) . ' 项（开单即已扣费，不影响出院）';
+$ok = !count($orders) && !count($meds);
 Response::success([
     'ok' => $ok,
     'orders' => $orders,
+    'meds' => $meds,
+    'info' => $info,
     'labs' => $labs,
     'exams' => $exams,
-    'meds' => $meds,
 ]);

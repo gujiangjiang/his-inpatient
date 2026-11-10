@@ -25,10 +25,6 @@ if ($patient['status'] !== 'active') Response::error('患者当前状态不可�
 /* 服务端复核出院条件 */
 $blockOrders = DB::select("SELECT COUNT(*) n FROM orders WHERE patient_id = ? AND status IN ('draft','pending','stop_pending','invalid_pending')", [$patientId]);
 if ((int)$blockOrders[0]['n'] > 0) Response::error('存在未核对的医嘱（共 ' . (int)$blockOrders[0]['n'] . ' 条），请护士核对后再出院', 409);
-$blockLabs = DB::select("SELECT COUNT(*) n FROM lab_reports WHERE patient_id = ? AND status IN ('pending','collected')", [$patientId]);
-if ((int)$blockLabs[0]['n'] > 0) Response::error('存在未完成的检验（共 ' . (int)$blockLabs[0]['n'] . ' 项），请等待结果后再出院', 409);
-$blockExams = DB::select("SELECT COUNT(*) n FROM exam_reports WHERE patient_id = ? AND status = 'pending'", [$patientId]);
-if ((int)$blockExams[0]['n'] > 0) Response::error('存在未完成的检查（共 ' . (int)$blockExams[0]['n'] . ' 项），请等待结果后再出院', 409);
 $blockMeds = DB::select("SELECT COUNT(*) n FROM orders o WHERE o.patient_id = ? AND o.category = 'medication' AND o.status IN ('verified','executing') AND NOT EXISTS (SELECT 1 FROM dispensing_records d WHERE d.order_id = o.id)", [$patientId]);
 if ((int)$blockMeds[0]['n'] > 0) Response::error('存在未发放的处方（共 ' . (int)$blockMeds[0]['n'] . ' 条），请药房发药后再出院', 409);
 
