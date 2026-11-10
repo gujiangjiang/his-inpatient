@@ -48,6 +48,7 @@
 .emr-dc-list { margin: 0; padding-left: 18px; color: #606266; }
 .emr-dc-list li { margin-bottom: 4px; }
 .emr-dc-info { margin-top: 8px; color: #e6a23c; font-size: 12px; line-height: 1.6; }
+.team-modal { min-width: 420px; }
 .emr-dc-foot { display: flex; justify-content: flex-end; gap: 10px; }
 .emr-tree-header {
     padding: 12px 16px;

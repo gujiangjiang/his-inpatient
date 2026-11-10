@@ -52,6 +52,7 @@ class Asset {
         '/js/emr_editor/emr_editor.js',
         '/js/core/patient_context.js',
         '/js/core/discharge_modal.js',
+        '/js/core/team_modal.js',
         '/js/core/patient_switcher.js',
         '/js/core/patient_quick_switch.js',
         '/js/patients/admit_panel.js',
