@@ -39,7 +39,7 @@ const DischargeModal = {
         const okBtn = overlay.querySelector('#emr-dc-ok');
         const checkEl = overlay.querySelector('#emr-dc-check');
         if (window.DateTimePicker) DateTimePicker.initInputs(overlay);
-        const esc = (s) => (window.Format && Format.escape ? Format.escape(s) : String(s == null ? '' : s));
+        const esc = (s) => (typeof Format !== 'undefined' && Format.escape ? Format.escape(s) : String(s == null ? '' : s));
         let checkOk = false;
 
         function renderCheck(data) {

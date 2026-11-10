@@ -125,7 +125,8 @@ function renderCategoryTree() {
         docs.forEach(d => {
             const item = document.createElement('div');
             item.className = 'emr-doc-item' + (d.status === 'signed' ? ' signed' : '');
-            item.innerHTML = '<span class="emr-doc-title-text">' + Format.escape(d.title || d.template_name || '未命名文书') + '</span>' +
+            const fullTitle = d.title || d.template_name || '未命名文书';
+            item.innerHTML = '<span class="emr-doc-title-text" title="' + Format.escape(fullTitle) + '">' + Format.escape(fullTitle) + '</span>' +
                 '<span class="emr-doc-time">' + Format.escape(emrStamp(d.updated_at || d.created_at || '')) + '</span>' +
                 '<span class="emr-doc-status-tag ' + (d.status === 'signed' ? 'signed' : 'draft') + '">' + (d.status === 'signed' ? '已签名' : '草稿') + '</span>';
             item.onclick = () => emr_openDocument(d.id);
@@ -361,7 +362,7 @@ function emrStamp(v) {
     return m[4] != null ? d + ' ' + m[4].padStart(2, '0') + ':' + m[5].padStart(2, '0') : d;
 }
 /* 固化字段 (dyn 只读): 用户不可修改, 始终自动跟随病案首页 */
-const CASE_DYN = {
+var CASE_DYN = {
     p_name: (c, p) => c.name || (p && p.name) || '',
     p_gender: (c, p) => ({ '1': '男', '2': '女' }[c.gender]) || (p && p.gender === 'male' ? '男' : p && p.gender === 'female' ? '女' : (p && (p.gender === '男' || p.gender === '女') ? p.gender : '')),
     p_age: (c, p) => {
@@ -371,7 +372,7 @@ const CASE_DYN = {
     },
 };
 /* 可改字段 (slot): 未手动修改时自动跟随首页; 手动修改并保存后冻结 */
-const CASE_SYNC = {
+var CASE_SYNC = {
     p_marriage_val: (c) => ({ '1': '未婚', '2': '已婚', '3': '丧偶', '4': '离异' }[c.marriage] || ''),
     p_native_val: (c) => [c.native_prov, c.native_city].filter(x => x && String(x).trim()).join(''),
     p_nation_val: (c) => c.nation || '',
