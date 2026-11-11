@@ -308,6 +308,15 @@
     p.runs.splice(i, 0, M.item('ref', { key: String(key), fb: String(fb || '＿＿') }));
     return { p, o: o + 1, cont: pos.cont };
   };
+  /** 设计模式: 在 pos 插入任意原子项 (dyn/ref/date 等), item 为 {t, key, ...} */
+  O.insertRunAt = (pos, item) => {
+    const p = pos.p;
+    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
+    const i = M.splitAt(p, o);
+    p.runs.splice(i, 0, Object.assign({ rPr: {} }, item));
+    M.normalize(p);
+    return { p, o: o + 1, cont: pos.cont };
+  };
 
   /** 设置包含指定项的段落内 dyn 的文本; 返回是否命中 */
   O.setDynTextIn = (p, key, text) => {

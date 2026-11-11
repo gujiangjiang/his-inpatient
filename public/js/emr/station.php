@@ -540,6 +540,63 @@ async function emr_saveTemplateDesign() {
     Dom.toast('模板已保存', 'success');
 }
 
+/* 可插入字段目录: 患者信息(dyn 自动填入) + 病历字段(ref 引用其他文书值) */
+var EMR_FIELD_CATALOG = [
+    { g: '患者信息（自动填入）', items: [
+        ['dyn', 'p_name', '姓名'], ['dyn', 'p_gender', '性别'], ['dyn', 'p_age', '年龄']
+    ] },
+    { g: '病历字段（引用其他文书）', items: [
+        ['ref', 'chief_complaint_val', '主诉'], ['ref', 'present_illness_val', '现病史'],
+        ['ref', 'past_history_val', '既往史'], ['ref', 'personal_history_val', '个人史'],
+        ['ref', 'marital_history_val', '婚育史'], ['ref', 'menstrual_history_val', '月经史'],
+        ['ref', 'family_history_val', '家族史'], ['ref', 'exam_general_val', '体格检查·一般情况'],
+        ['ref', 'special_exam_val', '专科检查'], ['ref', 'aux_exam_val', '辅助检查'],
+        ['ref', 'admission_condition_val', '入院情况'], ['ref', 'admission_diag_val', '入院诊断'],
+        ['ref', 'initial_diagnosis_value', '初步诊断'], ['ref', 'course_val', '诊疗经过'],
+        ['ref', 'discharge_condition_val', '出院情况'], ['ref', 'discharge_diag_val', '出院诊断'],
+        ['ref', 'discharge_orders_val', '出院医嘱'], ['ref', 'vital_bmi_value', 'BMI']
+    ] }
+];
+
+/** 插入字段展开列表: 分组字段目录 + 搜索 + 自定义字段入口; 点击即插入光标处 */
+function emr_dsnToggleFields() {
+    const head = document.getElementById('dsn-sec-field');
+    const box = document.getElementById('dsn-fields');
+    const open = head.classList.toggle('open');
+    box.style.display = open ? '' : 'none';
+    if (!open) return;
+    if (!box.dataset.built) { box.dataset.built = '1'; emr_dsnRenderFieldList(''); }
+    const inp = box.querySelector('.emr-dsn-search');
+    if (inp) inp.focus();
+}
+function emr_dsnRenderFieldList(q) {
+    const box = document.getElementById('dsn-fields');
+    const kw = (q || '').trim();
+    let html = '<input class="emr-dsn-search form-control" placeholder="搜索字段…" value="' + Format.escape(kw) + '">';
+    EMR_FIELD_CATALOG.forEach(function (grp) {
+        const items = grp.items.filter(function (x) { return !kw || x[2].indexOf(kw) >= 0 || x[1].indexOf(kw) >= 0; });
+        if (!items.length) return;
+        html += '<div class="emr-dsn-group">' + Format.escape(grp.g) + '</div>';
+        html += items.map(function (x) {
+            return '<div class="emr-dsn-field" data-t="' + x[0] + '" data-k="' + x[1] + '">' + Format.escape(x[2]) + '</div>';
+        }).join('');
+    });
+    html += '<div class="emr-dsn-field emr-dsn-custom" id="dsn-field-custom">＋ 自定义字段（标签＋输入槽）</div>';
+    box.innerHTML = html;
+    const inp = box.querySelector('.emr-dsn-search');
+    inp.addEventListener('input', function () { emr_dsnRenderFieldList(inp.value); });
+    box.querySelectorAll('.emr-dsn-field[data-k]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            if (!_emrEditor) return;
+            const t = el.dataset.t, k = el.dataset.k;
+            if (t === 'dyn') _emrEditor.insertItem({ t: 'dyn', key: k, text: '' });
+            else _emrEditor.insertRef(k, '＿＿');
+        });
+    });
+    const cu = box.querySelector('#dsn-field-custom');
+    if (cu) cu.addEventListener('click', function () { emr_dsnInsertField(false); });
+}
+
 /** 设计工具: 插入字段 / 下拉字段 / 标题 / 引用 */
 function emr_dsnInsertField(withSelect) {
     if (!_emrEditor) return;
@@ -1089,7 +1146,7 @@ function bindToolbar() {
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
-    bind('dsn-sec-field', function () { emr_dsnInsertField(false); });
+    bind('dsn-sec-field', function () { emr_dsnToggleFields(); });
     bind('btn-dsn-select', function () { emr_dsnInsertField(true); });
     bind('btn-dsn-heading', emr_dsnInsertHeading);
     bind('btn-dsn-ref', emr_dsnInsertRef);

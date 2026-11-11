@@ -487,6 +487,9 @@
     inst.insertRef = (key, fb) => {
       apply('设计', () => O.insertRefAt(posNow(), key, fb));
     };
+    inst.insertItem = (item) => {
+      apply('设计', () => O.insertRunAt(posNow(), item));
+    };
     inst.insertHeading = (text) => {
       apply('设计', () => {
         const pos = posNow();
