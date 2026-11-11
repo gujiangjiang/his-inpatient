@@ -18,14 +18,14 @@
 
     /* ---------- 归一化: 补齐块 id (模板/迁移数据可能缺失, 渲染与光标映射必需) ---------- */
     M.ensureIds(inst.doc.body || []);
-    if (!inst.readonly) O.recalcBmi(inst.doc.body); /* 打开即校正 BMI */
+    if (!inst.readonly && !inst.design) O.recalcBmi(inst.doc.body); /* 打开即校正 BMI (设计模板不引用患者数据) */
 
     /* ---------- DOM 搭建 ---------- */
     inst.container.innerHTML = '<div class="emr-head-wrap"></div>'
       + '<div class="emr-body" contenteditable="' + (inst.readonly ? 'false' : 'true') + '"></div>';
     inst.headEl = inst.container.querySelector('.emr-head-wrap');
     inst.bodyEl = inst.container.querySelector('.emr-body');
-    inst.headEl.innerHTML = R.headerToHTML(inst.doc.header, inst.patientInfo);
+    inst.headEl.innerHTML = R.headerToHTML(inst.doc.header, inst.patientInfo, inst.design);
 
     /* ---------- 历史绑定 ---------- */
     H.bind(() => inst.doc, (d) => { inst.doc = d; });
@@ -33,7 +33,7 @@
 
     /* ---------- 渲染 ---------- */
     const renderBody = (pos, end) => {
-      inst.bodyEl.innerHTML = R.blocksToHTML(inst.doc.body);
+      inst.bodyEl.innerHTML = R.blocksToHTML(inst.doc.body, inst.design);
       inst.index = new Map();
       O.ctx(inst.doc.body).forEach((x) => inst.index.set(x.p.id, x));
       if (pos) {
@@ -508,7 +508,7 @@
     };
     inst.setPatientInfo = (pi) => {
       inst.patientInfo = pi || {};
-      inst.headEl.innerHTML = R.headerToHTML(inst.doc.header, inst.patientInfo);
+      inst.headEl.innerHTML = R.headerToHTML(inst.doc.header, inst.patientInfo, inst.design);
     };
     inst.destroy = () => {
       inst._handlers.forEach(([el, type, fn]) => el.removeEventListener(type, fn));

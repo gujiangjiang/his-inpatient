@@ -488,7 +488,7 @@ async function emr_enterTemplateDesign(tid, opts) {
         container: document.getElementById('emr-editor-canvas'),
         doc: EmrDoc.fromSchema(schema),
         guard: null,
-        patientInfo: buildPatientInfo(),
+        patientInfo: {}, /* 设计模板与患者无关: 页眉/引用以占位符呈现 (render 层 design 标志) */
         design: true,
         onChange: null,
         onStatus: updateEditorStatus

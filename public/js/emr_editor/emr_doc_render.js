@@ -51,7 +51,13 @@
     }
     return false;
   };
-  const runsToHTML = (p) => {
+  /** dyn 元素的占位文案 (设计模式显示用途, 不引用实际数据) */
+  const DYN_PH = {
+    vital_bmi_value: 'BMI自动计算', sign_names: '医师签名', initial_diagnosis_value: '初步诊断(点此同步)',
+    diag_admission: '入院诊断', diag_discharge: '出院诊断',
+    p_name: '姓名', p_gender: '性别', p_age: '年龄',
+  };
+  const runsToHTML = (p, design) => {
     const out = [];
     let pos = 0;
     let afterSlot = false; /* 槽位后的文本 = 该字段的值: 编辑状态带下划线提示可编辑 */
@@ -74,23 +80,25 @@
       if (it.t === 'slot') {
         afterSlot = true;
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
-        const cls = 'emr-slot' + (Array.isArray(it.opts) && it.opts.length ? ' emr-slot-sel' : '');
+        const cls = 'emr-slot' + (Array.isArray(it.opts) ? ' emr-slot-sel' : '') + (it.req ? ' emr-req' : '');
         out.push(filled
           ? '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>'
           : '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');
         continue;
       }
       if (it.t === 'ref') {
-        /* 字段引用 (自动调用其他文书的字段值, 如病程记录引用入院记录的【主诉】) */
-        out.push('<span class="emr-ref" data-item="ref" data-key="' + esc(it.key) + '"'
-          + ' data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.text || it.fb || '') + '</span>');
+        /* 字段引用 (自动调用其他文书的字段值); 设计模式仅显示默认占位符, 不引用 */
+        const txt = design ? (it.fb || '＿＿') : (it.text || it.fb || '');
+        out.push('<span class="emr-ref' + (design ? ' emr-ref-des' : '') + '" data-item="ref" data-key="' + esc(it.key) + '"'
+          + ' data-o="' + o + '" data-n="1" contenteditable="false">' + esc(txt) + '</span>');
         continue;
       }
       if (it.t === 'dyn') {
         const sync = it.key === 'initial_diagnosis_value';
-        out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
+        const txt = design ? ('（' + (DYN_PH[it.key] || it.key) + '）') : it.text;
+        out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + (design ? ' emr-dyn-des' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
           + ' data-o="' + o + '" data-n="1" contenteditable="false"'
-          + (sync ? ' title="点击同步诊断（来源：左侧诊断 → 入院诊断）"' : '') + '>' + esc(it.text) + '</span>');
+          + (sync && !design ? ' title="点击同步诊断（来源：左侧诊断 → 入院诊断）"' : '') + '>' + esc(txt) + '</span>');
         continue;
       }
       if (it.t === 'tab') {
@@ -108,18 +116,18 @@
   };
 
   /** 段落 → HTML */
-  R.paraToHTML = (p) => {
-    const inner = runsToHTML(p);
+  R.paraToHTML = (p, design) => {
+    const inner = runsToHTML(p, design);
     const ps = R.pPrStyle(p.pPr);
     return '<div class="p" data-pid="' + p.id + '"><div class="pc"' + (ps ? ' style="' + ps + '"' : '') + '>'
       + (inner || '<br>') + '</div></div>';
   };
 
   /** 块列表 → HTML (表格递归) */
-  R.blocksToHTML = (blocks) => {
+  R.blocksToHTML = (blocks, design) => {
     const out = [];
     for (const b of blocks) {
-      if (b.t === 'p') out.push(R.paraToHTML(b));
+      if (b.t === 'p') out.push(R.paraToHTML(b, design));
       else if (b.t === 'tbl') {
         const grid = b.grid || [];
         const cells = b.rows.map((r) =>
@@ -129,26 +137,27 @@
               if (c.tcPr.w) st.push('width:' + pt(c.tcPr.w));
               if (c.tcPr.shd) st.push('background:' + c.tcPr.shd);
             }
-            return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks) + '</td>';
+            return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks, design) + '</td>';
           }).join('') + '</tr>').join('');
-        const cls = 'emr-tbl' + (b.tblPr && b.tblPr.plain ? ' emr-tbl-plain' : '');
+        const cls = 'emr-tbl' + (b.tblPr && b.tblPr.plain ? ' emr-tbl-plain' : '') + (b.tblPr && b.tblPr.bd === 0 ? ' emr-tbl-none' : b.tblPr && b.tblPr.bd === 2 ? ' emr-tbl-bold' : '');
         const st = [];
         st.push('width:' + (grid.length ? pt(grid.reduce((a, x) => a + x, 0)) : '100%'));
         if (b.tblPr && b.tblPr.center) st.push('margin-left:auto', 'margin-right:auto'); /* 整表居中, 内部单元格左对齐 */
-        out.push('<table class="' + cls + '" style="' + st.join(';') + '">' + cells + '</table>');
+        out.push('<table class="' + cls + '" data-tblid="' + b.id + '" style="' + st.join(';') + '">' + cells + '</table>');
       }
     }
     return out.join('');
   };
 
   /* ---------- 抬头 ---------- */
-  /** 固定抬头 HTML: 医院名/文书名/患者信息栏; patientInfo 键: name/gender/age/admission_no/ward_name/bed_no */
-  R.headerToHTML = (header, patientInfo) => {
+  /** 固定抬头 HTML: 医院名/文书名/患者信息栏; patientInfo 键: name/gender/age/admission_no/ward_name/bed_no
+   *  design=true (设计模板) 时信息栏以占位符呈现, 不显示真实患者 */
+  R.headerToHTML = (header, patientInfo, design) => {
     const info = patientInfo || {};
     const fields = (header.info_fields || []).map((f) => {
       const [label, key] = f;
-      const val = info[key] || '';
-      return '<span class="emr-hf"><b>' + esc(label) + '</b><span class="emr-hf-val">' + esc(val) + '</span></span>';
+      const val = design ? '＿＿＿＿' : (info[key] || '');
+      return '<span class="emr-hf"><b>' + esc(label) + '</b><span class="emr-hf-val' + (design ? ' emr-ph-des' : '') + '">' + esc(val) + '</span></span>';
     }).join('');
     return '<div class="emr-page-head">'
       + (header.hospital ? '<div class="emr-hos">' + esc(header.hospital) + '</div>' : '')

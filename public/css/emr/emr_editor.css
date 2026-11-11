@@ -127,6 +127,11 @@
 /* 动态只读项 (BMI/签名/诊断): 普通显示; 诊断同步项可点击 */
 .emr-dyn { user-select: none; -webkit-user-select: none; }
 .emr-dyn:empty { min-width: 3em; display: inline-block; }
+
+/* 模板设计模式: 引用/动态项/页眉信息以灰色占位符呈现 (不引用患者数据) */
+.emr-ref-des { color: #9aa1ad; border-bottom: 1px dotted #c3c8d1; cursor: default; }
+.emr-dyn-des { color: #9aa1ad; }
+.emr-ph-des { color: #9aa1ad; border-bottom: 1px dotted #c3c8d1; }
 .emr-dyn-sync {
   cursor: pointer;
   border-bottom: 1px dashed #3385ff;
