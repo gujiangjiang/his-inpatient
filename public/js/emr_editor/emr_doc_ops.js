@@ -71,7 +71,7 @@
       const n = M.ilen(it);
       const s = pos, e = pos + n;
       pos = e;
-      if (M.isProtected(it) && !O.design) { out.push(it); continue; }
+      if (M.isProtected(it)) { out.push(it); continue; }
       if (it.t !== 'text') {
         if (s < from || e > to) out.push(it);
         continue;
@@ -97,16 +97,14 @@
       M.normalize(a.p);
       return { p: a.p, o: lo, cont: a.cont };
     }
-    /* 跨段: 中间整段不可含固定元素或内容 */
+    /* 跨段: 中间整段不可含固定元素或内容 (设计模式同样保护, 删除固定元素用右击菜单) */
     const paras = O.ctx(a.cont);
     const ia = paras.findIndex((x) => x.p === a.p);
     const ib = paras.findIndex((x) => x.p === b.p);
-    if (!O.design) {
-      for (let k = ia + 1; k < ib; k++) {
-        if (hasProtected(paras[k].p) || paras[k].p.runs.length) {
-          const e = new Error('该区域包含固定元素, 不可整段删除');
-          e.code = 'protected'; throw e;
-        }
+    for (let k = ia + 1; k < ib; k++) {
+      if (hasProtected(paras[k].p) || paras[k].p.runs.length) {
+        const e = new Error('该区域包含固定元素, 不可整段删除');
+        e.code = 'protected'; throw e;
       }
     }
     eraseInPara(a.p, a.o, M.plen(a.p));
@@ -139,7 +137,7 @@
     const info = paras.find((x) => x.p === pos.p);
     if (!info || info.i === 0) return pos;
     const prev = paras[info.i - 1].p;
-    if (hasProtected(prev) && !O.design) {
+    if (hasProtected(prev)) {
       /* 当前段为空 (如槽位行后回车产生的空行): 只删空段, 不影响固定段 */
       if (!pos.p.runs.length) {
         const cur = paras[info.i];
@@ -160,7 +158,7 @@
     const info = paras.find((x) => x.p === pos.p);
     if (!info || info.i >= paras.length - 1) return pos;
     const next = paras[info.i + 1].p;
-    if (hasProtected(next) && !O.design) {
+    if (hasProtected(next)) {
       /* 当前段为空: 只删空段, 不动固定段 */
       if (!pos.p.runs.length) {
         const cur = paras[info.i];
@@ -282,7 +280,7 @@
     return O.setRefTextIn(p, key, text);
   };
   /* ---------- 模板设计模式 ---------- */
-  /** 设计模式: 允许删除固定元素 (fx/slot/dyn/ref), 供模板制作 (正常编辑恒为 false) */
+  /** 设计模式标志 (供编辑器/宿主查询; 固定元素删除保护与设计模式无关: 一律只能右击菜单删除) */
   O.design = false;
   O.setDesignMode = (v) => { O.design = !!v; };
 
