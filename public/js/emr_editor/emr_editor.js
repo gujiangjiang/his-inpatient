@@ -293,6 +293,51 @@
       setTimeout(finish, 300000); /* 兜底清理 */
       return true;
     };
+    /* 复选弹层: options 多选, 确定后以顿号拼接 (当前值按分隔符回填勾选) */
+    const openMultiChoice = (slotEl, options, current, onOk) => {
+      closeChoice();
+      const box = document.createElement('div');
+      box.className = 'emr-choice emr-choice-multi';
+      const r = slotEl.getBoundingClientRect();
+      box.style.left = Math.round(r.left) + 'px';
+      box.style.top = Math.round(r.bottom + 2) + 'px';
+      const cur = String(current || '').split(/[、,，;；]\s*/).filter(Boolean);
+      options.forEach((opt) => {
+        const lab = document.createElement('label');
+        lab.className = 'emr-choice-ck';
+        const ck = document.createElement('input');
+        ck.type = 'checkbox';
+        ck.value = opt;
+        ck.checked = cur.indexOf(opt) >= 0;
+        lab.appendChild(ck);
+        lab.appendChild(document.createTextNode(' ' + opt));
+        box.appendChild(lab);
+      });
+      const ft = document.createElement('div');
+      ft.className = 'emr-choice-ft';
+      const ok = document.createElement('button');
+      ok.type = 'button'; ok.className = 'mini-btn mini-ok'; ok.textContent = '确定';
+      const clr = document.createElement('button');
+      clr.type = 'button'; clr.className = 'mini-btn'; clr.textContent = '清空';
+      ft.appendChild(ok); ft.appendChild(clr);
+      box.appendChild(ft);
+      document.body.appendChild(box);
+      const rr = box.getBoundingClientRect();
+      if (rr.right > window.innerWidth - 8) box.style.left = Math.max(8, rr.left - (rr.right - window.innerWidth + 8)) + 'px';
+      choiceBox = box;
+      const mousedownGuard = (ev) => { ev.preventDefault(); };
+      box.addEventListener('mousedown', mousedownGuard);
+      ok.addEventListener('click', () => {
+        const vals = Array.from(box.querySelectorAll('input[type=checkbox]:checked')).map((x) => x.value);
+        closeChoice();
+        onOk(vals.join('、'));
+      });
+      clr.addEventListener('click', () => { closeChoice(); onOk(''); });
+      setTimeout(() => {
+        document.addEventListener('mousedown', onDocDown, true);
+        document.addEventListener('keydown', onChoiceKey, true);
+      }, 0);
+    };
     const openChoice = (slotEl, options, onPick) => {
       closeChoice();
       const box = document.createElement('div');
@@ -378,7 +423,12 @@
               if (Array.isArray(prev.opts) && prev.opts.length) {
                 e.preventDefault();
                 deactivateSlot();
-                openChoice(span, prev.opts, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
+                if (prev.multi) {
+                  const cur = O.valueAfterSlot(info2.p, prev.key).trim();
+                  openMultiChoice(span, prev.opts, cur, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
+                } else {
+                  openChoice(span, prev.opts, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
+                }
                 return;
               }
               if (opts.datePickers && opts.datePickers[prev.key]) {
@@ -414,16 +464,27 @@
       const o = +slot.dataset.o;
       const loc = M.locate(info.p, o);
       const item = info.p.runs[loc.i];
-      /* 带选项的填写槽: 弹出下拉选项, 选择即填入(替换旧值) */
+      /* 带选项的填写槽: 单选弹下拉选项即选即填; 复选弹勾选层, 确定后顿号拼接 */
       if (item && item.t === 'slot' && Array.isArray(item.opts) && item.opts.length) {
         deactivateSlot();
-        openChoice(slot, item.opts, (val) => {
-          apply('选择', () => {
-            O.setSlotValue(info.p, item.key, val);
-            O.assertGuard(inst.doc.body, inst.guard);
-            return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+        if (item.multi) {
+          const cur = O.valueAfterSlot(info.p, item.key).trim();
+          openMultiChoice(slot, item.opts, cur, (val) => {
+            apply('选择', () => {
+              O.setSlotValue(info.p, item.key, val);
+              O.assertGuard(inst.doc.body, inst.guard);
+              return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+            });
           });
-        });
+        } else {
+          openChoice(slot, item.opts, (val) => {
+            apply('选择', () => {
+              O.setSlotValue(info.p, item.key, val);
+              O.assertGuard(inst.doc.body, inst.guard);
+              return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+            });
+          });
+        }
         return;
       }
       /* 日期类填写槽: dt 属性(设计期配置) 或 opts.datePickers(内置键) 弹出日期时间选择框 */

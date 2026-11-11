@@ -13,7 +13,13 @@
                 <div class="emr-dsn-head" id="dsn-sec-fixed"><span class="emr-dsn-caret"></span>固定元素</div>
                 <div class="emr-dsn-sub" id="dsn-fixed" style="display:none"></div>
             </div>
-            <div class="emr-dsn-item" id="btn-dsn-select">插入下拉字段</div>
+            <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-select"><span class="emr-dsn-caret"></span>插入下拉字段</div>
+                <div class="emr-dsn-sub" id="dsn-select" style="display:none">
+                    <div class="emr-dsn-field" data-sel="single">单选框（下拉选择）</div>
+                    <div class="emr-dsn-field" data-sel="multi">复选框（多选、顿号拼接）</div>
+                </div>
+            </div>
             <div class="emr-dsn-item" id="btn-dsn-heading">插入标题</div>
             <div class="emr-dsn-item" id="btn-dsn-ref">插入字段引用</div>
         </div>
@@ -691,20 +697,71 @@ function emr_dsnShowProps(item, p, o) {
             ]);
         return;
     }
+    /* 下拉/复选槽属性: 选项内容(每行一个) + 单选/复选切换 + 测试 */
+    if (item.t === 'slot' && Array.isArray(item.opts)) {
+        const isMulti = !!item.multi;
+        const typeRadios = [['single', '单选（下拉选择）'], ['multi', '复选（多选、顿号拼接）']].map(function (m) {
+            const on = (m[0] === 'multi') === isMulti;
+            return '<label class="emr-prop-radio"><input type="radio" name="sel-type" value="' + m[0] + '"' + (on ? ' checked' : '') + '> ' + m[1] + '</label>';
+        }).join('');
+        const sub = Dom.modal('元素属性 · 下拉字段',
+            '<div class="form-group"><label class="form-label">选项内容（每行一个）</label>'
+            + '<textarea id="prop-opts" class="form-control" rows="6" placeholder="无&#10;有&#10;不详">' + Format.escape(item.opts.join('\n')) + '</textarea></div>'
+            + '<div class="form-group"><label class="form-label">类型</label><div class="emr-prop-radios">' + typeRadios + '</div></div>'
+            + '<div class="form-group"><label class="form-label">测试选择（不保存，仅验证交互）</label>'
+            + '<div id="prop-test" class="emr-prop-test"></div>'
+            + '<div class="emr-prop-testval">结果预览：<b id="prop-test-val">—</b></div></div>',
+            [
+                { text: '确定', type: 'primary', onclick: function () {
+                    const lines = (document.getElementById('prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+                    const sel = sub.querySelector('input[name="sel-type"]:checked');
+                    item.opts = lines;
+                    if (sel && sel.value === 'multi') item.multi = true; else delete item.multi;
+                    if (_emrEditor) _emrEditor.refresh();
+                    Dom.toast('属性已更新', 'success');
+                } },
+                { text: '取消', type: 'default' }
+            ]);
+        /* 测试交互: 随选项/类型实时重建, 选择即预览拼接结果 */
+        function renderTest() {
+            const lines = (document.getElementById('prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+            const sel = sub.querySelector('input[name="sel-type"]:checked');
+            const multi = sel && sel.value === 'multi';
+            const box = document.getElementById('prop-test');
+            const prev = document.getElementById('prop-test-val');
+            prev.textContent = '—';
+            if (!lines.length) { box.innerHTML = '<span class="emr-prop-testempty">暂无选项</span>'; return; }
+            box.innerHTML = lines.map(function (o, i) {
+                return '<label class="emr-prop-radio"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="prop-testpick" value="' + Format.escape(o) + '"> ' + Format.escape(o) + '</label>';
+            }).join('');
+            box.querySelectorAll('input').forEach(function (inp) {
+                inp.addEventListener('change', function () {
+                    const vals = Array.from(box.querySelectorAll('input:checked')).map(function (x) { return x.value; });
+                    prev.textContent = vals.join('、') || '—';
+                });
+            });
+        }
+        document.getElementById('prop-opts').addEventListener('input', renderTest);
+        sub.querySelectorAll('input[name="sel-type"]').forEach(function (r) { r.addEventListener('change', renderTest); });
+        renderTest();
+        return;
+    }
     Dom.toast('该元素暂无可编辑属性', 'info');
 }
 
-/** 设计工具: 插入字段 / 下拉字段 / 标题 / 引用 */
-function emr_dsnInsertField(withSelect) {
+/** 设计工具: 插入字段 / 下拉字段(单选/复选) / 标题 / 引用 */
+function emr_dsnInsertField(withSelect, multi) {
     if (!_emrEditor) return;
+    const title = withSelect ? (multi ? '插入复选框字段' : '插入下拉字段') : '插入字段';
     const content = '<div class="form-group"><label class="form-label">字段名称（显示为固定标签）</label><input id="dsn-label" class="form-control" placeholder="如：职业史"></div>'
-        + (withSelect ? '<div class="form-group"><label class="form-label">下拉选项（用顿号/逗号分隔，可留空）</label><input id="dsn-opts" class="form-control" placeholder="如：无、有、不详"></div>' : '');
-    Dom.modal(withSelect ? '插入下拉字段' : '插入字段', content, [
+        + (withSelect ? '<div class="form-group"><label class="form-label">选项（用顿号/逗号分隔，可留空稍后右击配置）</label><input id="dsn-opts" class="form-control" placeholder="如：无、有、不详"></div>'
+            + (multi ? '<p class="emr-tpl-hint">复选：书写时可勾选多项，自动以顿号拼接（如 1、2）</p>' : '') : '');
+    Dom.modal(title, content, [
         { text: '插入', type: 'primary', onclick: function () {
             const label = (document.getElementById('dsn-label').value || '').trim();
             if (!label) { Dom.toast('请输入字段名称', 'error'); return; }
-            const select = withSelect ? (document.getElementById('dsn-opts').value || '').split(/[、，,;；]/).map(function (x) { return x.trim(); }).filter(Boolean) : null;
-            _emrEditor.insertField(label, select && select.length ? { select: select } : null);
+            const select = withSelect ? (document.getElementById('dsn-opts').value || '').split(/[、，,;；]/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
+            _emrEditor.insertField(label, withSelect ? { select: select, multi: !!multi } : null);
         } },
         { text: '取消', type: 'default' }
     ]);
@@ -1245,6 +1302,17 @@ function bindToolbar() {
     bind('btn-template-mgr', () => emr_openTemplateManager());
     bind('dsn-sec-field', function () { emr_dsnToggleFields(); });
     bind('dsn-sec-fixed', function () { emr_dsnToggleFixed(); });
+    bind('dsn-sec-select', function () {
+        const head = document.getElementById('dsn-sec-select');
+        const open = head.classList.toggle('open');
+        document.getElementById('dsn-select').style.display = open ? '' : 'none';
+    });
+    (function () {
+        const box = document.getElementById('dsn-select');
+        box.querySelectorAll('.emr-dsn-field').forEach(function (el) {
+            el.addEventListener('click', function () { emr_dsnInsertField(true, el.dataset.sel === 'multi'); });
+        });
+    })();
     bind('btn-dsn-select', function () { emr_dsnInsertField(true); });
     bind('btn-dsn-heading', emr_dsnInsertHeading);
     bind('btn-dsn-ref', emr_dsnInsertRef);

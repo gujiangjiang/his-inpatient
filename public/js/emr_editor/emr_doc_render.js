@@ -80,7 +80,7 @@
       if (it.t === 'slot') {
         afterSlot = true;
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
-        const cls = 'emr-slot' + (Array.isArray(it.opts) || it.dt ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.req ? ' emr-req' : '');
+        const cls = 'emr-slot' + ((Array.isArray(it.opts) && it.opts.length) || it.dt ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '') + (it.req ? ' emr-req' : '');
         out.push(filled
           ? '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>'
           : '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');

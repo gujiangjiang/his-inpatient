@@ -294,7 +294,8 @@
     const key = 'f' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10);
     const items = [M.fx(key, String(label) + '：')];
     const slot = M.slot(key + '_val', '请输入' + label);
-    if (opts && Array.isArray(opts.select) && opts.select.length) slot.opts = opts.select.slice();
+    if (opts && Array.isArray(opts.select)) slot.opts = opts.select.slice(); /* 空数组也保留: 标记为下拉槽待配置 */
+    if (opts && opts.multi) slot.multi = true;
     items.push(slot);
     p.runs.splice(i, 0, ...items);
     M.normalize(p);
