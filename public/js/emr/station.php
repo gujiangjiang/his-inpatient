@@ -2,9 +2,18 @@
 <div class="emr-station">
     <!-- 二级左栏: 病历分类树 + 文书目录 -->
     <div class="emr-tree">
-        <div class="emr-tree-header">病历文书</div>
+        <div class="emr-tree-header" id="emr-tree-header">病历文书</div>
         <div id="emr-category-tree" class="emr-category-tree"></div>
-        <div class="emr-tree-foot">
+        <div id="emr-design-panel" class="emr-dsn-panel" style="display:none">
+            <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-field"><span class="emr-dsn-caret"></span>插入字段</div>
+                <div class="emr-dsn-sub" id="dsn-fields" style="display:none"></div>
+            </div>
+            <div class="emr-dsn-item" id="btn-dsn-select">插入下拉字段</div>
+            <div class="emr-dsn-item" id="btn-dsn-heading">插入标题</div>
+            <div class="emr-dsn-item" id="btn-dsn-ref">插入字段引用</div>
+        </div>
+        <div class="emr-tree-foot" id="emr-tree-foot">
             <button type="button" class="btn btn-small" id="btn-template-mgr">模板</button>
         </div>
     </div>
@@ -36,10 +45,7 @@
             </div>
             <div class="emr-toolbar" id="emr-design-bar" style="display:none">
                 <span class="emr-design-name" id="emr-design-name"></span>
-                <button type="button" class="btn btn-small" id="btn-dsn-field">插入字段</button>
-                <button type="button" class="btn btn-small" id="btn-dsn-select">插入下拉字段</button>
-                <button type="button" class="btn btn-small" id="btn-dsn-heading">插入标题</button>
-                <button type="button" class="btn btn-small" id="btn-dsn-ref">插入引用</button>
+                <span class="emr-dsn-tip">从左侧「模板设计」面板插入字段与元素；右击正文元素可修改属性</span>
                 <span class="emr-tb-spacer"></span>
                 <button type="button" class="btn btn-small btn-success" id="btn-dsn-save">保存模板</button>
                 <button type="button" class="btn btn-small" id="btn-dsn-exit">退出设计</button>
@@ -482,6 +488,11 @@ async function emr_enterTemplateDesign(tid, opts) {
     document.getElementById('emr-design-name').textContent = '模板设计：' + _emrDesign.name;
     const dsEl = document.getElementById('emr-doc-status');
     dsEl.textContent = ''; dsEl.className = 'emr-doc-status';
+    /* 左栏切换为「模板设计」面板 */
+    document.getElementById('emr-tree-header').textContent = '模板设计';
+    document.getElementById('emr-category-tree').style.display = 'none';
+    document.getElementById('emr-tree-foot').style.display = 'none';
+    document.getElementById('emr-design-panel').style.display = '';
     applyPageCss(schema.page);
     EmrOps.setDesignMode(true);
     _emrEditor = EmrEditor.create({
@@ -498,6 +509,11 @@ async function emr_enterTemplateDesign(tid, opts) {
 function emr_exitTemplateDesign() {
     EmrOps.setDesignMode(false);
     _emrDesign = null;
+    /* 左栏还原为病历文书树 */
+    document.getElementById('emr-tree-header').textContent = '病历文书';
+    document.getElementById('emr-category-tree').style.display = '';
+    document.getElementById('emr-tree-foot').style.display = '';
+    document.getElementById('emr-design-panel').style.display = 'none';
     if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
     document.getElementById('emr-design-bar').style.display = 'none';
     document.getElementById('emr-toolbar').style.display = '';
@@ -1073,7 +1089,7 @@ function bindToolbar() {
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
-    bind('btn-dsn-field', function () { emr_dsnInsertField(false); });
+    bind('dsn-sec-field', function () { emr_dsnInsertField(false); });
     bind('btn-dsn-select', function () { emr_dsnInsertField(true); });
     bind('btn-dsn-heading', emr_dsnInsertHeading);
     bind('btn-dsn-ref', emr_dsnInsertRef);
