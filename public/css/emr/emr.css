@@ -297,6 +297,9 @@
 .emr-dsn-field { padding: 6px 8px 6px 14px; border-radius: 5px; font-size: 12.5px; color: #303133; cursor: pointer; }
 .emr-dsn-field:hover { background: #eef4ff; color: #149a9a; }
 .emr-dsn-custom { color: #149a9a; border-top: 1px dashed #e4e7ed; margin-top: 6px; padding-top: 8px; }
+/* 元素属性对话框 */
+.emr-prop-radios { display: flex; gap: 16px; padding: 4px 0; }
+.emr-prop-radio { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #303133; cursor: pointer; }
 
 /* 右键上下文菜单 */
 .emr-context-menu {

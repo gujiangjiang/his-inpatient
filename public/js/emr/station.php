@@ -9,6 +9,10 @@
                 <div class="emr-dsn-head" id="dsn-sec-field"><span class="emr-dsn-caret"></span>插入字段</div>
                 <div class="emr-dsn-sub" id="dsn-fields" style="display:none"></div>
             </div>
+            <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-fixed"><span class="emr-dsn-caret"></span>固定元素</div>
+                <div class="emr-dsn-sub" id="dsn-fixed" style="display:none"></div>
+            </div>
             <div class="emr-dsn-item" id="btn-dsn-select">插入下拉字段</div>
             <div class="emr-dsn-item" id="btn-dsn-heading">插入标题</div>
             <div class="emr-dsn-item" id="btn-dsn-ref">插入字段引用</div>
@@ -501,6 +505,7 @@ async function emr_enterTemplateDesign(tid, opts) {
         guard: null,
         patientInfo: {}, /* 设计模板与患者无关: 页眉/引用以占位符呈现 (render 层 design 标志) */
         design: true,
+        onItemContext: emr_dsnItemContext, /* 右击元素: 属性/删除 菜单 */
         onChange: null,
         onStatus: updateEditorStatus
     });
@@ -595,6 +600,98 @@ function emr_dsnRenderFieldList(q) {
     });
     const cu = box.querySelector('#dsn-field-custom');
     if (cu) cu.addEventListener('click', function () { emr_dsnInsertField(false); });
+}
+
+/* 固定元素目录: 设计期插入的原子元素 (不可日常删除, 右击可改属性/删除) */
+var EMR_FIXED_ELEMENTS = [
+    { id: 'date', label: '日期组件', hint: '默认日期+时间, 右击可改类型与格式' },
+];
+
+/** 固定元素展开列表 */
+function emr_dsnToggleFixed() {
+    const head = document.getElementById('dsn-sec-fixed');
+    const box = document.getElementById('dsn-fixed');
+    const open = head.classList.toggle('open');
+    box.style.display = open ? '' : 'none';
+    if (!open || box.dataset.built) return;
+    box.dataset.built = '1';
+    box.innerHTML = EMR_FIXED_ELEMENTS.map(function (x) {
+        return '<div class="emr-dsn-field" data-fixed="' + x.id + '" title="' + Format.escape(x.hint) + '">' + Format.escape(x.label) + '</div>';
+    }).join('');
+    box.querySelectorAll('.emr-dsn-field').forEach(function (el) {
+        el.addEventListener('click', function () {
+            if (el.dataset.fixed === 'date' && _emrEditor) {
+                _emrEditor.insertItem({
+                    t: 'slot', key: 'd' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10),
+                    ph: '请选择', dt: { mode: 'datetime', fmt: '' }
+                });
+            }
+        });
+    });
+}
+
+/** 设计模式右击元素: 浮动菜单 (属性 / 删除固定元素) */
+function emr_dsnItemContext(item, p, o, x, y) {
+    document.querySelectorAll('.emr-ctx-float').forEach(function (m) { m.remove(); });
+    const menu = document.createElement('div');
+    menu.className = 'emr-context-menu emr-ctx-float';
+    menu.style.cssText = 'position:fixed;z-index:5200;left:' + x + 'px;top:' + y + 'px;min-width:130px;';
+    let html = '<div class="ctx-item" data-a="props">元素属性…</div>';
+    if (EmrDoc.isProtected(item)) html += '<div class="ctx-item danger" data-a="del">删除该固定元素</div>';
+    menu.innerHTML = html;
+    document.body.appendChild(menu);
+    /* 边界收拢: 靠右/下越界时回退 */
+    const r = menu.getBoundingClientRect();
+    if (r.right > window.innerWidth - 8) menu.style.left = (x - r.width) + 'px';
+    if (r.bottom > window.innerHeight - 8) menu.style.top = (y - r.height) + 'px';
+    const close = function () { menu.remove(); document.removeEventListener('mousedown', onDoc, true); document.removeEventListener('keydown', onEsc, true); };
+    const onDoc = function (ev) { if (!menu.contains(ev.target)) close(); };
+    const onEsc = function (ev) { if (ev.key === 'Escape') close(); };
+    setTimeout(function () { document.addEventListener('mousedown', onDoc, true); document.addEventListener('keydown', onEsc, true); }, 0);
+    menu.querySelector('[data-a="props"]').addEventListener('click', function () {
+        close();
+        emr_dsnShowProps(item, p, o);
+    });
+    const del = menu.querySelector('[data-a="del"]');
+    if (del) del.addEventListener('click', function () {
+        close();
+        Dom.modal('删除固定元素', '<p>确认从模板中删除该元素？删除后文书结构中不再保留。</p>', [
+            { text: '删除', type: 'danger', onclick: function () { if (_emrEditor) _emrEditor.removeItem(p, item); } },
+            { text: '取消', type: 'default' }
+        ]);
+    });
+}
+
+/** 元素属性对话框 (按类型显示可编辑项) */
+function emr_dsnShowProps(item, p, o) {
+    if (item.t === 'slot' && item.dt) {
+        const mode = (item.dt && item.dt.mode) || 'datetime';
+        const fmt = (item.dt && item.dt.fmt) || '';
+        const presets = ['', 'yyyy-mm-dd', 'yyyy年mm月dd日', 'yyyy-mm-dd hh:nn', 'yyyy年mm月dd日 hh时nn分', 'hh:nn'];
+        const radios = [['datetime', '日期+时间'], ['date', '仅日期'], ['time', '仅时间']].map(function (m) {
+            return '<label class="emr-prop-radio"><input type="radio" name="dt-mode" value="' + m[0] + '"' + (mode === m[0] ? ' checked' : '') + '> ' + m[1] + '</label>';
+        }).join('');
+        const opts = presets.map(function (x) {
+            return '<option value="' + x + '"' + (fmt === x ? ' selected' : '') + '>' + (x || '默认(按类型)') + '</option>';
+        }).join('');
+        const sub = Dom.modal('元素属性 · 日期组件', 
+            '<div class="form-group"><label class="form-label">日期类型</label><div class="emr-prop-radios">' + radios + '</div></div>'
+            + '<div class="form-group"><label class="form-label">显示格式</label><select id="prop-dt-fmt" class="form-control">' + opts + '</select></div>'
+            + '<div class="form-group"><label class="form-label">自定义格式（可留空）</label><input id="prop-dt-fmtc" class="form-control" placeholder="如 yyyy年mm月dd日 hh时nn分（占位: yyyy/mm/dd/hh/nn）" value="' + (presets.indexOf(fmt) < 0 ? Format.escape(fmt) : '') + '"></div>',
+            [
+                { text: '确定', type: 'primary', onclick: function () {
+                    const sel = sub.querySelector('input[name="dt-mode"]:checked');
+                    const fmtSel = (document.getElementById('prop-dt-fmt').value || '').trim();
+                    const fmtCustom = (document.getElementById('prop-dt-fmtc').value || '').trim();
+                    item.dt = { mode: sel ? sel.value : 'datetime', fmt: fmtCustom || fmtSel };
+                    if (_emrEditor) _emrEditor.refresh();
+                    Dom.toast('属性已更新', 'success');
+                } },
+                { text: '取消', type: 'default' }
+            ]);
+        return;
+    }
+    Dom.toast('该元素暂无可编辑属性', 'info');
 }
 
 /** 设计工具: 插入字段 / 下拉字段 / 标题 / 引用 */
@@ -1147,6 +1244,7 @@ function bindToolbar() {
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
     bind('dsn-sec-field', function () { emr_dsnToggleFields(); });
+    bind('dsn-sec-fixed', function () { emr_dsnToggleFixed(); });
     bind('btn-dsn-select', function () { emr_dsnInsertField(true); });
     bind('btn-dsn-heading', emr_dsnInsertHeading);
     bind('btn-dsn-ref', emr_dsnInsertRef);

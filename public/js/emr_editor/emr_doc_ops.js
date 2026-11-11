@@ -308,6 +308,26 @@
     p.runs.splice(i, 0, M.item('ref', { key: String(key), fb: String(fb || '＿＿') }));
     return { p, o: o + 1, cont: pos.cont };
   };
+  /** 设计模式: 删除单个原子项 (仅右击菜单调用) */
+  O.removeItemAt = (p, item) => {
+    const i = p.runs.indexOf(item);
+    if (i >= 0) { p.runs.splice(i, 1); M.normalize(p); return true; }
+    return false;
+  };
+
+  /** 日期时间格式化: val='yyyy-mm-dd[ hh:mm]' → fmt 模板 (yyyy年=四位年, mm=月, dd=日, hh=时, nn=分) */
+  O.fmtDateTime = (val, fmt) => {
+    const s = String(val || '').trim();
+    if (!s) return '';
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+    if (!m) return s; /* 非标准值(如手输文本)原样返回 */
+    const [, Y, Mo, D, H, Mi] = m;
+    const tpl = fmt || (m[4] ? 'yyyy-mm-dd hh:nn' : 'yyyy-mm-dd');
+    return tpl
+      .replace(/yyyy/g, Y).replace(/mm/g, Mo).replace(/dd/g, D)
+      .replace(/hh/g, H || '00').replace(/nn/g, Mi || '00');
+  };
+
   /** 设计模式: 在 pos 插入任意原子项 (dyn/ref/date 等), item 为 {t, key, ...} */
   O.insertRunAt = (pos, item) => {
     const p = pos.p;

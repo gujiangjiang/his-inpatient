@@ -426,15 +426,19 @@
         });
         return;
       }
-      /* 日期类填写槽: 弹出日期时间选择框 */
-      if (item && item.t === 'slot' && opts.datePickers && opts.datePickers[item.key]) {
+      /* 日期类填写槽: dt 属性(设计期配置) 或 opts.datePickers(内置键) 弹出日期时间选择框 */
+      const dtCfg = item && item.t === 'slot'
+        ? (item.dt || (opts.datePickers && opts.datePickers[item.key] ? { mode: opts.datePickers[item.key] } : null))
+        : null;
+      if (dtCfg) {
         deactivateSlot();
         const cur = O.valueAfterSlot(info.p, item.key).trim();
-        const opened = openDatePicker(slot, opts.datePickers[item.key], cur, (val) => {
+        const opened = openDatePicker(slot, dtCfg.mode || 'datetime', cur, (val) => {
+          const shown = O.fmtDateTime(val, dtCfg.fmt);
           apply('日期', () => {
-            O.setSlotValue(info.p, item.key, val);
+            O.setSlotValue(info.p, item.key, shown);
             O.assertGuard(inst.doc.body, inst.guard);
-            return { p: info.p, o: o + 1 + String(val).length, cont: info.cont };
+            return { p: info.p, o: o + 1 + String(shown).length, cont: info.cont };
           });
         });
         if (opened) return;
@@ -470,8 +474,21 @@
     on(inst.bodyEl, 'click', onClick);
     on(inst.bodyEl, 'mousedown', onMouseDown);
     on(inst.bodyEl, 'blur', () => { deactivateSlot(); inst.composing = false; });
-    /* 病历 Word 样式区域内禁用鼠标右键菜单 (避免原生菜单干扰编辑与粘贴) */
-    on(inst.container, 'contextmenu', (e) => e.preventDefault());
+    /* 右键: 正文内禁用原生菜单; 设计模式下定位元素并回调宿主 (元素属性/删除) */
+    on(inst.container, 'contextmenu', (e) => {
+      e.preventDefault();
+      if (!inst.design || !opts.onItemContext) return;
+      const el = e.target.closest && e.target.closest('[data-item]');
+      if (!el) return;
+      const pEl = el.closest('.p');
+      const info = pEl ? inst.index.get(+pEl.dataset.pid) : null;
+      if (!info) return;
+      const o = +el.dataset.o;
+      const loc = M.locate(info.p, o);
+      const item = info.p.runs[loc.i];
+      if (!item) return;
+      try { opts.onItemContext(item, info.p, o, e.clientX, e.clientY); } catch (err) { console.error('元素菜单失败', err); }
+    });
 
     /* ---------- 设计模式插入 (模板制作) ---------- */
     const posNow = () => {
@@ -502,6 +519,12 @@
     };
 
     /* ---------- 对外 ---------- */
+    inst.refresh = () => { renderBody(); inst.dirty = true; if (inst.onChange) inst.onChange(inst); };
+    inst.removeItem = (p, item) => {
+      const info = O.ctx(inst.doc.body).find((x) => x.p === p);
+      if (!info) return;
+      apply('设计', () => { O.removeItemAt(p, item); return { p, o: 0, cont: info.cont }; });
+    };
     inst.getDoc = () => inst.doc;
     inst.buildPrintHTML = () => P.buildHTML(inst.doc, inst.patientInfo);
     inst.print = () => P.print(inst.doc, inst.patientInfo);
