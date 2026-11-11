@@ -568,6 +568,17 @@
     inst.insertItem = (item) => {
       apply('设计', () => O.insertRunAt(posNow(), item));
     };
+    /** 在当前段之后插入右对齐签名行 (医师签名：+ 签名动态项; 签名时服务端自动填入) */
+    inst.insertSignLine = () => {
+      apply('设计', () => {
+        const pos = posNow();
+        const info = O.ctx(inst.doc.body).find((x) => x.p === pos.p);
+        const np = M.para([M.fx('sign_line', '医师签名：'), M.item('dyn', { key: 'sign_names', text: '' })], { align: 'right' });
+        if (info) info.cont.splice(info.i + 1, 0, np);
+        else inst.doc.body.push(np);
+        return { p: np, o: 0, cont: info ? info.cont : inst.doc.body };
+      });
+    };
     inst.insertHeading = (text) => {
       apply('设计', () => {
         const pos = posNow();

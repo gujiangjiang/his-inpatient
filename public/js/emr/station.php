@@ -611,6 +611,8 @@ function emr_dsnRenderFieldList(q) {
 /* 固定元素目录: 设计期插入的原子元素 (不可日常删除, 右击可改属性/删除) */
 var EMR_FIXED_ELEMENTS = [
     { id: 'date', label: '日期组件', hint: '默认日期+时间, 右击可改类型与格式' },
+    { id: 'text', label: '固定文字', hint: '不可删除的描述文字（如 主诉：现病史：等标签）' },
+    { id: 'sign', label: '签名元素', hint: '医师签名行（签名时自动填入姓名）' }
 ];
 
 /** 固定元素展开列表 */
@@ -626,11 +628,29 @@ function emr_dsnToggleFixed() {
     }).join('');
     box.querySelectorAll('.emr-dsn-field').forEach(function (el) {
         el.addEventListener('click', function () {
-            if (el.dataset.fixed === 'date' && _emrEditor) {
+            if (!_emrEditor) return;
+            if (el.dataset.fixed === 'date') {
                 _emrEditor.insertItem({
                     t: 'slot', key: 'd' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10),
                     ph: '请选择', dt: { mode: 'datetime', fmt: '' }
                 });
+            } else if (el.dataset.fixed === 'text') {
+                const sub = Dom.modal('插入固定文字',
+                    '<div class="form-group"><label class="form-label">文字内容（书写时不可删除，如 主诉：）</label>'
+                    + '<input id="dsn-fixedtext" class="form-control" placeholder="如：主诉："></div>',
+                    [
+                        { text: '插入', type: 'primary', onclick: function () {
+                            if (!_emrEditor) return;
+                            const t = (document.getElementById('dsn-fixedtext').value || '').trim();
+                            if (!t) { Dom.toast('请输入文字内容', 'error'); return; }
+                            _emrEditor.insertItem({ t: 'fx', key: 't' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10), text: t });
+                        } },
+                        { text: '取消', type: 'default' }
+                    ]);
+                const inp = sub.querySelector('#dsn-fixedtext');
+                inp.focus();
+            } else if (el.dataset.fixed === 'sign') {
+                _emrEditor.insertSignLine();
             }
         });
     });
