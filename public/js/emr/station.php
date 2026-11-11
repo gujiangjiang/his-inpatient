@@ -150,7 +150,7 @@ async function emr_openTemplatePicker(categoryId) {
     const groups = new Map();
     templates.forEach(function (t) {
         const key = t.department_id == null ? '0' : String(t.department_id);
-        if (!groups.has(key)) groups.set(key, { name: t.department_name || '全院通用', items: [] });
+        if (!groups.has(key)) groups.set(key, { name: emrDeptNameOf(t), items: [] });
         groups.get(key).items.push(t);
     });
     const myGroup = myDeptId ? groups.get(myDeptId) : null;
@@ -568,8 +568,14 @@ function emr_dsnInsertRef() {
     ]);
 }
 
-/** 模板管理弹窗: 左右两栏 (左=分类 / 右=该分类模板); 本科室可设计/删除, 全院可复制到本科室
- *  两个 Tab (本科室/全院) 共用同一布局; preCatId 可预选分类 */
+/** 科室显示名: 全院通用(NULL) / 实时科室名 (id 关联, 随管理员更名同步) / 已删除科室兜底 */
+function emrDeptNameOf(t) {
+    if (t.department_id == null) return '全院通用';
+    return t.department_name ? t.department_name : ('科室#' + t.department_id + '（已弃用）');
+}
+
+/** 模板管理弹窗: 本科室=左分类/右列表 两栏; 全院=左科室/中分类/右列表 三栏
+ *  本科室可设计/删除, 全院可复制到本科室; preCatId 可预选分类 */
 async function emr_openTemplateManager(preCatId) {
     const [r, cr] = await Promise.all([
         AjaxLoader.api('emr/template-list?structured=1', { silent: true }),
@@ -581,11 +587,13 @@ async function emr_openTemplateManager(preCatId) {
     const myDeptId = Auth.user && Auth.user.department_id ? String(Auth.user.department_id) : null;
     let activeTab = 'mine';
     let activeCat = (typeof preCatId === 'string' || typeof preCatId === 'number') ? String(preCatId) : 'all';
+    let activeDept = '0'; /* 全院 Tab: '0'=全院通用, 其余=科室id (id 关联, 名称实时同步) */
 
     const isOwn = (t) => t.department_id != null && String(t.department_id) === myDeptId;
+    const deptKeyOf = (t) => t.department_id == null ? '0' : String(t.department_id);
     const tabTpls = () => activeTab === 'mine'
         ? templates.filter(function (t) { return isOwn(t); })
-        : templates;
+        : templates.filter(function (t) { return deptKeyOf(t) === activeDept; });
     const catKeyOf = (t) => t.category_id == null ? 'none' : String(t.category_id);
     const catTpls = (key) => key === 'all'
         ? tabTpls()
@@ -599,6 +607,7 @@ async function emr_openTemplateManager(preCatId) {
     const content = '<div class="emr-tpm">'
         + '<div class="emr-tpl-tabs"><span class="emr-tpl-tab active" data-tab="mine">本科室</span><span class="emr-tpl-tab" data-tab="all">全院</span></div>'
         + '<div class="emr-tpm-body">'
+        + '<div class="emr-tpm-depts" id="emr-tpm-depts" style="display:none"></div>'
         + '<div class="emr-tpm-cats" id="emr-tpm-cats"></div>'
         + '<div class="emr-tpm-main" id="emr-tpm-main"></div>'
         + '</div>'
@@ -606,12 +615,44 @@ async function emr_openTemplateManager(preCatId) {
         + '</div>';
     const overlay = Dom.modal('病历模板管理', content, []);
     overlay.querySelector('.modal').classList.add('modal-lg');
+    const deptsEl = overlay.querySelector('#emr-tpm-depts');
     const catsEl = overlay.querySelector('#emr-tpm-cats');
     const mainEl = overlay.querySelector('#emr-tpm-main');
 
     async function reload() {
         const rr = await AjaxLoader.api('emr/template-list?structured=1', { silent: true });
         templates = rr.data || [];
+    }
+
+    /** 全院 Tab 左栏: 科室列表 (全院通用/各科室/已弃用科室兜底; 计数=该科室模板总数) */
+    function renderDepts() {
+        const map = new Map();
+        templates.forEach(function (t) {
+            const k = deptKeyOf(t);
+            if (!map.has(k)) map.set(k, { key: k, name: emrDeptNameOf(t), n: 0 });
+            map.get(k).n++;
+        });
+        const list = Array.from(map.values()).sort(function (a, b) {
+            if (a.key === '0') return -1;
+            if (b.key === '0') return 1;
+            if ((a.key === myDeptId) !== (b.key === myDeptId)) return a.key === myDeptId ? -1 : 1;
+            return a.name.localeCompare(b.name, 'zh');
+        });
+        if (!list.some(function (x) { return x.key === activeDept; })) activeDept = '0';
+        deptsEl.innerHTML = list.map(function (x) {
+            const tag = x.key === myDeptId ? '<span class="emr-tpm-dtag">本科室</span>' : '';
+            return '<div class="emr-tpm-cat' + (x.key === activeDept ? ' active' : '') + '" data-dept="' + x.key + '">'
+                + '<span class="emr-tpm-cat-name" title="' + Format.escape(x.name) + '">' + Format.escape(x.name) + '</span>'
+                + tag + '<span class="emr-tpm-cat-count">' + x.n + '</span></div>';
+        }).join('');
+        deptsEl.querySelectorAll('[data-dept]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                activeDept = el.dataset.dept;
+                renderDepts();
+                renderCats();
+                renderMain();
+            });
+        });
     }
 
     /** 左栏: 分类列表 (全部 + 各分类 + 未分类), 计数随当前 Tab 变化 */
@@ -633,25 +674,30 @@ async function emr_openTemplateManager(preCatId) {
         });
     }
 
-    /** 右栏: 当前分类下的模板行 (全院 Tab 显示科室归属) */
+    /** 右栏: 当前分类下的模板行 (全院 Tab 头部标注当前科室, 行内不再重复) */
     function renderMain() {
         const list = catTpls(activeCat).slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'zh'); });
         const catName = activeCat === 'all' ? '全部'
             : activeCat === 'none' ? '未分类'
             : ((cats.find(function (c) { return String(c.id) === activeCat; }) || {}).name || '模板');
-        const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + Format.escape(catName) + '</span><span class="emr-tpm-mcount">' + list.length + ' 个模板</span></div>';
+        let deptName = '';
+        if (activeTab === 'all') {
+            const dt = templates.find(function (x) { return deptKeyOf(x) === activeDept; });
+            deptName = dt ? emrDeptNameOf(dt) : '全院通用';
+        }
+        const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + Format.escape(catName) + '</span>'
+            + (deptName ? '<span class="emr-tpm-mdept">· ' + Format.escape(deptName) + '</span>' : '')
+            + '<span class="emr-tpm-mcount">' + list.length + ' 个模板</span></div>';
         let body;
         if (!list.length) {
             body = '<div class="emr-tpl-empty">' + (activeTab === 'mine'
                 ? '该分类暂无本科室模板：可切换到「全院」将模板复制到本科室，或点击下方"新建模板"创建'
-                : '该分类暂无模板') + '</div>';
+                : '「' + Format.escape(deptName) + '」下该分类暂无模板') + '</div>';
         } else {
             body = list.map(function (t) {
-                const deptTag = activeTab === 'all'
-                    ? '<span class="emr-tpm-rdept">' + Format.escape(t.department_name || '全院通用') + '</span>' : '';
                 return '<div class="emr-tpm-row" data-id="' + t.id + '">'
                     + '<span class="emr-tpm-rname" title="' + Format.escape(t.name) + '">' + Format.escape(t.name) + '</span>'
-                    + deptTag + '<span class="emr-tpm-ract">' + actHTML(t) + '</span></div>';
+                    + '<span class="emr-tpm-ract">' + actHTML(t) + '</span></div>';
             }).join('');
         }
         mainEl.innerHTML = head + body;
@@ -667,6 +713,7 @@ async function emr_openTemplateManager(preCatId) {
                                 await AjaxLoader.api('emr/template-delete?id=' + t.id, { method: 'POST' });
                                 Dom.toast('已删除', 'success');
                                 await reload();
+                                renderDepts();
                                 renderCats();
                                 renderMain();
                             } },
@@ -684,6 +731,7 @@ async function emr_openTemplateManager(preCatId) {
                         }});
                         Dom.toast('已复制到本科室', 'success');
                         await reload();
+                        renderDepts();
                         renderCats();
                         renderMain();
                     }
@@ -697,33 +745,46 @@ async function emr_openTemplateManager(preCatId) {
             overlay.querySelectorAll('.emr-tpl-tab').forEach(function (x) { x.classList.remove('active'); });
             tab.classList.add('active');
             activeTab = tab.dataset.tab;
+            deptsEl.style.display = activeTab === 'all' ? '' : 'none';
+            renderDepts();
             renderCats();
             renderMain();
         });
     });
+    renderDepts();
     renderCats();
     renderMain();
     overlay.querySelector('#emr-tpm-close').addEventListener('click', function () { overlay.remove(); });
     overlay.querySelector('#emr-tpm-new').addEventListener('click', function () {
         const defCat = cats.some(function (c) { return String(c.id) === activeCat; }) ? activeCat : (cats.length ? String(cats[0].id) : '');
         const catOpts = cats.map(function (c) { return '<option value="' + c.id + '"' + (String(c.id) === defCat ? ' selected' : '') + '>' + Format.escape(c.name) + '</option>'; }).join('');
-        function baseOpts(catId) {
-            const list = templates.filter(function (t) { return String(t.category_id) === String(catId); });
-            return '<option value="">空白模板（自由发挥）</option>' + list.map(function (t) {
-                return '<option value="' + t.id + '">' + Format.escape(t.name) + '（' + Format.escape(t.department_name || '全院通用') + '）</option>';
+        let selBase = ''; /* '' = 空白模板 (任何分类都提供) */
+        function baseRows(catId) {
+            const list = templates.filter(function (t) { return String(t.category_id) === String(catId); })
+                .slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'zh'); });
+            let html = '<div class="emr-newtpl-base' + (selBase === '' ? ' active' : '') + '" data-id="">'
+                + '<span class="emr-newtpl-base-name">空白模板（自由发挥）</span><span class="emr-newtpl-base-sub">从零开始</span></div>';
+            html += list.map(function (t) {
+                return '<div class="emr-newtpl-base' + (String(t.id) === String(selBase) ? ' active' : '') + '" data-id="' + t.id + '">'
+                    + '<span class="emr-newtpl-base-name" title="' + Format.escape(t.name) + '">' + Format.escape(t.name) + '</span>'
+                    + '<span class="emr-tpm-rdept">' + Format.escape(emrDeptNameOf(t)) + '</span></div>';
             }).join('');
+            return html;
         }
-        const firstCat = defCat;
         const sub = Dom.modal('新建模板',
-            '<div class="form-group"><label class="form-label">模板名称</label><input id="emr-newtpl-name" class="form-control" placeholder="如：男性患者入院记录"></div>'
+            '<div class="emr-newtpl">'
+            + '<div class="emr-newtpl-left">'
+            + '<div class="form-group"><label class="form-label">模板名称</label><input id="emr-newtpl-name" class="form-control" placeholder="如：男性患者入院记录"></div>'
             + '<div class="form-group"><label class="form-label">所属分类</label><select id="emr-newtpl-cat" class="form-control">' + catOpts + '</select></div>'
-            + '<div class="form-group"><label class="form-label">基础模板</label><select id="emr-newtpl-base" class="form-control">' + baseOpts(firstCat) + '</select>'
-            + '<p class="emr-tpl-hint">可基于现有模板创建（如"入院记录"），在设计模式中自由增删修改，避免从头编写</p></div>',
+            + '<p class="emr-tpl-hint">可选择右侧现有模板作为底稿（如"入院记录"），在设计模式中自由增删修改；也可选择空白模板从零发挥。</p>'
+            + '</div>'
+            + '<div class="emr-newtpl-right"><div class="emr-newtpl-rhead">基础模板</div>'
+            + '<div class="emr-newtpl-bases" id="emr-newtpl-bases">' + baseRows(defCat) + '</div></div>'
+            + '</div>',
             [
                 { text: '创建并设计', type: 'primary', onclick: async function () {
                     const name = (document.getElementById('emr-newtpl-name').value || '').trim();
                     const cid = document.getElementById('emr-newtpl-cat').value;
-                    const baseId = document.getElementById('emr-newtpl-base').value;
                     if (!name) { Dom.toast('请输入模板名称', 'error'); return; }
                     const cat = cats.find(function (c) { return String(c.id) === String(cid); });
                     let schema = {
@@ -736,9 +797,9 @@ async function emr_openTemplateManager(preCatId) {
                         ]
                     };
                     /* 以现有模板为底稿: 复制其版式/正文, 仅替换名称 (科室归属自动为本科室) */
-                    if (baseId) {
+                    if (selBase) {
                         try {
-                            const tr = await AjaxLoader.api('emr/template-get?id=' + baseId, { silent: true });
+                            const tr = await AjaxLoader.api('emr/template-get?id=' + selBase, { silent: true });
                             const bs = parseSchema(tr.data && tr.data.schema_json);
                             if (bs && bs.mode === 'word') {
                                 schema = {
@@ -760,12 +821,24 @@ async function emr_openTemplateManager(preCatId) {
                 } },
                 { text: '取消', type: 'default' }
             ]);
-        /* 分类联动基础模板选项 */
+        /* 基础模板列表选择 (单选卡片) */
+        const basesEl = sub.querySelector('#emr-newtpl-bases');
+        function bindBases() {
+            basesEl.querySelectorAll('.emr-newtpl-base').forEach(function (el) {
+                el.addEventListener('click', function () {
+                    selBase = el.dataset.id;
+                    basesEl.querySelectorAll('.emr-newtpl-base').forEach(function (x) { x.classList.remove('active'); });
+                    el.classList.add('active');
+                });
+            });
+        }
+        bindBases();
+        /* 分类联动基础模板列表 */
         const catSel = sub.querySelector('#emr-newtpl-cat');
         catSel.addEventListener('change', function () {
-            const baseSel = sub.querySelector('#emr-newtpl-base');
-            baseSel.innerHTML = baseOpts(catSel.value);
-            if (window.SelectPicker) SelectPicker.refresh(baseSel);
+            selBase = '';
+            basesEl.innerHTML = baseRows(catSel.value);
+            bindBases();
         });
     });
 }
