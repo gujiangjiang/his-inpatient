@@ -140,9 +140,10 @@
     background: #fafafa;
     flex-wrap: wrap;
 }
-.emr-doc-status { margin-left: auto; font-size: 12px; font-weight: 600; }
-.emr-doc-status.draft { color: #e6a23c; }
-.emr-doc-status.signed { color: #67c23a; }
+.emr-statusbar .emr-doc-status { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 9px; }
+.emr-statusbar .emr-doc-status:empty { display: none; }
+.emr-statusbar .emr-doc-status.draft { background: #e6a23c22; color: #e6a23c; }
+.emr-statusbar .emr-doc-status.signed { background: #67c23a22; color: #67c23a; }
 
 /* 结构化段落 (A4 仿真排版) */
 .emr-doc-sections {
@@ -225,13 +226,26 @@
 .emr-tpl-opt select:disabled, .emr-tpl-opt input:disabled { background: #f5f7fa; color: #c0c4cc; cursor: not-allowed; }
 .emr-tpl-foot { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
 .emr-tpl-foot .emr-tb-spacer { flex: 1; }
-/* 模板管理: 模板项与操作 */
-.emr-tpl-mitem { display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 4px; font-size: 13px; color: #303133; }
-.emr-tpl-mitem:hover { background: #f5f7fa; }
-.emr-tpl-mname { flex: 1; }
-.emr-tpl-mact { display: flex; gap: 10px; }
-.emr-tpl-mact .mini { font-size: 12px; color: #149a9a; cursor: pointer; }
-.emr-tpl-mact .mini.danger { color: #f56c6c; }
+/* 模板管理: 左右两栏 (左=分类 / 右=该分类模板) */
+.emr-tpm-body { display: flex; gap: 12px; height: 420px; max-height: calc(100vh - 300px); margin-bottom: 12px; }
+.emr-tpm-cats { width: 180px; flex-shrink: 0; border: 1px solid #ebeef5; border-radius: 8px; padding: 6px; overflow-y: auto; background: #fafbfd; }
+.emr-tpm-cat { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 13px; color: #303133; cursor: pointer; margin-bottom: 2px; }
+.emr-tpm-cat:hover { background: #eef4ff; }
+.emr-tpm-cat.active { background: #149a9a1a; color: #149a9a; font-weight: 600; }
+.emr-tpm-cat-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emr-tpm-cat-count { font-size: 11px; color: #909399; background: #f0f2f5; border-radius: 9px; padding: 1px 7px; flex-shrink: 0; }
+.emr-tpm-cat.active .emr-tpm-cat-count { background: #149a9a22; color: #149a9a; }
+.emr-tpm-main { flex: 1; min-width: 0; border: 1px solid #ebeef5; border-radius: 8px; padding: 10px 12px; overflow-y: auto; }
+.emr-tpm-mhead { display: flex; align-items: center; gap: 8px; padding: 0 2px 8px; border-bottom: 1px solid #f2f4f7; margin-bottom: 8px; }
+.emr-tpm-mtitle { font-size: 13px; font-weight: 600; color: #303133; }
+.emr-tpm-mcount { font-size: 12px; color: #909399; }
+.emr-tpm-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid #eef0f4; border-radius: 8px; margin-bottom: 6px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+.emr-tpm-row:hover { border-color: rgba(20, 154, 154, 0.4); box-shadow: 0 2px 8px rgba(20, 154, 154, 0.08); }
+.emr-tpm-rname { flex: 1; min-width: 0; font-size: 13px; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emr-tpm-rdept { font-size: 11px; color: #909399; background: #f5f7fa; border-radius: 8px; padding: 1px 8px; flex-shrink: 0; }
+.emr-tpm-ract { display: flex; gap: 12px; flex-shrink: 0; }
+.emr-tpm-ract .mini { font-size: 12px; color: #149a9a; cursor: pointer; }
+.emr-tpm-ract .mini.danger { color: #f56c6c; }
 /* 设计模式提示条 */
 .emr-design-name { font-weight: 600; color: #303133; margin-right: 8px; }
 

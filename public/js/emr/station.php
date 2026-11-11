@@ -33,7 +33,6 @@
                 <button type="button" class="btn btn-small" id="btn-template">存为模板</button>
                 <button type="button" class="btn btn-small" id="btn-versions">版本</button>
                 <button type="button" class="btn btn-small btn-primary" id="btn-sign">医师签名</button>
-                <span id="emr-doc-status" class="emr-doc-status"></span>
             </div>
             <div class="emr-toolbar" id="emr-design-bar" style="display:none">
                 <span class="emr-design-name" id="emr-design-name"></span>
@@ -50,7 +49,7 @@
                     <div id="emr-editor-canvas"></div>
                 </div>
             </div>
-            <div id="emr-editor-status" class="emr-statusbar"><span class="emr-sb-saved">已保存</span><span id="emr-save-state"></span></div>
+            <div id="emr-editor-status" class="emr-statusbar"><span id="emr-doc-status" class="emr-doc-status"></span><span id="emr-sb-savetag" class="emr-sb-saved">已保存</span><span id="emr-save-state" class="emr-sb-state"></span><span id="emr-sb-count" class="emr-sb-count">字数 0</span></div>
             <div id="emr-signature-footer" class="emr-signature-footer" style="display:none"></div>
         </div>
     </div>
@@ -481,6 +480,8 @@ async function emr_enterTemplateDesign(tid, opts) {
     document.getElementById('emr-toolbar').style.display = 'none';
     document.getElementById('emr-design-bar').style.display = 'flex';
     document.getElementById('emr-design-name').textContent = '模板设计：' + _emrDesign.name;
+    const dsEl = document.getElementById('emr-doc-status');
+    dsEl.textContent = ''; dsEl.className = 'emr-doc-status';
     applyPageCss(schema.page);
     EmrOps.setDesignMode(true);
     _emrEditor = EmrEditor.create({
@@ -567,65 +568,97 @@ function emr_dsnInsertRef() {
     ]);
 }
 
-/** 模板管理弹窗: 本科室(可设计/删除) / 全院(按科室分组, 可复制到本科室) + 新建模板 */
-async function emr_openTemplateManager() {
+/** 模板管理弹窗: 左右两栏 (左=分类 / 右=该分类模板); 本科室可设计/删除, 全院可复制到本科室
+ *  两个 Tab (本科室/全院) 共用同一布局; preCatId 可预选分类 */
+async function emr_openTemplateManager(preCatId) {
     const [r, cr] = await Promise.all([
         AjaxLoader.api('emr/template-list?structured=1', { silent: true }),
         AjaxLoader.api('emr/category-list', { silent: true })
     ]);
-    const templates = r.data || [];
+    let templates = r.data || [];
     const cats = cr.data || [];
     if (!templates.length && !cats.length) { Dom.toast('数据加载失败', 'error'); return; }
     const myDeptId = Auth.user && Auth.user.department_id ? String(Auth.user.department_id) : null;
-    const myDeptName = (function () { const t = templates.find(function (x) { return String(x.department_id) === myDeptId; }); return t ? t.department_name : '本科室'; })();
-    const groups = new Map();
-    templates.forEach(function (t) {
-        const key = t.department_id == null ? '0' : String(t.department_id);
-        if (!groups.has(key)) groups.set(key, { name: t.department_name || '全院通用', items: [] });
-        groups.get(key).items.push(t);
-    });
+    let activeTab = 'mine';
+    let activeCat = (typeof preCatId === 'string' || typeof preCatId === 'number') ? String(preCatId) : 'all';
+
+    const isOwn = (t) => t.department_id != null && String(t.department_id) === myDeptId;
+    const tabTpls = () => activeTab === 'mine'
+        ? templates.filter(function (t) { return isOwn(t); })
+        : templates;
+    const catKeyOf = (t) => t.category_id == null ? 'none' : String(t.category_id);
+    const catTpls = (key) => key === 'all'
+        ? tabTpls()
+        : tabTpls().filter(function (t) { return catKeyOf(t) === key; });
 
     function actHTML(t) {
-        const own = t.department_id != null && String(t.department_id) === myDeptId;
-        if (own) return '<span class="mini" data-a="design">设计</span><span class="mini danger" data-a="del">删除</span>';
+        if (isOwn(t)) return '<span class="mini" data-a="design">设计</span><span class="mini danger" data-a="del">删除</span>';
         return '<span class="mini" data-a="clone">复制到本科室</span>';
     }
-    function itemHTML(t) {
-        return '<div class="emr-tpl-mitem" data-id="' + t.id + '"><span class="emr-tpl-mname">' + Format.escape(t.name) + '</span><span class="emr-tpl-mact">' + actHTML(t) + '</span></div>';
-    }
-    function mineHTML() {
-        const g = myDeptId ? groups.get(myDeptId) : null;
-        if (!g) return '<div class="emr-tpl-empty">本科室暂无模板：点击下方"新建模板"创建</div>';
-        return '<div class="emr-tpl-group"><div class="emr-tpl-ghead open"><span class="emr-tpl-gname">' + Format.escape(g.name) + '</span><span class="emr-tpl-gcount">' + g.items.length + '</span><span class="emr-tpl-gcaret"></span></div><div class="emr-tpl-gitems">' + g.items.map(itemHTML).join('') + '</div></div>';
-    }
-    function allHTML() {
-        return Array.from(groups.keys()).map(function (k) {
-            const g = groups.get(k);
-            const open = (k === '0' || k === myDeptId);
-            return '<div class="emr-tpl-group"><div class="emr-tpl-ghead' + (open ? ' open' : '') + '"><span class="emr-tpl-gname">' + Format.escape(g.name) + '</span><span class="emr-tpl-gcount">' + g.items.length + '</span><span class="emr-tpl-gcaret"></span></div><div class="emr-tpl-gitems"' + (open ? '' : ' style="display:none"') + '>' + g.items.map(itemHTML).join('') + '</div></div>';
-        }).join('');
-    }
 
-    const content = '<div class="emr-tpl-picker">'
+    const content = '<div class="emr-tpm">'
         + '<div class="emr-tpl-tabs"><span class="emr-tpl-tab active" data-tab="mine">本科室</span><span class="emr-tpl-tab" data-tab="all">全院</span></div>'
-        + '<div class="emr-tpl-list" id="emr-tpm-list">' + mineHTML() + '</div>'
+        + '<div class="emr-tpm-body">'
+        + '<div class="emr-tpm-cats" id="emr-tpm-cats"></div>'
+        + '<div class="emr-tpm-main" id="emr-tpm-main"></div>'
+        + '</div>'
         + '<div class="emr-tpl-foot"><button type="button" class="btn btn-small btn-primary" id="emr-tpm-new">新建模板</button><span class="emr-tb-spacer"></span><button type="button" class="btn" id="emr-tpm-close">关闭</button></div>'
         + '</div>';
     const overlay = Dom.modal('病历模板管理', content, []);
-    const listEl = overlay.querySelector('#emr-tpm-list');
+    overlay.querySelector('.modal').classList.add('modal-lg');
+    const catsEl = overlay.querySelector('#emr-tpm-cats');
+    const mainEl = overlay.querySelector('#emr-tpm-main');
 
-    function bindList() {
-        listEl.querySelectorAll('.emr-tpl-ghead').forEach(function (h) {
-            h.addEventListener('click', function () {
-                const items = h.nextElementSibling;
-                const open = h.classList.toggle('open');
-                items.style.display = open ? '' : 'none';
+    async function reload() {
+        const rr = await AjaxLoader.api('emr/template-list?structured=1', { silent: true });
+        templates = rr.data || [];
+    }
+
+    /** 左栏: 分类列表 (全部 + 各分类 + 未分类), 计数随当前 Tab 变化 */
+    function renderCats() {
+        const items = [{ key: 'all', name: '全部' }].concat(cats.map(function (c) { return { key: String(c.id), name: c.name }; }));
+        if (tabTpls().some(function (t) { return catKeyOf(t) === 'none'; })) items.push({ key: 'none', name: '未分类' });
+        if (!items.some(function (x) { return x.key === activeCat; })) activeCat = 'all';
+        catsEl.innerHTML = items.map(function (x) {
+            return '<div class="emr-tpm-cat' + (x.key === activeCat ? ' active' : '') + '" data-cat="' + x.key + '">'
+                + '<span class="emr-tpm-cat-name">' + Format.escape(x.name) + '</span>'
+                + '<span class="emr-tpm-cat-count">' + catTpls(x.key).length + '</span></div>';
+        }).join('');
+        catsEl.querySelectorAll('.emr-tpm-cat').forEach(function (el) {
+            el.addEventListener('click', function () {
+                activeCat = el.dataset.cat;
+                renderCats();
+                renderMain();
             });
         });
-        listEl.querySelectorAll('.emr-tpl-mitem').forEach(function (it) {
-            it.querySelectorAll('.mini').forEach(function (a) {
+    }
+
+    /** 右栏: 当前分类下的模板行 (全院 Tab 显示科室归属) */
+    function renderMain() {
+        const list = catTpls(activeCat).slice().sort(function (a, b) { return String(a.name).localeCompare(String(b.name), 'zh'); });
+        const catName = activeCat === 'all' ? '全部'
+            : activeCat === 'none' ? '未分类'
+            : ((cats.find(function (c) { return String(c.id) === activeCat; }) || {}).name || '模板');
+        const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + Format.escape(catName) + '</span><span class="emr-tpm-mcount">' + list.length + ' 个模板</span></div>';
+        let body;
+        if (!list.length) {
+            body = '<div class="emr-tpl-empty">' + (activeTab === 'mine'
+                ? '该分类暂无本科室模板：可切换到「全院」将模板复制到本科室，或点击下方"新建模板"创建'
+                : '该分类暂无模板') + '</div>';
+        } else {
+            body = list.map(function (t) {
+                const deptTag = activeTab === 'all'
+                    ? '<span class="emr-tpm-rdept">' + Format.escape(t.department_name || '全院通用') + '</span>' : '';
+                return '<div class="emr-tpm-row" data-id="' + t.id + '">'
+                    + '<span class="emr-tpm-rname" title="' + Format.escape(t.name) + '">' + Format.escape(t.name) + '</span>'
+                    + deptTag + '<span class="emr-tpm-ract">' + actHTML(t) + '</span></div>';
+            }).join('');
+        }
+        mainEl.innerHTML = head + body;
+        mainEl.querySelectorAll('.emr-tpm-row').forEach(function (row) {
+            row.querySelectorAll('.mini').forEach(function (a) {
                 a.addEventListener('click', async function () {
-                    const t = templates.find(function (x) { return String(x.id) === String(it.dataset.id); });
+                    const t = templates.find(function (x) { return String(x.id) === String(row.dataset.id); });
                     if (!t) return;
                     if (a.dataset.a === 'design') { overlay.remove(); emr_enterTemplateDesign(t.id); return; }
                     if (a.dataset.a === 'del') {
@@ -633,8 +666,9 @@ async function emr_openTemplateManager() {
                             { text: '删除', type: 'danger', onclick: async function () {
                                 await AjaxLoader.api('emr/template-delete?id=' + t.id, { method: 'POST' });
                                 Dom.toast('已删除', 'success');
-                                overlay.remove();
-                                emr_openTemplateManager();
+                                await reload();
+                                renderCats();
+                                renderMain();
                             } },
                             { text: '取消', type: 'default' }
                         ]);
@@ -649,32 +683,37 @@ async function emr_openTemplateManager() {
                             category_id: t.category_id
                         }});
                         Dom.toast('已复制到本科室', 'success');
-                        overlay.remove();
-                        emr_openTemplateManager();
+                        await reload();
+                        renderCats();
+                        renderMain();
                     }
                 });
             });
         });
     }
+
     overlay.querySelectorAll('.emr-tpl-tab').forEach(function (tab) {
         tab.addEventListener('click', function () {
             overlay.querySelectorAll('.emr-tpl-tab').forEach(function (x) { x.classList.remove('active'); });
             tab.classList.add('active');
-            listEl.innerHTML = tab.dataset.tab === 'mine' ? mineHTML() : allHTML();
-            bindList();
+            activeTab = tab.dataset.tab;
+            renderCats();
+            renderMain();
         });
     });
-    bindList();
+    renderCats();
+    renderMain();
     overlay.querySelector('#emr-tpm-close').addEventListener('click', function () { overlay.remove(); });
     overlay.querySelector('#emr-tpm-new').addEventListener('click', function () {
-        const catOpts = cats.map(function (c) { return '<option value="' + c.id + '">' + Format.escape(c.name) + '</option>'; }).join('');
+        const defCat = cats.some(function (c) { return String(c.id) === activeCat; }) ? activeCat : (cats.length ? String(cats[0].id) : '');
+        const catOpts = cats.map(function (c) { return '<option value="' + c.id + '"' + (String(c.id) === defCat ? ' selected' : '') + '>' + Format.escape(c.name) + '</option>'; }).join('');
         function baseOpts(catId) {
             const list = templates.filter(function (t) { return String(t.category_id) === String(catId); });
             return '<option value="">空白模板（自由发挥）</option>' + list.map(function (t) {
                 return '<option value="' + t.id + '">' + Format.escape(t.name) + '（' + Format.escape(t.department_name || '全院通用') + '）</option>';
             }).join('');
         }
-        const firstCat = cats.length ? cats[0].id : '';
+        const firstCat = defCat;
         const sub = Dom.modal('新建模板',
             '<div class="form-group"><label class="form-label">模板名称</label><input id="emr-newtpl-name" class="form-control" placeholder="如：男性患者入院记录"></div>'
             + '<div class="form-group"><label class="form-label">所属分类</label><select id="emr-newtpl-cat" class="form-control">' + catOpts + '</select></div>'
@@ -716,6 +755,7 @@ async function emr_openTemplateManager() {
                         schema_json: JSON.stringify(schema),
                         category_id: cat ? cat.id : null
                     }});
+                    overlay.remove();
                     emr_enterTemplateDesign(resp.data.id);
                 } },
                 { text: '取消', type: 'default' }
@@ -759,9 +799,10 @@ function setSaveState(text, cls) {
 }
 
 function updateEditorStatus(chars, dirty) {
-    document.getElementById('emr-editor-status').innerHTML =
-        '<span class="' + (dirty ? 'emr-sb-dirty' : 'emr-sb-saved') + '">' + (dirty ? '未保存' : '已保存') + '</span>'
-        + '<span class="emr-sb-count">字数 ' + chars + '</span>';
+    const tag = document.getElementById('emr-sb-savetag');
+    if (tag) { tag.textContent = dirty ? '未保存' : '已保存'; tag.className = dirty ? 'emr-sb-dirty' : 'emr-sb-saved'; }
+    const cnt = document.getElementById('emr-sb-count');
+    if (cnt) cnt.textContent = '字数 ' + chars;
 }
 
 function syncToolbar(signed) {
@@ -958,7 +999,7 @@ function bindToolbar() {
     bind('btn-template', emr_saveAsTemplate);
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
-    bind('btn-template-mgr', emr_openTemplateManager);
+    bind('btn-template-mgr', () => emr_openTemplateManager());
     bind('btn-dsn-field', function () { emr_dsnInsertField(false); });
     bind('btn-dsn-select', function () { emr_dsnInsertField(true); });
     bind('btn-dsn-heading', emr_dsnInsertHeading);

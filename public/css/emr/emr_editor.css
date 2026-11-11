@@ -4,13 +4,13 @@
 .emr-editor-scroll {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: auto; /* 所见即所得: 窗口不足时横向滚动, 纸张不缩放 */
   background: #e8eaee;
   padding: 10px;
 }
 .emr-editor-page {
-  width: 794px; /* A4 @96dpi */
-  max-width: 100%;
+  width: 794px; /* A4 @96dpi 固定纸张宽度 (不随窗口缩放) */
+  flex-shrink: 0;
   margin: 14px auto;
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 0 1px #d5d8dd;

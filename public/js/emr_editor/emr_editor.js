@@ -83,8 +83,8 @@
         renderBody(); /* 历史已回滚, 重建 DOM */
         return;
       }
+      inst.dirty = true; /* 先置脏: renderBody → updateStatus 才能立即显示"未保存" */
       renderBody(pos, end);
-      inst.dirty = true;
       if (inst.onChange) inst.onChange(inst);
     };
 
