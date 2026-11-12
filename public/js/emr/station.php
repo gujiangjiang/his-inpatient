@@ -80,7 +80,28 @@
                     <div id="emr-editor-canvas"></div>
                 </div>
             </div>
-            <div id="emr-editor-status" class="emr-statusbar"><span id="emr-doc-status" class="emr-doc-status"></span><span id="emr-sb-savetag" class="emr-sb-saved">已保存</span><span id="emr-save-state" class="emr-sb-state"></span><span id="emr-sb-count" class="emr-sb-count">字数 0</span></div>
+            <div id="emr-editor-status" class="emr-statusbar"><span id="emr-doc-status" class="emr-doc-status"></span><span id="emr-sb-savetag" class="emr-sb-saved">已保存</span><span id="emr-save-state" class="emr-sb-state"></span><button type="button" class="emr-refp-btn" id="btn-ref-panel" title="引用病历/检验/检查/医嘱/既往/内容">引用</button><span id="emr-sb-count" class="emr-sb-count">字数 0</span></div>
+            <!-- 引用面板: 从状态栏向上弹出 (病历/检验/检查/医嘱/既往/内容) -->
+            <div id="emr-ref-panel" class="emr-refp" style="display:none">
+                <div class="emr-refp-head">
+                    <div class="emr-refp-tabs">
+                        <span class="emr-refp-tab active" data-tab="doc">病历</span>
+                        <span class="emr-refp-tab" data-tab="lab">检验</span>
+                        <span class="emr-refp-tab" data-tab="exam">检查</span>
+                        <span class="emr-refp-tab" data-tab="order">医嘱</span>
+                        <span class="emr-refp-tab" data-tab="past">既往</span>
+                        <span class="emr-refp-tab" data-tab="content">内容</span>
+                    </div>
+                    <button type="button" class="btn btn-small btn-primary" id="emr-refp-write">写回病历</button>
+                    <button type="button" class="btn btn-small" id="emr-refp-close">收起</button>
+                </div>
+                <div class="emr-refp-body">
+                    <div class="emr-refp-left" id="emr-refp-left"></div>
+                    <div class="emr-refp-right" id="emr-refp-right">
+                        <div class="emr-refp-empty">从左侧选择一条记录，右侧显示内容；可全选或选中部分文字后点击「写回病历」</div>
+                    </div>
+                </div>
+            </div>
             <div id="emr-signature-footer" class="emr-signature-footer" style="display:none"></div>
         </div>
     </div>
@@ -360,6 +381,8 @@ async function emr_openDocument(docId) {
     }
     const doc = r.data;
     _emrCurrentDoc = doc;
+    document.getElementById('emr-ref-panel').style.display = 'none'; /* 切换文书: 收起引用面板 */
+    _emrRefCache = {};
     if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
 
     document.getElementById('emr-editor-empty').style.display = 'none';
@@ -1515,6 +1538,189 @@ function scheduleAutoSave() {
     _emrAutoSaveTimer = setTimeout(() => emr_saveDraft(true), 8000);
 }
 
+/* ================= 引用面板 (状态栏 ↑): 病历/检验/检查/医嘱/既往/内容 → 写回 ================= */
+var _emrRefCaret = null;   // 打开面板时的光标位置 (写回定位用)
+var _emrRefTab = 'doc';
+var _emrRefCache = {};     // 文书 id → 纯文本缓存
+
+function emr_refToggle() {
+    const panel = document.getElementById('emr-ref-panel');
+    if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+    if (!_emrEditor || _emrEditor.readonly) { Dom.toast('请先打开可编辑的文书', 'info'); return; }
+    _emrRefCaret = _emrEditor.getCaretPoint() || _emrEditor.getDocEndPoint(); /* 无光标时追加到文末 */
+    panel.style.display = 'flex';
+    emr_refSwitch(_emrRefTab);
+}
+
+function emr_refSwitch(tab) {
+    _emrRefTab = tab;
+    document.querySelectorAll('.emr-refp-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.tab === tab); });
+    document.getElementById('emr-refp-left').innerHTML = '<div class="emr-refp-empty">加载中…</div>';
+    document.getElementById('emr-refp-right').innerHTML = '<div class="emr-refp-empty">从左侧选择一条记录，右侧显示内容；可全选或选中部分文字后点击「写回病历」</div>';
+    const loader = { doc: emr_refLoadDocs, past: emr_refLoadDocs, lab: emr_refLoadLab, exam: emr_refLoadExam, order: emr_refLoadOrders, content: emr_refLoadContent }[tab];
+    if (loader) loader();
+}
+
+/** 左侧列表渲染: items = [{name, time, load()}] */
+function emr_refListRender(items) {
+    const left = document.getElementById('emr-refp-left');
+    if (!items.length) {
+        left.innerHTML = '<div class="emr-refp-empty">' + (_emrRefTab === 'past' ? '暂无既往住院病历' : '暂无可引用记录') + '</div>';
+        return;
+    }
+    left.innerHTML = items.map(function (x, i) {
+        return '<div class="emr-refp-item" data-i="' + i + '"><div class="emr-refp-name">' + Format.escape(x.name) + '</div><div class="emr-refp-time">' + Format.escape(x.time || '') + '</div></div>';
+    }).join('');
+    left.querySelectorAll('.emr-refp-item').forEach(function (el) {
+        el.addEventListener('click', async function () {
+            left.querySelectorAll('.emr-refp-item').forEach(function (x) { x.classList.remove('active'); });
+            el.classList.add('active');
+            const x = items[+el.dataset.i];
+            const right = document.getElementById('emr-refp-right');
+            right.innerHTML = '<div class="emr-refp-empty">加载中…</div>';
+            try { right.textContent = await x.load(); } catch (e) { right.innerHTML = '<div class="emr-refp-empty">加载失败</div>'; }
+        });
+    });
+}
+
+/** 文书 doc_json → 纯文本 (含表格行) */
+function emr_refDocText(doc) {
+    const blockLines = function (b) {
+        if (b.t === 'p') {
+            let s = '';
+            for (const it of (b.runs || [])) {
+                if (it.t === 'text') s += it.text;
+                else if (it.t === 'fx') s += it.text;
+                else if (it.t === 'dyn' || it.t === 'ref') s += (it.text || '');
+                else if (it.t === 'tab') s += '\t';
+            }
+            return [s];
+        }
+        if (b.t === 'tbl') {
+            const out = [];
+            for (const r of (b.rows || [])) {
+                const cells = (r.cells || []).map(function (c) {
+                    let t = '';
+                    (c.blocks || []).forEach(function (cb) { t += blockLines(cb).join(' '); });
+                    return t.trim();
+                });
+                out.push(cells.join(' | '));
+            }
+            return out;
+        }
+        return [];
+    };
+    const lines = [];
+    (doc.body || []).forEach(function (b) { lines.push.apply(lines, blockLines(b)); });
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+async function emr_refLoadDocs() {
+    const r = await AjaxLoader.api('emr/document-list?patient_id=' + _emrPatient.id, { silent: true });
+    let docs = r.data || [];
+    if (_emrRefTab === 'past') {
+        docs = docs.filter(function (d) { return d.admission_no && _emrPatient.admission_no && d.admission_no !== _emrPatient.admission_no; });
+    }
+    emr_refListRender(docs.map(function (d) {
+        return {
+            name: (d.title || d.template_name || '未命名文书') + (d.status === 'signed' ? '（已签名）' : ''),
+            time: emrStamp(d.updated_at || d.created_at || ''),
+            load: async function () {
+                if (_emrRefCache[d.id] != null) return _emrRefCache[d.id];
+                const dr = await AjaxLoader.api('emr/document-get?id=' + d.id, { silent: true });
+                const txt = emr_refDocText((dr.data && dr.data.doc_json) || {});
+                _emrRefCache[d.id] = txt;
+                return txt || '（空文书）';
+            }
+        };
+    }));
+}
+
+async function emr_refLoadLab() {
+    const r = await AjaxLoader.api('lab/list?patient_id=' + _emrPatient.id, { silent: true });
+    emr_refListRender((r.data || []).map(function (x) {
+        return {
+            name: x.exam_name || '检验报告',
+            time: emrStamp(x.reported_at || x.created_at || ''),
+            load: async function () {
+                const dr = await AjaxLoader.api('lab/detail?id=' + x.id, { silent: true });
+                const d = dr.data || {};
+                const lines = (d.items || []).map(function (it) {
+                    return it.item_name + '：' + (it.result || '') + (it.unit ? ' ' + it.unit : '') + (it.reference_range ? '（参考 ' + it.reference_range + '）' : '') + (it.flag ? ' ' + it.flag : '');
+                });
+                return '【' + (d.exam_name || '') + '】' + (d.reported_at ? ' 报告时间 ' + d.reported_at : '') + '\n' + (lines.join('\n') || '（暂无结果明细）');
+            }
+        };
+    }));
+}
+
+async function emr_refLoadExam() {
+    const r = await AjaxLoader.api('exam/list?patient_id=' + _emrPatient.id, { silent: true });
+    emr_refListRender((r.data || []).map(function (x) {
+        return {
+            name: (x.exam_type || '检查') + (x.body_part ? '·' + x.body_part : ''),
+            time: emrStamp(x.reported_at || x.created_at || ''),
+            load: async function () {
+                return '【' + (x.exam_type || '') + (x.body_part ? '（' + x.body_part + '）' : '') + '】' + (x.reported_at ? ' 报告时间 ' + x.reported_at : '')
+                    + (x.findings ? '\n检查所见：' + x.findings : '')
+                    + (x.conclusion ? '\n检查结论：' + x.conclusion : '')
+                    + (x.impression ? '\n印象：' + x.impression : '')
+                    + (!x.findings && !x.conclusion && !x.impression ? '\n（暂无报告内容）' : '');
+            }
+        };
+    }));
+}
+
+async function emr_refLoadOrders() {
+    const r = await AjaxLoader.api('orders/list?patient_id=' + _emrPatient.id, { silent: true });
+    emr_refListRender((r.data || []).map(function (x) {
+        return {
+            name: (x.content || '医嘱') + (x.dosage ? ' ' + x.dosage : '') + (x.frequency ? ' ' + x.frequency : ''),
+            time: emrStamp(x.start_date || x.created_at || '') + (x.status ? ' · ' + x.status : ''),
+            load: async function () {
+                return (x.order_period === 'temp' ? '临时医嘱' : '长期医嘱') + '：' + (x.content || '')
+                    + (x.dosage ? '\n剂量：' + x.dosage + (x.dosage_unit || '') : '')
+                    + (x.frequency ? '\n频次：' + x.frequency : '')
+                    + (x.usage_name ? '\n用法：' + x.usage_name : '')
+                    + (x.notes ? '\n备注：' + x.notes : '')
+                    + (x.start_date ? '\n开始：' + x.start_date : '');
+            }
+        };
+    }));
+}
+
+async function emr_refLoadContent() {
+    const r = await AjaxLoader.api('emr/content-list', { silent: true });
+    emr_refListRender((r.data || []).map(function (x) {
+        return {
+            name: (x.category_name ? '[' + x.category_name + '] ' : '') + x.name,
+            time: emrStamp(x.updated_at || ''),
+            load: async function () { return x.content || '（空内容）'; }
+        };
+    }));
+}
+
+/** 写回病历: 右侧选中部分文字则写所选, 否则写全部; 按行分段写入光标处 */
+function emr_refWriteBack() {
+    const right = document.getElementById('emr-refp-right');
+    let text = '';
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount && right.contains(sel.anchorNode)) {
+        const t = String(sel.toString() || '').trim();
+        if (t) text = t;
+    }
+    if (!text) text = String(right.innerText || '').trim();
+    if (!text) { Dom.toast('右侧暂无内容可写回', 'error'); return; }
+    if (!_emrEditor) { Dom.toast('编辑器未就绪', 'error'); return; }
+    _emrEditor.focusCaret(_emrRefCaret);
+    const lines = text.replace(/\r/g, '').split('\n');
+    lines.forEach(function (ln, i) {
+        if (i > 0) _emrEditor.enter();
+        if (ln) _emrEditor.insertText(ln);
+    });
+    Dom.toast('已写回病历', 'success');
+}
+
 /* ================= 签名 / 打印 / 版本 / 模板 ================= */
 /** 必选字段未完成清单: {name, ph} —— 签名前校验 */
 function emrFindMissingRequired() {
@@ -1663,6 +1869,12 @@ function bindToolbar() {
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
     bind('btn-content-mgr', () => emr_openContentManager());
+    bind('btn-ref-panel', emr_refToggle);
+    bind('emr-refp-close', function () { document.getElementById('emr-ref-panel').style.display = 'none'; });
+    bind('emr-refp-write', emr_refWriteBack);
+    document.querySelectorAll('.emr-refp-tab').forEach(function (t) {
+        t.addEventListener('click', function () { emr_refSwitch(t.dataset.tab); });
+    });
     bind('dsn-sec-field', function () { emr_dsnToggleFields(); });
     bind('dsn-sec-fixed', function () { emr_dsnToggleFixed(); });
     bind('dsn-sec-select', function () {

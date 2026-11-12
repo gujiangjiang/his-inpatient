@@ -710,6 +710,23 @@
 
     /* ---------- 对外 ---------- */
     inst.refresh = () => { renderBody(); inst.dirty = true; if (inst.onChange) inst.onChange(inst); };
+    /** 光标模型位置 (面板打开前保存; 写回时用 focusCaret 恢复) */
+    inst.getCaretPoint = () => {
+      const s = C.rangeToModel(inst.bodyEl, inst.index);
+      return s ? s.a : null;
+    };
+    inst.focusCaret = (pos) => {
+      if (!pos || !inst.bodyEl.isConnected) return;
+      inst.bodyEl.focus();
+      C.restore(inst.bodyEl, pos);
+    };
+    /** 文末定位点 (无光标时写回兜底: 追加到文书末尾) */
+    inst.getDocEndPoint = () => {
+      const paras = O.ctx(inst.doc.body);
+      if (!paras.length) return null;
+      const last = paras[paras.length - 1].p;
+      return { p: last, o: M.plen(last), cont: null };
+    };
     inst.removeItem = (p, item) => {
       const info = O.ctx(inst.doc.body).find((x) => x.p === p);
       if (!info) return;
