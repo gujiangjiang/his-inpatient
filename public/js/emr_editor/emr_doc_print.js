@@ -35,6 +35,7 @@
     const style = [
       '@page { size: A4; margin: 0; }',
       'html, body { margin: 0; padding: 0; }',
+      '* { box-sizing: border-box; } /* 与编辑器 reset 对齐: 否则 td padding 撑宽表格 → 信息表不居中/宽度失真 */',
       '.page { position: relative; width: ' + d.w + 'px; height: ' + d.h + 'px; overflow: hidden; page-break-after: always; }',
       '.page:last-child { page-break-after: auto; }',
       '.pg-head { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + d.mt + 'px; text-align: center; }',
