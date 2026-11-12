@@ -94,11 +94,14 @@
         continue;
       }
       if (it.t === 'dyn') {
-        const sync = it.key === 'initial_diagnosis_value';
+        const sync = it.key === 'initial_diagnosis_value' || it.key === 'diag_admission' || it.key === 'diag_discharge';
+        const syncTitle = it.key === 'diag_discharge' ? '点击同步出院诊断（来源：左侧诊断 → 出院诊断）'
+          : it.key === 'diag_admission' ? '点击同步入院诊断（来源：左侧诊断 → 入院诊断）'
+          : '点击同步诊断（来源：左侧诊断 → 入院诊断）';
         const txt = design ? ('（' + (DYN_PH[it.key] || it.key) + '）') : it.text;
         out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + (design ? ' emr-dyn-des' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
           + ' data-o="' + o + '" data-n="1" contenteditable="false"'
-          + (sync && !design ? ' title="点击同步诊断（来源：左侧诊断 → 入院诊断）"' : '') + '>' + esc(txt) + '</span>');
+          + (sync && !design ? ' title="' + syncTitle + '"' : '') + '>' + esc(txt) + '</span>');
         continue;
       }
       if (it.t === 'tab') {

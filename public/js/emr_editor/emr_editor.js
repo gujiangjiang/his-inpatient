@@ -442,15 +442,17 @@
           }
         }
       }
-      /* 初步诊断行: 点击一键同步诊断 (来源: 左侧「诊断」的入院诊断, 不允许手改) */
+      /* 诊断类动态项: 点击一键同步诊断 (来源: 左侧「诊断」模块, 不允许手改) */
       const pEl = e.target.closest && e.target.closest('.p');
-      if (pEl && pEl.querySelector('.emr-dyn-sync')) {
+      const syncEl = pEl && pEl.querySelector('.emr-dyn-sync');
+      if (pEl && syncEl) {
         e.preventDefault();
         deactivateSlot();
         if (inst.readonly || !opts.diagSync) return;
-        Promise.resolve(opts.diagSync()).then((text) => {
+        const key = syncEl.dataset.key || 'initial_diagnosis_value';
+        Promise.resolve(opts.diagSync(key)).then((text) => {
           if (text == null) return;
-          inst.setDyn('initial_diagnosis_value', String(text));
+          inst.setDyn(key, String(text));
         }).catch(() => {});
         return;
       }

@@ -14,6 +14,13 @@
                 <div class="emr-dsn-sub" id="dsn-fixed" style="display:none"></div>
             </div>
             <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-diag"><span class="emr-dsn-caret"></span>诊断引用</div>
+                <div class="emr-dsn-sub" id="dsn-diag" style="display:none">
+                    <div class="emr-dsn-field" data-diag="admission">入院诊断（写作时自动填入）</div>
+                    <div class="emr-dsn-field" data-diag="discharge">出院诊断（写作时自动填入）</div>
+                </div>
+            </div>
+            <div class="emr-dsn-sec">
                 <div class="emr-dsn-head" id="dsn-sec-select"><span class="emr-dsn-caret"></span>插入下拉字段</div>
                 <div class="emr-dsn-sub" id="dsn-select" style="display:none">
                     <div class="emr-dsn-field" data-sel="single">单选框（下拉选择）</div>
@@ -427,6 +434,28 @@ async function syncFromFrontPage(doc) {
     }
 }
 
+/** 诊断引用元素自动填充: diag_admission/diag_discharge dyn 取左侧「诊断」模块 (未签文档每次打开刷新) */
+async function syncDiagDyns(doc) {
+    const need = ['diag_admission', 'diag_discharge'].filter(function (k) {
+        return EmrOps.findParaWithItem(doc.body, 'dyn', k);
+    });
+    if (!need.length) return;
+    let rows = [];
+    try {
+        const r = await AjaxLoader.api('emr/diagnosis-list?patient_id=' + _emrPatient.id, { silent: true });
+        rows = r.data || [];
+    } catch (e) { return; }
+    const join = function (cat) {
+        const list = rows.filter(function (x) { return x.category === cat; });
+        if (!list.length && cat === 'admission' && _emrPatient && _emrPatient.admission_diagnosis) {
+            return String(_emrPatient.admission_diagnosis); /* 诊断模块未录入时兜底: 患者入院诊断 */
+        }
+        return list.map(function (x, i) { return list.length > 1 ? (i + 1) + '.' + x.name : x.name; }).join('；');
+    };
+    if (need.indexOf('diag_admission') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_admission', join('admission'));
+    if (need.indexOf('diag_discharge') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_discharge', join('discharge'));
+}
+
 /** 字段引用解析: 【姓名】【主诉】等自动调用患者其他文书里的字段值
  *  规则: 仅在【首次创建】文书时调用一次; 保存后即为固化快照, 再次打开不再变化
  *  (如需重新取值: 删除该文书后重新创建) */
@@ -449,6 +478,7 @@ async function openWordDoc(doc, signed) {
     /* 编辑状态: 患者信息与病案首页单项同步 (已签名=快照, 不动) */
     if (!signed && doc.doc_json && Array.isArray(doc.doc_json.body)) {
         try { await syncFromFrontPage(doc.doc_json); } catch (e) { console.error('病案首页同步失败', e); }
+        try { await syncDiagDyns(doc.doc_json); } catch (e) { console.error('诊断引用填充失败', e); }
     }
     const metaGuard = doc.doc_meta && doc.doc_meta.guard && Array.isArray(doc.doc_meta.guard.fx) ? doc.doc_meta.guard : null;
     _emrEditor = EmrEditor.create({
@@ -1101,11 +1131,16 @@ function emr_showQc(catId) {
     Dom.modal((cat ? cat.name : '') + ' · 质控提醒', html, [{ text: '知道了', type: 'primary' }]);
 }
 
-/** 一键同步诊断: 取左侧「诊断」模块的入院诊断 (category=admission) 拼为文本; 无则提示 */
-async function fetchAdmissionDiagText() {
+/** 一键同步诊断: 按 dyn key 取左侧「诊断」模块对应分类拼为文本 (diag_discharge→出院诊断, 其余→入院诊断) */
+async function fetchAdmissionDiagText(dynKey) {
+    const cat = dynKey === 'diag_discharge' ? 'discharge' : 'admission';
     const r = await AjaxLoader.api('emr/diagnosis-list?patient_id=' + _emrPatient.id, { silent: true });
-    const rows = (r.data || []).filter(x => x.category === 'admission');
-    if (!rows.length) { Dom.toast('诊断中暂无入院诊断，请先在左侧「诊断」中添加', 'error'); return null; }
+    const rows = (r.data || []).filter(x => x.category === cat);
+    if (!rows.length) {
+        if (cat === 'admission' && _emrPatient && _emrPatient.admission_diagnosis) return String(_emrPatient.admission_diagnosis);
+        Dom.toast('诊断中暂无' + (cat === 'discharge' ? '出院诊断' : '入院诊断') + '，请先在左侧「诊断」中添加', 'error');
+        return null;
+    }
     return rows.map((x, i) => rows.length > 1 ? (i + 1) + '.' + x.name : x.name).join('；');
 }
 
@@ -1327,6 +1362,20 @@ function bindToolbar() {
         const open = head.classList.toggle('open');
         document.getElementById('dsn-select').style.display = open ? '' : 'none';
     });
+    bind('dsn-sec-diag', function () {
+        const head = document.getElementById('dsn-sec-diag');
+        const open = head.classList.toggle('open');
+        document.getElementById('dsn-diag').style.display = open ? '' : 'none';
+    });
+    (function () {
+        const box = document.getElementById('dsn-diag');
+        box.querySelectorAll('.emr-dsn-field').forEach(function (el) {
+            el.addEventListener('click', function () {
+                if (!_emrEditor) return;
+                _emrEditor.insertItem({ t: 'dyn', key: el.dataset.diag === 'discharge' ? 'diag_discharge' : 'diag_admission', text: '' });
+            });
+        });
+    })();
     (function () {
         const box = document.getElementById('dsn-select');
         box.querySelectorAll('.emr-dsn-field').forEach(function (el) {
