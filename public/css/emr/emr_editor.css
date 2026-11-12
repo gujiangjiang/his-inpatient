@@ -83,6 +83,8 @@
 }
 .emr-slot[data-key] { font-style: normal; }
 .emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
+/* 必选未完成: 红色下划线+红字提示 (已填写则占位隐藏, 值下划线为常规样式) */
+.emr-body .emr-slot.emr-req { border-bottom-color: #e5484d; color: #e5484d; }
 /* 点击激活: 占位槽收拢为窄条并保留下划线 (光标紧贴标签, 仍提示此处可编辑) */
 .emr-slot-active {
   color: transparent !important;

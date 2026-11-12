@@ -338,6 +338,13 @@
     }
     return false;
   };
+  /** 遍历全部槽位: fn(段落, 槽位项) (含表格单元格内) */
+  O.walkSlots = (body, fn) => {
+    M.walk(body, (b) => {
+      if (b.t === 'p') for (const it of (b.runs || [])) if (it.t === 'slot') fn(b, it);
+    });
+  };
+
   /** 在全文中查找包含某项 (t+key) 的段落 */
   O.findParaWithItem = (body, t, key) => {
     let hit = null;
