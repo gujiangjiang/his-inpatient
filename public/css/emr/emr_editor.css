@@ -130,6 +130,14 @@
 .emr-dyn { user-select: none; -webkit-user-select: none; }
 .emr-dyn:empty { min-width: 3em; display: inline-block; }
 
+/* 表格: 框线样式 (默认细线/加粗/无框线) 与单元格编辑 */
+.emr-body .emr-tbl { border-collapse: collapse; margin: 6px 0; table-layout: fixed; width: auto; }
+.emr-body .emr-tbl td { border: 1px solid #7a7f88; padding: 4px 6px; vertical-align: top; }
+.emr-body .emr-tbl-bold td { border-width: 2px; border-color: #000; }
+.emr-body .emr-tbl-none td { border: none; }
+.emr-body .emr-tbl .p { margin: 0; }
+.emr-body .emr-tbl .pc { min-height: 1.2em; }
+
 /* 模板设计模式: 引用/动态项/页眉信息以灰色占位符呈现 (不引用患者数据) */
 .emr-ref-des { color: #9aa1ad; border-bottom: 1px dotted #c3c8d1; cursor: default; }
 .emr-dyn-des { color: #9aa1ad; }

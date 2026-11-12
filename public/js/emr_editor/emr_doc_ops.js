@@ -301,6 +301,70 @@
     p.runs.splice(i, 0, M.item('ref', { key: String(key), fb: String(fb || '＿＿') }));
     return { p, o: o + 1, cont: pos.cont };
   };
+  /* ---------- 表格 (设计模式) ---------- */
+  /** 按块 id 在全文(含单元格)中查找块 */
+  O.findBlockById = (body, id) => {
+    let hit = null;
+    const walk = (bl) => {
+      for (const b of bl) {
+        if (hit) return;
+        if (b.id === id) { hit = b; return; }
+        if (b.t === 'tbl') for (const r of b.rows) for (const c of r.cells) walk(c.blocks || []);
+      }
+    };
+    walk(body);
+    return hit;
+  };
+
+  /** 在 pos 段落后插入 n×n 表格 (列宽均分正文宽; 表格后补空段便于继续书写) */
+  O.insertTableAt = (pos, nRows, nCols, contentW) => {
+    const p = pos.p;
+    const info = infoOf(pos.cont, p);
+    if (!info) return pos;
+    const total = contentW || 523; /* A4 内容宽 (pt) ≈ 595 - 36×2 */
+    const w = +(total / nCols).toFixed(1);
+    const rows = [];
+    for (let ri = 0; ri < nRows; ri++) {
+      const cells = [];
+      for (let ci = 0; ci < nCols; ci++) cells.push(M.cell([M.para()], { w }));
+      rows.push(M.row(cells));
+    }
+    const tbl = M.table(rows, rows[0].cells.map(() => w));
+    info.cont.splice(info.i + 1, 0, tbl);
+    const np = M.para();
+    info.cont.splice(info.i + 2, 0, np);
+    return { p: np, o: 0, cont: info.cont };
+  };
+  /** 按块 id 删除块 (含单元格内; 设计模式表格整体删除) */
+  O.removeBlockById = (body, id) => {
+    const walk = (bl) => {
+      for (let i = 0; i < bl.length; i++) {
+        const b = bl[i];
+        if (b.id === id) { bl.splice(i, 1); return true; }
+        if (b.t === 'tbl') for (const r of b.rows) for (const c of r.cells) if (walk(c.blocks || [])) return true;
+      }
+      return false;
+    };
+    return walk(body);
+  };
+
+  O.tableAddRow = (tbl) => {
+    const last = tbl.rows[tbl.rows.length - 1];
+    tbl.rows.push(M.row(last.cells.map((c) => M.cell([M.para()], Object.assign({}, c.tcPr || {})))));
+  };
+  O.tableDelRow = (tbl) => { if (tbl.rows.length > 1) tbl.rows.pop(); };
+  O.tableAddCol = (tbl) => {
+    const w = (tbl.grid && tbl.grid.length) ? tbl.grid[tbl.grid.length - 1] : 60;
+    tbl.grid = (tbl.grid || []).concat([w]);
+    tbl.rows.forEach((r) => r.cells.push(M.cell([M.para()], { w })));
+  };
+  O.tableDelCol = (tbl) => {
+    if ((tbl.grid || []).length > 1) {
+      tbl.grid.pop();
+      tbl.rows.forEach((r) => r.cells.pop());
+    }
+  };
+
   /** 设计模式: 删除单个原子项 (仅右击菜单调用) */
   O.removeItemAt = (p, item) => {
     const i = p.runs.indexOf(item);

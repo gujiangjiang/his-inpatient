@@ -21,6 +21,13 @@
                 </div>
             </div>
             <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-table"><span class="emr-dsn-caret"></span>插入表格</div>
+                <div class="emr-dsn-sub" id="dsn-table" style="display:none">
+                    <div class="emr-tblpick" id="emr-tblpick"></div>
+                    <div class="emr-tblpick-label" id="emr-tblpick-label">移入选择行列（拖动框线可调列宽/行高）</div>
+                </div>
+            </div>
+            <div class="emr-dsn-sec">
                 <div class="emr-dsn-head" id="dsn-sec-select"><span class="emr-dsn-caret"></span>插入下拉字段</div>
                 <div class="emr-dsn-sub" id="dsn-select" style="display:none">
                     <div class="emr-dsn-field" data-sel="single">单选框（下拉选择）</div>
@@ -548,6 +555,7 @@ async function emr_enterTemplateDesign(tid, opts) {
         patientInfo: {}, /* 设计模板与患者无关: 页眉/引用以占位符呈现 (render 层 design 标志) */
         design: true,
         onItemContext: emr_dsnItemContext, /* 右击元素: 属性/删除 菜单 */
+        onTableContext: emr_dsnTableContext, /* 右击表格: 表格属性/删除 */
         onChange: null,
         onStatus: updateEditorStatus
     });
@@ -691,6 +699,107 @@ function emr_dsnToggleFixed() {
             }
         });
     });
+}
+
+/** 表格快速选择器: 6×6 移入高亮 n×m, 点击插入 */
+function emr_dsnBuildTablePicker() {
+    const box = document.getElementById('emr-tblpick');
+    if (box.dataset.built) return;
+    box.dataset.built = '1';
+    let cells = '';
+    for (let r = 1; r <= 6; r++) for (let c = 1; c <= 6; c++) {
+        cells += '<span data-r="' + r + '" data-c="' + c + '"></span>';
+    }
+    box.innerHTML = cells;
+    const label = document.getElementById('emr-tblpick-label');
+    const all = Array.from(box.querySelectorAll('span'));
+    const clear = function () { all.forEach(function (x) { x.classList.remove('on'); }); };
+    all.forEach(function (x) {
+        x.addEventListener('mouseover', function () {
+            const R = +x.dataset.r, C = +x.dataset.c;
+            all.forEach(function (y) { y.classList.toggle('on', +y.dataset.r <= R && +y.dataset.c <= C); });
+            label.textContent = R + ' 行 × ' + C + ' 列';
+        });
+        x.addEventListener('click', function () {
+            if (!_emrEditor) return;
+            _emrEditor.insertTable(+x.dataset.r, +x.dataset.c);
+            label.textContent = '已插入 ' + x.dataset.r + ' 行 × ' + x.dataset.c + ' 列（拖动框线可调列宽/行高）';
+        });
+    });
+    box.addEventListener('mouseleave', function () { clear(); if (label.textContent.indexOf('已插入') < 0) label.textContent = '移入选择行列（拖动框线可调列宽/行高）'; });
+}
+
+/** 设计模式右击表格: 浮动菜单 (表格属性 / 删除表格) */
+function emr_dsnTableContext(tblId, x, y) {
+    document.querySelectorAll('.emr-ctx-float').forEach(function (m) { m.remove(); });
+    const menu = document.createElement('div');
+    menu.className = 'emr-context-menu emr-ctx-float';
+    menu.style.cssText = 'position:fixed;z-index:5200;left:' + x + 'px;top:' + y + 'px;min-width:130px;';
+    menu.innerHTML = '<div class="ctx-item" data-a="props">表格属性…</div><div class="ctx-item danger" data-a="del">删除表格</div>';
+    document.body.appendChild(menu);
+    const r = menu.getBoundingClientRect();
+    if (r.right > window.innerWidth - 8) menu.style.left = (x - r.width) + 'px';
+    if (r.bottom > window.innerHeight - 8) menu.style.top = (y - r.height) + 'px';
+    const close = function () { menu.remove(); document.removeEventListener('mousedown', onDoc, true); };
+    const onDoc = function (ev) { if (!menu.contains(ev.target)) close(); };
+    setTimeout(function () { document.addEventListener('mousedown', onDoc, true); }, 0);
+    menu.querySelector('[data-a="props"]').addEventListener('click', function () { close(); emr_dsnTableProps(tblId); });
+    menu.querySelector('[data-a="del"]').addEventListener('click', function () {
+        close();
+        Dom.modal('删除表格', '<p>确认从模板中删除整个表格？</p>', [
+            { text: '删除', type: 'danger', onclick: function () {
+                if (!_emrEditor) return;
+                EmrOps.removeBlockById(_emrEditor.getDoc().body, tblId);
+                _emrEditor.refresh();
+            } },
+            { text: '取消', type: 'default' }
+        ]);
+    });
+}
+
+/** 表格属性: 框线样式(默认/加粗/无) + 行数列数增减 + 删除表格 */
+function emr_dsnTableProps(tblId) {
+    const tbl = EmrOps.findBlockById(_emrEditor.getDoc().body, tblId);
+    if (!tbl || tbl.t !== 'tbl') { Dom.toast('表格不存在', 'error'); return; }
+    const curBd = (tbl.tblPr && tbl.tblPr.bd === 0) ? 'none' : (tbl.tblPr && tbl.tblPr.bd === 2) ? 'bold' : 'default';
+    const bdOpts = [['default', '默认细线'], ['bold', '加粗框线'], ['none', '无框线']].map(function (m) {
+        return '<label class="emr-prop-radio"><input type="radio" name="tbl-bd" value="' + m[0] + '"' + (curBd === m[0] ? ' checked' : '') + '> ' + m[1] + '</label>';
+    }).join('');
+    const sub = Dom.modal('表格属性',
+        '<div class="form-group"><label class="form-label">框线样式</label><div class="emr-prop-radios">' + bdOpts + '</div></div>'
+        + '<div class="form-group emr-tblp-rows"><label class="form-label">行数：<b id="tblp-rows">' + tbl.rows.length + '</b></label>'
+        + '<button type="button" class="btn btn-small" id="tblp-addrow">添加行</button>'
+        + '<button type="button" class="btn btn-small" id="tblp-delrow">删除行</button></div>'
+        + '<div class="form-group emr-tblp-rows"><label class="form-label">列数：<b id="tblp-cols">' + (tbl.grid || []).length + '</b></label>'
+        + '<button type="button" class="btn btn-small" id="tblp-addcol">添加列</button>'
+        + '<button type="button" class="btn btn-small" id="tblp-delcol">删除列</button></div>',
+        [
+            { text: '确定', type: 'primary', onclick: function () {
+                const sel = sub.querySelector('input[name="tbl-bd"]:checked');
+                const v = sel ? sel.value : 'default';
+                tbl.tblPr = tbl.tblPr || {};
+                if (v === 'none') tbl.tblPr.bd = 0;
+                else if (v === 'bold') tbl.tblPr.bd = 2;
+                else delete tbl.tblPr.bd;
+                if (!Object.keys(tbl.tblPr).length) delete tbl.tblPr;
+                _emrEditor.refresh();
+                Dom.toast('表格属性已更新', 'success');
+            } },
+            { text: '删除表格', type: 'danger', onclick: function () {
+                EmrOps.removeBlockById(_emrEditor.getDoc().body, tblId);
+                _emrEditor.refresh();
+            } },
+            { text: '取消', type: 'default' }
+        ]);
+    const upd = function () {
+        sub.querySelector('#tblp-rows').textContent = tbl.rows.length;
+        sub.querySelector('#tblp-cols').textContent = (tbl.grid || []).length;
+        _emrEditor.refresh();
+    };
+    sub.querySelector('#tblp-addrow').addEventListener('click', function () { EmrOps.tableAddRow(tbl); upd(); });
+    sub.querySelector('#tblp-delrow').addEventListener('click', function () { EmrOps.tableDelRow(tbl); upd(); });
+    sub.querySelector('#tblp-addcol').addEventListener('click', function () { EmrOps.tableAddCol(tbl); upd(); });
+    sub.querySelector('#tblp-delcol').addEventListener('click', function () { EmrOps.tableDelCol(tbl); upd(); });
 }
 
 /** 设计模式右击元素: 浮动菜单 (属性 / 删除固定元素) */
@@ -1443,6 +1552,12 @@ function bindToolbar() {
         const head = document.getElementById('dsn-sec-diag');
         const open = head.classList.toggle('open');
         document.getElementById('dsn-diag').style.display = open ? '' : 'none';
+    });
+    bind('dsn-sec-table', function () {
+        const head = document.getElementById('dsn-sec-table');
+        const open = head.classList.toggle('open');
+        document.getElementById('dsn-table').style.display = open ? '' : 'none';
+        if (open) emr_dsnBuildTablePicker();
     });
     (function () {
         const box = document.getElementById('dsn-diag');

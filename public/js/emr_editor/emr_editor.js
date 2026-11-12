@@ -383,9 +383,99 @@
     /* 光标统一定位: 鼠标在正文按下时, 一律由我们按点击坐标放置光标与焦点
        (caretRangeFromPoint 与浏览器命中测试同源) —— 不再依赖各浏览器的原生行为,
        彻底规避「个别浏览器在 contenteditable=false 邻位不放置光标」导致的点击无效 */
+    /* ---------- 设计模式: 表格框线拖拽 (列宽/行高) ---------- */
+    const PX2PT = 72 / 96;
+    const ptPx = (v) => (Math.round(v * 96 / 72 * 100) / 100) + 'px';
+    let rs = null;
+    const startTableResize = (e, td, colMode) => {
+      e.preventDefault();
+      const tblEl = td.closest('table[data-tblid]');
+      if (!tblEl) return;
+      const model = O.findBlockById(inst.doc.body, +tblEl.dataset.tblid);
+      if (!model || model.t !== 'tbl') return;
+      const trEl = td.parentElement;
+      const ri = Array.prototype.indexOf.call(trEl.parentElement.children, trEl);
+      const ci = td.cellIndex;
+      const hasNext = ci < (model.rows[0] ? model.rows[0].cells.length - 1 : 0);
+      const cellW = (r, i) => (r.cells[i] && r.cells[i].tcPr && r.cells[i].tcPr.w) || (model.grid && model.grid[i]) || 60;
+      const state = {
+        model, tblEl, trEl, ri, ci, hasNext,
+        mode: colMode ? 'col' : 'row',
+        startX: e.clientX, startY: e.clientY,
+        w: cellW(model.rows[ri], ci),
+        wNext: hasNext ? cellW(model.rows[ri], ci + 1) : 0,
+        h: (model.rows[ri].trPr && model.rows[ri].trPr.h) || Math.round(trEl.getBoundingClientRect().height * PX2PT),
+        curW: null, curWNext: null, curH: null,
+        $col: [], $colNext: [],
+      };
+      Array.prototype.forEach.call(tblEl.rows, (tr) => {
+        state.$col.push(tr.cells[ci]);
+        if (hasNext && tr.cells[ci + 1]) state.$colNext.push(tr.cells[ci + 1]);
+      });
+      rs = state;
+      inst.bodyEl.style.cursor = colMode ? 'col-resize' : 'row-resize';
+      const onMove = (ev) => {
+        if (!rs) return;
+        ev.preventDefault();
+        if (rs.mode === 'col') {
+          const dpt = (ev.clientX - rs.startX) * PX2PT;
+          const nw = Math.max(20, rs.w + dpt);
+          const nwn = rs.hasNext ? Math.max(20, rs.wNext - dpt) : null;
+          rs.curW = nw; rs.curWNext = nwn;
+          rs.$col.forEach((td2) => { td2.style.width = ptPx(nw); });
+          if (nwn != null) rs.$colNext.forEach((td2) => { td2.style.width = ptPx(nwn); });
+          const m = rs.model;
+          let sum = 0;
+          (m.grid || []).forEach((g, i) => { sum += i === rs.ci ? nw : (i === rs.ci + 1 && nwn != null ? nwn : g); });
+          if (!(m.grid || []).length) sum = nw + (nwn || 0);
+          rs.tblEl.style.width = ptPx(sum);
+        } else {
+          const dpt = (ev.clientY - rs.startY) * PX2PT;
+          const nh = Math.max(20, rs.h + dpt);
+          rs.curH = nh;
+          rs.trEl.style.height = ptPx(nh);
+        }
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove', onMove, true);
+        document.removeEventListener('mouseup', onUp, true);
+        inst.bodyEl.style.cursor = '';
+        if (!rs) return;
+        const m = rs.model;
+        if (rs.mode === 'col' && rs.curW != null) {
+          m.rows.forEach((row) => {
+            const c1 = row.cells[rs.ci];
+            if (c1) { c1.tcPr = c1.tcPr || {}; c1.tcPr.w = +rs.curW.toFixed(1); }
+            if (rs.curWNext != null) {
+              const c2 = row.cells[rs.ci + 1];
+              if (c2) { c2.tcPr = c2.tcPr || {}; c2.tcPr.w = +rs.curWNext.toFixed(1); }
+            }
+          });
+          m.grid = (m.rows[0] ? m.rows[0].cells.map((c) => (c.tcPr && c.tcPr.w) || 60) : []);
+        } else if (rs.mode === 'row' && rs.curH != null) {
+          const row = m.rows[rs.ri];
+          if (row) { row.trPr = row.trPr || {}; row.trPr.h = +rs.curH.toFixed(1); }
+        }
+        inst.dirty = true;
+        if (inst.onChange) inst.onChange(inst);
+        rs = null;
+      };
+      document.addEventListener('mousemove', onMove, true);
+      document.addEventListener('mouseup', onUp, true);
+    };
+
     const onMouseDown = (e) => {
       if (inst.readonly || e.button !== 0) return;
       const t = e.target;
+      /* 设计模式: 表格框线附近按下 → 列宽/行高拖拽 */
+      if (inst.design && t.closest && !t.closest('[data-item]')) {
+        const td = t.closest('td');
+        if (td && td.closest('table[data-tblid]')) {
+          const r = td.getBoundingClientRect();
+          if ((r.right - e.clientX) <= 5) { startTableResize(e, td, true); return; }
+          if ((r.bottom - e.clientY) <= 5) { startTableResize(e, td, false); return; }
+        }
+      }
       if (t.closest && (t.closest('.emr-slot') || t.closest('.emr-dyn'))) return; /* 槽位/动态项走 click 逻辑 */
       const x = e.clientX, y = e.clientY;
       setTimeout(() => {
@@ -537,20 +627,40 @@
     on(inst.bodyEl, 'click', onClick);
     on(inst.bodyEl, 'mousedown', onMouseDown);
     on(inst.bodyEl, 'blur', () => { deactivateSlot(); inst.composing = false; });
-    /* 右键: 正文内禁用原生菜单; 设计模式下定位元素并回调宿主 (元素属性/删除) */
+    /* 右键: 正文内禁用原生菜单; 设计模式下定位元素/表格并回调宿主 (属性/删除) */
     on(inst.container, 'contextmenu', (e) => {
       e.preventDefault();
-      if (!inst.design || !opts.onItemContext) return;
+      if (!inst.design) return;
       const el = e.target.closest && e.target.closest('[data-item]');
-      if (!el) return;
-      const pEl = el.closest('.p');
-      const info = pEl ? inst.index.get(+pEl.dataset.pid) : null;
-      if (!info) return;
-      const o = +el.dataset.o;
-      const loc = M.locate(info.p, o);
-      const item = info.p.runs[loc.i];
-      if (!item) return;
-      try { opts.onItemContext(item, info.p, o, e.clientX, e.clientY); } catch (err) { console.error('元素菜单失败', err); }
+      if (el && opts.onItemContext) {
+        const pEl = el.closest('.p');
+        const info = pEl ? inst.index.get(+pEl.dataset.pid) : null;
+        if (!info) return;
+        const o = +el.dataset.o;
+        const loc = M.locate(info.p, o);
+        const item = info.p.runs[loc.i];
+        if (!item) return;
+        try { opts.onItemContext(item, info.p, o, e.clientX, e.clientY); } catch (err) { console.error('元素菜单失败', err); }
+        return;
+      }
+      const tblEl = e.target.closest && e.target.closest('table[data-tblid]');
+      if (tblEl && opts.onTableContext) {
+        try { opts.onTableContext(+tblEl.dataset.tblid, e.clientX, e.clientY); } catch (err) { console.error('表格菜单失败', err); }
+      }
+    });
+    /* 设计模式: 悬停表格框线时提示可拖拽 (列/行) */
+    on(inst.bodyEl, 'mousemove', (e) => {
+      if (!inst.design || rs) return;
+      const t = e.target;
+      if (!t.closest || t.closest('[data-item]')) return;
+      const td = t.closest('td');
+      let cur = '';
+      if (td && td.closest('table[data-tblid]')) {
+        const r = td.getBoundingClientRect();
+        if ((r.right - e.clientX) <= 5) cur = 'col-resize';
+        else if ((r.bottom - e.clientY) <= 5) cur = 'row-resize';
+      }
+      if (inst.bodyEl.style.cursor !== cur) inst.bodyEl.style.cursor = cur;
     });
 
     /* ---------- 设计模式插入 (模板制作) ---------- */
@@ -569,6 +679,12 @@
     };
     inst.insertItem = (item) => {
       apply('设计', () => O.insertRunAt(posNow(), item));
+    };
+    /** 设计模式: 在当前段后插入 n×n 表格 (按页面边距计算正文可用宽) */
+    inst.insertTable = (nRows, nCols) => {
+      const page = inst.doc.page || {};
+      const contentW = 595 - (page.ml != null ? page.ml : 36) - (page.mr != null ? page.mr : 36);
+      apply('设计', () => O.insertTableAt(posNow(), nRows, nCols, contentW));
     };
     /** 在当前段之后插入右对齐签名行 (医师签名：+ 签名动态项; 签名时服务端自动填入) */
     inst.insertSignLine = () => {

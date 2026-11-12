@@ -133,15 +133,17 @@
       if (b.t === 'p') out.push(R.paraToHTML(b, design));
       else if (b.t === 'tbl') {
         const grid = b.grid || [];
-        const cells = b.rows.map((r) =>
-          '<tr>' + r.cells.map((c) => {
+        const cells = b.rows.map((r) => {
+          const trh = r.trPr && r.trPr.h ? ' style="height:' + pt(r.trPr.h) + '"' : '';
+          return '<tr' + trh + '>' + r.cells.map((c) => {
             const st = [];
             if (c.tcPr) {
               if (c.tcPr.w) st.push('width:' + pt(c.tcPr.w));
               if (c.tcPr.shd) st.push('background:' + c.tcPr.shd);
             }
             return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks, design) + '</td>';
-          }).join('') + '</tr>').join('');
+          }).join('') + '</tr>';
+        }).join('');
         const cls = 'emr-tbl' + (b.tblPr && b.tblPr.plain ? ' emr-tbl-plain' : '') + (b.tblPr && b.tblPr.bd === 0 ? ' emr-tbl-none' : b.tblPr && b.tblPr.bd === 2 ? ' emr-tbl-bold' : '');
         const st = [];
         st.push('width:' + (grid.length ? pt(grid.reduce((a, x) => a + x, 0)) : '100%'));
