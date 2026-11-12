@@ -174,20 +174,22 @@
   };
 
   /* ---------- 格式 ---------- */
-  /** 对 [a,b) 文本 run 应用 rPr 片段 (toggle: 有则移除, 无则设置) */
+  /** 对 [a,b) 文本 run 应用 rPr 片段 (toggle: 有则移除, 无则设置)
+   *  注意: 模板 JSON 的文本 run 可能缺 rPr 字段 (仅在有格式时序列化), 必须先补齐 */
+  const applyPatch = (it, patch) => {
+    if (it.t !== 'text') return;
+    it.rPr = it.rPr || {};
+    for (const key in patch) {
+      if (it.rPr[key] === patch[key]) delete it.rPr[key];
+      else it.rPr[key] = patch[key];
+    }
+    if (!Object.keys(it.rPr).length) delete it.rPr;
+  };
   O.toggleRange = (a, b, patch) => {
     if (a.p === b.p) {
       const lo = Math.min(a.o, b.o), hi = Math.max(a.o, b.o);
       const i0 = M.splitAt(a.p, lo), i1 = M.splitAt(a.p, hi);
-      for (let k = i0; k < i1; k++) {
-        const it = a.p.runs[k];
-        if (it.t !== 'text') continue;
-        for (const key in patch) {
-          if (it.rPr[key] === patch[key]) delete it.rPr[key];
-          else it.rPr[key] = patch[key];
-        }
-        if (!Object.keys(it.rPr).length) delete it.rPr;
-      }
+      for (let k = i0; k < i1; k++) applyPatch(a.p.runs[k], patch);
       M.normalize(a.p);
       return;
     }
@@ -199,15 +201,7 @@
       const s = x.p === a.p ? a.o : 0;
       const e = x.p === b.p ? b.o : M.plen(x.p);
       const i0 = M.splitAt(x.p, s), i1 = M.splitAt(x.p, e);
-      for (let k = i0; k < i1; k++) {
-        const it = x.p.runs[k];
-        if (it.t !== 'text') continue;
-        for (const key in patch) {
-          if (it.rPr[key] === patch[key]) delete it.rPr[key];
-          else it.rPr[key] = patch[key];
-        }
-        if (!Object.keys(it.rPr).length) delete it.rPr;
-      }
+      for (let k = i0; k < i1; k++) applyPatch(x.p.runs[k], patch);
       M.normalize(x.p);
       if (x.p === b.p) break;
     }
