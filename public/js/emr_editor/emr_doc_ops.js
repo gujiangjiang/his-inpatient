@@ -101,6 +101,14 @@
     const paras = O.ctx(a.cont);
     const ia = paras.findIndex((x) => x.p === a.p);
     const ib = paras.findIndex((x) => x.p === b.p);
+    if (ia < 0 || ib < 0) {
+      /* 跨容器选区 (如表格单元格 ↔ 正文): 不做段落合并, 仅擦除两端选区内容 */
+      eraseInPara(a.p, a.o, M.plen(a.p));
+      eraseInPara(b.p, 0, b.o);
+      M.normalize(a.p);
+      M.normalize(b.p);
+      return { p: a.p, o: Math.min(a.o, M.plen(a.p)), cont: a.cont };
+    }
     for (let k = ia + 1; k < ib; k++) {
       if (hasProtected(paras[k].p) || paras[k].p.runs.length) {
         const e = new Error('该区域包含固定元素, 不可整段删除');

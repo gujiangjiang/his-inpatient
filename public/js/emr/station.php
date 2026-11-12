@@ -1546,6 +1546,7 @@ var _emrRefCache = {};     // 文书 id → 纯文本缓存
 function emr_refToggle() {
     const panel = document.getElementById('emr-ref-panel');
     if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+    if (_emrDesign) { Dom.toast('模板设计中不可使用引用写回', 'info'); return; }
     if (!_emrEditor || _emrEditor.readonly) { Dom.toast('请先打开可编辑的文书', 'info'); return; }
     _emrRefCaret = _emrEditor.getCaretPoint() || _emrEditor.getDocEndPoint(); /* 无光标时追加到文末 */
     panel.style.display = 'flex';
