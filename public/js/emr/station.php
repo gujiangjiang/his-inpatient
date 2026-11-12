@@ -39,6 +39,7 @@
         </div>
         <div class="emr-tree-foot" id="emr-tree-foot">
             <button type="button" class="btn btn-small" id="btn-template-mgr">模板</button>
+            <button type="button" class="btn btn-small" id="btn-content-mgr">内容</button>
         </div>
     </div>
     <!-- 二级主视图: 字处理病历编辑区 (类 Word 整页画布) -->
@@ -1284,6 +1285,126 @@ async function emr_openTemplateManager(preCatId) {
     });
 }
 
+/** 内容库管理 (纯文本条目): 左右两栏 (左分类/右条目), 新建与编辑在模态框内完成 */
+async function emr_openContentManager(preCatId) {
+    const [r, cr] = await Promise.all([
+        AjaxLoader.api('emr/content-list', { silent: true }),
+        AjaxLoader.api('emr/category-list', { silent: true })
+    ]);
+    let items = r.data || [];
+    const cats = cr.data || [];
+    let activeCat = (typeof preCatId === 'string' || typeof preCatId === 'number') ? String(preCatId) : 'all';
+
+    const catKeyOf = (t) => t.category_id == null ? 'none' : String(t.category_id);
+    const listOf = (key) => key === 'all' ? items : items.filter(function (t) { return catKeyOf(t) === key; });
+
+    const content = '<div class="emr-tpm">'
+        + '<div class="emr-tpm-body">'
+        + '<div class="emr-tpm-cats" id="emr-cm-cats"></div>'
+        + '<div class="emr-tpm-main" id="emr-cm-main"></div>'
+        + '</div>'
+        + '<div class="emr-tpl-foot"><button type="button" class="btn btn-small btn-primary" id="emr-cm-new">新建内容</button><span class="emr-tb-spacer"></span><button type="button" class="btn" id="emr-cm-close">关闭</button></div>'
+        + '</div>';
+    const overlay = Dom.modal('病历内容库', content, []);
+    overlay.querySelector('.modal').classList.add('modal-lg');
+    const catsEl = overlay.querySelector('#emr-cm-cats');
+    const mainEl = overlay.querySelector('#emr-cm-main');
+
+    async function reload() {
+        const rr = await AjaxLoader.api('emr/content-list', { silent: true });
+        items = rr.data || [];
+    }
+
+    function renderCats() {
+        const list = [{ key: 'all', name: '全部' }].concat(cats.map(function (c) { return { key: String(c.id), name: c.name }; }));
+        if (items.some(function (t) { return catKeyOf(t) === 'none'; })) list.push({ key: 'none', name: '未分类' });
+        if (!list.some(function (x) { return x.key === activeCat; })) activeCat = 'all';
+        catsEl.innerHTML = list.map(function (x) {
+            return '<div class="emr-tpm-cat' + (x.key === activeCat ? ' active' : '') + '" data-cat="' + x.key + '">'
+                + '<span class="emr-tpm-cat-name">' + Format.escape(x.name) + '</span>'
+                + '<span class="emr-tpm-cat-count">' + listOf(x.key).length + '</span></div>';
+        }).join('');
+        catsEl.querySelectorAll('.emr-tpm-cat').forEach(function (el) {
+            el.addEventListener('click', function () { activeCat = el.dataset.cat; renderCats(); renderMain(); });
+        });
+    }
+
+    function renderMain() {
+        const list = listOf(activeCat);
+        const catName = activeCat === 'all' ? '全部' : activeCat === 'none' ? '未分类'
+            : ((cats.find(function (c) { return String(c.id) === activeCat; }) || {}).name || '内容');
+        const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + Format.escape(catName) + '</span><span class="emr-tpm-mcount">' + list.length + ' 条内容</span></div>';
+        let body;
+        if (!list.length) {
+            body = '<div class="emr-tpl-empty">该分类暂无内容：点击下方"新建内容"创建（纯文本片段，写病历时可整段或选段写入）</div>';
+        } else {
+            body = list.map(function (t) {
+                const tag = t.category_name ? '<span class="emr-tpm-rdept">' + Format.escape(t.category_name) + '</span>' : '';
+                return '<div class="emr-tpm-row" data-id="' + t.id + '">'
+                    + '<span class="emr-tpm-rname" title="' + Format.escape(t.name) + '">' + Format.escape(t.name) + '</span>'
+                    + tag + '<span class="emr-tpm-ract"><span class="mini" data-a="edit">编辑</span><span class="mini danger" data-a="del">删除</span></span></div>';
+            }).join('');
+        }
+        mainEl.innerHTML = head + body;
+        mainEl.querySelectorAll('.emr-tpm-row').forEach(function (row) {
+            row.querySelectorAll('.mini').forEach(function (a) {
+                a.addEventListener('click', function () {
+                    const t = items.find(function (x) { return String(x.id) === String(row.dataset.id); });
+                    if (!t) return;
+                    if (a.dataset.a === 'edit') { emr_contentEditDialog(t, cats, reload, function () { renderCats(); renderMain(); }); return; }
+                    Dom.modal('删除内容', '<p>确认删除内容「' + Format.escape(t.name) + '」？</p>', [
+                        { text: '删除', type: 'danger', onclick: async function () {
+                            await AjaxLoader.api('emr/content-delete?id=' + t.id, { method: 'POST' });
+                            Dom.toast('已删除', 'success');
+                            await reload();
+                            renderCats();
+                            renderMain();
+                        } },
+                        { text: '取消', type: 'default' }
+                    ]);
+                });
+            });
+        });
+    }
+
+    overlay.querySelector('#emr-cm-close').addEventListener('click', function () { overlay.remove(); });
+    overlay.querySelector('#emr-cm-new').addEventListener('click', function () {
+        const defCat = cats.some(function (c) { return String(c.id) === activeCat; }) ? activeCat : (cats.length ? String(cats[0].id) : '');
+        emr_contentEditDialog({ id: null, name: '', category_id: defCat, content: '' }, cats, reload, function () { renderCats(); renderMain(); });
+    });
+    renderCats();
+    renderMain();
+}
+
+/** 内容条目编辑对话框 (标题/分类/正文); done 回调刷新列表 */
+function emr_contentEditDialog(item, cats, reload, done) {
+    const catOpts = cats.map(function (c) {
+        return '<option value="' + c.id + '"' + (String(c.id) === String(item.category_id) ? ' selected' : '') + '>' + Format.escape(c.name) + '</option>';
+    }).join('');
+    Dom.modal(item.id ? '编辑内容' : '新建内容',
+        '<div class="form-group"><label class="form-label">内容标题</label><input id="cm-name" class="form-control" placeholder="如：锁骨骨折查体" value="' + Format.escape(item.name || '') + '"></div>'
+        + '<div class="form-group"><label class="form-label">所属分类</label><select id="cm-cat" class="form-control">' + catOpts + '</select></div>'
+        + '<div class="form-group"><label class="form-label">内容正文（纯文本）</label>'
+        + '<textarea id="cm-content" class="form-control" rows="8" placeholder="输入可供引用的文字内容…">' + Format.escape(item.content || '') + '</textarea></div>',
+        [
+            { text: '保存', type: 'primary', onclick: async function () {
+                const name = (document.getElementById('cm-name').value || '').trim();
+                if (!name) { Dom.toast('请输入内容标题', 'error'); return; }
+                const data = {
+                    name: name,
+                    category_id: document.getElementById('cm-cat').value,
+                    content: document.getElementById('cm-content').value || ''
+                };
+                if (item.id) data.id = item.id;
+                await AjaxLoader.api('emr/content-save', { method: 'POST', data: data });
+                Dom.toast('已保存', 'success');
+                await reload();
+                if (done) done();
+            } },
+            { text: '取消', type: 'default' }
+        ]);
+}
+
 /** 质控提醒弹窗 */
 function emr_showQc(catId) {
     const items = _emrQc.filter(q => q.cat == catId);
@@ -1541,6 +1662,7 @@ function bindToolbar() {
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
+    bind('btn-content-mgr', () => emr_openContentManager());
     bind('dsn-sec-field', function () { emr_dsnToggleFields(); });
     bind('dsn-sec-fixed', function () { emr_dsnToggleFixed(); });
     bind('dsn-sec-select', function () {

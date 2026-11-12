@@ -59,6 +59,9 @@ function getRoutes() {
         'emr/template-save' => ['emr/template_save.php', ['admin', 'doctor']],
         'emr/template-use' => ['emr/template_use.php', ['admin', 'doctor']],
         'emr/template-delete' => ['emr/template_delete.php', ['admin', 'doctor']],
+        'emr/content-list' => ['emr/content_list.php', ['admin', 'doctor', 'nurse']],
+        'emr/content-save' => ['emr/content_save.php', ['admin', 'doctor']],
+        'emr/content-delete' => ['emr/content_delete.php', ['admin', 'doctor']],
 
         // 药房
         'pharmacy/medication-list' => ['pharmacy/medication_list.php', ['admin', 'pharmacist', 'doctor']],
