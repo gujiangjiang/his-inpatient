@@ -1548,7 +1548,7 @@ function emr_refToggle() {
     if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
     if (_emrDesign) { Dom.toast('模板设计中不可使用引用写回', 'info'); return; }
     if (!_emrEditor || _emrEditor.readonly) { Dom.toast('请先打开可编辑的文书', 'info'); return; }
-    _emrRefCaret = _emrEditor.getCaretPoint() || _emrEditor.getDocEndPoint(); /* 无光标时追加到文末 */
+    _emrRefCaret = _emrEditor.getCaretPoint(); /* 记录光标模型位置 (含跟踪兜底); 写回时精确恢复 */
     panel.style.display = 'flex';
     emr_refSwitch(_emrRefTab);
 }
@@ -1713,7 +1713,11 @@ function emr_refWriteBack() {
     if (!text) text = String(right.innerText || '').trim();
     if (!text) { Dom.toast('右侧暂无内容可写回', 'error'); return; }
     if (!_emrEditor) { Dom.toast('编辑器未就绪', 'error'); return; }
-    _emrEditor.focusCaret(_emrRefCaret);
+    /* 必须定位到文书内有效光标处才能写回 (禁止写入无设计区域/文末兜底) */
+    if (!_emrEditor.focusCaret(_emrRefCaret)) {
+        Dom.toast('请先在文书中点击要插入的位置，再使用引用写回', 'info');
+        return;
+    }
     const lines = text.replace(/\r/g, '').split('\n');
     lines.forEach(function (ln, i) {
         if (i > 0) _emrEditor.enter();

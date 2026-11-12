@@ -13,7 +13,7 @@
       patientInfo: opts.patientInfo || {}, readonly: !!opts.readonly, design: !!opts.design,
       onChange: opts.onChange || null, onStatus: opts.onStatus || null,
       bodyEl: null, index: new Map(), composing: false, composeStart: null,
-      dirty: false, _handlers: [],
+      dirty: false, _handlers: [], _lastPos: null, /* _lastPos: 最近一次可靠的模型光标位置 */
     };
 
     /* ---------- 归一化: 补齐块 id (模板/迁移数据可能缺失, 渲染与光标映射必需) ---------- */
@@ -39,6 +39,7 @@
       if (pos) {
         inst.bodyEl.focus();
         C.restore(inst.bodyEl, pos, end || pos);
+        inst._lastPos = pos;
       }
       inst.updateStatus();
     };
@@ -494,6 +495,8 @@
           const s = window.getSelection();
           s.removeAllRanges();
           s.addRange(range);
+          const m = C.rangeToModel(inst.bodyEl, inst.index);
+          if (m) inst._lastPos = m.a;
         }
       }, 0);
     };
@@ -599,6 +602,7 @@
       }
       inst.bodyEl.focus();
       C.restore(inst.bodyEl, { p: info.p, o: o + 1, cont: info.cont });
+      inst._lastPos = { p: info.p, o: o + 1, cont: info.cont };
       activateSlot(slot);
     };
 
@@ -627,6 +631,17 @@
     on(inst.bodyEl, 'click', onClick);
     on(inst.bodyEl, 'mousedown', onMouseDown);
     on(inst.bodyEl, 'blur', () => { deactivateSlot(); inst.composing = false; });
+    /* 选区变化跟踪: 记住正文内最近一次可靠光标位置 (引用写回等外部插入用) */
+    const onSelChange = () => {
+      const sel = window.getSelection();
+      if (!sel || !sel.rangeCount) return;
+      const r0 = sel.getRangeAt(0);
+      if (!inst.bodyEl.contains(r0.startContainer)) return;
+      const m = C.rangeToModel(inst.bodyEl, inst.index);
+      if (m) inst._lastPos = m.a;
+    };
+    document.addEventListener('selectionchange', onSelChange);
+    inst._handlers.push([document, 'selectionchange', onSelChange]);
     /* 右键: 正文内禁用原生菜单; 设计模式下定位元素/表格并回调宿主 (属性/删除) */
     on(inst.container, 'contextmenu', (e) => {
       e.preventDefault();
@@ -710,22 +725,22 @@
 
     /* ---------- 对外 ---------- */
     inst.refresh = () => { renderBody(); inst.dirty = true; if (inst.onChange) inst.onChange(inst); };
-    /** 光标模型位置 (面板打开前保存; 写回时用 focusCaret 恢复) */
+    /** 光标模型位置: 实时选区优先, 否则返回最近跟踪位置 (外部控件点击导致选区丢失时仍可靠) */
     inst.getCaretPoint = () => {
       const s = C.rangeToModel(inst.bodyEl, inst.index);
-      return s ? s.a : null;
+      if (s) { inst._lastPos = s.a; return s.a; }
+      return inst._lastPos;
     };
+    /** 恢复光标到模型位置; 返回是否成功 (位置失效/段落已被删除时 false, 调用方应放弃插入) */
     inst.focusCaret = (pos) => {
-      if (!pos || !inst.bodyEl.isConnected) return;
+      if (!pos || !inst.bodyEl.isConnected) return false;
+      const r = C.modelToRange(inst.bodyEl, pos, pos);
+      if (!r) return false;
       inst.bodyEl.focus();
-      C.restore(inst.bodyEl, pos);
-    };
-    /** 文末定位点 (无光标时写回兜底: 追加到文书末尾) */
-    inst.getDocEndPoint = () => {
-      const paras = O.ctx(inst.doc.body);
-      if (!paras.length) return null;
-      const last = paras[paras.length - 1].p;
-      return { p: last, o: M.plen(last), cont: null };
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      return true;
     };
     inst.removeItem = (p, item) => {
       const info = O.ctx(inst.doc.body).find((x) => x.p === p);
