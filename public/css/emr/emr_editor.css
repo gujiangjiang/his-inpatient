@@ -138,6 +138,7 @@
 .emr-body .emr-tbl .p { margin: 0; }
 .emr-body .emr-tbl .pc { min-height: 1.2em; }
 /* 信息表(plain): 默认隐藏框线, 行内排布; 需置于 .emr-tbl td 规则之后覆盖 (同优先级后者胜) */
+.emr-body .emr-tbl-plain { margin: 2px 0 6px; }
 .emr-body .emr-tbl-plain td { border: none; padding: 1px 6px 1px 0; vertical-align: top; white-space: nowrap; }
 .emr-body .emr-tbl-plain .emr-fx { font-weight: normal; } /* 信息表标签保持常规字重 */
 
@@ -154,22 +155,10 @@
 .emr-dyn-sync:hover { background: #eef4ff; }
 .emr-dyn-sync:empty::before { content: '点击同步诊断'; color: #8aa8d8; }
 
-/* 制表位 / 表格 */
+/* 制表位 */
 .emr-tab { white-space: pre; }
-.emr-tbl {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 6px 0;
-}
-.emr-tbl td {
-  border: 0.5pt solid #333;
-  padding: 4px 6px;
-  vertical-align: top;
-}
-/* 无边框信息表 (患者信息 12 项等): 固定列宽 + 单行不换行, 以正中为左右分割线 */
-.emr-tbl-plain { margin: 2px 0 6px; table-layout: fixed; }
-.emr-tbl-plain td { border: none; padding: 1px 6px 1px 0; vertical-align: top; white-space: nowrap; }
-.emr-tbl-plain .emr-slot:not(:empty) { display: inline; min-width: 0; } /* 行内化仅作用于占位态; 已填写槽保持 :empty 隐藏 */
+/* 信息表占位态: 行内化 (已填写槽保持 :empty 隐藏) */
+.emr-tbl-plain .emr-slot:not(:empty) { display: inline; min-width: 0; }
 
 /* 隐藏测量容器 (分页引擎) */
 .emr-measure { contain: layout style; }
