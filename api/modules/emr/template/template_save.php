@@ -28,13 +28,15 @@ $userId = Auth::user()['id'];
 $id = isset($data['id']) && $data['id'] ? $data['id'] : null;
 
 if ($id) {
-    $existing = DB::selectOne("SELECT department_id FROM emr_templates WHERE id = ?", [$id]);
+    $existing = DB::selectOne("SELECT department_id, created_by FROM emr_templates WHERE id = ?", [$id]);
+    $cur = Auth::user();
+    if ($cur['role'] !== 'admin' && $existing && (int)$existing['created_by'] !== (int)$cur['id']) Response::error('仅创建人可编辑', 403);
     $departmentId = resolve_department_id($departmentId, $existing ? $existing['department_id'] : null);
     $stmt = $pdo->prepare("UPDATE emr_templates SET name=?, content_delta=?, content_html=?, schema_json=?, category_id=?, department_id=? WHERE id=?");
     $stmt->execute([$name, $contentDelta, $contentHtml, $schemaJson, $categoryId, $departmentId, $id]);
 } else {
     $departmentId = resolve_department_id($departmentId, null);
-    $stmt = $pdo->prepare("INSERT INTO emr_templates (name, record_type, content_delta, content_html, schema_json, category_id, department_id, usage_count, created_by, created_at) VALUES (?,?,?,?,?,?,?,0,?,?)");
+    $stmt = $pdo->prepare("INSERT INTO emr_templates (name, record_type, content_delta, content_html, schema_json, category_id, department_id, usage_count, created_by, created_at, pub_status) VALUES (?,?,?,?,?,?,?,0,?,?,'personal')");
     $stmt->execute([$name, $recordType, $contentDelta, $contentHtml, $schemaJson, $categoryId, $departmentId, $userId, DateHelper::now()]);
     $id = $pdo->lastInsertId();
 }

@@ -1,22 +1,24 @@
 <?php
-// api/modules/emr/template_list.php
-$roles = ['admin', 'doctor'];
-Auth::requireRole($roles);
-/* record_type 仅在显式传入时过滤 (原默认 admission 导致按分类查询时
-   病程/沟通/出院等分类永远查不到模板) */
+// api/modules/emr/template/template_list.php - 模板列表 (发布可见性过滤)
+Auth::requireRole(['admin', 'doctor']);
+if (Validator::get('review') === '1' && Auth::user()['role'] !== 'admin') Response::error('无权限', 403);
 $recordType = Validator::get('record_type');
 $categoryId = Validator::get('category_id');
-$structured = Validator::get('structured'); // 1 只取结构化模板(带schema_json)
+$structured = Validator::get('structured');
+$review = Validator::get('review'); // 1: 审核中心 (仅管理员) 待审列表
 
-$sql = "SELECT t.*, dep.name AS department_name FROM emr_templates t LEFT JOIN departments dep ON dep.id = t.department_id WHERE 1=1";
-$params = [];
+[$pubSql, $pubParams] = emr_pub_visibility_sql('t', $review === '1');
+$sql = "SELECT t.*, dep.name AS department_name, u.name AS creator_name FROM emr_templates t
+        LEFT JOIN departments dep ON dep.id = t.department_id
+        LEFT JOIN users u ON u.id = t.created_by
+        WHERE 1=1" . $pubSql;
+$params = $pubParams;
 if ($recordType) { $sql .= " AND t.record_type = ?"; $params[] = $recordType; }
 if ($categoryId) { $sql .= " AND t.category_id = ?"; $params[] = $categoryId; }
 if ($structured) { $sql .= " AND t.schema_json IS NOT NULL AND t.schema_json != ''"; }
 $sql .= " ORDER BY t.usage_count DESC, t.created_at DESC";
 
 $templates = DB::select($sql, $params);
-// 解析 schema_json 供前端使用
 foreach ($templates as &$t) {
     $t['schema'] = json_decode($t['schema_json'] ?? '{}', true) ?: null;
 }

@@ -59,9 +59,13 @@ function getRoutes() {
         'emr/template-save' => ['emr/template/template_save.php', ['admin', 'doctor']],
         'emr/template-use' => ['emr/template/template_use.php', ['admin', 'doctor']],
         'emr/template-delete' => ['emr/template/template_delete.php', ['admin', 'doctor']],
+        'emr/template-publish' => ['emr/template/template_publish.php', ['admin', 'doctor']],
+        'emr/template-review' => ['emr/template/template_review.php', ['admin']],
         'emr/content-list' => ['emr/content/content_list.php', ['admin', 'doctor', 'nurse']],
         'emr/content-save' => ['emr/content/content_save.php', ['admin', 'doctor']],
         'emr/content-delete' => ['emr/content/content_delete.php', ['admin', 'doctor']],
+        'emr/content-publish' => ['emr/content/content_publish.php', ['admin', 'doctor']],
+        'emr/content-review' => ['emr/content/content_review.php', ['admin']],
 
         // 药房
         'pharmacy/medication-list' => ['pharmacy/medication/medication_list.php', ['admin', 'pharmacist', 'doctor']],
