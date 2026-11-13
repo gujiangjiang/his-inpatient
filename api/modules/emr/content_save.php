@@ -15,13 +15,13 @@ $pdo = DB::getPDO();
 if ($id) {
     $existing = DB::selectOne("SELECT id, department_id FROM emr_contents WHERE id = ?", [$id]);
     if (!$existing) Response::error('内容不存在', 404);
-    if ($departmentId === null) $departmentId = $existing['department_id'];
+    $departmentId = resolve_department_id($departmentId, $existing['department_id']);
     $stmt = $pdo->prepare("UPDATE emr_contents SET name=?, category_id=?, content=?, department_id=?, updated_at=? WHERE id=?");
-    $stmt->execute([$name, $categoryId ?: null, $content, ($departmentId === 0 || $departmentId === '0') ? null : $departmentId, DateHelper::now(), $id]);
+    $stmt->execute([$name, $categoryId ?: null, $content, $departmentId, DateHelper::now(), $id]);
 } else {
-    if ($departmentId === null) $departmentId = Auth::user()['department_id'] ?? null;
+    $departmentId = resolve_department_id($departmentId, null);
     $stmt = $pdo->prepare("INSERT INTO emr_contents (name, category_id, content, department_id, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?)");
-    $stmt->execute([$name, $categoryId ?: null, $content, ($departmentId === 0 || $departmentId === '0') ? null : $departmentId, Auth::user()['id'], DateHelper::now(), DateHelper::now()]);
+    $stmt->execute([$name, $categoryId ?: null, $content, $departmentId, Auth::user()['id'], DateHelper::now(), DateHelper::now()]);
     $id = $pdo->lastInsertId();
 }
 Response::success(['id' => $id]);

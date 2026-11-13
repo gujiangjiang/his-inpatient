@@ -14,6 +14,7 @@ require_once __DIR__ . '/core/helpers/upload_helper.php';
 require_once __DIR__ . '/core/helpers/department_helper.php';
 require_once __DIR__ . '/core/helpers/fee_helper.php';
 require_once __DIR__ . '/core/helpers/patient_helper.php';
+require_once __DIR__ . '/core/helpers/dept_helper.php';
 require_once __DIR__ . '/core/helpers/integration_helper.php';
 require_once __DIR__ . '/core/helpers/opd_helper.php';
 require_once __DIR__ . '/core/helpers/opd_order_push.php';
