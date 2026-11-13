@@ -4,6 +4,50 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.27.0] - 2026-11-13
+
+### 修复
+- **信息表框线预览/打印不一致**：编辑器 `.emr-tbl td` 新规则覆盖了 plain 表的隐藏框线 → 显式
+  `.emr-tbl-plain` 覆盖（预览不再显示患者信息表框线）；打印端补全局 `box-sizing: border-box`
+  （打印页无 reset，td 的 padding 在 content-box 下把表格撑宽导致宽度失真与不居中），打印与预览
+  完全一致；信息表标签在打印/预览均保持常规字重。
+- **引用写回丢失光标**：编辑器持久跟踪模型光标位置（`_lastPos`：选区变化/点击/渲染时更新），
+  写回前 `focusCaret` 复核定位，无有效光标时拒绝写入（不再误落到「医师签名」下方等无设计区域）；
+  写回内容精确进入光标所在输入槽。
+- **信息表列宽终版** `[46,188,80,186]`：右列左移（职业/单位/住址起始点提前）、右值列加宽
+  （住址更宽裕）、病史陈述者标签不再折行；总宽不变保持居中（迁移 045/047/048，并修复
+  `($arr ?? []) as &$ref` 取临时表达式引用修改副本导致单元格级修改静默丢失的 PHP 陷阱）。
+- **表格内固定元素右击**：信息表标签（姓名：等）固化为 fx 固定元素（右击=元素属性、日常删除键
+  受保护）；右击槽位「值文本」归属到该槽位元素（可改属性）。
+- **守卫清理误删用户模板（P0）**：`EmrTemplatesGuard` 清理遗留种子模板的 `LIKE '%测试%'`
+  匹配过宽，误删用户自建"xx测试"模板——收窄为仅清理确切种子名与 `(字处理)` 后缀。
+- **version_restore 缺守卫校验**：恢复历史版本前校验 `doc_json` 与固化守卫一致
+  （守卫助手抽离 `emr_guard_helper.php` 供保存/恢复共用）。
+
+### 新增
+- **表格右键二级菜单**：添加（向上/向下添加行、向左/向右添加列）、删除（当前行/当前列）、
+  表格属性、删除表格。
+- **内容库科室维度**：迁移 049 增加 `department_id`；管理模态框新增「本科室/全院」Tab，
+  全院三列（科室/分类/列表），非本科室条目可「复制到本科室」；科室名实时 JOIN 同步。
+
+### 重构（全面代码整理，零功能回退）
+- **目录重组**：`api/modules/emr` 按领域嵌套（document/template/content/diagnosis/station 五组），
+  全库模块按领域二级分组（admin 的 user/config/department/ward/integration，orders 的
+  order/rx/set，patients 的 patient/incoming/bed，lab 的 order/catalog，exam 的
+  report/catalog，pharmacy 的 medication/dispensing/queue）——URL 契约不变，路由映射同步。
+- **病历站巨石文件拆分**：`public/js/emr/station.php`（1800 行）拆为入口 + 6 个领域片段
+  （`station/` 目录：page/init/design/managers/core/refpanel/host），`bindToolbar` 移入
+  host 片段末尾保证跨脚本块定义时序。
+- **emr_editor.js 拆分**：弹层 UI（下拉单选/复选/日期）抽离 `emr_editor_ui.js`
+  （EmrEditorUI，与实例解耦；`dispose` 销毁清理含 DateTimePicker 弹层）。
+- **公共抽象**：`EmrUI.floatMenu` 统一三处浮动菜单；`EmrUI.managedList` 通用管理器外壳
+  （模板/内容管理改配置驱动，净减约 200 行）；属性对话框抽取日期/下拉选项构建器；
+  `Dom.modal` 按钮支持校验语义（返回 false / Promise 解析 false 保留弹窗）；
+  `resolve_department_id`（dept_helper.php）与 `emrExtractKeys`（emr_guard_helper.php）
+  服务端公共化。
+- **健壮性**：引用面板 Tab 竞态令牌、打开文书连点令牌、切换文书清理自动保存计时器、
+  表格拖拽中 destroy 清理监听器。
+
 ## [0.26.0] - 2026-11-12
 
 模板编辑器全面重构（对标国内主流电子病历系统），分 13 个原子提交逐步演进：
