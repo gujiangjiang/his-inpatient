@@ -52,7 +52,13 @@ const Dom = {
                 b.textContent = btn.text;
                 if (btn.onclick) {
                     b.addEventListener('click', () => {
-                        btn.onclick();
+                        const r = btn.onclick();
+                        /* 校验语义: onclick 返回 false (同步) 或 Promise 解析为 false → 保留弹窗 */
+                        if (r === false) return;
+                        if (r && typeof r.then === 'function') {
+                            r.then((v) => { if (v !== false) document.body.removeChild(overlay); });
+                            return;
+                        }
                         document.body.removeChild(overlay);
                     });
                 } else {
