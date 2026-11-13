@@ -873,10 +873,85 @@ function emr_dsnItemName(item) {
     return item.key || item.t;
 }
 
-/** 元素属性对话框 (通用): 元素名称/内容/默认内容/默认占位符/是否必选 + 类型专属(日期/下拉选项) */
+/** 属性对话框·日期块 (slot.dt): 返回 {html, bind(sub), read(sub)} */
+function emrPropDtBlock(item) {
+    const mode = item.dt.mode || 'datetime';
+    const fmt = item.dt.fmt || '';
+    const presets = ['', 'yyyy-mm-dd', 'yyyy年mm月dd日', 'yyyy-mm-dd hh:nn', 'yyyy年mm月dd日 hh时nn分', 'hh:nn'];
+    const html = '<div class="form-group"><label class="form-label">日期类型</label><div class="emr-prop-radios">'
+        + [['datetime', '日期+时间'], ['date', '仅日期'], ['time', '仅时间']].map(function (m) {
+            return '<label class="emr-prop-radio"><input type="radio" name="dt-mode" value="' + m[0] + '"' + (mode === m[0] ? ' checked' : '') + '> ' + m[1] + '</label>';
+        }).join('') + '</div></div>'
+        + '<div class="form-group"><label class="form-label">日期格式</label>'
+        + '<select id="prop-dt-fmt" class="form-control">' + presets.map(function (x) {
+            return '<option value="' + x + '"' + (fmt === x ? ' selected' : '') + '>' + (x || '默认(按类型)') + '</option>';
+        }).join('') + '</select>'
+        + '<input id="prop-dt-fmtc" class="form-control" style="margin-top:6px" placeholder="自定义格式（可留空）: yyyy/mm/dd/hh/nn" value="' + (presets.indexOf(fmt) < 0 ? Format.escape(fmt) : '') + '"></div>';
+    return {
+        html: html,
+        bind: function () {},
+        read: function (sub) {
+            const modeSel = sub.querySelector('input[name="dt-mode"]:checked');
+            const fmtSel = (sub.querySelector('#prop-dt-fmt').value || '').trim();
+            const fmtCustom = (sub.querySelector('#prop-dt-fmtc').value || '').trim();
+            return { mode: modeSel ? modeSel.value : 'datetime', fmt: fmtCustom || fmtSel };
+        }
+    };
+}
+
+/** 属性对话框·下拉选项块 (slot.opts): 选项逐行编辑 + 单选/复选 + 测试预览 */
+function emrPropOptsBlock(item) {
+    const isMulti = !!item.multi;
+    const html = '<div class="form-group"><label class="form-label">选项内容（每行一个）</label>'
+        + '<textarea id="prop-opts" class="form-control" rows="5" placeholder="无&#10;有&#10;不详">' + Format.escape(item.opts.join('\n')) + '</textarea></div>'
+        + '<div class="form-group"><label class="form-label">选择类型</label><div class="emr-prop-radios">'
+        + [['single', '单选（下拉选择）'], ['multi', '复选（多选、顿号拼接）']].map(function (m) {
+            const on = (m[0] === 'multi') === isMulti;
+            return '<label class="emr-prop-radio"><input type="radio" name="sel-type" value="' + m[0] + '"' + (on ? ' checked' : '') + '> ' + m[1] + '</label>';
+        }).join('') + '</div></div>'
+        + '<div class="form-group"><label class="form-label">测试选择（不保存，仅验证交互）</label>'
+        + '<div id="prop-test" class="emr-prop-test"></div>'
+        + '<div class="emr-prop-testval">结果预览：<b id="prop-test-val">—</b></div></div>';
+    return {
+        html: html,
+        bind: function (sub) {
+            const renderTest = function () {
+                const lines = (sub.querySelector('#prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+                const sel = sub.querySelector('input[name="sel-type"]:checked');
+                const multi = sel && sel.value === 'multi';
+                const box = sub.querySelector('#prop-test');
+                const prev = sub.querySelector('#prop-test-val');
+                prev.textContent = '—';
+                if (!lines.length) { box.innerHTML = '<span class="emr-prop-testempty">暂无选项</span>'; return; }
+                box.innerHTML = lines.map(function (o2) {
+                    return '<label class="emr-prop-radio"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="prop-testpick" value="' + Format.escape(o2) + '"> ' + Format.escape(o2) + '</label>';
+                }).join('');
+                box.querySelectorAll('input').forEach(function (inp) {
+                    inp.addEventListener('change', function () {
+                        const vals = Array.from(box.querySelectorAll('input:checked')).map(function (x) { return x.value; });
+                        prev.textContent = vals.join('、') || '—';
+                    });
+                });
+            };
+            sub.querySelector('#prop-opts').addEventListener('input', renderTest);
+            sub.querySelectorAll('input[name="sel-type"]').forEach(function (r) { r.addEventListener('change', renderTest); });
+            renderTest();
+        },
+        read: function (sub) {
+            const lines = (sub.querySelector('#prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+            const sel = sub.querySelector('input[name="sel-type"]:checked');
+            return { opts: lines, multi: !!(sel && sel.value === 'multi') };
+        }
+    };
+}
+
+/** 元素属性对话框 (通用): 名称/内容/默认内容/默认占位符/是否必选 + 类型专属(日期/下拉选项) */
 function emr_dsnShowProps(item, p, o) {
     const TYPE_NAME = { fx: '固定文字', slot: '填写字段', ref: '字段引用', dyn: '动态项' };
     const parts = [];
+    const dtBlk = (item.t === 'slot' && item.dt) ? emrPropDtBlock(item) : null;
+    const optsBlk = (item.t === 'slot' && Array.isArray(item.opts)) ? emrPropOptsBlock(item) : null;
+
     parts.push('<div class="form-group"><label class="form-label">元素名称（识别用，可留空）</label>'
         + '<input id="prop-name" class="form-control" value="' + Format.escape(item.name || '') + '" placeholder="' + Format.escape(emr_dsnItemName(item)) + '"></div>');
     if (item.t === 'fx') {
@@ -889,33 +964,8 @@ function emr_dsnShowProps(item, p, o) {
         parts.push('<div class="form-group"><label class="form-label">默认内容（新建文书时自动预填，可打印、可修改）</label>'
             + '<input id="prop-def" class="form-control" value="' + Format.escape(item.def || '') + '" placeholder="可留空"></div>');
         parts.push('<div class="form-group"><label class="emr-prop-radio"><input type="checkbox" id="prop-req"' + (item.req ? ' checked' : '') + '> 是否必选（未完成时红色下划线标记，且无法签名）</label></div>');
-        if (item.dt) {
-            const mode = item.dt.mode || 'datetime';
-            const fmt = item.dt.fmt || '';
-            const presets = ['', 'yyyy-mm-dd', 'yyyy年mm月dd日', 'yyyy-mm-dd hh:nn', 'yyyy年mm月dd日 hh时nn分', 'hh:nn'];
-            parts.push('<div class="form-group"><label class="form-label">日期类型</label><div class="emr-prop-radios">'
-                + [['datetime', '日期+时间'], ['date', '仅日期'], ['time', '仅时间']].map(function (m) {
-                    return '<label class="emr-prop-radio"><input type="radio" name="dt-mode" value="' + m[0] + '"' + (mode === m[0] ? ' checked' : '') + '> ' + m[1] + '</label>';
-                }).join('') + '</div></div>');
-            parts.push('<div class="form-group"><label class="form-label">日期格式</label>'
-                + '<select id="prop-dt-fmt" class="form-control">' + presets.map(function (x) {
-                    return '<option value="' + x + '"' + (fmt === x ? ' selected' : '') + '>' + (x || '默认(按类型)') + '</option>';
-                }).join('') + '</select>'
-                + '<input id="prop-dt-fmtc" class="form-control" style="margin-top:6px" placeholder="自定义格式（可留空）: yyyy/mm/dd/hh/nn" value="' + (presets.indexOf(fmt) < 0 ? Format.escape(fmt) : '') + '"></div>');
-        }
-        if (Array.isArray(item.opts)) {
-            const isMulti = !!item.multi;
-            parts.push('<div class="form-group"><label class="form-label">选项内容（每行一个）</label>'
-                + '<textarea id="prop-opts" class="form-control" rows="5" placeholder="无&#10;有&#10;不详">' + Format.escape(item.opts.join('\n')) + '</textarea></div>');
-            parts.push('<div class="form-group"><label class="form-label">选择类型</label><div class="emr-prop-radios">'
-                + [['single', '单选（下拉选择）'], ['multi', '复选（多选、顿号拼接）']].map(function (m) {
-                    const on = (m[0] === 'multi') === isMulti;
-                    return '<label class="emr-prop-radio"><input type="radio" name="sel-type" value="' + m[0] + '"' + (on ? ' checked' : '') + '> ' + m[1] + '</label>';
-                }).join('') + '</div></div>');
-            parts.push('<div class="form-group"><label class="form-label">测试选择（不保存，仅验证交互）</label>'
-                + '<div id="prop-test" class="emr-prop-test"></div>'
-                + '<div class="emr-prop-testval">结果预览：<b id="prop-test-val">—</b></div></div>');
-        }
+        if (dtBlk) parts.push(dtBlk.html);
+        if (optsBlk) parts.push(optsBlk.html);
     }
     if (item.t === 'ref') {
         parts.push('<div class="form-group"><label class="form-label">默认占位符（取不到值时显示，打印不可见）</label>'
@@ -926,63 +976,34 @@ function emr_dsnShowProps(item, p, o) {
     }
     const sub = Dom.modal('元素属性 · ' + (TYPE_NAME[item.t] || '元素'), parts.join(''), [
         { text: '确定', type: 'primary', onclick: function () {
-            const name = (document.getElementById('prop-name').value || '').trim();
+            const name = (sub.querySelector('#prop-name').value || '').trim();
             if (name) item.name = name; else delete item.name;
             if (item.t === 'fx') {
-                const tv = (document.getElementById('prop-fx-text').value || '').trim();
-                if (!tv) { Dom.toast('元素内容不能为空', 'error'); return; }
+                const tv = (sub.querySelector('#prop-fx-text').value || '').trim();
+                if (!tv) { Dom.toast('元素内容不能为空', 'error'); return false; }
                 item.text = tv;
             }
             if (item.t === 'slot') {
-                const ph = (document.getElementById('prop-ph').value || '').trim();
+                const ph = (sub.querySelector('#prop-ph').value || '').trim();
                 if (ph) item.ph = ph; else delete item.ph;
-                const def = (document.getElementById('prop-def').value || '').trim();
+                const def = (sub.querySelector('#prop-def').value || '').trim();
                 if (def) item.def = def; else delete item.def;
-                if (document.getElementById('prop-req').checked) item.req = true; else delete item.req;
-                if (item.dt) {
-                    const modeSel = sub.querySelector('input[name="dt-mode"]:checked');
-                    const fmtSel = (document.getElementById('prop-dt-fmt').value || '').trim();
-                    const fmtCustom = (document.getElementById('prop-dt-fmtc').value || '').trim();
-                    item.dt = { mode: modeSel ? modeSel.value : 'datetime', fmt: fmtCustom || fmtSel };
-                }
-                if (Array.isArray(item.opts)) {
-                    const lines = (document.getElementById('prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
-                    const sel = sub.querySelector('input[name="sel-type"]:checked');
-                    item.opts = lines;
-                    if (sel && sel.value === 'multi') item.multi = true; else delete item.multi;
+                if (sub.querySelector('#prop-req').checked) item.req = true; else delete item.req;
+                if (dtBlk) item.dt = dtBlk.read(sub);
+                if (optsBlk) {
+                    const r0 = optsBlk.read(sub);
+                    item.opts = r0.opts;
+                    if (r0.multi) item.multi = true; else delete item.multi;
                 }
             }
-            if (item.t === 'ref') item.fb = (document.getElementById('prop-fb').value || '').trim() || '＿＿';
+            if (item.t === 'ref') item.fb = (sub.querySelector('#prop-fb').value || '').trim() || '＿＿';
             if (_emrEditor) _emrEditor.refresh();
             Dom.toast('属性已更新', 'success');
         } },
         { text: '取消', type: 'default' }
     ]);
-    /* 测试交互 (下拉槽): 随选项/类型实时重建, 选择即预览拼接结果 */
-    const optsTa = sub.querySelector('#prop-opts');
-    if (optsTa) {
-        const renderTest = function () {
-            const lines = (sub.querySelector('#prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
-            const sel = sub.querySelector('input[name="sel-type"]:checked');
-            const multi = sel && sel.value === 'multi';
-            const box = sub.querySelector('#prop-test');
-            const prev = sub.querySelector('#prop-test-val');
-            prev.textContent = '—';
-            if (!lines.length) { box.innerHTML = '<span class="emr-prop-testempty">暂无选项</span>'; return; }
-            box.innerHTML = lines.map(function (o2) {
-                return '<label class="emr-prop-radio"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="prop-testpick" value="' + Format.escape(o2) + '"> ' + Format.escape(o2) + '</label>';
-            }).join('');
-            box.querySelectorAll('input').forEach(function (inp) {
-                inp.addEventListener('change', function () {
-                    const vals = Array.from(box.querySelectorAll('input:checked')).map(function (x) { return x.value; });
-                    prev.textContent = vals.join('、') || '—';
-                });
-            });
-        };
-        optsTa.addEventListener('input', renderTest);
-        sub.querySelectorAll('input[name="sel-type"]').forEach(function (r) { r.addEventListener('change', renderTest); });
-        renderTest();
-    }
+    if (dtBlk) dtBlk.bind(sub);
+    if (optsBlk) optsBlk.bind(sub);
 }
 
 /** 设计工具: 插入字段 / 下拉字段(单选/复选) / 标题 / 引用 */
@@ -995,7 +1016,7 @@ function emr_dsnInsertField(withSelect, multi) {
     Dom.modal(title, content, [
         { text: '插入', type: 'primary', onclick: function () {
             const label = (document.getElementById('dsn-label').value || '').trim();
-            if (!label) { Dom.toast('请输入字段名称', 'error'); return; }
+            if (!label) { Dom.toast('请输入字段名称', 'error'); return false; }
             const select = withSelect ? (document.getElementById('dsn-opts').value || '').split(/[、，,;；]/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
             _emrEditor.insertField(label, withSelect ? { select: select, multi: !!multi } : null);
         } },
@@ -1008,7 +1029,7 @@ function emr_dsnInsertHeading() {
     Dom.modal('插入标题', content, [
         { text: '插入', type: 'primary', onclick: function () {
             const t = (document.getElementById('dsn-h').value || '').trim();
-            if (!t) { Dom.toast('请输入标题文字', 'error'); return; }
+            if (!t) { Dom.toast('请输入标题文字', 'error'); return false; }
             _emrEditor.insertHeading(t);
         } },
         { text: '取消', type: 'default' }
@@ -1024,7 +1045,7 @@ function emr_dsnInsertRef() {
         { text: '插入', type: 'primary', onclick: function () {
             const k = (document.getElementById('dsn-ref').value || '').trim();
             const fb = (document.getElementById('dsn-ref-fb').value || '＿＿').trim();
-            if (!k) { Dom.toast('请输入字段键', 'error'); return; }
+            if (!k) { Dom.toast('请输入字段键', 'error'); return false; }
             _emrEditor.insertRef(k, fb);
         } },
         { text: '取消', type: 'default' }
@@ -1075,7 +1096,7 @@ function emr_tplNewDialog(api, defCat) {
             { text: '创建并设计', type: 'primary', onclick: async function () {
                 const name = (document.getElementById('emr-newtpl-name').value || '').trim();
                 const cid = document.getElementById('emr-newtpl-cat').value;
-                if (!name) { Dom.toast('请输入模板名称', 'error'); return; }
+                if (!name) { Dom.toast('请输入模板名称', 'error'); return false; }
                 const cat = cats.find(function (c) { return String(c.id) === String(cid); });
                 let schema = {
                     mode: 'word', title: name,
@@ -1251,7 +1272,7 @@ function emr_contentEditDialog(item, cats, reload, done) {
         [
             { text: '保存', type: 'primary', onclick: async function () {
                 const name = (document.getElementById('cm-name').value || '').trim();
-                if (!name) { Dom.toast('请输入内容标题', 'error'); return; }
+                if (!name) { Dom.toast('请输入内容标题', 'error'); return false; }
                 const data = {
                     name: name,
                     category_id: document.getElementById('cm-cat').value,
@@ -1620,7 +1641,7 @@ function emr_saveAsTemplate() {
     Dom.modal('存为模板', content, [
         { text: '保存', type: 'primary', onclick: function() {
             const name = document.getElementById('tpl-name').value.trim();
-            if (!name) { Dom.toast('请输入模板名称', 'error'); return; }
+            if (!name) { Dom.toast('请输入模板名称', 'error'); return false; }
             const doc = _emrEditor.getDoc();
             const schema = { mode: 'word', title: doc.title, page: doc.page, header: doc.header, body: doc.body };
             AjaxLoader.api('emr/template-save', {
