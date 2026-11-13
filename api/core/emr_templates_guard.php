@@ -61,8 +61,10 @@ class EmrTemplatesGuard {
 
         $pdo = DB::getPDO();
 
-        /* 清理早期版本种子产生的测试模板: 先解除文书引用(文书自有守卫, 不依赖模板), 再删除 */
-        $legacyRows = DB::select("SELECT id, name FROM emr_templates WHERE name IN ('常规入院记录','入院记录(字处理)') OR name LIKE '%(字处理)%' OR name LIKE '%测试%'");
+        /* 清理早期版本种子产生的测试模板: 先解除文书引用(文书自有守卫, 不依赖模板), 再删除
+         * 注意: 仅匹配早期种子的确切命名 + "(字处理)"后缀; 曾用 LIKE '%测试%' 误删用户自建
+         * 模板 (如"男性入院记录测试"), 已收窄 — 绝不可再扩大匹配范围 */
+        $legacyRows = DB::select("SELECT id, name FROM emr_templates WHERE name IN ('常规入院记录','入院记录(字处理)','测试模板(字处理)') OR name LIKE '%(字处理)%'");
         foreach ($legacyRows as $t) {
             $pdo->prepare("UPDATE emr_documents SET template_id = NULL WHERE template_id = ?")->execute([$t['id']]);
             $pdo->prepare("DELETE FROM emr_templates WHERE id = ?")->execute([$t['id']]);
