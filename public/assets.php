@@ -49,6 +49,7 @@ class Asset {
         '/js/emr_editor/emr_doc_layout.js',
         '/js/emr_editor/emr_doc_print.js',
         '/js/emr_editor/emr_editor_caret.js',
+        '/js/emr_editor/emr_editor_ui.js',
         '/js/emr_editor/emr_editor.js',
         '/js/emr/emr_ui.js',
         '/js/core/patient_context.js',
