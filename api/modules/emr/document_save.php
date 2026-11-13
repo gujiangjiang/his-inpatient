@@ -86,29 +86,6 @@ try {
     Response::error('保存失败: ' . $e->getMessage());
 }
 
-/** 递归提取正文块的固定元素键: {fx:[...], slot:[...]} (排序去重) */
-function emrExtractKeys($body) {
-    $keys = ['fx' => [], 'slot' => []];
-    $walk = function ($blocks) use (&$walk, &$keys) {
-        foreach ($blocks as $b) {
-            if (!is_array($b)) continue;
-            if (($b['t'] ?? null) === 'p') {
-                foreach (($b['runs'] ?? []) as $it) {
-                    /* dyn (动态只读项: BMI/签名/诊断同步) 与 ref (字段引用) 同 fx 组守卫 */
-                    if ((($it['t'] ?? null) === 'fx' || ($it['t'] ?? null) === 'dyn' || ($it['t'] ?? null) === 'ref') && isset($it['key'])) $keys['fx'][] = $it['key'];
-                    if (($it['t'] ?? null) === 'slot' && isset($it['key'])) $keys['slot'][] = $it['key'];
-                }
-            } elseif (($b['t'] ?? null) === 'tbl') {
-                foreach (($b['rows'] ?? []) as $r) foreach (($r['cells'] ?? []) as $c) $walk($c['blocks'] ?? []);
-            }
-        }
-    };
-    $walk($body);
-    $keys['fx'] = array_values(array_unique($keys['fx'])); sort($keys['fx']);
-    $keys['slot'] = array_values(array_unique($keys['slot'])); sort($keys['slot']);
-    return $keys;
-}
-
 /** 模板 schema (word 模式) 的固定元素键; 非 word 模板返回 null (不校验) */
 function templateGuard($templateId) {
     if (!$templateId) return null;

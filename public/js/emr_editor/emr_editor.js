@@ -463,6 +463,7 @@
       };
       document.addEventListener('mousemove', onMove, true);
       document.addEventListener('mouseup', onUp, true);
+      if (rs) rs._rm = [onMove, onUp];
     };
 
     const onMouseDown = (e) => {
@@ -767,6 +768,14 @@
       inst.headEl.innerHTML = R.headerToHTML(inst.doc.header, inst.patientInfo, inst.design);
     };
     inst.destroy = () => {
+      if (rs) {
+        if (rs._rm) {
+          document.removeEventListener('mousemove', rs._rm[0], true);
+          document.removeEventListener('mouseup', rs._rm[1], true);
+        }
+        rs = null;
+      }
+      inst._lastPos = null;
       inst._handlers.forEach(([el, type, fn]) => el.removeEventListener(type, fn));
       inst._handlers = [];
       inst.container.innerHTML = '';

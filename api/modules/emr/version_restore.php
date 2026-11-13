@@ -13,6 +13,17 @@ $doc = DB::selectOne("SELECT * FROM emr_documents WHERE id = ?", [$version['doc_
 if (!$doc) Response::error('文书不存在');
 if ($doc['status'] === 'signed') Response::error('文书已签名锁定, 禁止恢复历史', 403);
 
+/* 守卫校验: 历史版本 doc_json 的固定元素键必须与文书固化守卫一致 (防篡改版本被恢复) */
+$meta = json_decode($doc['doc_meta'] ?? '', true);
+$guard = is_array($meta) && isset($meta['guard']) ? $meta['guard'] : null;
+if (is_array($guard)) {
+    $restoreDoc = json_decode($version['doc_json'], true);
+    if (is_array($restoreDoc) && is_array($restoreDoc['body'] ?? null)) {
+        $guardErr = emrGuardValidate($restoreDoc['body'], $guard);
+        if ($guardErr !== '') Response::error('该历史版本与固化守卫不一致, 禁止恢复: ' . $guardErr);
+    }
+}
+
 $userId = Auth::user()['id'];
 $now = DateHelper::now();
 $pdo->beginTransaction();

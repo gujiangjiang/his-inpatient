@@ -371,7 +371,10 @@ function applyPageCss(page) {
 }
 
 /* ================= 打开文书 (统一字处理编辑器) ================= */
+var _emrOpenSeq = 0;       // 打开文书竞态令牌 (连点/并发响应只认最新)
 async function emr_openDocument(docId) {
+    clearTimeout(_emrAutoSaveTimer); /* 切换文书: 清理上一文书挂起的自动保存 */
+    const mySeq = ++_emrOpenSeq;
     let r;
     try {
         r = await AjaxLoader.api('emr/document-get?id=' + docId, { silent: true });
@@ -379,6 +382,7 @@ async function emr_openDocument(docId) {
         Dom.toast('打不开文书: ' + (e && e.message ? e.message : '未知错误'), 'error');
         return;
     }
+    if (mySeq !== _emrOpenSeq) return; /* 已被更新的打开请求取代 */
     const doc = r.data;
     _emrCurrentDoc = doc;
     document.getElementById('emr-ref-panel').style.display = 'none'; /* 切换文书: 收起引用面板 */
@@ -1400,6 +1404,7 @@ function scheduleAutoSave() {
 var _emrRefCaret = null;   // 打开面板时的光标位置 (写回定位用)
 var _emrRefTab = 'doc';
 var _emrRefCache = {};     // 文书 id → 纯文本缓存
+var _emrRefSeq = 0;       // 引用面板 Tab 竞态令牌
 
 function emr_refToggle() {
     const panel = document.getElementById('emr-ref-panel');
@@ -1413,16 +1418,19 @@ function emr_refToggle() {
 
 function emr_refSwitch(tab) {
     _emrRefTab = tab;
+    _emrRefSeq++;
+    const mySeq = _emrRefSeq;
     document.querySelectorAll('.emr-refp-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.tab === tab); });
     document.getElementById('emr-refp-left').innerHTML = '<div class="emr-refp-empty">加载中…</div>';
     document.getElementById('emr-refp-right').innerHTML = '<div class="emr-refp-empty">从左侧选择一条记录，右侧显示内容；可全选或选中部分文字后点击「写回病历」</div>';
     const loader = { doc: emr_refLoadDocs, past: emr_refLoadDocs, lab: emr_refLoadLab, exam: emr_refLoadExam, order: emr_refLoadOrders, content: emr_refLoadContent }[tab];
-    if (loader) loader();
+    if (loader) loader(mySeq);
 }
 
 /** 引用源通用加载: 拉取列表 → mapper 映射为 {name, time, load} → 渲染左栏 */
-async function emr_refLoadSource(url, mapper) {
+async function emr_refLoadSource(url, mapper, seq) {
     const r = await AjaxLoader.api(url, { silent: true });
+    if (seq != null && seq !== _emrRefSeq) return; /* 竞态: 已切换 Tab, 丢弃旧响应 */
     emr_refListRender((r.data || []).map(mapper));
 }
 
@@ -1480,8 +1488,9 @@ function emr_refDocText(doc) {
     return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-async function emr_refLoadDocs() {
+async function emr_refLoadDocs(seq) {
     const all = (await AjaxLoader.api('emr/document-list?patient_id=' + _emrPatient.id, { silent: true })).data || [];
+    if (seq != null && seq !== _emrRefSeq) return;
     const docs = _emrRefTab === 'past'
         ? all.filter(function (d) { return d.admission_no && _emrPatient.admission_no && d.admission_no !== _emrPatient.admission_no; })
         : all;
@@ -1500,7 +1509,7 @@ async function emr_refLoadDocs() {
     }));
 }
 
-async function emr_refLoadLab() {
+async function emr_refLoadLab(seq) {
     await emr_refLoadSource('lab/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: x.exam_name || '检验报告',
@@ -1514,10 +1523,10 @@ async function emr_refLoadLab() {
                 return '【' + (d.exam_name || '') + '】' + (d.reported_at ? ' 报告时间 ' + d.reported_at : '') + '\n' + (lines.join('\n') || '（暂无结果明细）');
             }
         };
-    });
+    }, seq);
 }
 
-async function emr_refLoadExam() {
+async function emr_refLoadExam(seq) {
     await emr_refLoadSource('exam/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: (x.exam_type || '检查') + (x.body_part ? '·' + x.body_part : ''),
@@ -1530,10 +1539,10 @@ async function emr_refLoadExam() {
                     + (!x.findings && !x.conclusion && !x.impression ? '\n（暂无报告内容）' : '');
             }
         };
-    });
+    }, seq);
 }
 
-async function emr_refLoadOrders() {
+async function emr_refLoadOrders(seq) {
     await emr_refLoadSource('orders/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: (x.content || '医嘱') + (x.dosage ? ' ' + x.dosage : '') + (x.frequency ? ' ' + x.frequency : ''),
@@ -1547,17 +1556,17 @@ async function emr_refLoadOrders() {
                     + (x.start_date ? '\n开始：' + x.start_date : '');
             }
         };
-    });
+    }, seq);
 }
 
-async function emr_refLoadContent() {
+async function emr_refLoadContent(seq) {
     await emr_refLoadSource('emr/content-list', function (x) {
         return {
             name: (x.category_name ? '[' + x.category_name + '] ' : '') + x.name,
             time: emrStamp(x.updated_at || ''),
             load: async function () { return x.content || '（空内容）'; }
         };
-    });
+    }, seq);
 }
 
 /** 写回病历: 右侧选中部分文字则写所选, 否则写全部; 按行分段写入光标处 */
