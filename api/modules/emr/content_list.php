@@ -4,8 +4,10 @@ Auth::requireRole(['admin', 'doctor', 'nurse']);
 $categoryId = Validator::get('category_id');
 $kw = trim((string)Validator::get('kw', ''));
 
-$sql = "SELECT c.*, cat.name AS category_name FROM emr_contents c
-        LEFT JOIN emr_categories cat ON cat.id = c.category_id WHERE 1=1";
+$sql = "SELECT c.*, cat.name AS category_name, dep.name AS department_name FROM emr_contents c
+        LEFT JOIN emr_categories cat ON cat.id = c.category_id
+        LEFT JOIN departments dep ON dep.id = c.department_id
+        WHERE 1=1";
 $params = [];
 if ($categoryId) { $sql .= " AND c.category_id = ?"; $params[] = $categoryId; }
 if ($kw !== '') { $sql .= " AND (c.name LIKE ? OR c.content LIKE ?)"; $params[] = '%' . $kw . '%'; $params[] = '%' . $kw . '%'; }

@@ -6,19 +6,22 @@ $data = Validator::all();
 $name = trim((string)Validator::get('name', ''));
 $categoryId = Validator::get('category_id');
 $content = (string)Validator::get('content', '');
+$departmentId = Validator::get('department_id'); // 科室归属; null=自动(新建取本人科室, 更新保持原值), 0=全院通用
 $id = isset($data['id']) && $data['id'] ? (int)$data['id'] : null;
 
 if ($name === '') Response::error('请输入内容标题');
 
 $pdo = DB::getPDO();
 if ($id) {
-    $existing = DB::selectOne("SELECT id FROM emr_contents WHERE id = ?", [$id]);
+    $existing = DB::selectOne("SELECT id, department_id FROM emr_contents WHERE id = ?", [$id]);
     if (!$existing) Response::error('内容不存在', 404);
-    $stmt = $pdo->prepare("UPDATE emr_contents SET name=?, category_id=?, content=?, updated_at=? WHERE id=?");
-    $stmt->execute([$name, $categoryId ?: null, $content, DateHelper::now(), $id]);
+    if ($departmentId === null) $departmentId = $existing['department_id'];
+    $stmt = $pdo->prepare("UPDATE emr_contents SET name=?, category_id=?, content=?, department_id=?, updated_at=? WHERE id=?");
+    $stmt->execute([$name, $categoryId ?: null, $content, ($departmentId === 0 || $departmentId === '0') ? null : $departmentId, DateHelper::now(), $id]);
 } else {
-    $stmt = $pdo->prepare("INSERT INTO emr_contents (name, category_id, content, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?)");
-    $stmt->execute([$name, $categoryId ?: null, $content, Auth::user()['id'], DateHelper::now(), DateHelper::now()]);
+    if ($departmentId === null) $departmentId = Auth::user()['department_id'] ?? null;
+    $stmt = $pdo->prepare("INSERT INTO emr_contents (name, category_id, content, department_id, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?)");
+    $stmt->execute([$name, $categoryId ?: null, $content, ($departmentId === 0 || $departmentId === '0') ? null : $departmentId, Auth::user()['id'], DateHelper::now(), DateHelper::now()]);
     $id = $pdo->lastInsertId();
 }
 Response::success(['id' => $id]);

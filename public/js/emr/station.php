@@ -1339,7 +1339,8 @@ async function emr_openTemplateManager(preCatId) {
     });
 }
 
-/** 内容库管理 (纯文本条目): 左右两栏 (左分类/右条目), 新建与编辑在模态框内完成 */
+/** 内容库管理 (纯文本条目): 本科室=左分类/右条目 两栏; 全院=左科室/中分类/右条目 三栏
+ *  本科室可编辑/删除, 全院可复制到本科室; 新建与编辑在模态框内完成 */
 async function emr_openContentManager(preCatId) {
     const [r, cr] = await Promise.all([
         AjaxLoader.api('emr/content-list', { silent: true }),
@@ -1347,13 +1348,25 @@ async function emr_openContentManager(preCatId) {
     ]);
     let items = r.data || [];
     const cats = cr.data || [];
+    const myDeptId = Auth.user && Auth.user.department_id ? String(Auth.user.department_id) : null;
+    let activeTab = 'mine';
     let activeCat = (typeof preCatId === 'string' || typeof preCatId === 'number') ? String(preCatId) : 'all';
+    let activeDept = '0'; /* 全院 Tab: '0'=全院通用, 其余=科室id */
 
+    const isOwn = (t) => t.department_id != null && String(t.department_id) === myDeptId;
+    const deptKeyOf = (t) => t.department_id == null ? '0' : String(t.department_id);
     const catKeyOf = (t) => t.category_id == null ? 'none' : String(t.category_id);
-    const listOf = (key) => key === 'all' ? items : items.filter(function (t) { return catKeyOf(t) === key; });
+    const tabItems = () => activeTab === 'mine'
+        ? items.filter(function (t) { return isOwn(t); })
+        : items.filter(function (t) { return deptKeyOf(t) === activeDept; });
+    const listOf = (key) => key === 'all'
+        ? tabItems()
+        : tabItems().filter(function (t) { return catKeyOf(t) === key; });
 
     const content = '<div class="emr-tpm">'
+        + '<div class="emr-tpl-tabs"><span class="emr-tpl-tab active" data-tab="mine">本科室</span><span class="emr-tpl-tab" data-tab="all">全院</span></div>'
         + '<div class="emr-tpm-body">'
+        + '<div class="emr-tpm-depts" id="emr-cm-depts" style="display:none"></div>'
         + '<div class="emr-tpm-cats" id="emr-cm-cats"></div>'
         + '<div class="emr-tpm-main" id="emr-cm-main"></div>'
         + '</div>'
@@ -1361,6 +1374,7 @@ async function emr_openContentManager(preCatId) {
         + '</div>';
     const overlay = Dom.modal('病历内容库', content, []);
     overlay.querySelector('.modal').classList.add('modal-lg');
+    const deptsEl = overlay.querySelector('#emr-cm-depts');
     const catsEl = overlay.querySelector('#emr-cm-cats');
     const mainEl = overlay.querySelector('#emr-cm-main');
 
@@ -1369,9 +1383,40 @@ async function emr_openContentManager(preCatId) {
         items = rr.data || [];
     }
 
+    /** 全院 Tab 左栏: 科室列表 (全文条目; 计数=该科室条目数) */
+    function renderDepts() {
+        const map = new Map();
+        items.forEach(function (t) {
+            const k = deptKeyOf(t);
+            if (!map.has(k)) map.set(k, { key: k, name: emrDeptNameOf(t), n: 0 });
+            map.get(k).n++;
+        });
+        const list = Array.from(map.values()).sort(function (a, b) {
+            if (a.key === '0') return -1;
+            if (b.key === '0') return 1;
+            if ((a.key === myDeptId) !== (b.key === myDeptId)) return a.key === myDeptId ? -1 : 1;
+            return a.name.localeCompare(b.name, 'zh');
+        });
+        if (!list.some(function (x) { return x.key === activeDept; })) activeDept = '0';
+        deptsEl.innerHTML = list.map(function (x) {
+            const tag = x.key === myDeptId ? '<span class="emr-tpm-dtag">本科室</span>' : '';
+            return '<div class="emr-tpm-cat' + (x.key === activeDept ? ' active' : '') + '" data-dept="' + x.key + '">'
+                + '<span class="emr-tpm-cat-name" title="' + Format.escape(x.name) + '">' + Format.escape(x.name) + '</span>'
+                + tag + '<span class="emr-tpm-cat-count">' + x.n + '</span></div>';
+        }).join('');
+        deptsEl.querySelectorAll('[data-dept]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                activeDept = el.dataset.dept;
+                renderDepts();
+                renderCats();
+                renderMain();
+            });
+        });
+    }
+
     function renderCats() {
         const list = [{ key: 'all', name: '全部' }].concat(cats.map(function (c) { return { key: String(c.id), name: c.name }; }));
-        if (items.some(function (t) { return catKeyOf(t) === 'none'; })) list.push({ key: 'none', name: '未分类' });
+        if (tabItems().some(function (t) { return catKeyOf(t) === 'none'; })) list.push({ key: 'none', name: '未分类' });
         if (!list.some(function (x) { return x.key === activeCat; })) activeCat = 'all';
         catsEl.innerHTML = list.map(function (x) {
             return '<div class="emr-tpm-cat' + (x.key === activeCat ? ' active' : '') + '" data-cat="' + x.key + '">'
@@ -1387,45 +1432,83 @@ async function emr_openContentManager(preCatId) {
         const list = listOf(activeCat);
         const catName = activeCat === 'all' ? '全部' : activeCat === 'none' ? '未分类'
             : ((cats.find(function (c) { return String(c.id) === activeCat; }) || {}).name || '内容');
-        const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + Format.escape(catName) + '</span><span class="emr-tpm-mcount">' + list.length + ' 条内容</span></div>';
+        let deptName = '';
+        if (activeTab === 'all') {
+            const dt = items.find(function (x) { return deptKeyOf(x) === activeDept; });
+            deptName = dt ? emrDeptNameOf(dt) : '全院通用';
+        }
+        const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + Format.escape(catName) + '</span>'
+            + (deptName ? '<span class="emr-tpm-mdept">· ' + Format.escape(deptName) + '</span>' : '')
+            + '<span class="emr-tpm-mcount">' + list.length + ' 条内容</span></div>';
         let body;
         if (!list.length) {
-            body = '<div class="emr-tpl-empty">该分类暂无内容：点击下方"新建内容"创建（纯文本片段，写病历时可整段或选段写入）</div>';
+            body = '<div class="emr-tpl-empty">' + (activeTab === 'mine'
+                ? '该分类暂无本科室内容：可切换到「全院」将内容复制到本科室，或点击下方"新建内容"创建（纯文本片段，写病历时可整段或选段写入）'
+                : '「' + Format.escape(deptName) + '」下该分类暂无内容') + '</div>';
         } else {
             body = list.map(function (t) {
                 const tag = t.category_name ? '<span class="emr-tpm-rdept">' + Format.escape(t.category_name) + '</span>' : '';
+                const act = isOwn(t)
+                    ? '<span class="mini" data-a="edit">编辑</span><span class="mini danger" data-a="del">删除</span>'
+                    : '<span class="mini" data-a="clone">复制到本科室</span>';
                 return '<div class="emr-tpm-row" data-id="' + t.id + '">'
                     + '<span class="emr-tpm-rname" title="' + Format.escape(t.name) + '">' + Format.escape(t.name) + '</span>'
-                    + tag + '<span class="emr-tpm-ract"><span class="mini" data-a="edit">编辑</span><span class="mini danger" data-a="del">删除</span></span></div>';
+                    + tag + '<span class="emr-tpm-ract">' + act + '</span></div>';
             }).join('');
         }
         mainEl.innerHTML = head + body;
         mainEl.querySelectorAll('.emr-tpm-row').forEach(function (row) {
             row.querySelectorAll('.mini').forEach(function (a) {
-                a.addEventListener('click', function () {
+                a.addEventListener('click', async function () {
                     const t = items.find(function (x) { return String(x.id) === String(row.dataset.id); });
                     if (!t) return;
-                    if (a.dataset.a === 'edit') { emr_contentEditDialog(t, cats, reload, function () { renderCats(); renderMain(); }); return; }
-                    Dom.modal('删除内容', '<p>确认删除内容「' + Format.escape(t.name) + '」？</p>', [
-                        { text: '删除', type: 'danger', onclick: async function () {
-                            await AjaxLoader.api('emr/content-delete?id=' + t.id, { method: 'POST' });
-                            Dom.toast('已删除', 'success');
-                            await reload();
-                            renderCats();
-                            renderMain();
-                        } },
-                        { text: '取消', type: 'default' }
-                    ]);
+                    if (a.dataset.a === 'edit') { emr_contentEditDialog(t, cats, reload, function () { renderDepts(); renderCats(); renderMain(); }); return; }
+                    if (a.dataset.a === 'del') {
+                        Dom.modal('删除内容', '<p>确认删除内容「' + Format.escape(t.name) + '」？</p>', [
+                            { text: '删除', type: 'danger', onclick: async function () {
+                                await AjaxLoader.api('emr/content-delete?id=' + t.id, { method: 'POST' });
+                                Dom.toast('已删除', 'success');
+                                await reload();
+                                renderDepts();
+                                renderCats();
+                                renderMain();
+                            } },
+                            { text: '取消', type: 'default' }
+                        ]);
+                        return;
+                    }
+                    if (a.dataset.a === 'clone') {
+                        await AjaxLoader.api('emr/content-save', { method: 'POST', data: {
+                            name: t.name + '（本科室副本）', category_id: t.category_id, content: t.content || ''
+                        }});
+                        Dom.toast('已复制到本科室', 'success');
+                        await reload();
+                        renderDepts();
+                        renderCats();
+                        renderMain();
+                    }
                 });
             });
         });
     }
 
+    overlay.querySelectorAll('.emr-tpl-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            overlay.querySelectorAll('.emr-tpl-tab').forEach(function (x) { x.classList.remove('active'); });
+            tab.classList.add('active');
+            activeTab = tab.dataset.tab;
+            deptsEl.style.display = activeTab === 'all' ? '' : 'none';
+            renderDepts();
+            renderCats();
+            renderMain();
+        });
+    });
     overlay.querySelector('#emr-cm-close').addEventListener('click', function () { overlay.remove(); });
     overlay.querySelector('#emr-cm-new').addEventListener('click', function () {
         const defCat = cats.some(function (c) { return String(c.id) === activeCat; }) ? activeCat : (cats.length ? String(cats[0].id) : '');
-        emr_contentEditDialog({ id: null, name: '', category_id: defCat, content: '' }, cats, reload, function () { renderCats(); renderMain(); });
+        emr_contentEditDialog({ id: null, name: '', category_id: defCat, content: '' }, cats, reload, function () { renderDepts(); renderCats(); renderMain(); });
     });
+    renderDepts();
     renderCats();
     renderMain();
 }
