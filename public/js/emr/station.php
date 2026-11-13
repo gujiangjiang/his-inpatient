@@ -469,26 +469,28 @@ async function syncFromFrontPage(doc) {
     }
 }
 
+/** 诊断文本 (按分类过滤+多诊断序号拼接; 入院诊断为空时兜底患者入院诊断; 无记录返回 '') */
+async function emrDiagTextOf(category) {
+    let rows = [];
+    try {
+        const r = await AjaxLoader.api('emr/diagnosis-list?patient_id=' + _emrPatient.id, { silent: true });
+        rows = r.data || [];
+    } catch (e) { rows = []; }
+    const list = rows.filter(function (x) { return x.category === category; });
+    if (!list.length && category === 'admission' && _emrPatient && _emrPatient.admission_diagnosis) {
+        return String(_emrPatient.admission_diagnosis);
+    }
+    return list.map(function (x, i) { return list.length > 1 ? (i + 1) + '.' + x.name : x.name; }).join('；');
+}
+
 /** 诊断引用元素自动填充: diag_admission/diag_discharge dyn 取左侧「诊断」模块 (未签文档每次打开刷新) */
 async function syncDiagDyns(doc) {
     const need = ['diag_admission', 'diag_discharge'].filter(function (k) {
         return EmrOps.findParaWithItem(doc.body, 'dyn', k);
     });
     if (!need.length) return;
-    let rows = [];
-    try {
-        const r = await AjaxLoader.api('emr/diagnosis-list?patient_id=' + _emrPatient.id, { silent: true });
-        rows = r.data || [];
-    } catch (e) { return; }
-    const join = function (cat) {
-        const list = rows.filter(function (x) { return x.category === cat; });
-        if (!list.length && cat === 'admission' && _emrPatient && _emrPatient.admission_diagnosis) {
-            return String(_emrPatient.admission_diagnosis); /* 诊断模块未录入时兜底: 患者入院诊断 */
-        }
-        return list.map(function (x, i) { return list.length > 1 ? (i + 1) + '.' + x.name : x.name; }).join('；');
-    };
-    if (need.indexOf('diag_admission') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_admission', join('admission'));
-    if (need.indexOf('diag_discharge') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_discharge', join('discharge'));
+    if (need.indexOf('diag_admission') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_admission', await emrDiagTextOf('admission'));
+    if (need.indexOf('diag_discharge') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_discharge', await emrDiagTextOf('discharge'));
 }
 
 /** 字段引用解析: 【姓名】【主诉】等自动调用患者其他文书里的字段值
@@ -1521,14 +1523,12 @@ function emr_showQc(catId) {
 /** 一键同步诊断: 按 dyn key 取左侧「诊断」模块对应分类拼为文本 (diag_discharge→出院诊断, 其余→入院诊断) */
 async function fetchAdmissionDiagText(dynKey) {
     const cat = dynKey === 'diag_discharge' ? 'discharge' : 'admission';
-    const r = await AjaxLoader.api('emr/diagnosis-list?patient_id=' + _emrPatient.id, { silent: true });
-    const rows = (r.data || []).filter(x => x.category === cat);
-    if (!rows.length) {
-        if (cat === 'admission' && _emrPatient && _emrPatient.admission_diagnosis) return String(_emrPatient.admission_diagnosis);
+    const text = await emrDiagTextOf(cat);
+    if (!text) {
         Dom.toast('诊断中暂无' + (cat === 'discharge' ? '出院诊断' : '入院诊断') + '，请先在左侧「诊断」中添加', 'error');
         return null;
     }
-    return rows.map((x, i) => rows.length > 1 ? (i + 1) + '.' + x.name : x.name).join('；');
+    return text;
 }
 
 /** 状态栏保存状态 (自动保存静默进行, 不再全屏加载遮罩) */
@@ -1641,6 +1641,12 @@ function emr_refSwitch(tab) {
     if (loader) loader();
 }
 
+/** 引用源通用加载: 拉取列表 → mapper 映射为 {name, time, load} → 渲染左栏 */
+async function emr_refLoadSource(url, mapper) {
+    const r = await AjaxLoader.api(url, { silent: true });
+    emr_refListRender((r.data || []).map(mapper));
+}
+
 /** 左侧列表渲染: items = [{name, time, load()}] */
 function emr_refListRender(items) {
     const left = document.getElementById('emr-refp-left');
@@ -1696,11 +1702,10 @@ function emr_refDocText(doc) {
 }
 
 async function emr_refLoadDocs() {
-    const r = await AjaxLoader.api('emr/document-list?patient_id=' + _emrPatient.id, { silent: true });
-    let docs = r.data || [];
-    if (_emrRefTab === 'past') {
-        docs = docs.filter(function (d) { return d.admission_no && _emrPatient.admission_no && d.admission_no !== _emrPatient.admission_no; });
-    }
+    const all = (await AjaxLoader.api('emr/document-list?patient_id=' + _emrPatient.id, { silent: true })).data || [];
+    const docs = _emrRefTab === 'past'
+        ? all.filter(function (d) { return d.admission_no && _emrPatient.admission_no && d.admission_no !== _emrPatient.admission_no; })
+        : all;
     emr_refListRender(docs.map(function (d) {
         return {
             name: (d.title || d.template_name || '未命名文书') + (d.status === 'signed' ? '（已签名）' : ''),
@@ -1717,8 +1722,7 @@ async function emr_refLoadDocs() {
 }
 
 async function emr_refLoadLab() {
-    const r = await AjaxLoader.api('lab/list?patient_id=' + _emrPatient.id, { silent: true });
-    emr_refListRender((r.data || []).map(function (x) {
+    await emr_refLoadSource('lab/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: x.exam_name || '检验报告',
             time: emrStamp(x.reported_at || x.created_at || ''),
@@ -1731,12 +1735,11 @@ async function emr_refLoadLab() {
                 return '【' + (d.exam_name || '') + '】' + (d.reported_at ? ' 报告时间 ' + d.reported_at : '') + '\n' + (lines.join('\n') || '（暂无结果明细）');
             }
         };
-    }));
+    });
 }
 
 async function emr_refLoadExam() {
-    const r = await AjaxLoader.api('exam/list?patient_id=' + _emrPatient.id, { silent: true });
-    emr_refListRender((r.data || []).map(function (x) {
+    await emr_refLoadSource('exam/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: (x.exam_type || '检查') + (x.body_part ? '·' + x.body_part : ''),
             time: emrStamp(x.reported_at || x.created_at || ''),
@@ -1748,12 +1751,11 @@ async function emr_refLoadExam() {
                     + (!x.findings && !x.conclusion && !x.impression ? '\n（暂无报告内容）' : '');
             }
         };
-    }));
+    });
 }
 
 async function emr_refLoadOrders() {
-    const r = await AjaxLoader.api('orders/list?patient_id=' + _emrPatient.id, { silent: true });
-    emr_refListRender((r.data || []).map(function (x) {
+    await emr_refLoadSource('orders/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: (x.content || '医嘱') + (x.dosage ? ' ' + x.dosage : '') + (x.frequency ? ' ' + x.frequency : ''),
             time: emrStamp(x.start_date || x.created_at || '') + (x.status ? ' · ' + x.status : ''),
@@ -1766,18 +1768,17 @@ async function emr_refLoadOrders() {
                     + (x.start_date ? '\n开始：' + x.start_date : '');
             }
         };
-    }));
+    });
 }
 
 async function emr_refLoadContent() {
-    const r = await AjaxLoader.api('emr/content-list', { silent: true });
-    emr_refListRender((r.data || []).map(function (x) {
+    await emr_refLoadSource('emr/content-list', function (x) {
         return {
             name: (x.category_name ? '[' + x.category_name + '] ' : '') + x.name,
             time: emrStamp(x.updated_at || ''),
             load: async function () { return x.content || '（空内容）'; }
         };
-    }));
+    });
 }
 
 /** 写回病历: 右侧选中部分文字则写所选, 否则写全部; 按行分段写入光标处 */
