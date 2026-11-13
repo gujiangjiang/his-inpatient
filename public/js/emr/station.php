@@ -753,22 +753,53 @@ function emr_dsnBuildTablePicker() {
     box.addEventListener('mouseleave', function () { clear(); if (label.textContent.indexOf('已插入') < 0) label.textContent = '移入选择行列（拖动框线可调列宽/行高）'; });
 }
 
-/** 设计模式右击表格: 浮动菜单 (表格属性 / 删除表格) */
-function emr_dsnTableContext(tblId, x, y) {
+/** 设计模式右击表格: 浮动菜单 (添加行/列二级菜单、删除行/列二级菜单、表格属性、删除表格) */
+function emr_dsnTableContext(tblId, ri, ci, x, y) {
     document.querySelectorAll('.emr-ctx-float').forEach(function (m) { m.remove(); });
     const menu = document.createElement('div');
     menu.className = 'emr-context-menu emr-ctx-float';
-    menu.style.cssText = 'position:fixed;z-index:5200;left:' + x + 'px;top:' + y + 'px;min-width:130px;';
-    menu.innerHTML = '<div class="ctx-item" data-a="props">表格属性…</div><div class="ctx-item danger" data-a="del">删除表格</div>';
+    menu.style.cssText = 'position:fixed;z-index:5200;left:' + x + 'px;top:' + y + 'px;min-width:140px;';
+    menu.innerHTML =
+        '<div class="ctx-item has-sub" data-a="add">添加<span class="ctx-caret">›</span>'
+        +   '<div class="ctx-sub">'
+        +     '<div class="ctx-item" data-a="add-row-up">向上添加行</div>'
+        +     '<div class="ctx-item" data-a="add-row-down">向下添加行</div>'
+        +     '<div class="ctx-item" data-a="add-col-left">向左添加列</div>'
+        +     '<div class="ctx-item" data-a="add-col-right">向右添加列</div>'
+        +   '</div></div>'
+        + '<div class="ctx-item has-sub" data-a="delmenu">删除<span class="ctx-caret">›</span>'
+        +   '<div class="ctx-sub">'
+        +     '<div class="ctx-item danger" data-a="del-row">删除当前行</div>'
+        +     '<div class="ctx-item danger" data-a="del-col">删除当前列</div>'
+        +   '</div></div>'
+        + '<div class="ctx-item" data-a="props">表格属性…</div>'
+        + '<div class="ctx-item danger" data-a="tbl-del">删除表格</div>';
     document.body.appendChild(menu);
     const r = menu.getBoundingClientRect();
-    if (r.right > window.innerWidth - 8) menu.style.left = (x - r.width) + 'px';
-    if (r.bottom > window.innerHeight - 8) menu.style.top = (y - r.height) + 'px';
+    if (r.right > window.innerWidth - 8) menu.style.left = Math.max(8, x - r.width) + 'px';
+    if (r.bottom > window.innerHeight - 8) menu.style.top = Math.max(8, y - r.height) + 'px';
     const close = function () { menu.remove(); document.removeEventListener('mousedown', onDoc, true); };
     const onDoc = function (ev) { if (!menu.contains(ev.target)) close(); };
     setTimeout(function () { document.addEventListener('mousedown', onDoc, true); }, 0);
+
+    const withTbl = function (fn) {
+        return function () {
+            if (!_emrEditor) return;
+            const tbl = EmrOps.findBlockById(_emrEditor.getDoc().body, tblId);
+            if (!tbl || tbl.t !== 'tbl') { Dom.toast('表格不存在', 'error'); close(); return; }
+            fn(tbl);
+            _emrEditor.refresh();
+            close();
+        };
+    };
+    menu.querySelector('[data-a="add-row-up"]').addEventListener('click', withTbl(function (t) { EmrOps.tableInsertRow(t, ri, true); }));
+    menu.querySelector('[data-a="add-row-down"]').addEventListener('click', withTbl(function (t) { EmrOps.tableInsertRow(t, ri, false); }));
+    menu.querySelector('[data-a="add-col-left"]').addEventListener('click', withTbl(function (t) { EmrOps.tableInsertCol(t, ci, true); }));
+    menu.querySelector('[data-a="add-col-right"]').addEventListener('click', withTbl(function (t) { EmrOps.tableInsertCol(t, ci, false); }));
+    menu.querySelector('[data-a="del-row"]').addEventListener('click', withTbl(function (t) { EmrOps.tableDelRowAt(t, ri); }));
+    menu.querySelector('[data-a="del-col"]').addEventListener('click', withTbl(function (t) { EmrOps.tableDelColAt(t, ci); }));
     menu.querySelector('[data-a="props"]').addEventListener('click', function () { close(); emr_dsnTableProps(tblId); });
-    menu.querySelector('[data-a="del"]').addEventListener('click', function () {
+    menu.querySelector('[data-a="tbl-del"]').addEventListener('click', function () {
         close();
         Dom.modal('删除表格', '<p>确认从模板中删除整个表格？</p>', [
             { text: '删除', type: 'danger', onclick: function () {

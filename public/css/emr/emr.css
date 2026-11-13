@@ -336,3 +336,13 @@
 }
 .emr-context-menu .ctx-item:hover { background: #f0f7ff; }
 .emr-context-menu .ctx-item.danger { color: #f56c6c; }
+/* 二级菜单 (悬浮展开) */
+.emr-context-menu .ctx-item.has-sub { position: relative; display: flex; align-items: center; justify-content: space-between; }
+.emr-context-menu .ctx-caret { color: #a8abb2; font-size: 12px; margin-left: 10px; }
+.emr-context-menu .ctx-sub {
+    display: none; position: absolute; left: 100%; top: -4px; min-width: 128px;
+    background: #fff; border-radius: 6px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    padding: 4px 0; z-index: 5300;
+}
+.emr-context-menu .ctx-item.has-sub:hover > .ctx-sub { display: block; }
+.emr-context-menu .ctx-sub .ctx-item { white-space: nowrap; }

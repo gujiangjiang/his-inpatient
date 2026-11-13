@@ -372,6 +372,34 @@
       tbl.rows.forEach((r) => r.cells.pop());
     }
   };
+  /** 在 at 行处插入空行 (before=true 向上, false 向下) */
+  O.tableInsertRow = (tbl, at, before) => {
+    const ref = tbl.rows[Math.min(at, tbl.rows.length - 1)];
+    if (!ref) return;
+    const idx = before ? Math.max(0, at) : Math.min(at + 1, tbl.rows.length);
+    tbl.rows.splice(idx, 0, M.row(ref.cells.map((c) => M.cell([M.para()], Object.assign({}, c.tcPr || {})))));
+  };
+  /** 在 at 列处插入空列 (before=true 向左, false 向右) */
+  O.tableInsertCol = (tbl, at, before) => {
+    const n = (tbl.grid || []).length;
+    if (!n) return;
+    const a = Math.min(Math.max(at, 0), n - 1);
+    const idx = before ? a : a + 1;
+    const w = (tbl.grid && tbl.grid[a]) || 60;
+    tbl.grid = (tbl.grid || []).slice(0, idx).concat([w], (tbl.grid || []).slice(idx));
+    tbl.rows.forEach((r) => r.cells.splice(idx, 0, M.cell([M.para()], { w })));
+  };
+  O.tableDelRowAt = (tbl, at) => {
+    if (tbl.rows.length > 1) tbl.rows.splice(Math.min(Math.max(at, 0), tbl.rows.length - 1), 1);
+  };
+  O.tableDelColAt = (tbl, at) => {
+    const n = (tbl.grid || []).length;
+    if (n > 1) {
+      const a = Math.min(Math.max(at, 0), n - 1);
+      tbl.grid.splice(a, 1);
+      tbl.rows.forEach((r) => r.cells.splice(a, 1));
+    }
+  };
 
   /** 设计模式: 删除单个原子项 (仅右击菜单调用) */
   O.removeItemAt = (p, item) => {

@@ -646,7 +646,12 @@
     on(inst.container, 'contextmenu', (e) => {
       e.preventDefault();
       if (!inst.design) return;
-      const el = e.target.closest && e.target.closest('[data-item]');
+      const el0 = e.target.closest && e.target.closest('[data-item]');
+      /* 右击「槽位值/引用值」等元素后随文本时, 归属到其前面的槽位元素 (便于改属性) */
+      const valSpan = !el0 && e.target.closest ? e.target.closest('.pc > span') : null;
+      const prevSlot = valSpan && valSpan.previousElementSibling && valSpan.previousElementSibling.classList
+        && valSpan.previousElementSibling.classList.contains('emr-slot') ? valSpan.previousElementSibling : null;
+      const el = el0 || prevSlot;
       if (el && opts.onItemContext) {
         const pEl = el.closest('.p');
         const info = pEl ? inst.index.get(+pEl.dataset.pid) : null;
@@ -660,7 +665,10 @@
       }
       const tblEl = e.target.closest && e.target.closest('table[data-tblid]');
       if (tblEl && opts.onTableContext) {
-        try { opts.onTableContext(+tblEl.dataset.tblid, e.clientX, e.clientY); } catch (err) { console.error('表格菜单失败', err); }
+        const td = e.target.closest && e.target.closest('td');
+        const ri = td ? Array.prototype.indexOf.call(td.parentElement.parentElement.rows, td.parentElement) : 0;
+        const ci = td ? td.cellIndex : 0;
+        try { opts.onTableContext(+tblEl.dataset.tblid, ri, ci, e.clientX, e.clientY); } catch (err) { console.error('表格菜单失败', err); }
       }
     });
     /* 设计模式: 悬停表格框线时提示可拖拽 (列/行) */
