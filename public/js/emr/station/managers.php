@@ -94,31 +94,85 @@ function emr_tplNewDialog(api, defCat) {
 }
 
 /** 模板管理: 本科室(设计/删除) / 全院(复制到本科室) —— 通用管理器外壳驱动 */
+/** 是否本人创建 (编辑/发布/删除 权限判定) */
+function emrIsCreator(t) {
+    const me = Auth.user && Auth.user.id;
+    return !!me && String(t.created_by) === String(me);
+}
+
+/** 本科室可用过滤: 本人全部 + 已审核全院 + 已审核本科室 */
+function emrMineUsable(t) {
+    if (emrIsCreator(t)) return true;
+    if (!t.pub_status || t.pub_status !== 'approved') return false;
+    if (t.pub_scope === 'all') return true;
+    return t.pub_scope === 'department' && String(t.department_id) === emrMyDeptId();
+}
+
+/** 行内发布状态徽标 */
+function emrStatusTag(t) {
+    if (t.pub_status === 'personal') return '<span class="emr-pub-tag pers">个人</span>';
+    if (t.pub_status === 'pending') return '<span class="emr-pub-tag pend">待审核</span>';
+    if (t.pub_status === 'rejected') return '<span class="emr-pub-tag rej" title="' + EmrUI.esc(t.pub_reject_reason || '') + '">未通过</span>';
+    if (t.pub_scope === 'all') return '<span class="emr-pub-tag all">全院</span>';
+    return '<span class="emr-pub-tag dept">科室</span>';
+}
+
+/** 发布对话框 (模板/内容): 选择 科室用/全院用 → 提交审核 */
+function emr_pubDialog(item, kind, api) {
+    const deptName = emrMyDeptId() ? (item.department_name || '本科室') : '本科室';
+    const sub = Dom.modal('发布' + kind + '「' + Format.escape(item.name || '') + '」',
+        '<div class="form-group"><label class="form-label">发布范围</label>'
+        + '<div class="emr-prop-radios">'
+        + '<label class="emr-prop-radio"><input type="radio" name="pub-scope" value="department" checked> 科室用（' + Format.escape(deptName) + '）</label>'
+        + '<label class="emr-prop-radio"><input type="radio" name="pub-scope" value="all"> 全院用</label>'
+        + '</div></div>'
+        + '<p class="emr-tpl-hint">提交后需管理员在「审核中心」审核；通过后「科室用」对本科室可见，「全院用」对全院可见。未通过可修改后重新发布。</p>',
+        [
+            { text: '提交审核', type: 'primary', onclick: async function () {
+                const scope = sub.querySelector('input[name="pub-scope"]:checked').value;
+                await AjaxLoader.api(kind === '内容' ? 'emr/content-publish' : 'emr/template-publish', { method: 'POST', data: { id: item.id, scope: scope } });
+                Dom.toast('已提交审核', 'success');
+                await api.reload();
+                api.rerender();
+            } },
+            { text: '取消', type: 'default' }
+        ]);
+}
+
+/** 行内操作 (own=本人创建): 编辑 + 发布(个人/未通过时) + 删除; 他人: 复制到本科室 */
+function emrRowActions(t, own) {
+    if (!own) return '<span class="mini" data-a="clone">复制到本科室</span>';
+    let h = '<span class="mini" data-a="edit">编辑</span>';
+    if (t.pub_status === 'personal' || t.pub_status === 'rejected') h += '<span class="mini" data-a="publish">发布</span>';
+    h += '<span class="mini danger" data-a="del">删除</span>';
+    return h;
+}
+
+/** 模板管理: 本科室(编辑/发布/删除) / 全院(复制到本科室) —— 通用管理器外壳驱动 */
 var emr_openTemplateManager = EmrUI.managedList({
     title: '病历模板管理',
     listUrl: 'emr/template-list?structured=1',
     catsUrl: 'emr/category-list',
-    myDeptId: emrMyDeptId(), /* 读取时已登录; isOwn 亦动态判定 */
+    myDeptId: emrMyDeptId(),
     deptNameOf: function (t) { return emrDeptNameOf(t); },
-    isOwn: function (t) { return t.department_id != null && String(t.department_id) === emrMyDeptId(); },
+    isOwn: emrIsCreator,
+    mineFilter: emrMineUsable,
+    statusTag: emrStatusTag,
     deptKeyOf: function (t) { return t.department_id == null ? '0' : String(t.department_id); },
     catKeyOf: function (t) { return t.category_id == null ? 'none' : String(t.category_id); },
     nameOf: function (t) { return t.name; },
     unitLabel: '个模板',
-    actionsHtml: function (t, own) {
-        return own
-            ? '<span class="mini" data-a="design">设计</span><span class="mini danger" data-a="del">删除</span>'
-            : '<span class="mini" data-a="clone">复制到本科室</span>';
-    },
+    actionsHtml: emrRowActions,
     emptyText: function (catName, deptName, tab) {
         return tab === 'mine'
-            ? '该分类暂无本科室模板：可切换到「全院」将模板复制到本科室，或点击下方"新建模板"创建'
+            ? '该分类暂无本科室可用模板：可切换到「全院」复制模板到本科室，或点击下方"新建模板"创建'
             : '「' + EmrUI.esc(deptName) + '」下该分类暂无模板';
     },
     newLabel: '新建模板',
     onNew: function (api, defCat) { emr_tplNewDialog(api, defCat); },
     onRowAction: async function (a, t, api) {
-        if (a === 'design') { api.close(); emr_enterTemplateDesign(t.id); return; }
+        if (a === 'edit') { api.close(); emr_enterTemplateDesign(t.id); return; }
+        if (a === 'publish') { emr_pubDialog(t, '模板', api); return; }
         if (a === 'del') {
             Dom.modal('删除模板', '<p>确认删除模板「' + Format.escape(t.name) + '」？引用该模板的文书不受影响（内容独立保存）。</p>', [
                 { text: '删除', type: 'danger', onclick: async function () {
@@ -146,14 +200,16 @@ var emr_openTemplateManager = EmrUI.managedList({
     }
 });
 
-/** 内容库管理: 本科室(编辑/删除) / 全院(复制到本科室, 三列科室列) —— 通用管理器外壳驱动 */
+/** 内容库管理: 本科室(编辑/发布/删除) / 全院(复制到本科室, 三列科室列) —— 通用管理器外壳驱动 */
 var emr_openContentManager = EmrUI.managedList({
     title: '病历内容库',
     listUrl: 'emr/content-list',
     catsUrl: 'emr/category-list',
     myDeptId: emrMyDeptId(),
     deptNameOf: function (t) { return emrDeptNameOf(t); },
-    isOwn: function (t) { return t.department_id != null && String(t.department_id) === emrMyDeptId(); },
+    isOwn: emrIsCreator,
+    mineFilter: emrMineUsable,
+    statusTag: emrStatusTag,
     deptKeyOf: function (t) { return t.department_id == null ? '0' : String(t.department_id); },
     catKeyOf: function (t) { return t.category_id == null ? 'none' : String(t.category_id); },
     nameOf: function (t) { return t.name; },
@@ -161,14 +217,10 @@ var emr_openContentManager = EmrUI.managedList({
     tagsHtml: function (t) {
         return t.category_name ? '<span class="emr-tpm-rdept">' + Format.escape(t.category_name) + '</span>' : '';
     },
-    actionsHtml: function (t, own) {
-        return own
-            ? '<span class="mini" data-a="edit">编辑</span><span class="mini danger" data-a="del">删除</span>'
-            : '<span class="mini" data-a="clone">复制到本科室</span>';
-    },
+    actionsHtml: emrRowActions,
     emptyText: function (catName, deptName, tab) {
         return tab === 'mine'
-            ? '该分类暂无本科室内容：可切换到「全院」将内容复制到本科室，或点击下方"新建内容"创建（纯文本片段，写病历时可整段或选段写入）'
+            ? '该分类暂无本科室可用内容：可切换到「全院」复制内容到本科室，或点击下方"新建内容"创建（纯文本片段，写病历时可整段或选段写入）'
             : '「' + EmrUI.esc(deptName) + '」下该分类暂无内容';
     },
     newLabel: '新建内容',
@@ -177,6 +229,7 @@ var emr_openContentManager = EmrUI.managedList({
     },
     onRowAction: async function (a, t, api) {
         if (a === 'edit') { emr_contentEditDialog(t, api.cats, api.reload, api.rerender); return; }
+        if (a === 'publish') { emr_pubDialog(t, '内容', api); return; }
         if (a === 'del') {
             Dom.modal('删除内容', '<p>确认删除内容「' + Format.escape(t.name) + '」？</p>', [
                 { text: '删除', type: 'danger', onclick: async function () {
@@ -199,8 +252,6 @@ var emr_openContentManager = EmrUI.managedList({
         }
     }
 });
-
-/** 内容条目编辑对话框 (标题/分类/正文); done 回调刷新列表 */
 function emr_contentEditDialog(item, cats, reload, done) {
     const catOpts = cats.map(function (c) {
         return '<option value="' + c.id + '"' + (String(c.id) === String(item.category_id) ? ' selected' : '') + '>' + Format.escape(c.name) + '</option>';

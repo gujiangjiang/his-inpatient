@@ -84,8 +84,9 @@
       let activeCat = (typeof preCatId === 'string' || typeof preCatId === 'number') ? String(preCatId) : (cfg.defCat || 'all');
       let activeDept = '0';
 
+      const mineFilter = cfg.mineFilter || cfg.isOwn;
       const tabItems = () => activeTab === 'mine'
-        ? items.filter((t) => cfg.isOwn(t))
+        ? items.filter((t) => mineFilter(t))
         : items.filter((t) => cfg.deptKeyOf(t) === activeDept);
       const catTpls = (key) => key === 'all'
         ? tabItems()
@@ -178,6 +179,7 @@
             const own = cfg.isOwn(t);
             return '<div class="emr-tpm-row" data-id="' + t.id + '">'
               + '<span class="emr-tpm-rname" title="' + esc2(cfg.nameOf(t)) + '">' + esc2(cfg.nameOf(t)) + '</span>'
+              + (cfg.statusTag ? cfg.statusTag(t) : '')
               + (cfg.tagsHtml ? cfg.tagsHtml(t, own, activeTab) : '')
               + '<span class="emr-tpm-ract">' + cfg.actionsHtml(t, own) + '</span></div>';
           }).join('');
