@@ -139,6 +139,7 @@
 .emr-body .emr-tbl .pc { min-height: 1.2em; }
 /* 信息表(plain): 默认隐藏框线, 行内排布; 需置于 .emr-tbl td 规则之后覆盖 (同优先级后者胜) */
 .emr-body .emr-tbl-plain td { border: none; padding: 1px 6px 1px 0; vertical-align: top; white-space: nowrap; }
+.emr-body .emr-tbl-plain .emr-fx { font-weight: normal; } /* 信息表标签保持常规字重 */
 
 /* 模板设计模式: 引用/动态项/页眉信息以灰色占位符呈现 (不引用患者数据) */
 .emr-ref-des { color: #9aa1ad; border-bottom: 1px dotted #c3c8d1; cursor: default; }

@@ -45,6 +45,7 @@
       '.pg-body { position: absolute; left: ' + d.bodyLeft + 'px; top: ' + d.bodyTop + 'px; width: ' + d.bodyW + 'px; height: ' + d.bodyH + 'px; overflow: hidden; font-family: ' + (doc.page.font || 'serif') + '; font-size: ' + (doc.page.sz || 12) + 'pt; line-height: ' + (doc.page.line || 1.5) + '; white-space: pre-wrap; overflow-wrap: break-word; }',
       '.pg-body .p { margin: 0; }',
       '.pg-body .emr-slot { display: none !important; } /* 打印不显示填写占位符 */',
+      '.pg-body .emr-tbl-plain .emr-fx { font-weight: normal; } /* 信息表标签保持常规字重 (与预览一致) */',
       '.pg-body .emr-val { border-bottom: none !important; } /* 打印不显示可编辑下划线 */',
       '.pg-body .emr-ref { border-bottom: none !important; }',
       '.pg-foot { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + (d.h - d.mb - d.footerH) + 'px; height: ' + d.footerH + 'px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',

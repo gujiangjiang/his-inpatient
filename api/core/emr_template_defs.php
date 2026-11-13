@@ -17,7 +17,8 @@ return function ($hospital) {
     };
     $sig = function () use ($fx, $dyn, $P) { return $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']); };
     /* 12 项患者信息表单元格助手 (label|value|label|value, 无边框) */
-    $cText = function ($text, $w) { return ['tcPr' => ['w' => $w], 'blocks' => [['t' => 'p', 'runs' => [['t' => 'text', 'text' => $text]]]]]; };
+    /* 信息表标签: 固化为固定元素 (fx) —— 右击可改属性, 日常不可删除; 键按标签文字稳定生成 */
+    $cText = function ($text, $w) { return ['tcPr' => ['w' => $w], 'blocks' => [['t' => 'p', 'runs' => [['t' => 'fx', 'key' => 'il_' . $text, 'text' => $text]]]]]; };
     $cItem = function ($item, $w) { return ['tcPr' => ['w' => $w], 'blocks' => [['t' => 'p', 'runs' => [$item]]]]; };
 
     $page = ['paper' => 'A4', 'mt' => 40, 'mb' => 36, 'ml' => 36, 'mr' => 36, 'header_h' => 16, 'footer_h' => 40,
@@ -44,20 +45,20 @@ return function ($hospital) {
         $body[] = [
             't' => 'tbl',
             'tblPr' => ['plain' => true, 'center' => true],
-            'grid' => [46, 204, 76, 174],
+            'grid' => [46, 188, 80, 186],
             'rows' => [
-                ['cells' => [$cText('姓名：', 46), $cItem($dyn('p_name', ''), 204),
-                    $cText('职业：', 76), $cItem($sel('p_occupation_val', '请选择职业', $OCCUPATION), 174)]],
-                ['cells' => [$cText('性别：', 46), $cItem($dyn('p_gender', ''), 204),
-                    $cText('单位：', 76), $cItem($slot('p_workunit_val', '请输入工作单位'), 174)]],
-                ['cells' => [$cText('年龄：', 46), $cItem($dyn('p_age', ''), 204),
-                    $cText('住址：', 76), $cItem($slot('p_address_val', '请输入住址'), 174)]],
-                ['cells' => [$cText('婚姻：', 46), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 204),
-                    $cText('病史陈述者：', 76), $cItem($sel('p_teller_val', '请选择', $TELLER), 174)]],
-                ['cells' => [$cText('籍贯：', 46), $cItem($slot('p_native_val', '请输入籍贯'), 204),
-                    $cText('入院日期：', 76), $cItem($slot('p_admitdate_val', '请输入'), 174)]],
-                ['cells' => [$cText('民族：', 46), $cItem($sel('p_nation_val', '请选择民族', $NATION), 204),
-                    $cText('记录日期：', 76), $cItem($slot('p_recorddate_val', '请输入'), 174)]],
+                ['cells' => [$cText('姓名：', 46), $cItem($dyn('p_name', ''), 188),
+                    $cText('职业：', 80), $cItem($sel('p_occupation_val', '请选择职业', $OCCUPATION), 186)]],
+                ['cells' => [$cText('性别：', 46), $cItem($dyn('p_gender', ''), 188),
+                    $cText('单位：', 80), $cItem($slot('p_workunit_val', '请输入工作单位'), 186)]],
+                ['cells' => [$cText('年龄：', 46), $cItem($dyn('p_age', ''), 188),
+                    $cText('住址：', 80), $cItem($slot('p_address_val', '请输入住址'), 186)]],
+                ['cells' => [$cText('婚姻：', 46), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 188),
+                    $cText('病史陈述者：', 80), $cItem($sel('p_teller_val', '请选择', $TELLER), 186)]],
+                ['cells' => [$cText('籍贯：', 46), $cItem($slot('p_native_val', '请输入籍贯'), 188),
+                    $cText('入院日期：', 80), $cItem($slot('p_admitdate_val', '请输入'), 186)]],
+                ['cells' => [$cText('民族：', 46), $cItem($sel('p_nation_val', '请选择民族', $NATION), 188),
+                    $cText('记录日期：', 80), $cItem($slot('p_recorddate_val', '请输入'), 186)]],
             ],
         ];
         $body[] = $line('主诉：', 'chief_complaint', '主要症状（或体征）及持续时间');
