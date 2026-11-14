@@ -168,7 +168,9 @@ async function emr_refLoadContent(seq) {
     }, seq);
 }
 
-/** 写回病历: 右侧选中部分文字则写所选, 否则写全部; 按行分段写入光标处 */
+/** 写回病历: 右侧选中部分文字则写所选, 否则写全部; 单事务按行分段写入「当前」光标处
+ *  光标以编辑器实时跟踪位置为准 (点击新的输入框后立即生效, 不再停留在打开面板时的旧位置);
+ *  未放置光标/无有效输入位置时直接提示, 不落文末兜底 */
 function emr_refWriteBack() {
     const right = document.getElementById('emr-refp-right');
     let text = '';
@@ -179,17 +181,17 @@ function emr_refWriteBack() {
     }
     if (!text) text = String(right.innerText || '').trim();
     if (!text) { Dom.toast('右侧暂无内容可写回', 'error'); return; }
-    if (!_emrEditor) { Dom.toast('编辑器未就绪', 'error'); return; }
-    /* 必须定位到文书内有效光标处才能写回 (禁止写入无设计区域/文末兜底) */
-    if (!_emrEditor.focusCaret(_emrRefCaret)) {
-        Dom.toast('请先在文书中点击要插入的位置，再使用引用写回', 'info');
+    if (!_emrEditor || !_emrEditor.insertBlockText) { Dom.toast('编辑器未就绪', 'error'); return; }
+    /* 取实时光标 (最近一次在文书内的点击/选区); 无有效位置 → 报错提示 */
+    const caret = _emrEditor.getCaretPoint() || _emrRefCaret;
+    if (!_emrEditor.focusCaret(caret)) {
+        Dom.toast('请先在文书中点击要插入的位置，再使用引用写回', 'error');
         return;
     }
-    const lines = text.replace(/\r/g, '').split('\n');
-    lines.forEach(function (ln, i) {
-        if (i > 0) _emrEditor.enter();
-        if (ln) _emrEditor.insertText(ln);
-    });
+    if (!_emrEditor.insertBlockText(text)) {
+        Dom.toast('请先在文书中点击要插入的位置，再使用引用写回', 'error');
+        return;
+    }
     Dom.toast('已写回病历', 'success');
 }
 

@@ -32,14 +32,33 @@
     H.clear();
 
     /* ---------- 渲染 ---------- */
+    /* 滚动容器: 整页画布滚动区 (重渲染时保持滚动位置, 避免"闪跳") */
+    const scroller = () => inst.container.closest ? inst.container.closest('.emr-editor-scroll') : null;
+    /* 光标不可见时最小化滚动使其可见 (保持在视口边缘内) */
+    const ensureCaretVisible = () => {
+      const sc = scroller();
+      const sel = window.getSelection();
+      if (!sc || !sel || !sel.rangeCount) return;
+      const rc = sel.getRangeAt(0).getBoundingClientRect();
+      if (!rc || (!rc.top && !rc.bottom)) return;
+      const sr = sc.getBoundingClientRect();
+      const pad = 24;
+      if (rc.top < sr.top + pad) sc.scrollTop -= (sr.top + pad - rc.top);
+      else if (rc.bottom > sr.bottom - pad) sc.scrollTop += (rc.bottom - (sr.bottom - pad));
+    };
     const renderBody = (pos, end) => {
+      const sc = scroller();
+      const keepTop = sc ? sc.scrollTop : 0;
+      const keepLeft = sc ? sc.scrollLeft : 0;
       inst.bodyEl.innerHTML = R.blocksToHTML(inst.doc.body, inst.design);
       inst.index = new Map();
       O.ctx(inst.doc.body).forEach((x) => inst.index.set(x.p.id, x));
+      if (sc) { sc.scrollTop = keepTop; sc.scrollLeft = keepLeft; }
       if (pos) {
-        inst.bodyEl.focus();
+        inst.bodyEl.focus({ preventScroll: true });
         C.restore(inst.bodyEl, pos, end || pos);
         inst._lastPos = pos;
+        ensureCaretVisible();
       }
       inst.updateStatus();
     };
@@ -424,11 +443,15 @@
                 }
                 return;
               }
-              if (opts.datePickers && opts.datePickers[prev.key]) {
+              /* 日期槽 (设计期 dt 属性或内置 datePickers): 已填值点击重新弹层改选 (含格式) */
+              const dtCfg2 = prev.dt
+                ? { mode: prev.dt.mode || 'datetime', fmt: prev.dt.fmt || '' }
+                : (opts.datePickers && opts.datePickers[prev.key] ? { mode: opts.datePickers[prev.key], fmt: '' } : null);
+              if (dtCfg2) {
                 e.preventDefault();
                 deactivateSlot();
                 const cur = O.valueAfterSlot(info2.p, prev.key).trim();
-                const opened = ui.openDatePicker(span, opts.datePickers[prev.key], cur, (val) => applySlotDate(info2, prev.key, +span.dataset.o - 1, val));
+                const opened = ui.openDatePicker(span, dtCfg2.mode, cur, (val) => applySlotDate(info2, prev.key, +span.dataset.o - 1, O.fmtDateTime(val, dtCfg2.fmt)));
                 if (opened) return;
               }
             }
@@ -587,32 +610,54 @@
     });
 
     /* ---------- 设计模式插入 (模板制作) ---------- */
+    /** 插入点解析: 实时选区优先 → 最近跟踪光标; 按块 id 重新解析为当前文档对象
+     *  (撤销/重做/重渲染会替换文档对象); 无有效插入点返回 null (调用方提示, 不再兜底到文末) */
     const posNow = () => {
+      let pos = null;
       const sel = C.rangeToModel(inst.bodyEl, inst.index);
-      if (sel) return sel.a;
-      const paras = O.ctx(inst.doc.body);
-      const p = paras.length ? paras[paras.length - 1].p : inst.doc.body[inst.doc.body.length - 1];
-      return { p, o: M.plen(p), cont: inst.doc.body };
+      if (sel) pos = sel.a;
+      else if (inst._lastPos) pos = inst._lastPos;
+      if (!pos) return null;
+      const p = O.findBlockById(inst.doc.body, pos.p.id);
+      if (!p || p.t !== 'p') return null;
+      const info = O.ctx(inst.doc.body).find((x) => x.p === p);
+      if (!info) return null;
+      return { p, o: Math.max(0, Math.min(pos.o, M.plen(p))), cont: info.cont };
+    };
+    /** 取插入点, 无有效位置时提示 (模板元素必须插入到点击的位置) */
+    const requirePos = () => {
+      const pos = posNow();
+      if (!pos) Dom.toast('请先在页面中点击要插入的位置', 'error');
+      return pos;
     };
     inst.insertField = (label, opts) => {
-      apply('设计', () => O.insertFieldAt(posNow(), label, opts));
+      const pos = requirePos();
+      if (!pos) return;
+      apply('设计', () => O.insertFieldAt(pos, label, opts));
     };
     inst.insertRef = (key, fb) => {
-      apply('设计', () => O.insertRefAt(posNow(), key, fb));
+      const pos = requirePos();
+      if (!pos) return;
+      apply('设计', () => O.insertRefAt(pos, key, fb));
     };
     inst.insertItem = (item) => {
-      apply('设计', () => O.insertRunAt(posNow(), item));
+      const pos = requirePos();
+      if (!pos) return;
+      apply('设计', () => O.insertRunAt(pos, item));
     };
     /** 设计模式: 在当前段后插入 n×n 表格 (按页面边距计算正文可用宽) */
     inst.insertTable = (nRows, nCols) => {
+      const pos = requirePos();
+      if (!pos) return;
       const page = inst.doc.page || {};
       const contentW = 595 - (page.ml != null ? page.ml : 36) - (page.mr != null ? page.mr : 36);
-      apply('设计', () => O.insertTableAt(posNow(), nRows, nCols, contentW));
+      apply('设计', () => O.insertTableAt(pos, nRows, nCols, contentW));
     };
     /** 在当前段之后插入右对齐签名行 (医师签名：+ 签名动态项; 签名时服务端自动填入) */
     inst.insertSignLine = () => {
+      const pos = requirePos();
+      if (!pos) return;
       apply('设计', () => {
-        const pos = posNow();
         const info = O.ctx(inst.doc.body).find((x) => x.p === pos.p);
         const np = M.para([M.fx('sign_line', '医师签名：'), M.item('dyn', { key: 'sign_names', text: '' })], { align: 'right' });
         if (info) info.cont.splice(info.i + 1, 0, np);
@@ -621,8 +666,9 @@
       });
     };
     inst.insertHeading = (text) => {
+      const pos = requirePos();
+      if (!pos) return;
       apply('设计', () => {
-        const pos = posNow();
         const np = O.insertParaAt(pos);
         np.p.pPr = Object.assign({}, np.p.pPr, { align: 'center', borders: { top: true } });
         np.p.rPr = Object.assign({}, np.p.rPr, { b: true, sz: 13 });
@@ -644,10 +690,30 @@
       if (!pos || !inst.bodyEl.isConnected) return false;
       const r = C.modelToRange(inst.bodyEl, pos, pos);
       if (!r) return false;
-      inst.bodyEl.focus();
+      inst.bodyEl.focus({ preventScroll: true }); /* 不引发画布滚动跳动 */
       const sel = window.getSelection();
       sel.removeAllRanges();
       sel.addRange(r);
+      return true;
+    };
+    /** 多行文本整块插入: 按行分段, 单事务一次重渲染 (引用写回用; 不逐行闪跳) */
+    inst.insertBlockText = (text) => {
+      const raw = String(text || '').replace(/\r/g, '');
+      if (!raw) return false;
+      const sel = C.rangeToModel(inst.bodyEl, inst.index);
+      if (!sel) return false;
+      let target = sel.a;
+      apply('引用', () => {
+        if (!sel.collapsed) target = O.deleteRange(sel.a, sel.b);
+        let pos = target;
+        const lines = raw.split('\n');
+        lines.forEach((ln, i) => {
+          if (i > 0) pos = O.insertParaAt(pos);
+          if (ln) for (const ch of ln) pos = O.insertTextAt(pos, ch, rPrOf(pos));
+        });
+        O.assertGuard(inst.doc.body, inst.guard);
+        return pos;
+      });
       return true;
     };
     inst.removeItem = (p, item) => {
