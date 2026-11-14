@@ -101,6 +101,8 @@
 
 /* 下拉选项槽: 点击弹出选项 (是否/婚姻状况/民族等) */
 .emr-slot-sel { cursor: pointer; background: #f5f8ff; }
+/* 下拉/日期槽整体不折行: 占位文字与箭头同行 (混排时不被压缩挤出换行) */
+.emr-slot-sel, .emr-slot-dt { white-space: nowrap; flex-shrink: 0; }
 .emr-slot-sel::after {
   content: '';
   display: inline-block;
@@ -110,6 +112,16 @@
   border-right: 4px solid transparent;
   border-top: 4px solid #8aa8d8;
 }
+/* 已填写: 槽位隐藏但保留箭头按钮 (便于点击改选); 非编辑态不显示 */
+.emr-body[contenteditable="true"] .emr-slot-sel:empty {
+  display: inline-block;
+  min-width: 0;
+  padding: 0 2px;
+  border-bottom: none;
+  background: transparent;
+}
+/* 弹性行(体温/脉搏等): 标签与槽位不被压缩换行 */
+.pc.emr-flx > .emr-fx, .pc.emr-flx > .emr-slot, .pc.emr-flx > .emr-dyn { flex-shrink: 0; white-space: nowrap; }
 /* 下拉弹层 */
 .emr-choice {
   position: fixed;
@@ -125,6 +137,49 @@
 }
 .emr-choice-item { padding: 6px 14px; font-size: 13px; color: #303133; cursor: pointer; white-space: nowrap; }
 .emr-choice-item:hover { background: #eef4ff; }
+/* 复选弹层: 勾选项 + 底部操作 */
+.emr-choice-multi { padding: 6px 8px 8px; }
+.emr-choice-ck {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.emr-choice-ck:hover { background: #eef4ff; }
+.emr-choice-ck input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #149a9a;
+  cursor: pointer;
+}
+.emr-choice-ft {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #eef2f7;
+}
+.emr-choice .mini-btn {
+  padding: 3px 12px;
+  font-size: 12px;
+  color: #606266;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.emr-choice .mini-btn:hover { border-color: #149a9a; color: #149a9a; }
+.emr-choice .mini-btn.mini-ok { color: #fff; background: #149a9a; border-color: #149a9a; }
+.emr-choice .mini-btn.mini-ok:hover { color: #fff; background: #118a8a; }
 
 /* 动态只读项 (BMI/签名/诊断): 普通显示; 诊断同步项可点击 */
 .emr-dyn { user-select: none; -webkit-user-select: none; }
@@ -158,7 +213,7 @@
 /* 制表位 */
 .emr-tab { white-space: pre; }
 /* 信息表占位态: 行内化 (已填写槽保持 :empty 隐藏) */
-.emr-tbl-plain .emr-slot:not(:empty) { display: inline; min-width: 0; }
+.emr-tbl-plain .emr-slot:not(:empty) { display: inline-block; min-width: 0; }
 
 /* 隐藏测量容器 (分页引擎) */
 .emr-measure { contain: layout style; }
