@@ -270,14 +270,17 @@
       });
     };
 
-    /* 占位符激活: 点击后隐藏占位文字(背景提示), 光标落在字段内; 点别处恢复 */
+    /* 占位符激活: 点击后隐藏占位文字(背景提示), 光标落在字段内; 点别处恢复
+     *  设计模式下激活槽位 = 后续输入填入该字段 (O.valTyping); 未激活输入为普通正文 */
     let activeSlot = null;
     const deactivateSlot = () => {
       if (activeSlot) { activeSlot.classList.remove('emr-slot-active'); activeSlot = null; }
+      O.setValTyping(false);
     };
     const activateSlot = (el) => {
       deactivateSlot();
       activeSlot = el;
+      O.setValTyping(true);
       el.classList.add('emr-slot-active');
     };
 
@@ -741,6 +744,7 @@
         rs = null;
       }
       if (window.EmrEditorUI && window.EmrEditorUI.dispose) window.EmrEditorUI.dispose(); /* destroy: 关闭遗留弹层(含日期) */
+      O.setValTyping(false);
       inst._lastPos = null;
       inst._handlers.forEach(([el, type, fn]) => el.removeEventListener(type, fn));
       inst._handlers = [];

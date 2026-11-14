@@ -22,7 +22,8 @@
      固定项的删除保护由 deleteRange/守卫校验负责, 插入边界无需额外钳制 */
   /** 在 pos 插入文本; 返回新光标位置
    *  写入槽值: 紧邻槽位(或值的续写/值内换行)输入的文本自动归属该槽位值 (val 标记),
-   *  混排时槽位后的普通说明文字不受影响; 设计模式一律为普通正文 */
+   *  混排时槽位后的普通说明文字不受影响;
+   *  设计模式: 点击槽位激活后输入视为填入该字段 (valTyping), 未激活时为普通正文 */
   O.insertTextAt = (pos, text, rPr) => {
     if (!text) return pos;
     const p = pos.p;
@@ -32,7 +33,8 @@
     while (k >= 0 && p.runs[k].t === 'br') k--; /* 值内换行后继续归属同一槽位值 */
     const prev = p.runs[k];
     const it = M.text(text, M.cloneR(rPr || p.rPr || {}));
-    if (!O.design && prev && (prev.t === 'slot' || (prev.t === 'text' && prev.val))) it.val = true;
+    /* 值的续写(紧邻既有值)恒归属该值; 紧邻槽位在写模式归属值, 设计模式需槽位激活 */
+    if (prev && (prev.val || (prev.t === 'slot' && (!O.design || O.valTyping)))) it.val = true;
     p.runs.splice(i, 0, it);
     M.normalize(p);
     return { p, o: o + text.length };
@@ -296,7 +298,10 @@
   /* ---------- 模板设计模式 ---------- */
   /** 设计模式标志 (供编辑器/宿主查询; 固定元素删除保护与设计模式无关: 一律只能右击菜单删除) */
   O.design = false;
-  O.setDesignMode = (v) => { O.design = !!v; };
+  O.setDesignMode = (v) => { O.design = !!v; O.valTyping = false; };
+  /** 设计模式: 点击槽位激活后, 紧随输入的文本归属该槽位值 (点击别处输入为普通正文, 便于混排) */
+  O.valTyping = false;
+  O.setValTyping = (v) => { O.valTyping = !!v; };
 
   /** 设计模式: 在 pos 插入字段 (可选固定标签 + 填写槽)
    *  opts: { select 下拉选项, multi 复选, ph 占位描述, withLabel 是否含固定标签(默认含) }
