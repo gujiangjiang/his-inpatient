@@ -28,16 +28,30 @@ if (opd_settings()['opd_enabled'] === '1') {
 }
 
 // 本地字典回退 (FTS5 + LIKE 双通道, data/icd10.sqlite; 仅首页支持, 返回最多 limit 条)
-$keywords = explode(' ', $keyword);
-$ftsQuery = implode(' ', array_map(fn($k) => $k . '*', $keywords));
+// FTS5 查询语法敏感: 用户输入中的引号/星号/运算符会破坏 MATCH 语法 (如 j's 直接 500),
+// 逐词转为「短语前缀」查询 ("词"*), 引号剔除; 任何 FTS 异常回退 LIKE, 不中断请求
+$tokens = preg_split('/\s+/u', $keyword, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+$ftsParts = [];
+foreach ($tokens as $tk) {
+    $tk = str_replace('"', '', $tk);
+    if ($tk === '') continue;
+    $ftsParts[] = '"' . $tk . '"*';
+}
+$ftsQuery = implode(' ', $ftsParts);
 
 $pdo = new PDO('sqlite:' . ICD_DB_PATH);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $results = [];
-$stmt = $pdo->prepare("SELECT code, name FROM icd_codes_fts WHERE icd_codes_fts MATCH ? ORDER BY rank LIMIT " . $limit);
-$stmt->execute([$ftsQuery]);
-$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if ($ftsQuery !== '') {
+    try {
+        $stmt = $pdo->prepare("SELECT code, name FROM icd_codes_fts WHERE icd_codes_fts MATCH ? ORDER BY rank LIMIT " . $limit);
+        $stmt->execute([$ftsQuery]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $results = []; /* FTS 语法异常: 回退 LIKE 检索 */
+    }
+}
 
 if (count($results) < 10 && $offset === 0) {
     $likeStmt = $pdo->prepare("SELECT code, name FROM icd_codes WHERE code LIKE ? OR name LIKE ? ORDER BY code LIMIT 20");
