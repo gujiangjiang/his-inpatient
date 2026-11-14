@@ -64,7 +64,7 @@
    * 通用「管理列表」模态框外壳 (模板管理/内容库共用):
    * 本科室 = 左分类 / 右列表; 全院 = 左科室 / 中分类 / 右列表 (三栏)
    * cfg: {
-   *   title, listUrl, catsUrl,
+   *   title, listUrl, catsUrl, deptsUrl,
    *   myDeptId, deptNameOf(item), isOwn(item), deptKeyOf(item), catKeyOf(item), nameOf(item),
    *   tagsHtml(item, own, tab), actionsHtml(item, own), unitLabel,
    *   emptyText(catName, deptName, tab), newLabel, onNew(api, defCat), onRowAction(action, item, api)
@@ -74,12 +74,15 @@
   const managedList = (cfg) => {
     const esc2 = esc;
     return async function openManager(preCatId) {
-      const [elemRes, catRes] = await Promise.all([
+      const [elemRes, catRes, deptRes] = await Promise.all([
         AjaxLoader.api(cfg.listUrl, { silent: true }),
-        cfg.catsUrl ? AjaxLoader.api(cfg.catsUrl, { silent: true }) : Promise.resolve({ data: [] })
+        cfg.catsUrl ? AjaxLoader.api(cfg.catsUrl, { silent: true }) : Promise.resolve({ data: [] }),
+        cfg.deptsUrl ? AjaxLoader.api(cfg.deptsUrl, { silent: true }) : Promise.resolve({ data: [] })
       ]);
       let items = elemRes.data || [];
       const cats = catRes.data || [];
+      const depts = deptRes.data || [];
+      let deptList = []; /* 全院 Tab 左栏数据: 全院通用 + 全部科室 (渲染时组装) */
       let activeTab = 'mine';
       let activeCat = (typeof preCatId === 'string' || typeof preCatId === 'number') ? String(preCatId) : (cfg.defCat || 'all');
       let activeDept = '0';
@@ -119,12 +122,19 @@
         rerender() { renderDepts(); renderCats(); renderMain(); }
       };
 
-      /** 全院 Tab 左栏: 科室列表 (计数=该科室条目数; 本科室优先/全院通用置顶/名称排序) */
+      /** 全院 Tab 左栏: 科室列表 —— 始终显示「全院通用 + 全部科室」, 与有无内容无关
+       *  (空科室计数 0 仍展示; 计数=该科室可见条目数; 全院通用置顶/本科室次之/名称排序) */
       function renderDepts() {
         const map = new Map();
+        map.set('0', { key: '0', name: '全院通用', n: 0 });
+        depts.forEach((d) => {
+          const k = String(d.id);
+          if (!map.has(k)) map.set(k, { key: k, name: d.name || ('科室#' + k), n: 0 });
+        });
+        if (cfg.myDeptId && !map.has(String(cfg.myDeptId))) map.set(String(cfg.myDeptId), { key: String(cfg.myDeptId), name: '本科室', n: 0 });
         items.forEach((t) => {
           const k = cfg.deptKeyOf(t);
-          if (!map.has(k)) map.set(k, { key: k, name: cfg.deptNameOf(t), n: 0 });
+          if (!map.has(k)) map.set(k, { key: k, name: cfg.deptNameOf(t) || ('科室#' + k), n: 0 }); /* 已删除科室等兜底 */
           map.get(k).n++;
         });
         const list = Array.from(map.values()).sort((a, b) => {
@@ -133,6 +143,7 @@
           if ((a.key === cfg.myDeptId) !== (b.key === cfg.myDeptId)) return a.key === cfg.myDeptId ? -1 : 1;
           return a.name.localeCompare(b.name, 'zh');
         });
+        deptList = list;
         if (!list.some((x) => x.key === activeDept)) activeDept = '0';
         deptsEl.innerHTML = list.map((x) => {
           const tag = x.key === cfg.myDeptId ? '<span class="emr-tpm-dtag">本科室</span>' : '';
@@ -165,8 +176,8 @@
           : (((cats.find((c) => String(c.id) === activeCat)) || {}).name || '');
         let deptName = '';
         if (activeTab === 'all') {
-          const dt = items.find((x) => cfg.deptKeyOf(x) === activeDept);
-          deptName = dt ? cfg.deptNameOf(dt) : '全院通用';
+          const dt = deptList.find((x) => x.key === activeDept);
+          deptName = dt ? dt.name : '全院通用';
         }
         const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + esc2(catName) + '</span>'
           + (deptName ? '<span class="emr-tpm-mdept">· ' + esc2(deptName) + '</span>' : '')

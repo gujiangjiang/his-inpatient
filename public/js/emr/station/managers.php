@@ -48,14 +48,15 @@ function emr_tplNewDialog(api, defCat) {
                         EmrDoc.para([EmrDoc.fx('sign_line', '医师签名：'), EmrDoc.item('dyn', { key: 'sign_names', text: '' })], { align: 'right' })
                     ]
                 };
-                /* 以现有模板为底稿: 复制其版式/正文, 仅替换名称 (科室归属自动为本科室) */
+                /* 以现有模板为底稿: 复制其版式/正文, 仅替换名称 (科室归属自动为本科室)
+                 *  mv 原样保留: 旧模型模板进入设计器时再迁移值标记 */
                 if (selBase) {
                     try {
                         const tr = await AjaxLoader.api('emr/template-get?id=' + selBase, { silent: true });
                         const bs = parseSchema(tr.data && tr.data.schema_json);
                         if (bs && bs.mode === 'word') {
                             schema = {
-                                mode: 'word', title: name, page: bs.page,
+                                mode: 'word', mv: bs.mv, title: name, page: bs.page,
                                 header: Object.assign({}, bs.header, { doc_name: name }),
                                 body: bs.body
                             };
@@ -100,12 +101,11 @@ function emrIsCreator(t) {
     return !!me && String(t.created_by) === String(me);
 }
 
-/** 本科室可用过滤: 本人全部 + 已审核全院 + 已审核本科室 */
+/** 本科室 Tab 过滤: 仅归属本科室的模板/内容 (department_id = 本人科室);
+ *  全院通用 (department_id 为空) 与他人科室条目一律归「全院」Tab, 不与本科室混排 */
 function emrMineUsable(t) {
-    if (emrIsCreator(t)) return true;
-    if (!t.pub_status || t.pub_status !== 'approved') return false;
-    if (t.pub_scope === 'all') return true;
-    return t.pub_scope === 'department' && String(t.department_id) === emrMyDeptId();
+    const my = emrMyDeptId();
+    return !!my && t.department_id != null && String(t.department_id) === String(my);
 }
 
 /** 行内发布状态徽标 */
@@ -153,6 +153,7 @@ var emr_openTemplateManager = EmrUI.managedList({
     title: '病历模板管理',
     listUrl: 'emr/template-list?structured=1',
     catsUrl: 'emr/category-list',
+    deptsUrl: 'admin/department-list',
     myDeptId: emrMyDeptId(),
     deptNameOf: function (t) { return emrDeptNameOf(t); },
     isOwn: emrIsCreator,
@@ -205,6 +206,7 @@ var emr_openContentManager = EmrUI.managedList({
     title: '病历内容库',
     listUrl: 'emr/content-list',
     catsUrl: 'emr/category-list',
+    deptsUrl: 'admin/department-list',
     myDeptId: emrMyDeptId(),
     deptNameOf: function (t) { return emrDeptNameOf(t); },
     isOwn: emrIsCreator,
