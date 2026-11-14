@@ -9,6 +9,10 @@
         <div class="rv-sec-head">内容库待审核<span class="rv-count" id="rv-cons-count"></span></div>
         <div id="rv-cons"></div>
     </div>
+    <div class="rv-sec">
+        <div class="rv-sec-head">病历维护申请<span class="rv-count" id="rv-maint-count"></span></div>
+        <div id="rv-maint"></div>
+    </div>
 </div>
 <script>
 var _rvKind = ''; /* 防止重复初始化加载 */
@@ -18,6 +22,63 @@ async function admin_review_init() {
     _rvKind = 'x';
     await rvLoad('tpls', 'rv-tpls', 'emr/template-list?review=1', '模板');
     await rvLoad('cons', 'rv-cons', 'emr/content-list?review=1', '内容');
+    await rvLoadMaint();
+}
+
+/** 病历维护申请 (签名病历 编辑/删除): 批准 → 编辑退回草稿 / 删除文书; 驳回附原因 */
+async function rvLoadMaint() {
+    const r = await AjaxLoader.api('emr/maintenance-list?review=1', { silent: true });
+    const items = r.data || [];
+    const el = document.getElementById('rv-maint');
+    const countEl = document.getElementById('rv-maint-count');
+    countEl.textContent = items.length ? '(' + items.length + ')' : '';
+    if (!items.length) {
+        el.innerHTML = '<div style="padding:18px;color:#909399;font-size:13px">暂无待审核项</div>';
+        return;
+    }
+    el.innerHTML = items.map(function (it) {
+        const actTxt = it.action === 'delete' ? '删除' : '编辑';
+        const meta = [
+            it.patient_name ? it.patient_name + (it.admission_no ? '（' + it.admission_no + '）' : '') : '',
+            it.requester_name, (it.requested_at || '').slice(0, 16)
+        ].filter(Boolean).join(' · ');
+        return '<div class="rv-row">'
+            + '<div class="rv-name"><b>' + Format.escape(it.doc_title || '未命名文书') + '</b>'
+            + '<span class="rv-prev">原因：' + Format.escape(it.reason || '') + '</span></div>'
+            + '<span class="emr-pub-tag ' + (it.action === 'delete' ? 'rej' : 'pend') + '">' + actTxt + '</span>'
+            + '<span class="rv-meta">' + Format.escape(meta) + '</span>'
+            + '<span class="rv-act"><button type="button" class="btn btn-small btn-success" data-mid="' + it.id + '" data-a="ok">批准</button>'
+            + '<button type="button" class="btn btn-small" data-mid="' + it.id + '" data-a="no">驳回</button></span></div>';
+    }).join('');
+    el.querySelectorAll('button[data-mid]').forEach(function (b) {
+        b.addEventListener('click', function () {
+            if (b.dataset.a === 'ok') {
+                const isDel = (items.find(function (x) { return String(x.id) === String(b.dataset.mid); }) || {}).action === 'delete';
+                Dom.modal('批准维护申请', isDel
+                    ? '<p>将<b>删除</b>该病历及其全部历史版本，且不可恢复。确定批准吗？</p>'
+                    : '<p>将把该病历<b>退回草稿</b>（解锁编辑），修改后需重新签名。确定批准吗？</p>',
+                    [
+                        { text: '批准', type: 'primary', onclick: function () {
+                            AjaxLoader.api('emr/maintenance-review', { method: 'POST', data: { id: b.dataset.mid, action: 'approve' } }).then(function () {
+                                Dom.toast('已批准', 'success');
+                                rvLoadMaint();
+                            });
+                        } },
+                        { text: '取消', type: 'default' }
+                    ]);
+                return;
+            }
+            Dom.modal('驳回维护申请', '<div class="form-group"><label class="form-label">驳回原因（申请人可见）</label><input id="rv-m-reason" class="form-control" placeholder="如：请先联系病案室登记"></div>', [
+                { text: '确认驳回', type: 'danger', onclick: function () {
+                    AjaxLoader.api('emr/maintenance-review', { method: 'POST', data: { id: b.dataset.mid, action: 'reject', reason: document.getElementById('rv-m-reason').value || '' } }).then(function () {
+                        Dom.toast('已驳回', 'success');
+                        rvLoadMaint();
+                    });
+                } },
+                { text: '取消', type: 'default' }
+            ]);
+        });
+    });
 }
 
 function rvRender(elId, items, kind) {
