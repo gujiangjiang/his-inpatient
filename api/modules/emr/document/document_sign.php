@@ -47,9 +47,10 @@ $contentHtml = $doc['content_html'] ?? '';
 if ($docJsonStr !== '') {
     $dj = json_decode($docJsonStr, true);
     if (is_array($dj) && is_array($dj['body'] ?? null)) {
+        $dv2 = ((int)($dj['v'] ?? 0)) >= 2; /* v2: 槽位值以 val 标记界定 (混排不误判) */
         /* 必选字段校验: req 槽位其后无值文本 → 阻止签名 (前端已拦, 服务端兜底防绕过) */
         $missing = [];
-        $checkReq = function ($blocks) use (&$checkReq, &$missing) {
+        $checkReq = function ($blocks) use (&$checkReq, &$missing, $dv2) {
             foreach ($blocks as $b) {
                 if (($b['t'] ?? '') === 'p') {
                     $runs = $b['runs'] ?? [];
@@ -57,12 +58,7 @@ if ($docJsonStr !== '') {
                     for ($i = 0; $i < $n; $i++) {
                         $it = $runs[$i];
                         if (($it['t'] ?? '') === 'slot' && !empty($it['req'])) {
-                            $val = '';
-                            for ($j = $i + 1; $j < $n; $j++) {
-                                $jt = $runs[$j]['t'] ?? '';
-                                if (in_array($jt, ['fx', 'slot', 'dyn', 'ref'], true)) break;
-                                if ($jt === 'text') $val .= (string)$runs[$j]['text'];
-                            }
+                            $val = emr_slot_value_after($runs, $i, $dv2);
                             if (trim($val) === '') {
                                 $missing[] = (string)($it['name'] ?? $it['ph'] ?? $it['key'] ?? '必选字段');
                             }

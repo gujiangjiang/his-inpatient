@@ -96,10 +96,12 @@ function templateGuard($templateId) {
     return emrExtractKeys($schema['body'] ?? []);
 }
 
-/** 校验字处理文档: 结构完整性 + 固定元素键与守卫一致 (不可增删/篡改) */
+/** 校验字处理文档: 结构完整性 + 固定元素键与守卫一致 (不可增删/篡改)
+ *  版本: v1 (旧模型) / v2 (槽位值 val 标记 + 混排; 客户端打开旧文档自动迁移) */
 function validateDocJson($doc, $guard) {
     $errors = [];
-    if (!isset($doc['v']) || $doc['v'] !== 1) $errors[] = '文档版本 v 必须为 1';
+    $dv = isset($doc['v']) ? (int)$doc['v'] : 0;
+    if ($dv < 1 || $dv > 2) $errors[] = '文档版本 v 必须为 1 或 2';
     if (!is_array($doc['body'] ?? null)) $errors[] = '缺少正文 body 数组';
     if (!is_array($doc['header'] ?? null)) $errors[] = '缺少抬头 header';
     if (!is_array($doc['page'] ?? null)) $errors[] = '缺少排版 page 配置';

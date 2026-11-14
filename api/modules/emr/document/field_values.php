@@ -12,8 +12,8 @@ $docs = DB::select(
     "SELECT id, doc_json FROM emr_documents WHERE patient_id = ? ORDER BY updated_at ASC, id ASC",
     [$patientId]
 );
-/** 递归提取段落字段 (含表格单元格内段落) */
-$extract = function ($blocks) use (&$extract, &$fields) {
+/** 递归提取段落字段 (含表格单元格内段落); $v2: 槽位值按 val 标记界定 (混排不误判) */
+$extract = function ($blocks, $v2) use (&$extract, &$fields) {
     foreach ($blocks as $b) {
         if (!is_array($b)) continue;
         if (($b['t'] ?? '') === 'p') {
@@ -26,21 +26,14 @@ $extract = function ($blocks) use (&$extract, &$fields) {
                     $val = trim((string)($it['text'] ?? ''));
                     if (isset($it['key']) && $val !== '') $fields[$it['key']] = $val;
                 } elseif ($t === 'slot' && isset($it['key'])) {
-                    /* 槽位值 = 其后到下一个保护项的文本 */
-                    $val = '';
-                    for ($j = $i + 1; $j < $n; $j++) {
-                        $jt = $runs[$j]['t'] ?? '';
-                        if (in_array($jt, ['fx', 'slot', 'dyn', 'ref'], true)) break;
-                        if ($jt === 'text') $val .= (string)$runs[$j]['text'];
-                    }
-                    $val = trim($val);
+                    $val = trim(emr_slot_value_after($runs, $i, $v2));
                     if ($val !== '') $fields[$it['key']] = $val;
                 }
             }
         } elseif (($b['t'] ?? '') === 'tbl') {
             foreach (($b['rows'] ?? []) as $r) {
                 foreach (($r['cells'] ?? []) as $c) {
-                    $extract($c['blocks'] ?? []);
+                    $extract($c['blocks'] ?? [], $v2);
                 }
             }
         }
@@ -50,6 +43,6 @@ foreach ($docs as $d) {
     if (empty($d['doc_json'])) continue;
     $doc = json_decode($d['doc_json'], true);
     if (!is_array($doc) || !is_array($doc['body'] ?? null)) continue;
-    $extract($doc['body']);
+    $extract($doc['body'], ((int)($doc['v'] ?? 0)) >= 2);
 }
 Response::success(['fields' => $fields]);
