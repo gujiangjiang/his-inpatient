@@ -213,9 +213,11 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
         ? EmrDoc.fromSchema(schema)
         : EmrDoc.fromSections(schema.sections || [], template.name);
     doc.title = opts.title || template.name;
-    /* 槽位「默认内容」预填 (元素属性配置; 非占位符, 可打印可修改) */
+    /* 槽位默认值预填: 下拉/复选用模板勾选的「默认选中」(defPick), 其余用默认内容 (def) */
     EmrOps.walkSlots(doc.body, function (p, slot) {
-        if (slot.def && !EmrOps.valueAfterSlot(p, slot.key).trim()) EmrOps.setSlotValue(p, slot.key, slot.def);
+        if (EmrOps.valueAfterSlot(p, slot.key).trim()) return;
+        if (Array.isArray(slot.defPick) && slot.defPick.length) { EmrOps.setSlotValue(p, slot.key, slot.defPick.join('、')); return; }
+        if (slot.def) EmrOps.setSlotValue(p, slot.key, slot.def);
     });
     /* 记录日期 = 模板选择时指定的日期时间 (默认当前时间; 可点击修改; 不参与首页同步) */
     EmrOps.setSlotValueByKey(doc.body, 'p_recorddate_val', opts.datetime || emrNowStamp());
@@ -288,6 +290,11 @@ async function emr_openDocument(docId) {
         doc.doc_json = EmrDoc.fromSections(doc.sections || [], doc.title);
         doc.doc_meta = doc.doc_meta || {};
         if (!doc.doc_meta.guard) doc.doc_meta.guard = EmrDoc.collectGuard(doc.doc_json.body);
+    }
+    // 旧模型文档 (v<2): 槽位后文本视为值 (val 标记), 保证已填值可改选/参与计算, 保存时自动升级
+    if (doc.doc_json && Number(doc.doc_json.v || 0) < EmrDoc.MODEL_V) {
+        EmrDoc.legacyValMigrate(doc.doc_json.body || []);
+        doc.doc_json.v = EmrDoc.MODEL_V;
     }
     await openWordDoc(doc, doc.status === 'signed');
 }

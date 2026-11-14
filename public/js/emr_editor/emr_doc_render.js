@@ -43,11 +43,13 @@
   };
 
   /* ---------- 段内 run → HTML ---------- */
+  /** 槽位是否已填写: 紧邻其后的 val 值 run 存在 (普通正文紧邻不影响, 支持混排) */
   const paraHasTextAfter = (p, idx) => {
     for (let k = idx + 1; k < p.runs.length; k++) {
       const it = p.runs[k];
-      if (M.isProtected(it)) return false;
-      if (it.t === 'text' && it.text.trim()) return true;
+      if (it.t === 'text') return !!it.val;
+      if (it.t === 'br') continue;
+      return false;
     }
     return false;
   };
@@ -60,25 +62,23 @@
   const runsToHTML = (p, design) => {
     const out = [];
     let pos = 0;
-    let afterSlot = false; /* 槽位后的文本 = 该字段的值: 编辑状态带下划线提示可编辑 */
     for (const it of p.runs) {
       const n = M.ilen(it);
       const o = pos; pos += n;
       if (it.t === 'text') {
         if (it.text) {
-          const cls = afterSlot ? ' class="emr-val"' : '';
+          /* val 文本 = 槽位值: 编辑状态带下划线提示可编辑; 其余为普通正文 */
+          const cls = it.val ? ' class="emr-val"' : '';
           const st = it.rPr && Object.keys(it.rPr).length ? ' style="' + R.rPrStyle(it.rPr) + '"' : '';
           out.push('<span' + cls + ' data-o="' + o + '" data-n="' + n + '"' + st + '>' + esc(it.text) + '</span>');
         }
         continue;
       }
-      if (M.isProtected(it) && it.t !== 'slot') afterSlot = false; /* fx/dyn/ref 结束值的范围 */
       if (it.t === 'fx') {
         out.push('<span class="emr-fx" data-item="fx" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.text) + '</span>');
         continue;
       }
       if (it.t === 'slot') {
-        afterSlot = true;
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
         const cls = 'emr-slot' + ((Array.isArray(it.opts) && it.opts.length) || it.dt ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '') + (it.req ? ' emr-req' : '');
         out.push(filled
@@ -122,7 +122,9 @@
   R.paraToHTML = (p, design) => {
     const inner = runsToHTML(p, design);
     const ps = R.pPrStyle(p.pPr);
-    return '<div class="p" data-pid="' + p.id + '"><div class="pc"' + (ps ? ' style="' + ps + '"' : '') + '>'
+    /* emr-flx: 弹性行标记 (标签/槽位不压缩换行) */
+    const fm = p.pPr && p.pPr.flex === 'between' ? ' emr-flx' : '';
+    return '<div class="p" data-pid="' + p.id + '"><div class="pc' + fm + '"' + (ps ? ' style="' + ps + '"' : '') + '>'
       + (inner || '<br>') + '</div></div>';
   };
 

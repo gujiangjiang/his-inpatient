@@ -20,13 +20,19 @@
   /* 注意: 不能在插入时把「位于固定项起点的光标」强行推到其后 —— 该位置同时也是
      前一槽位的结束边界(如体征行: 槽位后紧邻下一个固定标签), 推移会导致输入错位;
      固定项的删除保护由 deleteRange/守卫校验负责, 插入边界无需额外钳制 */
-  /** 在 pos 插入文本; 返回新光标位置 */
+  /** 在 pos 插入文本; 返回新光标位置
+   *  写入槽值: 紧邻槽位(或值的续写/值内换行)输入的文本自动归属该槽位值 (val 标记),
+   *  混排时槽位后的普通说明文字不受影响; 设计模式一律为普通正文 */
   O.insertTextAt = (pos, text, rPr) => {
     if (!text) return pos;
     const p = pos.p;
     const o = Math.max(0, Math.min(pos.o, M.plen(p)));
     const i = M.splitAt(p, o);
+    let k = i - 1;
+    while (k >= 0 && p.runs[k].t === 'br') k--; /* 值内换行后继续归属同一槽位值 */
+    const prev = p.runs[k];
     const it = M.text(text, M.cloneR(rPr || p.rPr || {}));
+    if (!O.design && prev && (prev.t === 'slot' || (prev.t === 'text' && prev.val))) it.val = true;
     p.runs.splice(i, 0, it);
     M.normalize(p);
     return { p, o: o + text.length };
@@ -222,26 +228,32 @@
   };
 
   /* ---------- 动态只读项 dyn (BMI 自动计算 / 签名 / 诊断同步) ---------- */
-  /** 取段内某 slot 之后紧邻的文本值 (到下一个保护项或段尾) */
+  /** 取段内某 slot 紧邻的值文本 (val 标记 run; 到普通正文或保护项为止) */
   O.valueAfterSlot = (p, key) => {
     let on = false, s = '';
     for (const it of p.runs) {
-      if (on) {
-        if (M.isProtected(it)) break;
-        if (it.t === 'text') s += it.text;
-      } else if (it.t === 'slot' && it.key === key) on = true;
+      if (!on) { if (it.t === 'slot' && it.key === key) on = true; continue; }
+      if (it.t === 'br') continue; /* 值内换行 */
+      if (it.t === 'text' && it.val) { s += it.text; continue; }
+      break;
     }
     return s;
   };
-  /** 设置槽位值: 清除槽位后到下一个保护项之间的旧值, 写入新文本 (下拉选项/外部回填用) */
+  /** 设置槽位值: 仅清除紧邻的旧值 run (val), 不碰槽位后的普通正文 (混排); 外部回填/下拉选择用 */
   O.setSlotValue = (p, key, text) => {
     const runs = p.runs;
     const idx = runs.findIndex((it) => it.t === 'slot' && it.key === key);
     if (idx < 0) return false;
     let end = idx + 1;
-    while (end < runs.length && !M.isProtected(runs[end])) end++;
-    const repl = text ? [M.text(String(text))] : [];
+    while (end < runs.length) {
+      const it = runs[end];
+      if (it.t === 'br') { end++; continue; }
+      if (it.t === 'text' && it.val) { end++; continue; }
+      break;
+    }
+    const repl = text ? [M.text(String(text), null, true)] : [];
     runs.splice(idx + 1, end - (idx + 1), ...repl);
+    M.normalize(p);
     return true;
   };
 
@@ -286,20 +298,25 @@
   O.design = false;
   O.setDesignMode = (v) => { O.design = !!v; };
 
-  /** 设计模式: 在 pos 插入字段 (固定标签 + 填写槽; opts.select 为下拉选项) */
+  /** 设计模式: 在 pos 插入字段 (可选固定标签 + 填写槽)
+   *  opts: { select 下拉选项, multi 复选, ph 占位描述, withLabel 是否含固定标签(默认含) }
+   *  不含标签时仅插入槽位, 支持与文字混排 (如「下拉框」高血压病病史) */
   O.insertFieldAt = (pos, label, opts) => {
     const p = pos.p;
     const o = Math.max(0, Math.min(pos.o, M.plen(p)));
     const i = M.splitAt(p, o);
     const key = 'f' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10);
-    const items = [M.fx(key, String(label) + '：')];
-    const slot = M.slot(key + '_val', '请输入' + label);
+    const withLabel = !(opts && opts.withLabel === false);
+    const items = [];
+    if (withLabel) items.push(M.fx(key, String(label || '') + '：'));
+    const ph = (opts && opts.ph) || (withLabel && label ? '请输入' + label : '请选择');
+    const slot = M.slot(withLabel ? key + '_val' : key, ph);
     if (opts && Array.isArray(opts.select)) slot.opts = opts.select.slice(); /* 空数组也保留: 标记为下拉槽待配置 */
     if (opts && opts.multi) slot.multi = true;
     items.push(slot);
     p.runs.splice(i, 0, ...items);
     M.normalize(p);
-    return { p, o: o + 2, cont: pos.cont };
+    return { p, o: o + items.length, cont: pos.cont };
   };
   /** 设计模式: 插入字段引用 */
   O.insertRefAt = (pos, key, fb) => {

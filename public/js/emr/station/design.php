@@ -64,7 +64,8 @@ async function emr_saveTemplateDesign() {
     if (!_emrDesign || !_emrEditor) return;
     const doc = _emrEditor.getDoc();
     doc.title = _emrDesign.name;
-    const schema = { mode: 'word', title: _emrDesign.name, page: doc.page, header: doc.header, body: doc.body };
+    /* mv = 模型版本 (值标记/混排): 旧 schema 在载入设计时已迁移, 保存即升级 */
+    const schema = { mode: 'word', mv: EmrDoc.MODEL_V, title: _emrDesign.name, page: doc.page, header: doc.header, body: doc.body };
     const payload = {
         name: _emrDesign.name,
         record_type: _emrDesign.recordType,
@@ -158,11 +159,9 @@ function emr_dsnToggleFixed() {
         el.addEventListener('click', function () {
             if (!_emrEditor) return;
             if (el.dataset.fixed === 'date') {
-                _emrEditor.insertItem({
-                    t: 'slot', key: 'd' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10),
-                    ph: '请选择', dt: { mode: 'datetime', fmt: '' }
-                });
+                emr_dsnInsertDate();
             } else if (el.dataset.fixed === 'text') {
+                if (!_emrEditor.getCaretPoint()) { Dom.toast('请先在页面中点击要插入的位置', 'error'); return; }
                 const sub = Dom.modal('插入固定文字',
                     '<div class="form-group"><label class="form-label">文字内容（书写时不可删除，如 主诉：）</label>'
                     + '<input id="dsn-fixedtext" class="form-control" placeholder="如：主诉："></div>',
@@ -182,6 +181,35 @@ function emr_dsnToggleFixed() {
             }
         });
     });
+}
+
+/** 选项文本解析: 换行/顿号/逗号/分号分隔 (创建与属性配置一致) */
+function emrParseOpts(v) {
+    return String(v || '').split(/[\n、，,;；]/).map(function (x) { return x.trim(); }).filter(Boolean);
+}
+
+/** 插入日期组件 (类型/格式/占位描述; 占位描述即未选择时的显示文字) */
+function emr_dsnInsertDate() {
+    if (!_emrEditor) return;
+    if (!_emrEditor.getCaretPoint()) { Dom.toast('请先在页面中点击要插入的位置', 'error'); return; }
+    const blk = emrPropDtBlock({ t: 'slot', dt: { mode: 'datetime', fmt: '' } });
+    const content = blk.html
+        + '<div class="form-group"><label class="form-label">占位描述（未选择时显示，打印不可见）</label>'
+        + '<input id="dsn-dt-ph" class="form-control" value="请选择日期和时间" placeholder="如：请选择日期和时间（可留空）"></div>';
+    const sub = Dom.modal('插入日期组件', content, [
+        { text: '插入', type: 'primary', onclick: function () {
+            const dt = blk.read(sub);
+            const ph = (sub.querySelector('#dsn-dt-ph').value || '').trim();
+            _emrEditor.insertItem({
+                t: 'slot',
+                key: 'd' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10),
+                ph: ph,
+                dt: dt
+            });
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+    blk.bind(sub);
 }
 
 /** 表格快速选择器: 6×6 移入高亮 n×m, 点击插入 */
@@ -356,48 +384,64 @@ function emrPropDtBlock(item) {
     };
 }
 
-/** 属性对话框·下拉选项块 (slot.opts): 选项逐行编辑 + 单选/复选 + 测试预览 */
+/** 属性对话框·下拉选项块 (slot.opts): 选项逐行编辑 + 单选/复选 + 默认选中勾选
+ *  默认选中 = 模板勾选 (新建文书时自动填入; 单选/复选均可再取消), 替代旧「默认内容」 */
 function emrPropOptsBlock(item) {
     const isMulti = !!item.multi;
-    const html = '<div class="form-group"><label class="form-label">选项内容（每行一个）</label>'
-        + '<textarea id="prop-opts" class="form-control" rows="5" placeholder="无&#10;有&#10;不详">' + Format.escape(item.opts.join('\n')) + '</textarea></div>'
+    let picked = Array.isArray(item.defPick) ? item.defPick.slice() : [];
+    const html = '<div class="form-group"><label class="form-label">选项内容（每行一个，也可用顿号/逗号分隔）</label>'
+        + '<textarea id="prop-opts" class="form-control" rows="5" placeholder="承认&#10;否认&#10;不详">' + Format.escape(item.opts.join('\n')) + '</textarea></div>'
         + '<div class="form-group"><label class="form-label">选择类型</label><div class="emr-prop-radios">'
         + [['single', '单选（下拉选择）'], ['multi', '复选（多选、顿号拼接）']].map(function (m) {
             const on = (m[0] === 'multi') === isMulti;
             return '<label class="emr-prop-radio"><input type="radio" name="sel-type" value="' + m[0] + '"' + (on ? ' checked' : '') + '> ' + m[1] + '</label>';
         }).join('') + '</div></div>'
-        + '<div class="form-group"><label class="form-label">测试选择（不保存，仅验证交互）</label>'
-        + '<div id="prop-test" class="emr-prop-test"></div>'
-        + '<div class="emr-prop-testval">结果预览：<b id="prop-test-val">—</b></div></div>';
+        + '<div class="form-group"><label class="form-label">默认选中（新建文书时自动填入，可取消；不勾选则不预填）</label>'
+        + '<div id="prop-defpick" class="emr-prop-test"></div></div>';
+    const isMultiNow = (sub) => {
+        const sel = sub.querySelector('input[name="sel-type"]:checked');
+        return !!(sel && sel.value === 'multi');
+    };
     return {
         html: html,
         bind: function (sub) {
-            const renderTest = function () {
-                const lines = (sub.querySelector('#prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
-                const sel = sub.querySelector('input[name="sel-type"]:checked');
-                const multi = sel && sel.value === 'multi';
-                const box = sub.querySelector('#prop-test');
-                const prev = sub.querySelector('#prop-test-val');
-                prev.textContent = '—';
+            const box = sub.querySelector('#prop-defpick');
+            const renderPick = function () {
+                const lines = emrParseOpts(sub.querySelector('#prop-opts').value);
                 if (!lines.length) { box.innerHTML = '<span class="emr-prop-testempty">暂无选项</span>'; return; }
                 box.innerHTML = lines.map(function (o2) {
-                    return '<label class="emr-prop-radio"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="prop-testpick" value="' + Format.escape(o2) + '"> ' + Format.escape(o2) + '</label>';
+                    return '<label class="emr-prop-radio"><input type="checkbox" value="' + Format.escape(o2) + '"' + (picked.indexOf(o2) >= 0 ? ' checked' : '') + '> ' + Format.escape(o2) + '</label>';
                 }).join('');
                 box.querySelectorAll('input').forEach(function (inp) {
                     inp.addEventListener('change', function () {
-                        const vals = Array.from(box.querySelectorAll('input:checked')).map(function (x) { return x.value; });
-                        prev.textContent = vals.join('、') || '—';
+                        if (inp.checked) {
+                            if (isMultiNow(sub)) {
+                                if (picked.indexOf(inp.value) < 0) picked.push(inp.value);
+                            } else {
+                                picked = [inp.value]; /* 单选: 仅保留一项 */
+                                box.querySelectorAll('input').forEach(function (x) { x.checked = x === inp; });
+                            }
+                        } else {
+                            picked = picked.filter(function (x) { return x !== inp.value; });
+                        }
                     });
                 });
             };
-            sub.querySelector('#prop-opts').addEventListener('input', renderTest);
-            sub.querySelectorAll('input[name="sel-type"]').forEach(function (r) { r.addEventListener('change', renderTest); });
-            renderTest();
+            sub.querySelector('#prop-opts').addEventListener('input', renderPick);
+            sub.querySelectorAll('input[name="sel-type"]').forEach(function (r) {
+                r.addEventListener('change', function () {
+                    if (!isMultiNow(sub) && picked.length > 1) picked = picked.slice(0, 1);
+                    box.querySelectorAll('input').forEach(function (x) { x.checked = picked.indexOf(x.value) >= 0; });
+                });
+            });
+            renderPick();
         },
         read: function (sub) {
-            const lines = (sub.querySelector('#prop-opts').value || '').split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
-            const sel = sub.querySelector('input[name="sel-type"]:checked');
-            return { opts: lines, multi: !!(sel && sel.value === 'multi') };
+            const lines = emrParseOpts(sub.querySelector('#prop-opts').value);
+            const multi = isMultiNow(sub);
+            let dp = picked.filter(function (x) { return lines.indexOf(x) >= 0; });
+            if (!multi) dp = dp.slice(0, 1);
+            return { opts: lines, multi: multi, defPick: dp };
         }
     };
 }
@@ -416,10 +460,13 @@ function emr_dsnShowProps(item, p, o) {
             + '<input id="prop-fx-text" class="form-control" value="' + Format.escape(item.text || '') + '"></div>');
     }
     if (item.t === 'slot') {
-        parts.push('<div class="form-group"><label class="form-label">默认占位符（灰色提示，打印不可见）</label>'
-            + '<input id="prop-ph" class="form-control" value="' + Format.escape(item.ph || '') + '" placeholder="如：请输入"></div>');
-        parts.push('<div class="form-group"><label class="form-label">默认内容（新建文书时自动预填，可打印、可修改）</label>'
-            + '<input id="prop-def" class="form-control" value="' + Format.escape(item.def || '') + '" placeholder="可留空"></div>');
+        parts.push('<div class="form-group"><label class="form-label">占位描述（未填写时显示的灰色提示，打印不可见）</label>'
+            + '<input id="prop-ph" class="form-control" value="' + Format.escape(item.ph || '') + '" placeholder="如：请输入 / 请选择日期和时间"></div>');
+        /* 下拉/复选等可供选择的项目: 默认值改为在下方选项里勾选 (不再使用「默认内容」预填) */
+        if (!Array.isArray(item.opts)) {
+            parts.push('<div class="form-group"><label class="form-label">默认内容（新建文书时自动预填，可打印、可修改）</label>'
+                + '<input id="prop-def" class="form-control" value="' + Format.escape(item.def || '') + '" placeholder="可留空"></div>');
+        }
         parts.push('<div class="form-group"><label class="emr-prop-radio"><input type="checkbox" id="prop-req"' + (item.req ? ' checked' : '') + '> 是否必选（未完成时红色下划线标记，且无法签名）</label></div>');
         if (dtBlk) parts.push(dtBlk.html);
         if (optsBlk) parts.push(optsBlk.html);
@@ -443,14 +490,18 @@ function emr_dsnShowProps(item, p, o) {
             if (item.t === 'slot') {
                 const ph = (sub.querySelector('#prop-ph').value || '').trim();
                 if (ph) item.ph = ph; else delete item.ph;
-                const def = (sub.querySelector('#prop-def').value || '').trim();
-                if (def) item.def = def; else delete item.def;
+                const defEl = sub.querySelector('#prop-def');
+                if (defEl) {
+                    const def = (defEl.value || '').trim();
+                    if (def) item.def = def; else delete item.def;
+                }
                 if (sub.querySelector('#prop-req').checked) item.req = true; else delete item.req;
                 if (dtBlk) item.dt = dtBlk.read(sub);
                 if (optsBlk) {
                     const r0 = optsBlk.read(sub);
                     item.opts = r0.opts;
                     if (r0.multi) item.multi = true; else delete item.multi;
+                    if (r0.defPick.length) item.defPick = r0.defPick; else delete item.defPick;
                 }
             }
             if (item.t === 'ref') item.fb = (sub.querySelector('#prop-fb').value || '').trim() || '＿＿';
@@ -463,27 +514,52 @@ function emr_dsnShowProps(item, p, o) {
     if (optsBlk) optsBlk.bind(sub);
 }
 
-/** 设计工具: 插入字段 / 下拉字段(单选/复选) / 标题 / 引用 */
+/** 设计工具: 插入字段 / 下拉字段(单选/复选) / 标题 / 引用
+ *  下拉/复选: 可不含固定标签 (与文字混排), 选项每行一个, 占位描述可自定义 */
 function emr_dsnInsertField(withSelect, multi) {
     if (!_emrEditor) return;
+    if (!_emrEditor.getCaretPoint()) { Dom.toast('请先在页面中点击要插入的位置', 'error'); return; }
     const title = withSelect ? (multi ? '插入复选框字段' : '插入下拉字段') : '插入字段';
-    const content = '<div class="form-group"><label class="form-label">字段名称（显示为固定标签）</label><input id="dsn-label" class="form-control" placeholder="如：职业史"></div>'
-        + (withSelect ? '<div class="form-group"><label class="form-label">选项（用顿号/逗号分隔，可留空稍后右击配置）</label><input id="dsn-opts" class="form-control" placeholder="如：无、有、不详"></div>'
-            + (multi ? '<p class="emr-tpl-hint">复选：书写时可勾选多项，自动以顿号拼接（如 1、2）</p>' : '') : '');
-    Dom.modal(title, content, [
+    const content = '<div class="form-group"><label class="emr-prop-radio"><input type="checkbox" id="dsn-label-on" checked> 包含固定标签（在字段前显示文字标签，如「职业史：」）</label></div>'
+        + '<div class="form-group" id="dsn-label-row"><label class="form-label">固定标签文字</label>'
+        + '<input id="dsn-label" class="form-control" placeholder="如：职业史"></div>'
+        + (withSelect
+            ? '<div class="form-group"><label class="form-label">选项（每行一个，也可用顿号/逗号分隔；可留空稍后右击配置）</label>'
+              + '<textarea id="dsn-opts" class="form-control" rows="4" placeholder="承认&#10;否认&#10;不详"></textarea></div>'
+              + '<div class="form-group"><label class="form-label">占位描述（未选择时显示，打印不可见）</label>'
+              + '<input id="dsn-ph" class="form-control" value="请选择" placeholder="如：请选择处置措施（可留空）"></div>'
+            : '<div class="form-group"><label class="form-label">占位描述（未填写时显示，打印不可见）</label>'
+              + '<input id="dsn-ph" class="form-control" placeholder="默认：请输入+标签（可留空）"></div>')
+        + (withSelect ? '<p class="emr-tpl-hint">下拉框为独立元素：取消勾选固定标签后可与其他文字混排（如「下拉框」高血压病病史）。</p>' : '')
+        + (multi ? '<p class="emr-tpl-hint">复选：书写时可勾选多项，自动以顿号拼接（如 承认、否认）</p>' : '');
+    const sub = Dom.modal(title, content, [
         { text: '插入', type: 'primary', onclick: function () {
-            const label = (document.getElementById('dsn-label').value || '').trim();
-            if (!label) { Dom.toast('请输入字段名称', 'error'); return false; }
-            const select = withSelect ? (document.getElementById('dsn-opts').value || '').split(/[、，,;；]/).map(function (x) { return x.trim(); }).filter(Boolean) : [];
-            _emrEditor.insertField(label, withSelect ? { select: select, multi: !!multi } : null);
+            const withLabel = sub.querySelector('#dsn-label-on').checked;
+            const label = (sub.querySelector('#dsn-label').value || '').trim();
+            if (withLabel && !label) { Dom.toast('请输入固定标签文字（或取消勾选「包含固定标签」）', 'error'); return false; }
+            const select = withSelect ? emrParseOpts(sub.querySelector('#dsn-opts').value) : [];
+            const ph = (sub.querySelector('#dsn-ph').value || '').trim();
+            _emrEditor.insertField(label, {
+                withLabel: withLabel,
+                select: withSelect ? select : null,
+                multi: !!multi,
+                ph: ph || undefined
+            });
         } },
         { text: '取消', type: 'default' }
     ]);
+    const onEl = sub.querySelector('#dsn-label-on');
+    const labelRow = sub.querySelector('#dsn-label-row');
+    const updLabelRow = function () { labelRow.style.display = onEl.checked ? '' : 'none'; };
+    onEl.addEventListener('change', updLabelRow);
+    updLabelRow();
+    sub.querySelector('#dsn-label').focus();
 }
 function emr_dsnInsertHeading() {
     if (!_emrEditor) return;
+    if (!_emrEditor.getCaretPoint()) { Dom.toast('请先在页面中点击要插入的位置', 'error'); return; }
     const content = '<div class="form-group"><label class="form-label">标题文字</label><input id="dsn-h" class="form-control" placeholder="如：体格检查"></div>';
-    Dom.modal('插入标题', content, [
+    const sub = Dom.modal('插入标题', content, [
         { text: '插入', type: 'primary', onclick: function () {
             const t = (document.getElementById('dsn-h').value || '').trim();
             if (!t) { Dom.toast('请输入标题文字', 'error'); return false; }
@@ -491,14 +567,16 @@ function emr_dsnInsertHeading() {
         } },
         { text: '取消', type: 'default' }
     ]);
+    sub.querySelector('#dsn-h').focus();
 }
 function emr_dsnInsertRef() {
     if (!_emrEditor) return;
+    if (!_emrEditor.getCaretPoint()) { Dom.toast('请先在页面中点击要插入的位置', 'error'); return; }
     const content = '<div class="form-group"><label class="form-label">字段键（其他文书的字段标识）</label>'
         + '<input id="dsn-ref" class="form-control" list="dsn-ref-list" placeholder="如：chief_complaint_val（主诉）">'
         + '<datalist id="dsn-ref-list"><option value="p_name">姓名</option><option value="p_age">年龄</option><option value="p_gender">性别</option><option value="chief_complaint_val">主诉</option><option value="present_illness_val">现病史</option><option value="past_history_val">既往史</option><option value="special_exam_val">专科检查</option><option value="aux_exam_val">辅助检查</option><option value="vital_bmi_value">BMI</option></datalist></div>'
         + '<div class="form-group"><label class="form-label">无值时的占位文字</label><input id="dsn-ref-fb" class="form-control" value="＿＿"></div>';
-    Dom.modal('插入字段引用', content, [
+    const sub = Dom.modal('插入字段引用', content, [
         { text: '插入', type: 'primary', onclick: function () {
             const k = (document.getElementById('dsn-ref').value || '').trim();
             const fb = (document.getElementById('dsn-ref-fb').value || '＿＿').trim();
@@ -507,6 +585,7 @@ function emr_dsnInsertRef() {
         } },
         { text: '取消', type: 'default' }
     ]);
+    sub.querySelector('#dsn-ref').focus();
 }
 
 /** 科室显示名: 全院通用(NULL) / 实时科室名 (id 关联, 随管理员更名同步) / 已删除科室兜底 */

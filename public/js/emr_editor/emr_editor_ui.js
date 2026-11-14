@@ -28,7 +28,8 @@
       dtpInput = inp;
       let done = false;
       const finish = () => { if (!done) { done = true; if (dtpInput === inp) dtpInput = null; inp.remove(); } };
-      inp.addEventListener('change', () => { const v = inp.value; finish(); if (v) onPick(v); });
+      /* 选择/清空均回写 (清空 = 移除槽位值) */
+      inp.addEventListener('change', () => { const v = inp.value; finish(); onPick(v); });
       try { window.DateTimePicker.open(inp); } catch (e) { finish(); return false; }
       setTimeout(finish, 300000); /* 兜底清理 */
       return true;

@@ -57,7 +57,7 @@ function emr_saveAsTemplate() {
             const name = document.getElementById('tpl-name').value.trim();
             if (!name) { Dom.toast('请输入模板名称', 'error'); return false; }
             const doc = _emrEditor.getDoc();
-            const schema = { mode: 'word', title: doc.title, page: doc.page, header: doc.header, body: doc.body };
+            const schema = { mode: 'word', mv: EmrDoc.MODEL_V, title: doc.title, page: doc.page, header: doc.header, body: doc.body };
             AjaxLoader.api('emr/template-save', {
                 method: 'POST',
                 data: {

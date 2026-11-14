@@ -11,7 +11,12 @@
 
   /* ---------- 构造器 ---------- */
   M.para = (runs, pPr, rPr) => ({ t: 'p', id: M.nid(), pPr: pPr || {}, rPr: rPr || {}, runs: runs || [] });
-  M.text = (text, rPr) => ({ t: 'text', text: String(text), rPr: rPr || {} });
+  /* val=true: 该文本 run 是紧邻其前槽位的「值」(非普通正文; 支持【下拉框】文字 混排) */
+  M.text = (text, rPr, val) => {
+    const it = { t: 'text', text: String(text), rPr: rPr || {} };
+    if (val) it.val = true;
+    return it;
+  };
   M.fx = (key, text) => ({ t: 'fx', key, text: String(text || ''), rPr: {} });
   M.slot = (key, ph) => ({ t: 'slot', key, ph: String(ph || ''), rPr: {} });
   M.item = (t, extra) => Object.assign({ t, rPr: {} }, extra || {});
@@ -68,13 +73,13 @@
   M.sameRPr = (a, b) => JSON.stringify(a || {}) === JSON.stringify(b || {});
   M.cloneR = (r) => r ? JSON.parse(JSON.stringify(r)) : {};
 
-  /** 合并相邻同格式文本 run, 丢弃空文本 */
+  /** 合并相邻同格式文本 run, 丢弃空文本 (值/正文属性不同不合并, 保留槽位值边界) */
   M.normalize = (p) => {
     const out = [];
     for (const it of p.runs) {
       if (it.t === 'text' && !it.text) continue;
       const last = out[out.length - 1];
-      if (last && it.t === 'text' && last.t === 'text' && M.sameRPr(last.rPr, it.rPr)) {
+      if (last && it.t === 'text' && last.t === 'text' && M.sameRPr(last.rPr, it.rPr) && !!last.val === !!it.val) {
         out[out.length - 1] = Object.assign({}, last, { text: last.text + it.text });
         continue;
       }
@@ -119,14 +124,43 @@
   };
   /** 标准患者信息栏 (与页眉同排展示) */
   M.DEFAULT_INFO_FIELDS = [['姓名', 'name'], ['性别', 'gender'], ['科别', 'department'], ['病区', 'ward_name'], ['年龄', 'age'], ['床号', 'bed_no'], ['住院号', 'admission_no']];
-  /** 由模板 schema (word 模式) 生成空白文档 (补齐块 id) */
-  M.fromSchema = (schema) => ({
-    v: 1,
-    title: schema.title || '',
-    page: Object.assign({}, M.DEFAULT_PAGE, schema.page || {}),
-    header: Object.assign({}, { hospital: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
-    body: M.ensureIds(JSON.parse(JSON.stringify(schema.body && schema.body.length ? schema.body : [M.para()]))),
-  });
+  /* 模型版本: v2 起文本 run 以 val 标记「槽位值」(混排不误判); mv 为模板 schema 的模型版本 */
+  M.MODEL_V = 2;
+  /** 旧模型(无 val 标记)迁移: 紧邻槽位后的文本视为该槽位的值 (旧版语义如此, 混排模板带 mv≥2 不再迁移) */
+  M.legacyValMigrate = (blocks) => {
+    const walk = (bl) => {
+      for (const b of bl || []) {
+        if (!b) continue;
+        if (b.t === 'p') {
+          const runs = b.runs || [];
+          for (let i = 0; i < runs.length; i++) {
+            if (runs[i].t !== 'slot') continue;
+            for (let k = i + 1; k < runs.length; k++) {
+              const it = runs[k];
+              if (it.t === 'text') { if (it.text) it.val = true; continue; }
+              break;
+            }
+          }
+        } else if (b.t === 'tbl') {
+          for (const r of b.rows || []) for (const c of r.cells || []) walk(c.blocks || []);
+        }
+      }
+    };
+    walk(blocks);
+    return blocks;
+  };
+  /** 由模板 schema (word 模式) 生成空白文档 (补齐块 id; 旧模型 schema 迁移值标记) */
+  M.fromSchema = (schema) => {
+    const body = M.ensureIds(JSON.parse(JSON.stringify(schema.body && schema.body.length ? schema.body : [M.para()])));
+    if (Number(schema.mv || 0) < M.MODEL_V) M.legacyValMigrate(body);
+    return {
+      v: M.MODEL_V,
+      title: schema.title || '',
+      page: Object.assign({}, M.DEFAULT_PAGE, schema.page || {}),
+      header: Object.assign({}, { hospital: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
+      body,
+    };
+  };
   /** 为缺失 id 的块/行/单元格补齐 id (模板 JSON / 迁移数据可能未带 id; 编辑器渲染映射必需) */
   M.ensureIds = (blocks) => {
     for (const b of blocks) {
@@ -156,8 +190,9 @@
       body.push(M.para(runs));
     });
     if (!body.length) body.push(M.para());
+    M.legacyValMigrate(body); /* 旧结构化 content 即槽位值 */
     return {
-      v: 1,
+      v: M.MODEL_V,
       title: title || '',
       page: Object.assign({}, M.DEFAULT_PAGE),
       header: { hospital: '', doc_name: title || '', info_fields: M.DEFAULT_INFO_FIELDS },
