@@ -478,7 +478,20 @@
     return hit;
   };
 
-  /** BMI 自动计算: 由身高(cm)/体重(kg)槽位值重算 → dyn(vital_bmi_value); 任一缺失则清空 */
+  /** 自动计算项 (dyn.calc): 任一模式下跟随当前文书字段值刷新; 求值失败回退为空 */
+  O.recalcCalcs = (body) => {
+    const EC = window.EmrCalc;
+    if (!EC) return;
+    M.walk(body || [], (b) => {
+      if (b.t !== 'p') return;
+      for (const it of b.runs || []) {
+        if (it.t === 'dyn' && it.calc) it.text = EC.calcText(it.calc, body);
+      }
+    });
+  };
+
+  /** BMI 自动计算: 由身高(cm)/体重(kg)槽位值重算 → dyn(vital_bmi_value); 任一缺失则清空
+   *  (旧内置模板的 legacy 计算项; 新「自动计算项」走 recalcCalcs) */
   O.recalcBmi = (body) => {
     const bPara = O.findParaWithItem(body, 'dyn', 'vital_bmi_value');
     if (!bPara) return;

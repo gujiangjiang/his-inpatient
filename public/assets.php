@@ -43,6 +43,7 @@ class Asset {
         '/js/core/pdf_generator.js',
         '/js/core/print_helper.js',
         '/js/emr_editor/emr_doc_model.js',
+        '/js/emr_editor/emr_doc_calc.js',
         '/js/emr_editor/emr_doc_hist.js',
         '/js/emr_editor/emr_doc_ops.js',
         '/js/emr_editor/emr_doc_render.js',

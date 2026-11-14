@@ -117,4 +117,10 @@ function validateDocJson($doc, $guard) {
             }
         }
     }
+
+    /* 自动计算项: 公式引用的字段代码必须在当前文书中存在 (缺失/非法公式直接报错) */
+    foreach (emr_calc_missing($doc) as $mm) {
+        $errors[] = '计算项「' . $mm[0] . '」缺少字段: ' . implode('、', $mm[1]);
+    }
+    if ($errors) Response::error('doc_json 校验失败: ' . implode('; ', $errors));
 }
