@@ -34,6 +34,12 @@
                     <div class="emr-dsn-field" data-sel="multi">复选框（多选、顿号拼接）</div>
                 </div>
             </div>
+            <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-calc"><span class="emr-dsn-caret"></span>插入自动计算项</div>
+                <div class="emr-dsn-sub" id="dsn-calc" style="display:none">
+                    <div class="emr-dsn-field" data-calc="custom" title="按字段代码编写公式（如 BMI = 体重 / (身高/100)^2），书写时自动计算">自动计算项（公式组合字段代码，如 BMI）</div>
+                </div>
+            </div>
             <div class="emr-dsn-item" id="btn-dsn-heading">插入标题</div>
             <div class="emr-dsn-item" id="btn-dsn-ref">插入字段引用</div>
         </div>
@@ -64,7 +70,6 @@
                 <span class="emr-tb-spacer"></span>
                 <button type="button" class="btn btn-small btn-success" id="btn-save">保存草稿</button>
                 <button type="button" class="btn btn-small" id="btn-print">打印</button>
-                <button type="button" class="btn btn-small" id="btn-template">存为模板</button>
                 <button type="button" class="btn btn-small" id="btn-versions">版本</button>
                 <button type="button" class="btn btn-small btn-primary" id="btn-sign">医师签名</button>
             </div>
@@ -107,4 +112,4 @@
     </div>
 </div>
 
-<?php include __DIR__ . "/station/init.php"; include __DIR__ . "/station/design.php"; include __DIR__ . "/station/managers.php"; include __DIR__ . "/station/core.php"; include __DIR__ . "/station/refpanel.php"; include __DIR__ . "/station/host.php";
+<?php include __DIR__ . "/station/init.php"; include __DIR__ . "/station/design.php"; include __DIR__ . "/station/calc.php"; include __DIR__ . "/station/managers.php"; include __DIR__ . "/station/core.php"; include __DIR__ . "/station/refpanel.php"; include __DIR__ . "/station/maint.php"; include __DIR__ . "/station/host.php";

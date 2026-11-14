@@ -70,6 +70,7 @@ function renderCategoryTree() {
             const fullTitle = d.title || d.template_name || '未命名文书';
             item.innerHTML = '<span class="emr-doc-title-text" title="' + Format.escape(fullTitle) + '">' + Format.escape(fullTitle) + '</span>' +
                 '<span class="emr-doc-time">' + Format.escape(emrStamp(d.updated_at || d.created_at || '')) + '</span>' +
+                (d.maint_pending_id ? '<span class="emr-doc-maint" title="维护申请待管理员审核">维护待审</span>' : '') +
                 '<span class="emr-doc-status-tag ' + (d.status === 'signed' ? 'signed' : 'draft') + '">' + (d.status === 'signed' ? '已签名' : '草稿') + '</span>';
             item.onclick = () => emr_openDocument(d.id);
             item.oncontextmenu = (e) => { e.preventDefault(); emr_showContextMenu(e, d); };
@@ -212,7 +213,8 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
     const doc = (schema.mode === 'word')
         ? EmrDoc.fromSchema(schema)
         : EmrDoc.fromSections(schema.sections || [], template.name);
-    doc.title = opts.title || template.name;
+    /* 文书标题优先取模板的抬头 doc_name (与模板名称分离); 上级医师查房等可显式指定 */
+    doc.title = opts.title || (doc.header && doc.header.doc_name) || template.name;
     /* 槽位默认值预填: 下拉/复选用模板勾选的「默认选中」(defPick), 其余用默认内容 (def) */
     EmrOps.walkSlots(doc.body, function (p, slot) {
         if (EmrOps.valueAfterSlot(p, slot.key).trim()) return;
@@ -223,6 +225,8 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
     EmrOps.setSlotValueByKey(doc.body, 'p_recorddate_val', opts.datetime || emrNowStamp());
     /* 字段引用: 仅在首次创建时自动调用一次 (保存即固化, 之后打开不再变化) */
     try { await resolveRefFields(doc); } catch (e) { console.error('字段引用解析失败', e); }
+    /* 自动计算项: 预填/引用完成后按当前文书字段刷新一次 */
+    EmrOps.recalcCalcs(doc.body);
     const meta = Object.assign({ guard: EmrDoc.collectGuard(doc.body) }, opts.meta || {});
     let contentHtml = '';
     try { contentHtml = EmrPrint.buildHTML(doc, buildPatientInfo()); } catch (e) { console.error('打印快照生成失败', e); }
@@ -296,6 +300,8 @@ async function emr_openDocument(docId) {
         EmrDoc.legacyValMigrate(doc.doc_json.body || []);
         doc.doc_json.v = EmrDoc.MODEL_V;
     }
+    // 已知日期字段 (入院日期/记录日期等) 补齐 dt → 作为日期元素展示与配置 (右击属性可见)
+    if (doc.doc_json) EmrDoc.upgradeDateSlots(doc.doc_json.body || []);
     await openWordDoc(doc, doc.status === 'signed');
 }
 

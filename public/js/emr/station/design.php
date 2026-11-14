@@ -22,6 +22,9 @@ async function emr_enterTemplateDesign(tid, opts) {
     document.getElementById('emr-editor').classList.add('emr-design-on');
     document.getElementById('emr-design-bar').style.display = 'flex';
     document.getElementById('emr-design-name').textContent = '模板设计：' + _emrDesign.name;
+    /* 模板设计禁用「引用」: 收起引用面板并隐藏入口按钮 (避免误操作) */
+    document.getElementById('emr-ref-panel').style.display = 'none';
+    document.getElementById('btn-ref-panel').style.display = 'none';
     const dsEl = document.getElementById('emr-doc-status');
     dsEl.textContent = ''; dsEl.className = 'emr-doc-status';
     /* 左栏切换为「模板设计」面板 */
@@ -56,6 +59,7 @@ function emr_exitTemplateDesign() {
     if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
     document.getElementById('emr-design-bar').style.display = 'none';
     document.getElementById('emr-toolbar').style.display = '';
+    document.getElementById('btn-ref-panel').style.display = ''; /* 恢复引用入口 */
     document.getElementById('emr-editor').style.display = 'none';
     document.getElementById('emr-editor-empty').style.display = 'flex';
 }
@@ -63,9 +67,11 @@ function emr_exitTemplateDesign() {
 async function emr_saveTemplateDesign() {
     if (!_emrDesign || !_emrEditor) return;
     const doc = _emrEditor.getDoc();
-    doc.title = _emrDesign.name;
+    /* 文书标题 = 抬头 doc_name (与模板名称分离, 属性弹窗可改); schema.title 与之一致 */
+    const docTitle = (doc.header && doc.header.doc_name) || _emrDesign.name;
+    doc.title = docTitle;
     /* mv = 模型版本 (值标记/混排): 旧 schema 在载入设计时已迁移, 保存即升级 */
-    const schema = { mode: 'word', mv: EmrDoc.MODEL_V, title: _emrDesign.name, page: doc.page, header: doc.header, body: doc.body };
+    const schema = { mode: 'word', mv: EmrDoc.MODEL_V, title: docTitle, page: doc.page, header: doc.header, body: doc.body };
     const payload = {
         name: _emrDesign.name,
         record_type: _emrDesign.recordType,
@@ -141,7 +147,8 @@ function emr_dsnRenderFieldList(q) {
 var EMR_FIXED_ELEMENTS = [
     { id: 'date', label: '日期组件', hint: '默认日期+时间, 右击可改类型与格式' },
     { id: 'text', label: '固定文字', hint: '不可删除的描述文字（如 主诉：现病史：等标签）' },
-    { id: 'sign', label: '签名元素', hint: '医师签名行（签名时自动填入姓名）' }
+    { id: 'sign', label: '签名元素', hint: '医师签名行（签名时自动填入姓名）' },
+    { id: 'hr', label: '分隔线', hint: '在当前段落后插入一条横向分隔线（区分上下内容，如体格检查上方横线）' }
 ];
 
 /** 固定元素展开列表 */
@@ -178,6 +185,8 @@ function emr_dsnToggleFixed() {
                 inp.focus();
             } else if (el.dataset.fixed === 'sign') {
                 _emrEditor.insertSignLine();
+            } else if (el.dataset.fixed === 'hr') {
+                _emrEditor.insertDivider();
             }
         });
     });
@@ -446,15 +455,24 @@ function emrPropOptsBlock(item) {
     };
 }
 
-/** 元素属性对话框 (通用): 名称/内容/默认内容/默认占位符/是否必选 + 类型专属(日期/下拉选项) */
+/** 元素属性对话框 (通用): 名称/内容/默认内容/默认占位符/是否必选 + 类型专属(日期/下拉选项)
+ *  元素名称 = 系统识别用, 只读展示 (由元素内容/标签/键自动推导, 保证与模板结构一致);
+ *  仅「自动计算项」的显示名称可改 (如 BMI) */
 function emr_dsnShowProps(item, p, o) {
     const TYPE_NAME = { fx: '固定文字', slot: '填写字段', ref: '字段引用', dyn: '动态项' };
     const parts = [];
     const dtBlk = (item.t === 'slot' && item.dt) ? emrPropDtBlock(item) : null;
     const optsBlk = (item.t === 'slot' && Array.isArray(item.opts)) ? emrPropOptsBlock(item) : null;
+    const calcBlk = (item.t === 'dyn' && item.calc) ? emrCalcBlock(item, false) : null;
 
-    parts.push('<div class="form-group"><label class="form-label">元素名称（识别用，可留空）</label>'
-        + '<input id="prop-name" class="form-control" value="' + Format.escape(item.name || '') + '" placeholder="' + Format.escape(emr_dsnItemName(item)) + '"></div>');
+    if (item.t === 'dyn' && item.calc) {
+        /* 自动计算项: 显示名称可自由命名 (如 BMI), 不影响元素键/引用 */
+        parts.push('<div class="form-group"><label class="form-label">显示名称（可自由命名，如 BMI）</label>'
+            + '<input id="prop-name" class="form-control" value="' + Format.escape(item.name || '') + '" placeholder="如：BMI"></div>');
+    } else {
+        parts.push('<div class="form-group"><label class="form-label">元素名称（系统识别用，不可修改）</label>'
+            + '<p class="emr-tpl-hint emr-prop-static">' + Format.escape(emr_dsnItemName(item)) + ' · ' + (TYPE_NAME[item.t] || '元素') + '</p></div>');
+    }
     if (item.t === 'fx') {
         parts.push('<div class="form-group"><label class="form-label">元素内容（固定显示、日常不可删除）</label>'
             + '<input id="prop-fx-text" class="form-control" value="' + Format.escape(item.text || '') + '"></div>');
@@ -476,12 +494,19 @@ function emr_dsnShowProps(item, p, o) {
             + '<input id="prop-fb" class="form-control" value="' + Format.escape(item.fb || '＿＿') + '"></div>');
     }
     if (item.t === 'dyn') {
-        parts.push('<div class="form-group"><label class="form-label">说明</label><p class="emr-tpl-hint">动态项内容由系统自动填充（' + Format.escape(emr_dynHint(item.key)) + '），书写时不可手动编辑。</p></div>');
+        if (calcBlk) {
+            parts.push(calcBlk.html); /* 自动计算项: 公式编辑 + 字段代码字典 */
+        } else {
+            parts.push('<div class="form-group"><label class="form-label">说明</label><p class="emr-tpl-hint">动态项内容由系统自动填充（' + Format.escape(emr_dynHint(item.key)) + '），书写时不可手动编辑。</p></div>');
+        }
     }
     const sub = Dom.modal('元素属性 · ' + (TYPE_NAME[item.t] || '元素'), parts.join(''), [
         { text: '确定', type: 'primary', onclick: function () {
-            const name = (sub.querySelector('#prop-name').value || '').trim();
-            if (name) item.name = name; else delete item.name;
+            const nameEl = sub.querySelector('#prop-name'); /* 仅自动计算项可改显示名 */
+            if (nameEl) {
+                const name = (nameEl.value || '').trim();
+                if (name) item.name = name; else delete item.name;
+            }
             if (item.t === 'fx') {
                 const tv = (sub.querySelector('#prop-fx-text').value || '').trim();
                 if (!tv) { Dom.toast('元素内容不能为空', 'error'); return false; }
@@ -505,6 +530,11 @@ function emr_dsnShowProps(item, p, o) {
                 }
             }
             if (item.t === 'ref') item.fb = (sub.querySelector('#prop-fb').value || '').trim() || '＿＿';
+            if (calcBlk) {
+                const rc = calcBlk.read(sub);
+                if (!rc) return false;
+                item.calc = { expr: rc.expr, dec: rc.dec };
+            }
             if (_emrEditor) _emrEditor.refresh();
             Dom.toast('属性已更新', 'success');
         } },
@@ -512,6 +542,7 @@ function emr_dsnShowProps(item, p, o) {
     ]);
     if (dtBlk) dtBlk.bind(sub);
     if (optsBlk) optsBlk.bind(sub);
+    if (calcBlk) calcBlk.bind(sub);
 }
 
 /** 设计工具: 插入字段 / 下拉字段(单选/复选) / 标题 / 引用

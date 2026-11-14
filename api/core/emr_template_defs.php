@@ -7,6 +7,8 @@ return function ($hospital) {
     $fx = function ($key, $text) { return ['t' => 'fx', 'key' => $key, 'text' => $text]; };
     $slot = function ($key, $ph) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph]; };
     $sel = function ($key, $ph, array $opts) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph, 'opts' => $opts]; };
+    /* 日期元素: mode = datetime|date|time (书写时可弹日期选择器, 右击属性可改类型/格式/占位) */
+    $dtslot = function ($key, $ph, $mode = 'datetime') { return ['t' => 'slot', 'key' => $key, 'ph' => $ph, 'dt' => ['mode' => $mode, 'fmt' => '']]; };
     $dyn = function ($key, $text = '') { return ['t' => 'dyn', 'key' => $key, 'text' => $text]; };
     /* 字段引用: 自动调用患者其他文书的字段值 (如【姓名】【年龄】【主诉】); fb 为无值时的占位提示 */
     $ref = function ($key, $fb) { return ['t' => 'ref', 'key' => $key, 'fb' => $fb]; };
@@ -38,7 +40,7 @@ return function ($hospital) {
     $YESNO = ['无', '有'];
 
     /** 入院记录正文 (通用) */
-    $admissionBody = function () use ($fx, $slot, $sel, $dyn, $head, $row, $line, $P, $sig, $cText, $cItem, $NATION, $MARRIAGE, $OCCUPATION, $TELLER, $YESNO) {
+    $admissionBody = function () use ($fx, $slot, $sel, $dtslot, $dyn, $head, $row, $line, $P, $sig, $cText, $cItem, $NATION, $MARRIAGE, $OCCUPATION, $TELLER, $YESNO) {
         $body = [];
         /* 患者信息 12 项 (两列: 左 姓名/性别/年龄/婚姻/籍贯/民族, 右 职业/单位/住址/病史陈述者/入院日期/记录日期)
            编辑状态下与病案首页单项同步 (未手动修改过的字段自动更新, 手动修改并保存后停止同步) */
@@ -56,9 +58,9 @@ return function ($hospital) {
                 ['cells' => [$cText('婚姻：', 46), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 188),
                     $cText('病史陈述者：', 80), $cItem($sel('p_teller_val', '请选择', $TELLER), 186)]],
                 ['cells' => [$cText('籍贯：', 46), $cItem($slot('p_native_val', '请输入籍贯'), 188),
-                    $cText('入院日期：', 80), $cItem($slot('p_admitdate_val', '请输入'), 186)]],
+                    $cText('入院日期：', 80), $cItem($dtslot('p_admitdate_val', '请选择入院日期和时间'), 186)]],
                 ['cells' => [$cText('民族：', 46), $cItem($sel('p_nation_val', '请选择民族', $NATION), 188),
-                    $cText('记录日期：', 80), $cItem($slot('p_recorddate_val', '请输入'), 186)]],
+                    $cText('记录日期：', 80), $cItem($dtslot('p_recorddate_val', '请选择记录日期和时间'), 186)]],
             ],
         ];
         $body[] = $line('主诉：', 'chief_complaint', '主要症状（或体征）及持续时间');
@@ -129,10 +131,10 @@ return function ($hospital) {
     };
 
     /** 日常查房记录 (示例: 字段引用自动调用入院记录中的【姓名】【年龄】【主诉】) */
-    $dailyRound = function () use ($row, $fx, $slot, $line, $P, $dyn, $ref) {
+    $dailyRound = function () use ($row, $fx, $slot, $dtslot, $line, $P, $dyn, $ref) {
         return [
-            $row([$fx('round_date', '记录日期：'), $slot('round_date_val', '请输入'),
-                $fx('round_time', '记录时间：'), $slot('round_time_val', '请输入')]),
+            $row([$fx('round_date', '记录日期：'), $dtslot('round_date_val', '请选择日期', 'date'),
+                $fx('round_time', '记录时间：'), $dtslot('round_time_val', '请选择时间', 'time')]),
             $P([['t' => 'text', 'text' => '患者'], $ref('p_name', '＿＿＿'), ['t' => 'text', 'text' => '，'],
                 $ref('p_age', '＿＿'), ['t' => 'text', 'text' => '岁，因“'],
                 $ref('chief_complaint_val', '＿＿＿'), ['t' => 'text', 'text' => '”入院，今日查房。']]),
@@ -143,10 +145,10 @@ return function ($hospital) {
     };
 
     /** 上级医师查房记录 */
-    $seniorRound = function () use ($row, $fx, $slot, $line, $P, $dyn) {
+    $seniorRound = function () use ($row, $fx, $slot, $dtslot, $line, $P, $dyn) {
         return [
-            $row([$fx('round_date', '查房日期：'), $slot('round_date_val', '请输入'),
-                $fx('round_time', '查房时间：'), $slot('round_time_val', '请输入')]),
+            $row([$fx('round_date', '查房日期：'), $dtslot('round_date_val', '请选择日期', 'date'),
+                $fx('round_time', '查房时间：'), $dtslot('round_time_val', '请选择时间', 'time')]),
             $line('上级医师查房意见：', 'senior_opinion', '诊断依据、鉴别诊断及下一步诊疗意见'),
             $line('执行情况：', 'senior_exec', '落实情况'),
             $P([$fx('sign_line', '医师签名：'), $dyn('sign_names', '')], ['align' => 'right']),
@@ -165,9 +167,9 @@ return function ($hospital) {
     };
 
     /** 医患沟通记录 */
-    $communicate = function () use ($row, $fx, $slot, $line, $P, $dyn) {
+    $communicate = function () use ($row, $fx, $slot, $dtslot, $line, $P, $dyn) {
         return [
-            $row([$fx('comm_date', '沟通时间：'), $slot('comm_date_val', '请输入'),
+            $row([$fx('comm_date', '沟通时间：'), $dtslot('comm_date_val', '请选择日期和时间'),
                 $fx('comm_place', '沟通地点：'), $slot('comm_place_val', '请输入')]),
             $line('参加人员：', 'comm_people', '医师及患者（家属）参加人员'),
             $line('沟通内容：', 'comm_content', '病情、诊疗方案、风险及注意事项等'),
@@ -178,10 +180,10 @@ return function ($hospital) {
     };
 
     /** 出院记录 */
-    $dischargeRecord = function () use ($row, $fx, $slot, $line, $P, $dyn) {
+    $dischargeRecord = function () use ($row, $fx, $slot, $dtslot, $line, $P, $dyn) {
         return [
-            $row([$fx('admission_date', '入院日期：'), $slot('admission_date_val', '请输入'),
-                $fx('discharge_date', '出院日期：'), $slot('discharge_date_val', '请输入')]),
+            $row([$fx('admission_date', '入院日期：'), $dtslot('admission_date_val', '请选择日期', 'date'),
+                $fx('discharge_date', '出院日期：'), $dtslot('discharge_date_val', '请选择日期', 'date')]),
             $line('入院情况：', 'adm_condition', '入院时病情、主要症状体征'),
             $line('入院诊断：', 'adm_diag'),
             $line('诊疗经过：', 'course', '住院期间检查、治疗及转归'),

@@ -40,7 +40,7 @@ function updateEditorStatus(chars, dirty) {
 function syncToolbar(signed) {
     ['btn-bold', 'btn-italic', 'btn-underline', 'btn-strike',
      'btn-align-l', 'btn-align-c', 'btn-align-r', 'btn-align-j',
-     'btn-undo', 'btn-redo', 'btn-save', 'btn-template'].forEach(id => {
+     'btn-undo', 'btn-redo', 'btn-save'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.disabled = signed;
     });
@@ -63,6 +63,14 @@ async function emr_saveDraft(auto) {
     const title = _emrCurrentDoc.title || '病历';
     const doc = _emrEditor.getDoc();
     doc.title = title;
+    /* 自动计算项校验: 公式涉及的字段代码在当前文书中必须存在 (缺失直接报错, 不落库) */
+    const missCalc = (window.EmrCalc && EmrCalc.missing(doc.body)) || [];
+    if (missCalc.length) {
+        const msg = '自动计算项缺少字段: ' + missCalc.map(function (m) { return m.name + '（' + m.keys.join('、') + '）'; }).join('；');
+        setSaveState('保存失败', 'error');
+        if (!isAuto) Dom.toast(msg, 'error');
+        return;
+    }
     const meta = Object.assign({}, _emrCurrentDoc.doc_meta || {});
     if (!meta.guard) meta.guard = EmrDoc.collectGuard(doc.body);
 

@@ -48,29 +48,6 @@ function emr_printDoc() {
     if (_emrEditor) _emrEditor.print();
 }
 
-function emr_saveAsTemplate() {
-    if (!_emrEditor) { Dom.toast('请先打开文书', 'error'); return; }
-    const cat = _emrCategories.find(c => c.id == _emrCurrentDoc.category_id);
-    const content = '<div class="form-group"><label class="form-label">模板名称</label><input type="text" id="tpl-name" class="form-control" value="' + Format.escape(_emrCurrentDoc.title || '病历') + '模板"></div>';
-    Dom.modal('存为模板', content, [
-        { text: '保存', type: 'primary', onclick: function() {
-            const name = document.getElementById('tpl-name').value.trim();
-            if (!name) { Dom.toast('请输入模板名称', 'error'); return false; }
-            const doc = _emrEditor.getDoc();
-            const schema = { mode: 'word', mv: EmrDoc.MODEL_V, title: doc.title, page: doc.page, header: doc.header, body: doc.body };
-            AjaxLoader.api('emr/template-save', {
-                method: 'POST',
-                data: {
-                    name: name, record_type: (cat && cat.code) || 'admission',
-                    content_delta: '{}', content_html: '',
-                    schema_json: JSON.stringify(schema), category_id: _emrCurrentDoc.category_id
-                }
-            }).then(() => Dom.toast('模板已保存', 'success'));
-        } },
-        { text: '取消', type: 'default' }
-    ]);
-}
-
 function emr_showVersions() {
     if (!_emrCurrentDoc) return;
     AjaxLoader.api('emr/version-list?doc_id=' + _emrCurrentDoc.id, { silent: true }).then(r => {
@@ -97,13 +74,19 @@ function emr_restoreVersion(versionId) {
 function emr_undo() { if (_emrEditor) _emrEditor.undo(); }
 function emr_redo() { if (_emrEditor) _emrEditor.redo(); }
 
-/* ================= 右键菜单 / 删除 ================= */
+/* ================= 右键菜单 / 删除 / 病历维护 ================= */
 function emr_showContextMenu(e, doc) {
     const items = [{ a: 'open', label: '打开' }];
-    if (doc.status !== 'signed') items.push({ a: 'del', label: '删除', danger: true });
+    if (doc.status !== 'signed') {
+        items.push({ a: 'del', label: '删除', danger: true });
+    } else {
+        /* 已签名病历: 删除/编辑均需「病历维护」申请, 管理员审核通过后解锁 */
+        items.push({ a: 'maint', label: doc.maint_pending_id ? '病历维护（待审核）' : '病历维护…' });
+    }
     EmrUI.floatMenu(items, e.clientX, e.clientY, function (a) {
         if (a === 'open') emr_openDocument(doc.id);
         else if (a === 'del') emr_deleteDoc(doc.id);
+        else if (a === 'maint') emr_maintDialog(doc);
     });
 }
 
@@ -137,7 +120,6 @@ function bindToolbar() {
     bind('btn-redo', emr_redo);
     bind('btn-save', () => emr_saveDraft(false));
     bind('btn-print', emr_printDoc);
-    bind('btn-template', emr_saveAsTemplate);
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
@@ -155,6 +137,17 @@ function bindToolbar() {
         const open = head.classList.toggle('open');
         document.getElementById('dsn-select').style.display = open ? '' : 'none';
     });
+    bind('dsn-sec-calc', function () {
+        const head = document.getElementById('dsn-sec-calc');
+        const open = head.classList.toggle('open');
+        document.getElementById('dsn-calc').style.display = open ? '' : 'none';
+    });
+    (function () {
+        const box = document.getElementById('dsn-calc');
+        box.querySelectorAll('.emr-dsn-field').forEach(function (el) {
+            el.addEventListener('click', function () { emr_dsnInsertCalc(); });
+        });
+    })();
     bind('dsn-sec-diag', function () {
         const head = document.getElementById('dsn-sec-diag');
         const open = head.classList.toggle('open');

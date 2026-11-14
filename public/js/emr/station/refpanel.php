@@ -16,6 +16,7 @@ function emr_refToggle() {
 }
 
 function emr_refSwitch(tab) {
+    if (_emrDesign) return; /* 模板设计禁用引用 (双保险) */
     _emrRefTab = tab;
     _emrRefSeq++;
     const mySeq = _emrRefSeq;
@@ -172,6 +173,7 @@ async function emr_refLoadContent(seq) {
  *  光标以编辑器实时跟踪位置为准 (点击新的输入框后立即生效, 不再停留在打开面板时的旧位置);
  *  未放置光标/无有效输入位置时直接提示, 不落文末兜底 */
 function emr_refWriteBack() {
+    if (_emrDesign) { Dom.toast('模板设计中不可使用引用写回', 'info'); return; } /* 双保险 */
     const right = document.getElementById('emr-refp-right');
     let text = '';
     const sel = window.getSelection();

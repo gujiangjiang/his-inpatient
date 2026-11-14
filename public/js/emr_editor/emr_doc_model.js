@@ -149,10 +149,29 @@
     walk(blocks);
     return blocks;
   };
-  /** 由模板 schema (word 模式) 生成空白文档 (补齐块 id; 旧模型 schema 迁移值标记) */
+  /* 已知日期/时间字段 (内置模板键): 旧模板缺失 dt 时按此补齐 → 右击属性可完整配置日期元素 */
+  M.KNOWN_DATE_KEYS = {
+    p_recorddate_val: 'datetime', p_admitdate_val: 'datetime',
+    round_date_val: 'date', round_time_val: 'time',
+    comm_date_val: 'datetime', admission_date_val: 'date', discharge_date_val: 'date',
+  };
+  /** 为已知日期字段补齐 dt 属性 (升级为日期元素; 已有 dt 不覆盖; 打开旧模板/文档时调用) */
+  M.upgradeDateSlots = (blocks) => {
+    M.walk(blocks || [], (b) => {
+      if (b.t !== 'p') return;
+      for (const it of b.runs || []) {
+        if (it.t === 'slot' && !it.dt && M.KNOWN_DATE_KEYS[it.key]) {
+          it.dt = { mode: M.KNOWN_DATE_KEYS[it.key], fmt: '' };
+        }
+      }
+    });
+    return blocks;
+  };
+  /** 由模板 schema (word 模式) 生成空白文档 (补齐块 id; 旧模型 schema 迁移值标记 + 日期字段升级) */
   M.fromSchema = (schema) => {
     const body = M.ensureIds(JSON.parse(JSON.stringify(schema.body && schema.body.length ? schema.body : [M.para()])));
     if (Number(schema.mv || 0) < M.MODEL_V) M.legacyValMigrate(body);
+    M.upgradeDateSlots(body);
     return {
       v: M.MODEL_V,
       title: schema.title || '',
