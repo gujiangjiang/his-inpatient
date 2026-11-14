@@ -59,16 +59,34 @@
     diag_admission: '入院诊断', diag_discharge: '出院诊断',
     p_name: '姓名', p_gender: '性别', p_age: '年龄',
   };
+  /** 已填写下拉/日期槽: 值文本序列最后一 run 的下标 (箭头跟在值后面, 与未选时「占位+箭头」一致) */
+  const valArrowIndex = (p) => {
+    let last = -1;
+    const runs = p.runs;
+    for (let i = 0; i < runs.length; i++) {
+      const it = runs[i];
+      if (it.t !== 'slot' || !((Array.isArray(it.opts) && it.opts.length) || it.dt)) continue;
+      let j = i + 1;
+      while (j < runs.length && runs[j].t === 'br') j++;
+      let tail = -1;
+      while (j < runs.length && runs[j].t === 'text' && runs[j].val) { tail = j; j++; }
+      if (tail >= 0) last = tail;
+    }
+    return last;
+  };
   const runsToHTML = (p, design) => {
     const out = [];
+    const arrowAt = valArrowIndex(p);
     let pos = 0;
-    for (const it of p.runs) {
+    for (let ri = 0; ri < p.runs.length; ri++) {
+      const it = p.runs[ri];
       const n = M.ilen(it);
       const o = pos; pos += n;
       if (it.t === 'text') {
         if (it.text) {
-          /* val 文本 = 槽位值: 编辑状态带下划线提示可编辑; 其余为普通正文 */
-          const cls = it.val ? ' class="emr-val"' : '';
+          /* val 文本 = 槽位值: 编辑状态带下划线提示可编辑; 其余为普通正文
+             值尾 run 加 emr-val-sel: 尾部呈现下拉箭头 (与占位箭头位置一致) */
+          const cls = it.val ? ' class="emr-val' + (ri === arrowAt ? ' emr-val-sel' : '') + '"' : '';
           const st = it.rPr && Object.keys(it.rPr).length ? ' style="' + R.rPrStyle(it.rPr) + '"' : '';
           out.push('<span' + cls + ' data-o="' + o + '" data-n="' + n + '"' + st + '>' + esc(it.text) + '</span>');
         }
@@ -98,10 +116,13 @@
         const syncTitle = it.key === 'diag_discharge' ? '点击同步出院诊断（来源：左侧诊断 → 出院诊断）'
           : it.key === 'diag_admission' ? '点击同步入院诊断（来源：左侧诊断 → 入院诊断）'
           : '点击同步诊断（来源：左侧诊断 → 入院诊断）';
-        const txt = design ? ('（' + (DYN_PH[it.key] || it.key) + '）') : it.text;
+        /* 自动计算项: 设计模式显示名称占位 (如 BMI), 书写模式显示计算结果 (悬停可见公式) */
+        const calcName = it.calc ? (it.name || '自动计算') : null;
+        const txt = design ? ('（' + (calcName || DYN_PH[it.key] || it.key) + '）') : it.text;
+        const calcTitle = it.calc && !design ? ' title="自动计算：' + esc(it.calc.expr || '') + '"' : '';
         out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + (design ? ' emr-dyn-des' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
           + ' data-o="' + o + '" data-n="1" contenteditable="false"'
-          + (sync && !design ? ' title="' + syncTitle + '"' : '') + '>' + esc(txt) + '</span>');
+          + (sync && !design ? ' title="' + syncTitle + '"' : '') + calcTitle + '>' + esc(txt) + '</span>');
         continue;
       }
       if (it.t === 'tab') {

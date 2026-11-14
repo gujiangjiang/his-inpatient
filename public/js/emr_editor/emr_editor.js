@@ -30,6 +30,7 @@
     /* ---------- 历史绑定 ---------- */
     H.bind(() => inst.doc, (d) => { inst.doc = d; });
     H.clear();
+    if (!inst.readonly) O.recalcCalcs(inst.doc.body); /* 打开即刷新自动计算项 (设计模式同样预览) */
 
     /* ---------- 渲染 ---------- */
     /* 滚动容器: 整页画布滚动区 (重渲染时保持滚动位置, 避免"闪跳") */
@@ -90,8 +91,9 @@
       try {
         H.tx(label, () => {
           pos = fn();
+          O.recalcCalcs(inst.doc.body);          /* 自动计算项: 任一模式跟随字段值刷新 */
           if (!inst.design) {
-            O.recalcBmi(inst.doc.body);          /* 派生项自动重算 (BMI) */
+            O.recalcBmi(inst.doc.body);          /* 派生项自动重算 (BMI legacy) */
             /* 用户编辑 ⇒ 光标前方最近填写槽记为手动修改 (诊断同步除外; 自动填充不经此处) */
             if (label !== '同步' && pos) O.markManualAround(pos.p, pos.o);
             O.assertGuard(inst.doc.body, inst.guard);
@@ -418,7 +420,12 @@
           s.removeAllRanges();
           s.addRange(range);
           const m = C.rangeToModel(inst.bodyEl, inst.index);
-          if (m) inst._lastPos = m.a;
+          if (m) {
+            inst._lastPos = m.a;
+            /* 点击落在原子项边界(如体征行槽位)时, 浏览器不渲染光标:
+               按模型位置重放一次 → 注入零宽锚点, 光标可见 */
+            if (m.collapsed) C.restore(inst.bodyEl, m.a);
+          }
         }
       }, 0);
     };
@@ -679,6 +686,18 @@
         return { p: np.p, o: (text ? String(text).length : 0), cont: np.cont };
       });
     };
+    /** 在当前段落后插入横向分隔线 (空段落 + 上框线; 同「体格检查」标题上方的分割线) */
+    inst.insertDivider = () => {
+      const pos = requirePos();
+      if (!pos) return;
+      apply('设计', () => {
+        const info = O.ctx(inst.doc.body).find((x) => x.p === pos.p);
+        const np = M.para([], { borders: { top: true } });
+        if (info) info.cont.splice(info.i + 1, 0, np);
+        else inst.doc.body.push(np);
+        return { p: np, o: 0, cont: info ? info.cont : inst.doc.body };
+      });
+    };
 
     /* ---------- 对外 ---------- */
     inst.refresh = () => { renderBody(); inst.dirty = true; if (inst.onChange) inst.onChange(inst); };
@@ -691,12 +710,9 @@
     /** 恢复光标到模型位置; 返回是否成功 (位置失效/段落已被删除时 false, 调用方应放弃插入) */
     inst.focusCaret = (pos) => {
       if (!pos || !inst.bodyEl.isConnected) return false;
-      const r = C.modelToRange(inst.bodyEl, pos, pos);
-      if (!r) return false;
+      if (!C.modelToRange(inst.bodyEl, pos, pos)) return false; /* 位置失效校验 */
       inst.bodyEl.focus({ preventScroll: true }); /* 不引发画布滚动跳动 */
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(r);
+      C.restore(inst.bodyEl, pos); /* 元素边界自动注入零宽锚点, 保证光标可见 */
       return true;
     };
     /** 多行文本整块插入: 按行分段, 单事务一次重渲染 (引用写回用; 不逐行闪跳) */

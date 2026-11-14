@@ -112,16 +112,27 @@
   border-right: 4px solid transparent;
   border-top: 4px solid #8aa8d8;
 }
-/* 已填写: 槽位隐藏但保留箭头按钮 (便于点击改选); 非编辑态不显示 */
-.emr-body[contenteditable="true"] .emr-slot-sel:empty {
+/* 已填写: 槽位隐藏; 箭头跟到值文本尾部 (保持「值在左、箭头在右」, 点击可改选) */
+.emr-body[contenteditable="true"] .emr-val-sel::after {
+  content: '';
   display: inline-block;
-  min-width: 0;
-  padding: 0 2px;
-  border-bottom: none;
-  background: transparent;
+  margin-left: 5px;
+  vertical-align: 1px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid #8aa8d8;
 }
 /* 弹性行(体温/脉搏等): 标签与槽位不被压缩换行 */
 .pc.emr-flx > .emr-fx, .pc.emr-flx > .emr-slot, .pc.emr-flx > .emr-dyn { flex-shrink: 0; white-space: nowrap; }
+/* 光标零宽锚点: 原子项边界处承载可见光标 (零宽零占位; 重渲染自动清除) */
+.emr-anchor {
+  display: inline-block;
+  width: 0;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  pointer-events: none;
+}
 /* 下拉弹层 */
 .emr-choice {
   position: fixed;

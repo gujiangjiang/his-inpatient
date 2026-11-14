@@ -65,11 +65,16 @@
     return { a, b, collapsed: r.collapsed };
   };
 
-  /** 模型偏移 → DOM 锚点: {tn,rel} 文本节点内 | {el,after} 原子边界 | {pc,rel} 段首/尾 */
+  /** 模型偏移 → DOM 锚点: {tn,rel} 文本节点内 | {el,after} 原子边界 | {pc,rel} 段首/尾
+   *  文本 run 的首/尾优先返回文本节点 (元素边界 Chrome 不渲染光标) */
   const pointAt = (pc, o) => {
     for (const child of pc.childNodes) {
       if (child.nodeType === 1) {
         const co = +child.dataset.o, cn = +child.dataset.n;
+        if (child.classList && child.classList.contains('emr-anchor')) {
+          /* 零宽锚点: 直接用其文本节点 */
+          return { tn: child.firstChild || child, rel: 0 };
+        }
         if (child.dataset.item) {
           if (o === co) return { el: child, after: false };
           if (o === co + cn) return { el: child, after: true };
@@ -77,8 +82,8 @@
           const tn = child.firstChild;
           if (tn && tn.nodeType === 3) {
             if (o > co && o < co + cn) return { tn, rel: o - co };
-            if (o === co) return { el: child, after: false };
-            if (o === co + cn) return { el: child, after: true };
+            if (o === co) return { tn, rel: 0 };
+            if (o === co + cn) return { tn, rel: tn.textContent.length };
           }
         }
       } else if (child.nodeType === 3) {
@@ -99,6 +104,44 @@
     r[method](pt.pc, pt.rel);
   };
 
+  /* ---------- 光标可见性: 元素边界零宽锚点 ----------
+     Chrome 在原子项(固定标签/填写槽)边界不渲染光标, 视觉上会"跑到别处";
+     折叠光标落在元素边界时: 优先落相邻同偏移文本节点; 否则注入零宽锚点 span (重渲染自动清除) */
+  const ZW = '\u200B';
+  /** 相邻可落文本节点 (非原子项; 且模型偏移必须与目标一致) */
+  const caretTextAt = (node, o, start) => {
+    if (!node || node.nodeType !== 1 || (node.dataset && node.dataset.item)) return null;
+    const tn = node.firstChild;
+    if (!tn || tn.nodeType !== 3) return null;
+    const co = +node.dataset.o, cn = +node.dataset.n;
+    if (start && co !== o) return null;
+    if (!start && co + cn !== o) return null;
+    return { tn, rel: start ? 0 : tn.textContent.length };
+  };
+  const injectAnchor = (pc, ref, o) => {
+    const span = document.createElement('span');
+    span.className = 'emr-anchor';
+    span.setAttribute('data-n', '0');
+    span.setAttribute('data-o', String(o));
+    const tn = document.createTextNode(ZW);
+    span.appendChild(tn);
+    pc.insertBefore(span, ref || null); /* ref=null → 追加到段尾 */
+    return { tn, rel: 0 };
+  };
+  /** 折叠光标点物化: 保证落在可渲染的文本节点上 */
+  const materializeCaret = (pc, pt, o) => {
+    if (pt.tn) return pt;
+    if (pt.el) {
+      const next = pt.after ? pt.el.nextSibling : pt.el.previousSibling;
+      const prev = pt.after ? pt.el.previousSibling : pt.el.nextSibling;
+      return caretTextAt(next, o, true) || caretTextAt(prev, o, false)
+        || injectAnchor(pc, pt.after ? pt.el.nextSibling : pt.el, o);
+    }
+    /* 段边界 {pc, rel}: 先看左右相邻文本节点, 否则在 rel 处注入锚点 */
+    const before = pc.childNodes[pt.rel - 1], after = pc.childNodes[pt.rel];
+    return caretTextAt(before, o, false) || caretTextAt(after, o, true) || injectAnchor(pc, after, o);
+  };
+
   /** 模型位置 → DOM Range (a 必给, b 缺省为光标) */
   C.modelToRange = (bodyEl, a, b) => {
     const pElA = bodyEl.querySelector('.p[data-pid="' + a.p.id + '"]');
@@ -117,9 +160,24 @@
     return r;
   };
 
-  /** 恢复选区到 bodyEl (end 缺省为光标) */
+  /** 恢复选区到 bodyEl (end 缺省为光标)
+   *  折叠光标: 物化到可渲染文本节点 (元素边界注入零宽锚点); 非折叠选区: 常规映射 */
   C.restore = (bodyEl, pos, end) => {
-    const r = C.modelToRange(bodyEl, pos, end || pos);
+    const collapsed = !end || end === pos || (end.p === pos.p && end.o === pos.o);
+    if (collapsed) {
+      const pEl = bodyEl.querySelector('.p[data-pid="' + pos.p.id + '"]');
+      if (!pEl) return;
+      const pc = pEl.querySelector('.pc');
+      const pt = materializeCaret(pc, pointAt(pc, pos.o), pos.o);
+      const r = document.createRange();
+      r.setStart(pt.tn, pt.rel);
+      r.collapse(true);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+      return;
+    }
+    const r = C.modelToRange(bodyEl, pos, end);
     if (!r) return;
     const sel = window.getSelection();
     sel.removeAllRanges();
