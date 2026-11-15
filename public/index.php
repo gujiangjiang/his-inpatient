@@ -153,6 +153,13 @@ require_once __DIR__ . '/assets.php';
             </div>
             <div class="topbar-right">
                 <span id="user-info"></span>
+                <div class="notify-wrap">
+                    <button type="button" class="notify-bell" id="notify-bell" title="消息通知"><?= icon('common/actions', 'bell', 16) ?><span class="notify-badge" id="notify-badge" style="display:none">0</span></button>
+                    <div class="notify-panel" id="notify-panel" style="display:none">
+                        <div class="notify-head"><span>消息</span><a href="javascript:;" id="notify-readall">全部已读</a></div>
+                        <div class="notify-list" id="notify-list"></div>
+                    </div>
+                </div>
                 <button class="btn btn-small" onclick="Auth.logout()">退出</button>
             </div>
         </div>

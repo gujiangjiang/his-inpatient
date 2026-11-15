@@ -20,4 +20,16 @@ if ($action === 'approve') {
     $pdo->prepare("UPDATE emr_templates SET pub_status='rejected', pub_audited_by=?, pub_audited_at=?, pub_reject_reason=? WHERE id=?")
         ->execute([$uid, $now, $reason, $id]);
 }
+/* 推送: 管理员待办消除 (已审核) + 通知申请人结果 */
+notify_resolve('template', $id);
+$tpl = DB::selectOne("SELECT name, created_by FROM emr_templates WHERE id = ?", [$id]);
+if ($tpl && (int)$tpl['created_by'] !== (int)$uid) {
+    notify_send([
+        'user_ids' => [(int)$tpl['created_by']],
+        'type' => 'template',
+        'title' => '模板' . ($action === 'approve' ? '审核通过' : '被驳回') . '：' . $tpl['name'],
+        'body' => $action === 'approve' ? '已按发布范围生效，可在模板管理中查看' : ('原因：' . ($reason !== '' ? $reason : '未注明')),
+        'link' => '#emr/station', 'ref_type' => 'template_result', 'ref_id' => (int)$id,
+    ]);
+}
 Response::success(['id' => $id]);

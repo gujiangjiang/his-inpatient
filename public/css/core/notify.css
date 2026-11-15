@@ -1,0 +1,41 @@
+/* ===== 全局消息通知 (顶栏铃铛 + 下拉面板) ===== */
+.notify-wrap { position: relative; display: inline-flex; align-items: center; }
+.notify-bell {
+    position: relative;
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; border-radius: 50%;
+    background: transparent; color: #606266; cursor: pointer;
+}
+.notify-bell:hover { background: #eef4ff; color: #149a9a; }
+.notify-badge {
+    position: absolute; top: -3px; right: -3px;
+    min-width: 16px; height: 16px; line-height: 16px;
+    padding: 0 4px; border-radius: 9px;
+    background: #f56c6c; color: #fff;
+    font-size: 10px; text-align: center;
+}
+.notify-panel {
+    position: absolute; top: 38px; right: 0;
+    width: 340px; max-height: 420px;
+    display: flex; flex-direction: column;
+    background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+    z-index: 4000;
+}
+.notify-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-bottom: 1px solid #f0f2f5;
+    font-size: 13px; font-weight: 600; color: #303133;
+}
+.notify-head a { font-size: 12px; color: #149a9a; font-weight: normal; text-decoration: none; }
+.notify-head a:hover { text-decoration: underline; }
+.notify-list { flex: 1; min-height: 0; overflow-y: auto; }
+.notify-empty { padding: 28px 12px; text-align: center; color: #909399; font-size: 13px; }
+.notify-item { padding: 10px 14px; border-bottom: 1px solid #f5f6f8; cursor: pointer; }
+.notify-item:hover { background: #f7fafd; }
+.notify-item.unread { background: #f4f9ff; }
+.notify-item.unread .notify-item-title { font-weight: 600; }
+.notify-item-title { font-size: 13px; color: #303133; line-height: 1.4; }
+.notify-item-body { margin-top: 3px; font-size: 12px; color: #606266; line-height: 1.5; }
+.notify-item-time { margin-top: 4px; font-size: 11px; color: #a8abb2; }

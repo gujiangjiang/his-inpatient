@@ -19,6 +19,16 @@ $reason = trim((string)Validator::get('reason', ''));
 if ($action === 'reject') {
     $pdo->prepare("UPDATE emr_maintenance_requests SET status='rejected', reviewed_by=?, reviewed_at=?, reject_reason=? WHERE id=?")
         ->execute([$uid, $now, $reason, $id]);
+    /* 推送: 管理员待办消除 + 通知申请人驳回 */
+    notify_resolve('maintenance', $id);
+    if (!empty($row['requested_by'])) {
+        notify_send([
+            'user_ids' => [(int)$row['requested_by']],
+            'type' => 'maintenance', 'title' => '病历维护申请被驳回',
+            'body' => '原因：' . ($reason !== '' ? $reason : '未注明') . '（可在左下角「维护」查看）',
+            'link' => '#emr/station',
+        ]);
+    }
     Response::success(['id' => $id]);
 }
 
@@ -46,5 +56,16 @@ try {
 } catch (Exception $e) {
     $pdo->rollback();
     Response::error('维护处理失败: ' . $e->getMessage());
+}
+/* 推送: 管理员待办消除 + 通知申请人已批准 (批准编辑→可打开修改) */
+notify_resolve('maintenance', $id);
+if (!empty($row['requested_by'])) {
+    notify_send([
+        'user_ids' => [(int)$row['requested_by']],
+        'type' => 'maintenance',
+        'title' => '病历维护申请已批准（' . ($row['action'] === 'delete' ? '删除' : '编辑') . '）',
+        'body' => $row['action'] === 'edit' ? '病历已退回草稿，可在左下角「维护」中一键打开修改（修订留痕）' : '病历已按申请删除',
+        'link' => '#emr/station',
+    ]);
 }
 Response::success(['id' => $id, 'action' => $row['action']]);

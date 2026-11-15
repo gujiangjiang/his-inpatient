@@ -24,6 +24,7 @@ async function handleHashChange() {
     document.getElementById('login-container').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
     updateUserInfo();
+    if (window.Notify) Notify.init(); /* 全局消息推送 (幂等; 覆盖所有进入主界面的路径) */
 
     const key = route.module + '/' + route.page;
     const browsePages = ['patients/patient_list', 'patients/beds'];
@@ -87,6 +88,7 @@ function initWorkstation(role) {
         window.WorkstationMode = false;
         if (switcher) switcher.style.display = 'none';
     }
+    if (window.Notify) Notify.init(); /* 全局消息推送 (SSE): 登录后启动一次 */
 }
 
 window.addEventListener('hashchange', handleHashChange);

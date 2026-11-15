@@ -22,4 +22,13 @@ $uid = Auth::user()['id'];
 $pdo = DB::getPDO();
 $pdo->prepare("INSERT INTO emr_maintenance_requests (doc_id, action, reason, status, requested_by, requested_at) VALUES (?,?,?,'pending',?,?)")
     ->execute([$docId, $action, $reason, $uid, DateHelper::now()]);
-Response::success(['id' => $pdo->lastInsertId()]);
+$reqId = (int)$pdo->lastInsertId();
+/* 推送: 通知管理员病历维护申请 */
+notify_send([
+    'roles' => ['admin'], 'exclude_ids' => [$uid],
+    'type' => 'maintenance',
+    'title' => '病历维护申请（' . ($action === 'delete' ? '删除' : '编辑') . '）：' . (string)$doc['title'],
+    'body' => Auth::user()['name'] . ' · ' . $reason,
+    'link' => '#admin/review', 'ref_type' => 'maintenance', 'ref_id' => $reqId, 'upsert' => true,
+]);
+Response::success(['id' => $reqId]);

@@ -25,6 +25,8 @@ try {
         $stmt->execute([$now, $patientId]);
     }
     $pdo->commit();
+    /* 推送: 病区护士「新医嘱待核对」通知 (按患者重建; 处理完自动消失) */
+    try { notify_orders_sync((int)$patientId); } catch (Exception $e) { /* 推送失败不影响提交 */ }
     Response::success();
 } catch (Exception $e) {
     $pdo->rollback();

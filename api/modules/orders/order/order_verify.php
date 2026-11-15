@@ -69,6 +69,8 @@ try {
     }
 
     $pdo->commit();
+    /* 推送: 该患者待核医嘱变化 → 护士通知同步 (处理完自动消失) */
+    try { notify_orders_sync((int)$order['patient_id']); } catch (Exception $e) { }
     Response::success();
 } catch (Exception $e) {
     $pdo->rollback();

@@ -16,4 +16,12 @@ DB::execute(
     "UPDATE emr_contents SET pub_status='pending', pub_scope=?, department_id=?, pub_audited_by=NULL, pub_audited_at=NULL, pub_reject_reason=NULL WHERE id=?",
     [$scope, $dept, $id]
 );
+/* 推送: 通知管理员待审核 */
+$cName = (string)(DB::selectOne("SELECT name FROM emr_contents WHERE id = ?", [$id])['name'] ?? '');
+notify_send([
+    'roles' => ['admin'], 'exclude_ids' => [(int)$user['id']],
+    'type' => 'content', 'title' => '内容发布待审核：' . $cName,
+    'body' => $user['name'] . ' 提交了' . ($scope === 'all' ? '全院用' : '科室用') . '内容',
+    'link' => '#admin/review', 'ref_type' => 'content', 'ref_id' => (int)$id, 'upsert' => true,
+]);
 Response::success(['id' => $id]);
