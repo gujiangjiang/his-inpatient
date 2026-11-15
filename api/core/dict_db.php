@@ -1,17 +1,25 @@
 <?php
 // api/core/dict_db.php - 独立基础字典数据库 (data/dicts.sqlite, 与主业务库/配置库分离)
-// 内容: 省市县+邮编 (regions, 含区划代码) / 职业分类大典2022 (occupations) / 基础字典 (dicts)
-// 数据来源: 打包种子 JSON (api/core/dict_data/*.json, 不写入 PHP 代码); 首次使用自动建库导入。
-// 决策: 字典数据体量大且相对静态 — 独立库便于: 主库瘦身、单独更新/备份、与业务库解耦。
-// 升级路径: 迁移 057 建库导入并将旧 emr_dicts (主库) 数据合并迁移后移除旧表。
+// 内容: 省市县+邮编 (regions) / 职业分类大典2022 (occupations) / 基础字典 (dicts)
+// 数据: **固定字典库随仓库分发** (tools/dict_data/dicts.sqlite, 由 tools/build_dicts.php
+//       从 tools/dict_data/*.json 种子构建) — 运行时首次使用直接复制到 data/, 不做数据构造;
+//       core 仅保留读取/复制逻辑, 造数与种子数据均在 tools/。
+// 决策: 字典体量大且相对静态 — 独立库便于主库瘦身、单独更新/备份、与业务库解耦。
+// 升级路径: 迁移 057 建库(复制固定库)并将旧 emr_dicts (主库) 自定义键合并迁移后移除旧表。
 
-/** 字典库文件路径 */
+/** 固定字典库 (仓库内分发) */
+function dict_db_fixed_path()
+{
+    return BASE_DIR . '/tools/dict_data/dicts.sqlite';
+}
+
+/** 运行期字典库路径 */
 function dict_db_path()
 {
     return DATA_DIR . '/dicts.sqlite';
 }
 
-/** 字典库 PDO (首次访问自动建文件/目录) */
+/** 字典库 PDO (首次访问: 从固定库复制; 缺失时建空结构兜底) */
 function dict_db()
 {
     static $pdo = null;
@@ -19,22 +27,29 @@ function dict_db()
     $path = dict_db_path();
     $dir = dirname($path);
     if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    if (!is_file($path)) {
+        $fixed = dict_db_fixed_path();
+        if (is_file($fixed)) {
+            /* 直接复制固定字典库 (随仓库分发的基准数据) */
+            @copy($fixed, $path);
+        }
+    }
     $pdo = new PDO('sqlite:' . $path);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->exec('PRAGMA journal_mode = WAL');
     return $pdo;
 }
 
-/** 种子 JSON 读取 (打包数据, 非 PHP 代码) */
+/** 种子 JSON 读取 (只读回退用: 库不可用时的院级字典默认值; 数据位于 tools/) */
 function dict_seed_json($name)
 {
-    $file = __DIR__ . '/dict_data/' . $name . '.json';
+    $file = BASE_DIR . '/tools/dict_data/' . $name . '.json';
     if (!is_file($file)) return null;
     $data = json_decode((string)file_get_contents($file), true);
     return is_array($data) ? $data : null;
 }
 
-/** 建表 (幂等) */
+/** 建表 (空库兜底; 固定库复制时已含结构与数据, 本函数幂等) */
 function dict_db_schema()
 {
     $pdo = dict_db();
@@ -49,91 +64,29 @@ function dict_db_schema()
         builtin INTEGER DEFAULT 0, updated_at TEXT, updated_by INTEGER)");
 }
 
-/** 首次使用: 建库建表 + 种子导入 (各表为空时导入; dicts 仅补齐缺失键, 保留管理员修改) */
+/** 首次使用: 确保结构与基准数据可用 (复制固定库; 固定库缺失时记日志, 功能降级) */
 function dict_db_ensure()
 {
     static $done = false;
     if ($done) return;
     $done = true;
     try {
+        $wasMissing = !is_file(dict_db_path());
         dict_db_schema();
-        $pdo = dict_db();
-        if ((int)$pdo->query('SELECT COUNT(*) FROM regions')->fetchColumn() === 0) dict_db_import_regions();
-        if ((int)$pdo->query('SELECT COUNT(*) FROM occupations')->fetchColumn() === 0) dict_db_import_occupations();
-        dict_db_seed_dicts();
+        if ($wasMissing) {
+            if (!is_file(dict_db_fixed_path())) {
+                error_log('[dict_db] 固定字典库缺失 (tools/dict_data/dicts.sqlite); 可运行 php tools/build_dicts.php 重建');
+            } else {
+                $n = (int)dict_db()->query('SELECT COUNT(*) FROM regions')->fetchColumn();
+                error_log('[dict_db] 已从固定库初始化 data/dicts.sqlite (regions=' . $n . ')');
+            }
+        }
     } catch (Exception $e) {
         error_log('[dict_db] ensure 失败: ' . $e->getMessage());
     }
 }
 
-/** 导入省市县 (3100+ 条, 事务批量) */
-function dict_db_import_regions()
-{
-    $rows = dict_seed_json('regions');
-    if (!$rows) return 0;
-    $pdo = dict_db();
-    $pdo->beginTransaction();
-    $stmt = $pdo->prepare("INSERT OR IGNORE INTO regions (province, city, county, zip, code) VALUES (?,?,?,?,?)");
-    foreach ($rows as $r) {
-        $stmt->execute([$r['p'], $r['c'], $r['a'], (string)($r['z'] ?? ''), (string)($r['c2'] ?? '')]);
-    }
-    $pdo->commit();
-    return count($rows);
-}
-
-/** 导入职业分类大典 (层级: 大类/中类/小类/细类, 含完整路径) */
-function dict_db_import_occupations()
-{
-    $packed = dict_seed_json('occupations');
-    if (!$packed || empty($packed['categories'])) return 0;
-    $pdo = dict_db();
-    $pdo->beginTransaction();
-    $stmt = $pdo->prepare("INSERT OR REPLACE INTO occupations (code, name, level, parent_code, path, gbm) VALUES (?,?,?,?,?,?)");
-    $count = 0;
-    foreach ($packed['categories'] as $cat) {
-        $catCode = (string)($cat[0] ?? '');
-        $catName = (string)($cat[1] ?? '');
-        $stmt->execute([$catCode, $catName, 1, '', $catName, '']);
-        $count++;
-        foreach (($cat[2] ?? []) as $mid) {
-            $midCode = (string)($mid[0] ?? '');
-            $midName = (string)($mid[1] ?? '');
-            $stmt->execute([$midCode, $midName, 2, $catCode, $catName . ' > ' . $midName, '']);
-            $count++;
-            foreach (($mid[2] ?? []) as $minor) {
-                $minCode = (string)($minor[0] ?? '');
-                $minName = (string)($minor[1] ?? '');
-                $stmt->execute([$minCode, $minName, 3, $midCode, $catName . ' > ' . $midName . ' > ' . $minName, '']);
-                $count++;
-                foreach (($minor[2] ?? []) as $occ) {
-                    $occCode = (string)($occ[0] ?? '');
-                    $occName = (string)($occ[1] ?? '');
-                    $stmt->execute([$occCode, $occName, 4, $minCode, $catName . ' > ' . $midName . ' > ' . $minName . ' > ' . $occName, '']);
-                    $count++;
-                }
-            }
-        }
-    }
-    $pdo->commit();
-    return $count;
-}
-
-/** 基础字典种子 (补齐缺失键; 已存在的不覆盖 — 保留管理员修改) */
-function dict_db_seed_dicts()
-{
-    $rows = dict_seed_json('dicts');
-    if (!$rows) return;
-    $pdo = dict_db();
-    $stmt = $pdo->prepare("SELECT dkey FROM dicts WHERE dkey = ?");
-    $ins = $pdo->prepare("INSERT INTO dicts (dkey, name, items, builtin, updated_at, updated_by) VALUES (?,?,?,1,?,NULL)");
-    foreach ($rows as $d) {
-        $stmt->execute([$d['key']]);
-        if ($stmt->fetchColumn()) continue;
-        $ins->execute([$d['key'], $d['name'], json_encode($d['items'], JSON_UNESCAPED_UNICODE), DateHelper::now()]);
-    }
-}
-
-/** 省市县级联数据: [{p, c, a, z, code}] → 嵌套 {provinces:[{name, cities:[{name, areas:[[county, zip, code]]}]}]} */
+/** 省市县级联数据: 嵌套 {provinces:[{name, cities:[{name, areas:[[county, zip, code]]}]}]} */
 function dict_region_tree()
 {
     dict_db_ensure();
@@ -144,14 +97,12 @@ function dict_region_tree()
         $p = $r['province'];
         if (!isset($idx[$p])) { $idx[$p] = count($out); $out[] = ['name' => $p, 'cities' => []]; }
         $pi = $idx[$p];
-        $cities = &$out[$pi]['cities'];
         if (!isset($idx[$p . '|' . $r['city']])) {
-            $idx[$p . '|' . $r['city']] = count($cities);
-            $cities[] = ['name' => $r['city'], 'areas' => []];
+            $idx[$p . '|' . $r['city']] = count($out[$pi]['cities']);
+            $out[$pi]['cities'][] = ['name' => $r['city'], 'areas' => []];
         }
         $ci = $idx[$p . '|' . $r['city']];
-        $cities[$ci]['areas'][] = [$r['county'], (string)$r['zip'], (string)$r['code']];
-        unset($cities);
+        $out[$pi]['cities'][$ci]['areas'][] = [$r['county'], (string)$r['zip'], (string)$r['code']];
     }
     return $out;
 }
