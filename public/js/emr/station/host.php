@@ -124,6 +124,7 @@ function bindToolbar() {
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
     bind('btn-content-mgr', () => emr_openContentManager());
+    bind('btn-maint-mgr', emr_maintListDialog);
     bind('btn-ref-panel', emr_refToggle);
     bind('emr-refp-close', function () { document.getElementById('emr-ref-panel').style.display = 'none'; });
     bind('emr-refp-write', emr_refWriteBack);
@@ -178,6 +179,8 @@ function bindToolbar() {
     bind('btn-dsn-heading', emr_dsnInsertHeading);
     bind('btn-dsn-ref', emr_dsnInsertRef);
     bind('btn-dsn-save', emr_saveTemplateDesign);
+    bind('btn-dsn-import', emr_tplImport);
+    bind('btn-dsn-export', emr_tplExport);
     bind('btn-dsn-exit', function () {
         if (_emrEditor && _emrEditor.isDirty && _emrEditor.isDirty()) {
             Dom.modal('退出模板设计', '<p>存在未保存的修改，确定退出吗？</p>', [

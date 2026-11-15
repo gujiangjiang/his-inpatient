@@ -1,4 +1,4 @@
-<?php header("Content-Type: text/html; charset=utf-8"); ?>
+<?php header("Content-Type: text/html; charset=utf-8"); require_once __DIR__ . '/../../icons/icon.php'; ?>
 <div class="emr-station">
     <!-- 二级左栏: 病历分类树 + 文书目录 -->
     <div class="emr-tree">
@@ -46,6 +46,7 @@
         <div class="emr-tree-foot" id="emr-tree-foot">
             <button type="button" class="btn btn-small" id="btn-template-mgr">模板</button>
             <button type="button" class="btn btn-small" id="btn-content-mgr">内容</button>
+            <button type="button" class="btn btn-small" id="btn-maint-mgr" title="病历维护申请（本人申请与审核状态）">维护</button>
         </div>
     </div>
     <!-- 二级主视图: 字处理病历编辑区 (类 Word 整页画布) -->
@@ -60,13 +61,13 @@
                 <button type="button" class="btn btn-small fmt-btn fmt-u" id="btn-underline" title="下划线">U</button>
                 <button type="button" class="btn btn-small fmt-btn fmt-s" id="btn-strike" title="删除线">S</button>
                 <span class="emr-tb-sep"></span>
-                <button type="button" class="btn btn-small" id="btn-align-l" title="左对齐">左</button>
-                <button type="button" class="btn btn-small" id="btn-align-c" title="居中">中</button>
-                <button type="button" class="btn btn-small" id="btn-align-r" title="右对齐">右</button>
-                <button type="button" class="btn btn-small" id="btn-align-j" title="两端对齐">两</button>
+                <button type="button" class="btn btn-small fmt-btn" id="btn-align-l" title="左对齐"><?= icon('common/editor', 'align-left', 15) ?></button>
+                <button type="button" class="btn btn-small fmt-btn" id="btn-align-c" title="居中"><?= icon('common/editor', 'align-center', 15) ?></button>
+                <button type="button" class="btn btn-small fmt-btn" id="btn-align-r" title="右对齐"><?= icon('common/editor', 'align-right', 15) ?></button>
+                <button type="button" class="btn btn-small fmt-btn" id="btn-align-j" title="两端对齐"><?= icon('common/editor', 'align-justify', 15) ?></button>
                 <span class="emr-tb-sep"></span>
-                <button type="button" class="btn btn-small" id="btn-undo" title="撤销 (Ctrl+Z)">撤销</button>
-                <button type="button" class="btn btn-small" id="btn-redo" title="重做 (Ctrl+Y)">重做</button>
+                <button type="button" class="btn btn-small fmt-btn" id="btn-undo" title="撤销 (Ctrl+Z)"><?= icon('common/editor', 'undo', 15) ?></button>
+                <button type="button" class="btn btn-small fmt-btn" id="btn-redo" title="重做 (Ctrl+Y)"><?= icon('common/editor', 'redo', 15) ?></button>
                 <span class="emr-tb-spacer"></span>
                 <button type="button" class="btn btn-small btn-success" id="btn-save">保存草稿</button>
                 <button type="button" class="btn btn-small" id="btn-print">打印</button>
@@ -77,6 +78,8 @@
                 <span class="emr-design-name" id="emr-design-name"></span>
                 <span class="emr-dsn-tip">从左侧「模板设计」面板插入字段与元素；右击正文元素可修改属性</span>
                 <span class="emr-tb-spacer"></span>
+                <button type="button" class="btn btn-small" id="btn-dsn-import" title="从模板文件导入（新建模板）"><?= icon('common/editor', 'import', 14) ?> 导入</button>
+                <button type="button" class="btn btn-small" id="btn-dsn-export" title="导出当前模板为文件"><?= icon('common/editor', 'export', 14) ?> 导出</button>
                 <button type="button" class="btn btn-small btn-success" id="btn-dsn-save">保存模板</button>
                 <button type="button" class="btn btn-small" id="btn-dsn-exit">退出设计</button>
             </div>
@@ -112,4 +115,4 @@
     </div>
 </div>
 
-<?php include __DIR__ . "/station/init.php"; include __DIR__ . "/station/design.php"; include __DIR__ . "/station/calc.php"; include __DIR__ . "/station/managers.php"; include __DIR__ . "/station/core.php"; include __DIR__ . "/station/refpanel.php"; include __DIR__ . "/station/maint.php"; include __DIR__ . "/station/host.php";
+<?php include __DIR__ . "/station/init.php"; include __DIR__ . "/station/design.php"; include __DIR__ . "/station/tplio.php"; include __DIR__ . "/station/calc.php"; include __DIR__ . "/station/managers.php"; include __DIR__ . "/station/core.php"; include __DIR__ . "/station/refpanel.php"; include __DIR__ . "/station/maint.php"; include __DIR__ . "/station/host.php";

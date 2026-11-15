@@ -5,7 +5,7 @@ Auth::requireRole(['admin', 'doctor']);
 $user = Auth::user();
 $review = Validator::get('review');
 $pdo = DB::getPDO();
-$sql = "SELECT mr.*, d.title AS doc_title, d.status AS doc_status,
+$sql = "SELECT mr.*, d.title AS doc_title, d.status AS doc_status, d.patient_id,
         p.name AS patient_name, p.admission_no,
         u.name AS requester_name, rv.name AS reviewer_name
         FROM emr_maintenance_requests mr
