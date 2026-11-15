@@ -80,19 +80,29 @@
     return isFinite(v) ? v : null;
   };
 
-  /* ---------- 时间解析: 'YYYY-MM-DD[ HH:mm[:ss]]' / 'YYYY年M月D日…' / 'HH:mm[:ss]' ---------- */
+  /* ---------- 时间解析 (兼容多种书写格式; 未匹配/带多余内容 → null) ----------
+     'YYYY-MM-DD[ HH:mm[:ss]]' (分隔符 - / . ; 也可 T)  e.g. 2026-10-11 23:50 / 2026/10/11 23:50:30
+     'YYYY年M月D日[ HH时mm分[ss秒]]'                   e.g. 2026年10月11日 23时50分
+     'M月D日[ HH:mm]' (无年份, 同年推演, 跨年自动)      e.g. 10月11日 23:50
+     'HH:mm[:ss]' (纯时间, 跨零点自动 +24h)             e.g. 23:50 */
   const parseTime = (s) => {
     const str = String(s == null ? '' : s).trim();
     if (!str) return null;
     let m = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
     if (m) return { d: new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)) };
-    m = str.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日(?:\s*(\d{1,2})[时:](\d{1,2})分?(?::(\d{1,2}))?)?/);
+    m = str.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日(?:\s*(\d{1,2})\s*[时:]\s*(\d{1,2})\s*分?(?:(\d{1,2})\s*秒)?)?$/);
     if (m) return { d: new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)) };
+    m = str.match(/^(\d{1,2})月\s*(\d{1,2})日(?:\s*(\d{1,2})\s*[时:]\s*(\d{1,2})\s*分?(?:(\d{1,2})\s*秒)?)?$/);
+    if (m) return { d: new Date(2000, +m[1] - 1, +m[2], +(m[3] || 0), +(m[4] || 0), +(m[5] || 0)), noYear: true };
     m = str.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
     if (m) return { only: true, mins: +m[1] * 60 + +m[2] + (+(m[3] || 0)) / 60 };
     return null;
   };
-  /** 时间差(分钟): 纯时间跨零点自动 +1440; 结束早于开始(完整日期) → null (视为无效/回退) */
+  /** 时间差(分钟):
+   *  完整日期(含年月日): 时间戳差 — 跨天/跨月/跨年均正确 (如 2026-10-11 23:50 → 2026-10-12 01:50 = 120)
+   *  纯时间: 结束早于开始自动按跨零点 +24h
+   *  无年份(月日): 结束早于开始按跨年 +1 年
+   *  完整日期结束早于开始 → null (数据有误, 回退为空) */
   const diffMinutes = (a, b) => {
     const ta = parseTime(a), tb = parseTime(b);
     if (!ta || !tb) return null;
@@ -102,8 +112,17 @@
       if (d < 0) d += 1440;
       return d;
     }
-    const d = (tb.d.getTime() - ta.d.getTime()) / 60000;
-    return d < 0 ? null : d;
+    let d = (tb.d.getTime() - ta.d.getTime()) / 60000;
+    if (d < 0) {
+      if (ta.noYear && tb.noYear) {
+        const tb2 = new Date(tb.d.getTime());
+        tb2.setFullYear(tb2.getFullYear() + 1); /* 无年份: 视为跨年 (12月31日 → 1月1日) */
+        d = (tb2.getTime() - ta.d.getTime()) / 60000;
+      } else {
+        return null;
+      }
+    }
+    return d;
   };
 
   /* ---------- 递归下降求值 ---------- */

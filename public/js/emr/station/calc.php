@@ -55,7 +55,7 @@ function emrCalcBlock(item, withName) {
             return '<span class="emr-calc-var" data-k="' + Format.escape(v.key) + '" title="' + Format.escape(v.key) + '">'
                 + Format.escape(v.label) + ' <i>' + Format.escape(v.key) + '</i></span>';
         }).join('') : '<span class="emr-prop-testempty">当前模板暂无可用字段（请先在模板中插入字段）</span>')
-        + '</div><p class="emr-tpl-hint">计算仅依据当前病历内字段值（含混排下拉/日期）；时间计算取日期/时间字段原始值（手术开始/结束时自动支持跨零点）；保存时若公式涉及字段在文书中不存在将报错。</p></div>';
+        + '</div><p class="emr-tpl-hint">计算仅依据当前病历内字段值（含混排下拉/日期）；时间计算兼容多种格式：<b>2026-10-11 23:50</b> 至 <b>2026-10-12 01:50</b>（跨天/跨月/跨年正确换算）、2026年10月11日 23时50分、10月11日 23:50、23:50；保存时若公式涉及字段在文书中不存在将报错。</p></div>';
     const insertAt = function (sub, text) {
         const inp = sub.querySelector('#calc-expr');
         const s = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
