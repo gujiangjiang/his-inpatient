@@ -33,7 +33,10 @@
     for (const it of p.runs) {
       if (!on) { if (it.t === 'slot' && it.key === key) on = true; continue; }
       if (it.t === 'br') continue;
-      if (it.t === 'text' && it.val) { s += it.text; continue; }
+      if (it.t === 'text') {
+        if (it.del) continue; /* 留痕删除的值不参与计算 */
+        if (it.val) { s += it.text; continue; }
+      }
       break;
     }
     return s;

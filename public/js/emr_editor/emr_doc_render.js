@@ -43,11 +43,14 @@
   };
 
   /* ---------- 段内 run → HTML ---------- */
-  /** 槽位是否已填写: 紧邻其后的 val 值 run 存在 (普通正文紧邻不影响, 支持混排) */
+  /** 槽位是否已填写: 紧邻其后的 val 值 run 存在 (普通正文紧邻不影响, 支持混排; 留痕删除不计) */
   const paraHasTextAfter = (p, idx) => {
     for (let k = idx + 1; k < p.runs.length; k++) {
       const it = p.runs[k];
-      if (it.t === 'text') return !!it.val;
+      if (it.t === 'text') {
+        if (it.del) continue;
+        return !!it.val;
+      }
       if (it.t === 'br') continue;
       return false;
     }
@@ -69,26 +72,30 @@
       let j = i + 1;
       while (j < runs.length && runs[j].t === 'br') j++;
       let tail = -1;
-      while (j < runs.length && runs[j].t === 'text' && runs[j].val) { tail = j; j++; }
+      while (j < runs.length && runs[j].t === 'text' && runs[j].val && !runs[j].del) { tail = j; j++; }
       if (tail >= 0) last = tail;
     }
     return last;
   };
-  const runsToHTML = (p, design) => {
+  const runsToHTML = (p, design, opts) => {
     const out = [];
+    const hideDel = !!(opts && opts.hideDel); /* 打印/快照: 隐藏修改留痕 */
     const arrowAt = valArrowIndex(p);
     let pos = 0;
     for (let ri = 0; ri < p.runs.length; ri++) {
       const it = p.runs[ri];
-      const n = M.ilen(it);
+      const n = M.itemLen(it);
       const o = pos; pos += n;
       if (it.t === 'text') {
+        if (it.del && hideDel) continue;
         if (it.text) {
           /* val 文本 = 槽位值: 编辑状态带下划线提示可编辑; 其余为普通正文
-             值尾 run 加 emr-val-sel: 尾部呈现下拉箭头 (与占位箭头位置一致) */
-          const cls = it.val ? ' class="emr-val' + (ri === arrowAt ? ' emr-val-sel' : '') + '"' : '';
+             值尾 run 加 emr-val-sel: 尾部呈现下拉箭头; 留痕删除: emr-del (红删除线) */
+          let cls = it.val ? 'emr-val' + (ri === arrowAt ? ' emr-val-sel' : '') : '';
+          if (it.del) cls += (cls ? ' ' : '') + 'emr-del';
+          const clsAttr = cls ? ' class="' + cls + '"' : '';
           const st = it.rPr && Object.keys(it.rPr).length ? ' style="' + R.rPrStyle(it.rPr) + '"' : '';
-          out.push('<span' + cls + ' data-o="' + o + '" data-n="' + n + '"' + st + '>' + esc(it.text) + '</span>');
+          out.push('<span' + clsAttr + ' data-o="' + o + '" data-n="' + n + '"' + st + '>' + esc(it.text) + '</span>');
         }
         continue;
       }
@@ -140,8 +147,8 @@
   };
 
   /** 段落 → HTML */
-  R.paraToHTML = (p, design) => {
-    const inner = runsToHTML(p, design);
+  R.paraToHTML = (p, design, opts) => {
+    const inner = runsToHTML(p, design, opts);
     const ps = R.pPrStyle(p.pPr);
     /* emr-flx: 弹性行标记 (标签/槽位不压缩换行) */
     const fm = p.pPr && p.pPr.flex === 'between' ? ' emr-flx' : '';
@@ -150,10 +157,10 @@
   };
 
   /** 块列表 → HTML (表格递归) */
-  R.blocksToHTML = (blocks, design) => {
+  R.blocksToHTML = (blocks, design, opts) => {
     const out = [];
     for (const b of blocks) {
-      if (b.t === 'p') out.push(R.paraToHTML(b, design));
+      if (b.t === 'p') out.push(R.paraToHTML(b, design, opts));
       else if (b.t === 'tbl') {
         const grid = b.grid || [];
         const cells = b.rows.map((r) => {
@@ -164,7 +171,7 @@
               if (c.tcPr.w) st.push('width:' + pt(c.tcPr.w));
               if (c.tcPr.shd) st.push('background:' + c.tcPr.shd);
             }
-            return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks, design) + '</td>';
+            return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks, design, opts) + '</td>';
           }).join('') + '</tr>';
         }).join('');
         const cls = 'emr-tbl' + (b.tblPr && b.tblPr.plain ? ' emr-tbl-plain' : '') + (b.tblPr && b.tblPr.bd === 0 ? ' emr-tbl-none' : b.tblPr && b.tblPr.bd === 2 ? ' emr-tbl-bold' : '');

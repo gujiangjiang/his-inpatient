@@ -1,8 +1,13 @@
 // public/js/emr_editor/emr_doc_model.js - 病历文档模型
-// 文档 = {v:1, title, page(排版), header(固定抬头), body(正文块)}
+// 文档 = {v(模型版本), title, page(排版), header(固定抬头), body(正文块)}
 // 正文块: {t:'p',pPr,rPr,runs} 段落 | {t:'tbl',grid,rows} 表格
-// run 项: text/tab/br(文本) + fx(固定标签,原子不可删) + slot(填写槽,原子不可删)
-// 固定元素保护: 模型层 ops 禁止删除/越过 fx/slot; 每次事务后 validateGuard 校验键集合与模板一致
+// run 项: text(文本)/tab/br + fx(固定标签,原子不可删) + slot(填写槽) + dyn(动态只读项) + ref(字段引用)
+// 存储词汇速查 (与 Word 术语对齐; 为兼容存量 doc_json/schema_json, 键名不轻易更名):
+//   pPr = 段落属性 (align/ind/sp/flex/borders)   rPr = 字符属性 (b/i/u/strike/font/sz/color)
+//   val = 槽位值文本   del = 修订留痕删除 (红删除线, 打印不输出)   manual = 已手动修改(停止首页同步)
+//   ph = 占位描述   def = 默认内容(旧)   defPick = 默认选中(下拉/复选)   req = 必选
+//   opts/multi = 下拉选项/多选   dt = 日期元素(mode/fmt)   calc = 自动计算项(expr/dec)   fb = 引用无值占位
+// 固定元素保护: 模型层 ops 禁止删除/越过 fx/slot; 每次事务后 assertGuard 校验键集合与模板一致
 (function () {
   'use strict';
   const M = (window.EmrDoc = {});
@@ -26,20 +31,20 @@
 
   /* ---------- 长度与定位 ---------- */
   /** 项占字符位: 文本=字符数; 固定标签/填写槽/制表符等=1 占位(光标可停在两侧, 不可删除) */
-  M.ilen = (it) => {
+  M.itemLen = (it) => {
     if (it.t === 'text') return it.text.length;
     return 1;
   };
   /* dyn = 动态只读项 (BMI 自动计算/签名自动填入/诊断同步), 与 fx 同为不可删除原子 */
   M.isProtected = (it) => it.t === 'fx' || it.t === 'slot' || it.t === 'dyn' || it.t === 'ref';
-  M.plen = (p) => { let n = 0; for (const it of p.runs) n += M.ilen(it); return n; };
+  M.paraLen = (p) => { let n = 0; for (const it of p.runs) n += M.itemLen(it); return n; };
 
   /** 定位 offset o 到项: {i(项下标), off(项内偏移), start(项起始)} */
   M.locate = (p, o) => {
     let pos = 0;
     const runs = p.runs;
     for (let i = 0; i < runs.length; i++) {
-      const n = M.ilen(runs[i]);
+      const n = M.itemLen(runs[i]);
       if (o < pos + n) return { i, off: o - pos, start: pos };
       pos += n;
     }
@@ -51,7 +56,7 @@
     let pos = 0;
     for (let i = 0; i < p.runs.length; i++) {
       const it = p.runs[i];
-      const n = M.ilen(it);
+      const n = M.itemLen(it);
       if (o === pos) return i;
       if (o < pos + n) {
         if (it.t !== 'text') return i; /* 保护项/特殊项不可内部切开 */
@@ -73,13 +78,14 @@
   M.sameRPr = (a, b) => JSON.stringify(a || {}) === JSON.stringify(b || {});
   M.cloneR = (r) => r ? JSON.parse(JSON.stringify(r)) : {};
 
-  /** 合并相邻同格式文本 run, 丢弃空文本 (值/正文属性不同不合并, 保留槽位值边界) */
+  /** 合并相邻同格式文本 run, 丢弃空文本 (值/正文/留痕属性不同不合并, 保留边界) */
   M.normalize = (p) => {
     const out = [];
     for (const it of p.runs) {
       if (it.t === 'text' && !it.text) continue;
       const last = out[out.length - 1];
-      if (last && it.t === 'text' && last.t === 'text' && M.sameRPr(last.rPr, it.rPr) && !!last.val === !!it.val) {
+      if (last && it.t === 'text' && last.t === 'text' && M.sameRPr(last.rPr, it.rPr)
+        && !!last.val === !!it.val && !!last.del === !!it.del) {
         out[out.length - 1] = Object.assign({}, last, { text: last.text + it.text });
         continue;
       }

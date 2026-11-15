@@ -32,9 +32,13 @@ try {
         $pdo->prepare("DELETE FROM emr_document_versions WHERE doc_id = ?")->execute([(int)$doc['id']]);
         $pdo->prepare("DELETE FROM emr_documents WHERE id = ?")->execute([(int)$doc['id']]);
     } else {
-        /* edit: 退回草稿解锁 (内容与历史版本保留; 修改后需重新签名) */
-        $pdo->prepare("UPDATE emr_documents SET status = 'draft', updated_at = ? WHERE id = ?")
-            ->execute([$now, (int)$doc['id']]);
+        /* edit: 退回草稿解锁 (内容与历史版本保留; 修改后需重新签名); 打「修订留痕」标记:
+           之后删除的文字以红色删除线保留在文书中 (可追溯), 打印/快照不输出 */
+        $meta = json_decode((string)($doc['doc_meta'] ?? ''), true);
+        if (!is_array($meta)) $meta = [];
+        $meta['revise'] = true;
+        $pdo->prepare("UPDATE emr_documents SET status = 'draft', doc_meta = ?, updated_at = ? WHERE id = ?")
+            ->execute([json_encode($meta, JSON_UNESCAPED_UNICODE), $now, (int)$doc['id']]);
     }
     $pdo->prepare("UPDATE emr_maintenance_requests SET status='approved', reviewed_by=?, reviewed_at=?, reject_reason=NULL WHERE id=?")
         ->execute([$uid, $now, $id]);

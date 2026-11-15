@@ -145,6 +145,7 @@
 .emr-statusbar .emr-doc-status:empty { display: none; }
 .emr-statusbar .emr-doc-status.draft { background: #e6a23c22; color: #e6a23c; }
 .emr-statusbar .emr-doc-status.signed { background: #67c23a22; color: #67c23a; }
+.emr-statusbar .emr-doc-status.revise { background: #f56c6c1f; color: #e5484d; }
 
 /* 结构化段落 (A4 仿真排版) */
 .emr-doc-sections {

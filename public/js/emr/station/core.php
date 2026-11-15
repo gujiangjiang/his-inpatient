@@ -48,8 +48,9 @@ function syncToolbar(signed) {
     document.getElementById('btn-print').disabled = false;
     document.getElementById('btn-versions').disabled = false;
     const statusEl = document.getElementById('emr-doc-status');
-    statusEl.textContent = signed ? '已签名 · 只读锁定' : '草稿 · 可编辑';
-    statusEl.className = 'emr-doc-status ' + (signed ? 'signed' : 'draft');
+    statusEl.textContent = signed ? '已签名 · 只读锁定'
+        : (_emrReviseMode ? '修订中 · 删除留痕（打印不输出）' : '草稿 · 可编辑');
+    statusEl.className = 'emr-doc-status ' + (signed ? 'signed' : 'draft') + (_emrReviseMode ? ' revise' : '');
 }
 
 /* ================= 保存 ================= */

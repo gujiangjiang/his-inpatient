@@ -96,6 +96,8 @@
 }
 /* 填写槽的值 (已输入内容): 编辑状态常显浅色下划线提示可编辑; 只读(已签名)/打印不显示 */
 .emr-body[contenteditable="true"] .emr-val { border-bottom: 1px dashed #c3c8d1; }
+/* 修改留痕: 修订模式下删除的文字 (红删除线; 打印/快照不输出, 见 paginate hideDel) */
+.emr-del { color: #e5484d; text-decoration: line-through; }
 /* 字段引用 (自动调用值): 编辑态细虚线提示为自动内容; 只读/打印与正文一致 */
 .emr-body[contenteditable="true"] .emr-ref { border-bottom: 1px dotted #c9d4e6; }
 

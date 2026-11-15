@@ -11,11 +11,14 @@ function emr_slot_value_after(array $runs, $idx, $v2)
         $jt = $it['t'] ?? '';
         if ($v2) {
             if ($jt === 'br') continue;
-            if ($jt === 'text' && !empty($it['val'])) { $val .= (string)$it['text']; continue; }
+            if ($jt === 'text') {
+                if (!empty($it['del'])) continue; /* 留痕删除的值视为未填写 */
+                if (!empty($it['val'])) { $val .= (string)$it['text']; continue; }
+            }
             break;
         }
         if (in_array($jt, ['fx', 'slot', 'dyn', 'ref'], true)) break;
-        if ($jt === 'text') $val .= (string)$it['text'];
+        if ($jt === 'text' && empty($it['del'])) $val .= (string)$it['text'];
     }
     return $val;
 }
@@ -42,7 +45,7 @@ function emr_slot_reference_text(array $runs, $idx)
             $j = $k - 1; /* for 自增后从值之后继续 */
             continue;
         }
-        if ($jt === 'text') { $out .= (string)$it['text']; continue; }
+        if ($jt === 'text') { if (empty($it['del'])) $out .= (string)$it['text']; continue; }
         if ($jt === 'br') { $out .= "\n"; continue; }
         if ($jt === 'tab') { $out .= "\t"; continue; }
         if ($jt === 'dyn' || $jt === 'ref') { $out .= (string)($it['text'] ?? ''); continue; }

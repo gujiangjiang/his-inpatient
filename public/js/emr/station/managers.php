@@ -146,7 +146,7 @@ function emrIsCreator(t) {
 
 /** 本科室 Tab 过滤: 仅归属本科室的模板/内容 (department_id = 本人科室);
  *  全院通用 (department_id 为空) 与他人科室条目一律归「全院」Tab, 不与本科室混排 */
-function emrMineUsable(t) {
+function emrBelongsToMyDept(t) {
     const my = emrMyDeptId();
     return !!my && t.department_id != null && String(t.department_id) === String(my);
 }
@@ -205,7 +205,7 @@ var emr_openTemplateManager = EmrUI.managedList({
     myDeptId: emrMyDeptId(),
     deptNameOf: function (t) { return emrDeptNameOf(t); },
     isOwn: emrIsCreator,
-    mineFilter: emrMineUsable,
+    mineFilter: emrBelongsToMyDept,
     statusTag: emrStatusTag,
     deptKeyOf: function (t) { return t.department_id == null ? '0' : String(t.department_id); },
     catKeyOf: function (t) { return t.category_id == null ? 'none' : String(t.category_id); },
@@ -259,7 +259,7 @@ var emr_openContentManager = EmrUI.managedList({
     myDeptId: emrMyDeptId(),
     deptNameOf: function (t) { return emrDeptNameOf(t); },
     isOwn: emrIsCreator,
-    mineFilter: emrMineUsable,
+    mineFilter: emrBelongsToMyDept,
     statusTag: emrStatusTag,
     deptKeyOf: function (t) { return t.department_id == null ? '0' : String(t.department_id); },
     catKeyOf: function (t) { return t.category_id == null ? 'none' : String(t.category_id); },

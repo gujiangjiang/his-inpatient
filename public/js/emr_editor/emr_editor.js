@@ -11,6 +11,7 @@
     const inst = {
       container: opts.container, doc: opts.doc, guard: opts.guard || null,
       patientInfo: opts.patientInfo || {}, readonly: !!opts.readonly, design: !!opts.design,
+      trackChanges: !!opts.trackChanges, /* 修订模式: 删除留痕 (签名后维护解锁的文书) */
       onChange: opts.onChange || null, onStatus: opts.onStatus || null,
       bodyEl: null, index: new Map(), composing: false, composeStart: null,
       dirty: false, _handlers: [], _lastPos: null, /* _lastPos: 最近一次可靠的模型光标位置 */
@@ -18,6 +19,7 @@
 
     /* ---------- 归一化: 补齐块 id (模板/迁移数据可能缺失, 渲染与光标映射必需) ---------- */
     M.ensureIds(inst.doc.body || []);
+    O.setTrackChanges(!inst.readonly && !inst.design && inst.trackChanges); /* 修订模式: 删除留痕 */
     if (!inst.readonly && !inst.design) O.recalcBmi(inst.doc.body); /* 打开即校正 BMI (设计模板不引用患者数据) */
 
     /* ---------- DOM 搭建 ---------- */
@@ -53,7 +55,7 @@
       const keepLeft = sc ? sc.scrollLeft : 0;
       inst.bodyEl.innerHTML = R.blocksToHTML(inst.doc.body, inst.design);
       inst.index = new Map();
-      O.ctx(inst.doc.body).forEach((x) => inst.index.set(x.p.id, x));
+      O.paragraphs(inst.doc.body).forEach((x) => inst.index.set(x.p.id, x));
       if (sc) { sc.scrollTop = keepTop; sc.scrollLeft = keepLeft; }
       if (pos) {
         inst.bodyEl.focus({ preventScroll: true });
@@ -310,7 +312,7 @@
     /* ---------- 设计模式: 表格框线拖拽 (列宽/行高) ---------- */
     const PX2PT = 72 / 96;
     const ptPx = (v) => (Math.round(v * 96 / 72 * 100) / 100) + 'px';
-    let rs = null;
+    let resizeState = null;
     const startTableResize = (e, td, colMode) => {
       e.preventDefault();
       const tblEl = td.closest('table[data-tblid]');
@@ -336,57 +338,57 @@
         state.$col.push(tr.cells[ci]);
         if (hasNext && tr.cells[ci + 1]) state.$colNext.push(tr.cells[ci + 1]);
       });
-      rs = state;
+      resizeState = state;
       inst.bodyEl.style.cursor = colMode ? 'col-resize' : 'row-resize';
       const onMove = (ev) => {
-        if (!rs) return;
+        if (!resizeState) return;
         ev.preventDefault();
-        if (rs.mode === 'col') {
-          const dpt = (ev.clientX - rs.startX) * PX2PT;
-          const nw = Math.max(20, rs.w + dpt);
-          const nwn = rs.hasNext ? Math.max(20, rs.wNext - dpt) : null;
-          rs.curW = nw; rs.curWNext = nwn;
-          rs.$col.forEach((td2) => { td2.style.width = ptPx(nw); });
-          if (nwn != null) rs.$colNext.forEach((td2) => { td2.style.width = ptPx(nwn); });
-          const m = rs.model;
+        if (resizeState.mode === 'col') {
+          const dpt = (ev.clientX - resizeState.startX) * PX2PT;
+          const nw = Math.max(20, resizeState.w + dpt);
+          const nwn = resizeState.hasNext ? Math.max(20, resizeState.wNext - dpt) : null;
+          resizeState.curW = nw; resizeState.curWNext = nwn;
+          resizeState.$col.forEach((td2) => { td2.style.width = ptPx(nw); });
+          if (nwn != null) resizeState.$colNext.forEach((td2) => { td2.style.width = ptPx(nwn); });
+          const m = resizeState.model;
           let sum = 0;
-          (m.grid || []).forEach((g, i) => { sum += i === rs.ci ? nw : (i === rs.ci + 1 && nwn != null ? nwn : g); });
+          (m.grid || []).forEach((g, i) => { sum += i === resizeState.ci ? nw : (i === resizeState.ci + 1 && nwn != null ? nwn : g); });
           if (!(m.grid || []).length) sum = nw + (nwn || 0);
-          rs.tblEl.style.width = ptPx(sum);
+          resizeState.tblEl.style.width = ptPx(sum);
         } else {
-          const dpt = (ev.clientY - rs.startY) * PX2PT;
-          const nh = Math.max(20, rs.h + dpt);
-          rs.curH = nh;
-          rs.trEl.style.height = ptPx(nh);
+          const dpt = (ev.clientY - resizeState.startY) * PX2PT;
+          const nh = Math.max(20, resizeState.h + dpt);
+          resizeState.curH = nh;
+          resizeState.trEl.style.height = ptPx(nh);
         }
       };
       const onUp = () => {
         document.removeEventListener('mousemove', onMove, true);
         document.removeEventListener('mouseup', onUp, true);
         inst.bodyEl.style.cursor = '';
-        if (!rs) return;
-        const m = rs.model;
-        if (rs.mode === 'col' && rs.curW != null) {
+        if (!resizeState) return;
+        const m = resizeState.model;
+        if (resizeState.mode === 'col' && resizeState.curW != null) {
           m.rows.forEach((row) => {
-            const c1 = row.cells[rs.ci];
-            if (c1) { c1.tcPr = c1.tcPr || {}; c1.tcPr.w = +rs.curW.toFixed(1); }
-            if (rs.curWNext != null) {
-              const c2 = row.cells[rs.ci + 1];
-              if (c2) { c2.tcPr = c2.tcPr || {}; c2.tcPr.w = +rs.curWNext.toFixed(1); }
+            const c1 = row.cells[resizeState.ci];
+            if (c1) { c1.tcPr = c1.tcPr || {}; c1.tcPr.w = +resizeState.curW.toFixed(1); }
+            if (resizeState.curWNext != null) {
+              const c2 = row.cells[resizeState.ci + 1];
+              if (c2) { c2.tcPr = c2.tcPr || {}; c2.tcPr.w = +resizeState.curWNext.toFixed(1); }
             }
           });
           m.grid = (m.rows[0] ? m.rows[0].cells.map((c) => (c.tcPr && c.tcPr.w) || 60) : []);
-        } else if (rs.mode === 'row' && rs.curH != null) {
-          const row = m.rows[rs.ri];
-          if (row) { row.trPr = row.trPr || {}; row.trPr.h = +rs.curH.toFixed(1); }
+        } else if (resizeState.mode === 'row' && resizeState.curH != null) {
+          const row = m.rows[resizeState.ri];
+          if (row) { row.trPr = row.trPr || {}; row.trPr.h = +resizeState.curH.toFixed(1); }
         }
         inst.dirty = true;
         if (inst.onChange) inst.onChange(inst);
-        rs = null;
+        resizeState = null;
       };
       document.addEventListener('mousemove', onMove, true);
       document.addEventListener('mouseup', onUp, true);
-      if (rs) rs._rm = [onMove, onUp];
+      if (resizeState) resizeState._rm = [onMove, onUp];
     };
 
     const onMouseDown = (e) => {
@@ -606,7 +608,7 @@
     });
     /* 设计模式: 悬停表格框线时提示可拖拽 (列/行) */
     on(inst.bodyEl, 'mousemove', (e) => {
-      if (!inst.design || rs) return;
+      if (!inst.design || resizeState) return;
       const t = e.target;
       if (!t.closest || t.closest('[data-item]')) return;
       const td = t.closest('td');
@@ -630,9 +632,9 @@
       if (!pos) return null;
       const p = O.findBlockById(inst.doc.body, pos.p.id);
       if (!p || p.t !== 'p') return null;
-      const info = O.ctx(inst.doc.body).find((x) => x.p === p);
+      const info = O.paragraphs(inst.doc.body).find((x) => x.p === p);
       if (!info) return null;
-      return { p, o: Math.max(0, Math.min(pos.o, M.plen(p))), cont: info.cont };
+      return { p, o: Math.max(0, Math.min(pos.o, M.paraLen(p))), cont: info.cont };
     };
     /** 取插入点, 无有效位置时提示 (模板元素必须插入到点击的位置) */
     const requirePos = () => {
@@ -668,7 +670,7 @@
       const pos = requirePos();
       if (!pos) return;
       apply('设计', () => {
-        const info = O.ctx(inst.doc.body).find((x) => x.p === pos.p);
+        const info = O.paragraphs(inst.doc.body).find((x) => x.p === pos.p);
         const np = M.para([M.fx('sign_line', '医师签名：'), M.item('dyn', { key: 'sign_names', text: '' })], { align: 'right' });
         if (info) info.cont.splice(info.i + 1, 0, np);
         else inst.doc.body.push(np);
@@ -691,7 +693,7 @@
       const pos = requirePos();
       if (!pos) return;
       apply('设计', () => {
-        const info = O.ctx(inst.doc.body).find((x) => x.p === pos.p);
+        const info = O.paragraphs(inst.doc.body).find((x) => x.p === pos.p);
         const np = M.para([], { borders: { top: true } });
         if (info) info.cont.splice(info.i + 1, 0, np);
         else inst.doc.body.push(np);
@@ -736,7 +738,7 @@
       return true;
     };
     inst.removeItem = (p, item) => {
-      const info = O.ctx(inst.doc.body).find((x) => x.p === p);
+      const info = O.paragraphs(inst.doc.body).find((x) => x.p === p);
       if (!info) return;
       apply('设计', () => { O.removeItemAt(p, item); return { p, o: 0, cont: info.cont }; });
     };
@@ -752,15 +754,16 @@
       inst.headEl.innerHTML = R.headerToHTML(inst.doc.header, inst.patientInfo, inst.design);
     };
     inst.destroy = () => {
-      if (rs) {
-        if (rs._rm) {
-          document.removeEventListener('mousemove', rs._rm[0], true);
-          document.removeEventListener('mouseup', rs._rm[1], true);
+      if (resizeState) {
+        if (resizeState._rm) {
+          document.removeEventListener('mousemove', resizeState._rm[0], true);
+          document.removeEventListener('mouseup', resizeState._rm[1], true);
         }
-        rs = null;
+        resizeState = null;
       }
       if (window.EmrEditorUI && window.EmrEditorUI.dispose) window.EmrEditorUI.dispose(); /* destroy: 关闭遗留弹层(含日期) */
       O.setValTyping(false);
+      O.setTrackChanges(false);
       inst._lastPos = null;
       inst._handlers.forEach(([el, type, fn]) => el.removeEventListener(type, fn));
       inst._handlers = [];

@@ -8,6 +8,7 @@ var _emrAutoSaveTimer = null;
 var _emrPatient = null;
 var _emrQc = [];              // 质控提醒 [{cat, code, msg, hours}]
 var _emrDesign = null;        // 模板设计状态 {id, name, categoryId, recordType}
+var _emrReviseMode = false;   // 修订留痕模式 (签名后经维护批准解锁的文书)
 var _emrCategories = _emrCategories || [];
 
 /* ================= 初始化 / 树 ================= */
@@ -38,8 +39,9 @@ async function loadQc() {
     } catch (e) { _emrQc = []; }
 }
 
-/** 文书列表与质控统一刷新 */
+/** 文书列表与质控统一刷新 (已离开病历页时仅保存, 不刷新 UI: 自动保存可能在切换页面后完成) */
 async function refreshDocs() {
+    if (!document.getElementById('emr-category-tree')) return;
     await loadDocuments();
     await loadQc();
     renderCategoryTree();
@@ -47,6 +49,7 @@ async function refreshDocs() {
 
 function renderCategoryTree() {
     const container = document.getElementById('emr-category-tree');
+    if (!container) return; /* 页面已切换 (SPA): 元素不存在直接跳过 */
     container.innerHTML = '';
     _emrCategories.forEach(cat => {
         const docs = _emrDocs.filter(d => d.category_id == cat.id);
@@ -426,12 +429,15 @@ async function openWordDoc(doc, signed) {
         try { await syncDiagDyns(doc.doc_json); } catch (e) { console.error('诊断引用填充失败', e); }
     }
     const metaGuard = doc.doc_meta && doc.doc_meta.guard && Array.isArray(doc.doc_meta.guard.fx) ? doc.doc_meta.guard : null;
+    /* 修订模式: 签名后经维护批准解锁的文书 (doc_meta.revise) — 删除留痕, 打印不输出 */
+    _emrReviseMode = !signed && !!(doc.doc_meta && doc.doc_meta.revise);
     _emrEditor = EmrEditor.create({
         container: document.getElementById('emr-editor-canvas'),
         doc: doc.doc_json,
         guard: metaGuard || EmrDoc.collectGuard(doc.doc_json.body || []),
         patientInfo: buildPatientInfo(),
         readonly: signed,
+        trackChanges: _emrReviseMode,
         onChange: scheduleAutoSave,
         onStatus: updateEditorStatus,
         diagSync: fetchAdmissionDiagText,

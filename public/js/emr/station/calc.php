@@ -5,7 +5,7 @@ function emrCalcVars() {
     const out = [];
     const seen = {};
     if (!_emrEditor) return out;
-    EmrOps.ctx(_emrEditor.getDoc().body).forEach(function (x) {
+    EmrOps.paragraphs(_emrEditor.getDoc().body).forEach(function (x) {
         let label = '';
         (x.p.runs || []).forEach(function (it) {
             if (it.t === 'fx') { label = String(it.text || '').replace(/[：:]\s*$/, ''); return; }

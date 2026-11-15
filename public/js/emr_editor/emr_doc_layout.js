@@ -167,7 +167,8 @@
       + 'font-size:' + (doc.page.sz || 12) * PX + 'px;line-height:' + (doc.page.line || 1.5) + ';'
       + 'white-space:pre-wrap;overflow-wrap:break-word;';
     document.body.appendChild(meas);
-    meas.innerHTML = R.headerToHTML(doc.header, patientInfo) + R.blocksToHTML(doc.body);
+    /* hideDel: 打印/分页测量隐藏修改留痕 (屏显保留, 打印与测量一致) */
+    meas.innerHTML = R.headerToHTML(doc.header, patientInfo) + R.blocksToHTML(doc.body, false, { hideDel: true });
 
     /* 页眉实际高度动态测量: 正文从页眉下方 + 间隔开始, 避免信息栏与正文重叠 */
     const headEl = meas.querySelector('.emr-page-head');

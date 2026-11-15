@@ -7,14 +7,14 @@
   const O = (window.EmrOps = {});
 
   /** 建立上下文: 全部段落索引 {p, cont, i} */
-  O.ctx = (blocks) => {
+  O.paragraphs = (blocks) => {
     const paras = [];
     M.walk(blocks, (b, cont, i) => {
       if (b.t === 'p') paras.push({ p: b, cont, i });
     });
     return paras;
   };
-  const infoOf = (blocks, p) => O.ctx(blocks).find((x) => x.p === p) || null;
+  const infoOf = (blocks, p) => O.paragraphs(blocks).find((x) => x.p === p) || null;
 
   /* ---------- 插入 ---------- */
   /* 注意: 不能在插入时把「位于固定项起点的光标」强行推到其后 —— 该位置同时也是
@@ -27,7 +27,7 @@
   O.insertTextAt = (pos, text, rPr) => {
     if (!text) return pos;
     const p = pos.p;
-    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
+    const o = Math.max(0, Math.min(pos.o, M.paraLen(p)));
     const i = M.splitAt(p, o);
     let k = i - 1;
     while (k >= 0 && p.runs[k].t === 'br') k--; /* 值内换行后继续归属同一槽位值 */
@@ -43,7 +43,7 @@
   /** 在 pos 插入 tab (制表); 返回新位置 */
   O.insertTabAt = (pos) => {
     const p = pos.p;
-    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
+    const o = Math.max(0, Math.min(pos.o, M.paraLen(p)));
     const i = M.splitAt(p, o);
     p.runs.splice(i, 0, M.item('tab'));
     return { p, o: o + 1 };
@@ -76,7 +76,7 @@
     const out = [];
     let pos = 0;
     for (const it of p.runs) {
-      const n = M.ilen(it);
+      const n = M.itemLen(it);
       const s = pos, e = pos + n;
       pos = e;
       if (M.isProtected(it)) { out.push(it); continue; }
@@ -96,9 +96,82 @@
   /** 段内是否含保护项 */
   const hasProtected = (p) => p.runs.some(M.isProtected);
 
+  /* ---------- 修改留痕 (修订模式: 签名后经维护解锁的文书) ----------
+     trackChanges=true 时删除不抹除文本, 而是标记 del=true (红色删除线, 打印不输出);
+     再次删除已留痕文本不重复标记; 纯段落边界删除 (无文本) 仍走常规合并 */
+  O.trackChanges = false;
+  O.setTrackChanges = (v) => { O.trackChanges = !!v; };
+
+  /** 段内留痕删除: [from,to) 内非留痕文本 run 拆分并标记 del */
+  const trackEraseInPara = (p, from, to) => {
+    if (from >= to) return;
+    const out = [];
+    let pos = 0;
+    for (const it of p.runs) {
+      const n = M.itemLen(it);
+      const s = pos; const e = pos + n;
+      pos = e;
+      if (it.t !== 'text' || it.del) { out.push(it); continue; } /* 原子项/已留痕: 原样保留 */
+      const os = Math.max(s, from), oe = Math.min(e, to);
+      if (oe <= os) { out.push(it); continue; }
+      const text = it.text;
+      const keepL = os - s, keepR = e - oe;
+      const head = text.slice(0, keepL);
+      const mid = text.slice(keepL, text.length - keepR);
+      const tail = keepR > 0 ? text.slice(text.length - keepR) : '';
+      if (head) out.push(Object.assign({}, it, { text: head }));
+      if (mid) out.push(Object.assign({}, it, { text: mid, del: true }));
+      if (tail) out.push(Object.assign({}, it, { text: tail }));
+    }
+    p.runs = out;
+  };
+
+  /** 段落 [from,to) 内是否存在未留痕文本 */
+  const hasLiveText = (p, from, to) => {
+    let pos = 0;
+    for (const it of p.runs) {
+      const n = M.itemLen(it);
+      const s = pos; const e = pos + n;
+      pos = e;
+      if (it.t === 'text' && !it.del && e > from && s < to) return true;
+    }
+    return false;
+  };
+
+  /** 留痕删除 [a,b): 文本标记 del, 段落结构不动 (跨段不合并); 返回折叠光标 */
+  const deleteRangeTracked = (a, b) => {
+    if (a.p === b.p) {
+      const lo = Math.min(a.o, b.o), hi = Math.max(a.o, b.o);
+      trackEraseInPara(a.p, lo, hi);
+      M.normalize(a.p);
+      return { p: a.p, o: lo, cont: a.cont };
+    }
+    const paras = O.paragraphs(a.cont);
+    const ia = paras.findIndex((x) => x.p === a.p);
+    const ib = paras.findIndex((x) => x.p === b.p);
+    if (ia < 0 || ib < 0) {
+      trackEraseInPara(a.p, a.o, M.paraLen(a.p));
+      trackEraseInPara(b.p, 0, b.o);
+      M.normalize(a.p);
+      M.normalize(b.p);
+      return { p: a.p, o: Math.min(a.o, M.paraLen(a.p)), cont: a.cont };
+    }
+    let any = hasLiveText(a.p, a.o, M.paraLen(a.p)) || hasLiveText(b.p, 0, b.o);
+    for (let k = ia + 1; k < ib && !any; k++) any = hasLiveText(paras[k].p, 0, M.paraLen(paras[k].p));
+    if (!any) return deleteRangePlain(a, b); /* 仅段落边界: 无文本可留痕, 常规合并/删空段 */
+    trackEraseInPara(a.p, a.o, M.paraLen(a.p));
+    trackEraseInPara(b.p, 0, b.o);
+    for (let k = ia + 1; k < ib; k++) trackEraseInPara(paras[k].p, 0, M.paraLen(paras[k].p));
+    M.normalize(a.p);
+    return { p: a.p, o: a.o, cont: a.cont };
+  };
+
   /** 删除 [a,b) (同段或跨段); 返回折叠后光标
-   *  跨段合并规则: 空段不吞并内容段 —— 保留有内容段落的段落格式(对齐等), 只删除空段 */
-  O.deleteRange = (a, b) => {
+   *  跨段合并规则: 空段不吞并内容段 —— 保留有内容段落的段落格式(对齐等), 只删除空段
+   *  修订模式 (O.trackChanges): 改走留痕删除 */
+  O.deleteRange = (a, b) => (O.trackChanges ? deleteRangeTracked(a, b) : deleteRangePlain(a, b));
+
+  const deleteRangePlain = (a, b) => {
     if (a.p === b.p) {
       const lo = Math.min(a.o, b.o), hi = Math.max(a.o, b.o);
       eraseInPara(a.p, lo, hi);
@@ -106,16 +179,16 @@
       return { p: a.p, o: lo, cont: a.cont };
     }
     /* 跨段: 中间整段不可含固定元素或内容 (设计模式同样保护, 删除固定元素用右击菜单) */
-    const paras = O.ctx(a.cont);
+    const paras = O.paragraphs(a.cont);
     const ia = paras.findIndex((x) => x.p === a.p);
     const ib = paras.findIndex((x) => x.p === b.p);
     if (ia < 0 || ib < 0) {
       /* 跨容器选区 (如表格单元格 ↔ 正文): 不做段落合并, 仅擦除两端选区内容 */
-      eraseInPara(a.p, a.o, M.plen(a.p));
+      eraseInPara(a.p, a.o, M.paraLen(a.p));
       eraseInPara(b.p, 0, b.o);
       M.normalize(a.p);
       M.normalize(b.p);
-      return { p: a.p, o: Math.min(a.o, M.plen(a.p)), cont: a.cont };
+      return { p: a.p, o: Math.min(a.o, M.paraLen(a.p)), cont: a.cont };
     }
     for (let k = ia + 1; k < ib; k++) {
       if (hasProtected(paras[k].p) || paras[k].p.runs.length) {
@@ -123,7 +196,7 @@
         e.code = 'protected'; throw e;
       }
     }
-    eraseInPara(a.p, a.o, M.plen(a.p));
+    eraseInPara(a.p, a.o, M.paraLen(a.p));
     eraseInPara(b.p, 0, b.o);
     M.normalize(a.p);
     M.normalize(b.p);
@@ -149,7 +222,7 @@
   /** Backspace: 删光标前一个字符 */
   O.deleteBackward = (pos) => {
     if (pos.o > 0) return O.deleteRange({ p: pos.p, o: pos.o - 1, cont: pos.cont }, pos);
-    const paras = O.ctx(pos.cont);
+    const paras = O.paragraphs(pos.cont);
     const info = paras.find((x) => x.p === pos.p);
     if (!info || info.i === 0) return pos;
     const prev = paras[info.i - 1].p;
@@ -158,19 +231,19 @@
       if (!pos.p.runs.length) {
         const cur = paras[info.i];
         cur.cont.splice(cur.i, 1);
-        return { p: prev, o: M.plen(prev), cont: pos.cont };
+        return { p: prev, o: M.paraLen(prev), cont: pos.cont };
       }
       const e = new Error('上一段含固定元素, 不可整段删除');
       e.code = 'protected'; throw e;
     }
-    const end = { p: prev, o: M.plen(prev), cont: pos.cont };
+    const end = { p: prev, o: M.paraLen(prev), cont: pos.cont };
     return O.deleteRange(end, pos);
   };
 
   /** Delete: 删光标后一个字符 */
   O.deleteForward = (pos) => {
-    if (pos.o < M.plen(pos.p)) return O.deleteRange(pos, { p: pos.p, o: pos.o + 1, cont: pos.cont });
-    const paras = O.ctx(pos.cont);
+    if (pos.o < M.paraLen(pos.p)) return O.deleteRange(pos, { p: pos.p, o: pos.o + 1, cont: pos.cont });
+    const paras = O.paragraphs(pos.cont);
     const info = paras.find((x) => x.p === pos.p);
     if (!info || info.i >= paras.length - 1) return pos;
     const next = paras[info.i + 1].p;
@@ -180,7 +253,7 @@
         const cur = paras[info.i];
         cur.cont.splice(cur.i, 1);
         const prevInfo = info.i > 0 ? paras[info.i - 1] : null;
-        if (prevInfo) return { p: prevInfo.p, o: M.plen(prevInfo.p), cont: pos.cont };
+        if (prevInfo) return { p: prevInfo.p, o: M.paraLen(prevInfo.p), cont: pos.cont };
         return { p: next, o: 0, cont: pos.cont };
       }
       const e = new Error('下一段含固定元素, 不可整段删除');
@@ -209,13 +282,13 @@
       M.normalize(a.p);
       return;
     }
-    const paras = O.ctx(a.cont);
+    const paras = O.paragraphs(a.cont);
     let inRange = false;
     for (const x of paras) {
       if (x.p === a.p) inRange = true;
       if (!inRange) continue;
       const s = x.p === a.p ? a.o : 0;
-      const e = x.p === b.p ? b.o : M.plen(x.p);
+      const e = x.p === b.p ? b.o : M.paraLen(x.p);
       const i0 = M.splitAt(x.p, s), i1 = M.splitAt(x.p, e);
       for (let k = i0; k < i1; k++) applyPatch(x.p.runs[k], patch);
       M.normalize(x.p);
@@ -230,18 +303,22 @@
   };
 
   /* ---------- 动态只读项 dyn (BMI 自动计算 / 签名 / 诊断同步) ---------- */
-  /** 取段内某 slot 紧邻的值文本 (val 标记 run; 到普通正文或保护项为止) */
+  /** 取段内某 slot 紧邻的值文本 (val 标记 run; 到普通正文或保护项为止; 留痕删除的值不计入) */
   O.valueAfterSlot = (p, key) => {
     let on = false, s = '';
     for (const it of p.runs) {
       if (!on) { if (it.t === 'slot' && it.key === key) on = true; continue; }
       if (it.t === 'br') continue; /* 值内换行 */
-      if (it.t === 'text' && it.val) { s += it.text; continue; }
+      if (it.t === 'text') {
+        if (it.del) continue;      /* 已留痕删除: 视为未填写 */
+        if (it.val) { s += it.text; continue; }
+      }
       break;
     }
     return s;
   };
-  /** 设置槽位值: 仅清除紧邻的旧值 run (val), 不碰槽位后的普通正文 (混排); 外部回填/下拉选择用 */
+  /** 设置槽位值: 仅清除紧邻的旧值 run (val), 不碰槽位后的普通正文 (混排); 外部回填/下拉选择用
+   *  修订模式 (trackChanges): 旧值标记留痕 (del) 保留, 新值插在其前 */
   O.setSlotValue = (p, key, text) => {
     const runs = p.runs;
     const idx = runs.findIndex((it) => it.t === 'slot' && it.key === key);
@@ -254,7 +331,15 @@
       break;
     }
     const repl = text ? [M.text(String(text), null, true)] : [];
-    runs.splice(idx + 1, end - (idx + 1), ...repl);
+    if (O.trackChanges && end > idx + 1 && O.valueAfterSlot(p, key).trim() !== String(text).trim()) {
+      for (let k = idx + 1; k < end; k++) {
+        const it = runs[k];
+        if (it.t === 'text' && it.val) it.del = true; /* 旧值留痕 */
+      }
+      runs.splice(idx + 1, 0, ...repl); /* 新值在旧值(删除线)之前 */
+    } else {
+      runs.splice(idx + 1, end - (idx + 1), ...repl);
+    }
     M.normalize(p);
     return true;
   };
@@ -265,7 +350,7 @@
     for (const it of p.runs) {
       if (pos >= o) break;
       if (it.t === 'slot') last = it;
-      pos += M.ilen(it);
+      pos += M.itemLen(it);
     }
     if (last) last.manual = true;
   };
@@ -308,7 +393,7 @@
    *  不含标签时仅插入槽位, 支持与文字混排 (如「下拉框」高血压病病史) */
   O.insertFieldAt = (pos, label, opts) => {
     const p = pos.p;
-    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
+    const o = Math.max(0, Math.min(pos.o, M.paraLen(p)));
     const i = M.splitAt(p, o);
     const key = 'f' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10);
     const withLabel = !(opts && opts.withLabel === false);
@@ -326,7 +411,7 @@
   /** 设计模式: 插入字段引用 */
   O.insertRefAt = (pos, key, fb) => {
     const p = pos.p;
-    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
+    const o = Math.max(0, Math.min(pos.o, M.paraLen(p)));
     const i = M.splitAt(p, o);
     p.runs.splice(i, 0, M.item('ref', { key: String(key), fb: String(fb || '＿＿') }));
     return { p, o: o + 1, cont: pos.cont };
@@ -446,7 +531,7 @@
   /** 设计模式: 在 pos 插入任意原子项 (dyn/ref/date 等), item 为 {t, key, ...} */
   O.insertRunAt = (pos, item) => {
     const p = pos.p;
-    const o = Math.max(0, Math.min(pos.o, M.plen(p)));
+    const o = Math.max(0, Math.min(pos.o, M.paraLen(p)));
     const i = M.splitAt(p, o);
     p.runs.splice(i, 0, Object.assign({ rPr: {} }, item));
     M.normalize(p);
