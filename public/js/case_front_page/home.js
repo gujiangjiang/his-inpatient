@@ -4,17 +4,102 @@ const CaseHome = {
     autofill: null,
     data: {},
 
+    regions: [], /* 省市县级联数据 (独立字典库; 含邮编与区划代码) */
+
     async init() {
         const p = PatientContext.current();
         if (!p || !p.admission_no) { Dom.toast('请先选择患者', 'info'); return; }
         this.admissionNo = p.admission_no;
-        const [saved, auto] = await Promise.all([
+        if (CaseHomeFields.initDicts) CaseHomeFields.initDicts(); /* 民族/职业: 全院统一字典 */
+        const [saved, auto, regions] = await Promise.all([
             AjaxLoader.api('case/get?admission_no=' + encodeURIComponent(this.admissionNo), { silent: true }),
             AjaxLoader.api('case/autofill?admission_no=' + encodeURIComponent(this.admissionNo), { silent: true }),
+            AjaxLoader.api('dict/region-tree', { silent: true }).catch(() => ({ data: [] })),
         ]);
+        this.regions = regions.data || [];
         this.autofill = auto.data || {};
         this.compose((saved.data && saved.data.data) || {});
         this.render();
+    },
+
+    /* ---------- 省市县级联 (独立字典库: 选完区县自动关联邮编) ---------- */
+    provList() { return this.regions; },
+    cityList(prov) {
+        const p = this.regions.find(x => x.name === prov);
+        return p ? p.cities : [];
+    },
+    countyList(prov, city) {
+        const c = this.cityList(prov).find(x => x.name === city);
+        return c ? c.areas : [];
+    },
+    zipOf(prov, city, county) {
+        const hit = this.countyList(prov, city).find(x => x[0] === county);
+        return hit ? (hit[1] || '') : '';
+    },
+    /* 选项渲染: 保留历史自由录入值 (不在字典中的值补一个选项, 避免切换页面丢数据) */
+    regionOptions(list, value, labelFn) {
+        const opts = [];
+        const val = String(value || '');
+        if (val && !list.some(x => (labelFn ? labelFn(x) : x.name) === val)) {
+            opts.push('<option value="' + Format.escape(val) + '" selected>' + Format.escape(val) + '（原录入值）</option>');
+        }
+        list.forEach(x => {
+            const name = labelFn ? labelFn(x) : x.name;
+            opts.push('<option value="' + Format.escape(name) + '"' + (name === val ? ' selected' : '') + '>' + Format.escape(name) + '</option>');
+        });
+        return opts.join('');
+    },
+    regionHtml(f) {
+        const base = f.base;
+        const prov = this.raw(base + '_prov');
+        const city = this.raw(base + '_city');
+        const county = this.raw(base + '_county');
+        const cities = this.cityList(prov);
+        const counties = this.countyList(prov, city);
+        const zip = f.zip ? this.zipOf(prov, city, county) : '';
+        return '<div class="form-group cf-span-' + (f.span || 1) + '"><label class="form-label">' + Format.escape(f.l) + '</label>'
+            + '<div class="cf-region" data-cf-region="' + Format.escape(base) + '"' + (f.zip ? ' data-cf-region-zip="' + Format.escape(f.zip) + '"' : '') + '>'
+            + '<select class="form-control" data-cf="' + base + '_prov" data-region-level="prov">'
+            + '<option value="">省</option>' + this.regionOptions(this.provList(), prov) + '</select>'
+            + '<select class="form-control" data-cf="' + base + '_city" data-region-level="city">'
+            + '<option value="">市</option>' + this.regionOptions(cities, city) + '</select>'
+            + (f.county === false ? '' :
+                '<select class="form-control" data-cf="' + base + '_county" data-region-level="county">'
+                + '<option value="">区县</option>' + this.regionOptions(counties, county, x => x[0]) + '</select>')
+            + (zip ? '<span class="cf-region-zip">邮编 ' + Format.escape(zip) + '</span>' : '')
+            + '</div></div>';
+    },
+    /* 级联联动 + 区县选择后自动关联邮编 */
+    bindRegions() {
+        document.querySelectorAll('[data-cf-region]').forEach(box => {
+            const base = box.dataset.cfRegion;
+            const zipKey = box.dataset.cfRegionZip || '';
+            const selProv = box.querySelector('[data-region-level="prov"]');
+            const selCity = box.querySelector('[data-region-level="city"]');
+            const selCounty = box.querySelector('[data-region-level="county"]');
+            const fillCity = () => {
+                selCity.innerHTML = '<option value="">市</option>' + this.regionOptions(this.cityList(selProv.value), '');
+                if (selCounty) selCounty.innerHTML = '<option value="">区县</option>';
+            };
+            const fillCounty = () => {
+                if (selCounty) selCounty.innerHTML = '<option value="">区县</option>' + this.regionOptions(this.countyList(selProv.value, selCity.value), '', x => x[0]);
+            };
+            const applyZip = () => {
+                if (!zipKey) return;
+                const zip = box.querySelector('.cf-region-zip');
+                if (selCounty && selCounty.value) {
+                    const z = this.zipOf(selProv.value, selCity.value, selCounty.value);
+                    if (zip) zip.textContent = z ? ('邮编 ' + z) : '';
+                    if (z) {
+                        const zipInput = document.querySelector('[data-cf="' + zipKey + '"]');
+                        if (zipInput) { zipInput.value = z; this.data[zipKey] = z; }
+                    }
+                } else if (zip) zip.textContent = '';
+            };
+            selProv.addEventListener('change', () => { fillCity(); this.collect(); applyZip(); });
+            selCity.addEventListener('change', () => { fillCounty(); this.collect(); applyZip(); });
+            if (selCounty) selCounty.addEventListener('change', () => { this.collect(); applyZip(); });
+        });
     },
 
     /* 保存值 + 自动抓取值合成 (自动项与费用始终以接口为准) */
@@ -72,6 +157,7 @@ const CaseHome = {
     },
 
     fieldHtml(f) {
+        if (f.t === 'region') return this.regionHtml(f); /* 省市县级联 (独立字典库) */
         const v = this.raw(f.k);
         const span = f.span || 1;
         const label = Format.escape(f.l);
@@ -104,6 +190,7 @@ const CaseHome = {
         if (window.DateTimePicker) DateTimePicker.initInputs(document.getElementById('cf-pane2'));
         if (window.SelectPicker) SelectPicker.initInputs(document.getElementById('cf-pane1'));
         if (window.SelectPicker) SelectPicker.initInputs(document.getElementById('cf-pane2'));
+        this.bindRegions(); /* 省市县级联 + 邮编自动关联 */
     },
 
     /* 出院诊断: 诊断/编码自动, 入院病情/治疗转归手工补充 */

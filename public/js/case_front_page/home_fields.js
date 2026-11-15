@@ -22,6 +22,15 @@ const CaseHomeFields = {
     diagInStatus: [['', ''], ['1', '1 有'], ['2', '2 临床未确定'], ['3', '3 情况不明'], ['4', '4 无']],
     diagOutcome: [['', ''], ['1', '1 治愈'], ['2', '2 好转'], ['3', '3 未愈'], ['5', '5 死亡'], ['9', '9 其他']],
 
+    /* 民族/职业等选项: 初始化时从全院统一字典注入 (window.EmrDicts, 独立字典库) */
+    nationDict: [],
+    occupationDict: [],
+    initDicts() {
+        const D = window.EmrDicts || {};
+        if (D.nation && D.nation.length) this.nationDict = D.nation.map(n => [n, n]);
+        if (D.occupation && D.occupation.length) this.occupationDict = D.occupation.map(n => [n, n]);
+    },
+
     /* 首页(一) 编辑分组: auto=1 由系统自动抓取 (只读) */
     sections1: [
         { title: '基本信息', fields: [
@@ -42,19 +51,16 @@ const CaseHomeFields = {
             { k: 'id_type', l: '身份证件类型', t: 'select', o: 'idTypes' },
             { k: 'id_card', l: '身份证件号码', auto: 1 },
             { k: 'id_unknown_reason', l: '证件不详的具体原因', t: 'select', o: 'idUnknown' },
-            { k: 'birth_prov', l: '出生地（省）' },
-            { k: 'birth_city', l: '出生地（市）' },
-            { k: 'birth_county', l: '出生地（县）' },
-            { k: 'native_prov', l: '籍贯（省）' },
-            { k: 'native_city', l: '籍贯（市）' },
-            { k: 'nation', l: '民族' },
-            { k: 'occupation', l: '职业' },
+            { k: 'birth_region', l: '出生地', t: 'region', base: 'birth', county: true, span: 2 },
+            { k: 'native_region', l: '籍贯', t: 'region', base: 'native', county: true, span: 2 },
+            { k: 'nation', l: '民族', t: 'select', o: 'nationDict' },
+            { k: 'occupation', l: '职业', t: 'select', o: 'occupationDict' },
             { k: 'marriage', l: '婚姻', t: 'select', o: 'marriage' },
         ] },
         { title: '地址与联系人', fields: [
-            { k: 'addr_prov', l: '现住址（省）' }, { k: 'addr_city', l: '现住址（市）' }, { k: 'addr_county', l: '现住址（县）' },
+            { k: 'addr_region', l: '现住址', t: 'region', base: 'addr', county: true, zip: 'zip', span: 2 },
             { k: 'addr_detail', l: '现住址详址', span: 2 }, { k: 'phone', l: '电话' }, { k: 'zip', l: '邮编' },
-            { k: 'hukou_prov', l: '户口地址（省）' }, { k: 'hukou_city', l: '户口地址（市）' }, { k: 'hukou_county', l: '户口地址（县）' },
+            { k: 'hukou_region', l: '户口地址', t: 'region', base: 'hukou', county: true, zip: 'hukou_zip', span: 2 },
             { k: 'hukou_detail', l: '户口地址详址', span: 2 }, { k: 'hukou_zip', l: '户口邮编' },
             { k: 'work_unit', l: '工作单位及地址', span: 2 }, { k: 'work_phone', l: '单位电话' }, { k: 'work_zip', l: '单位邮编' },
             { k: 'contact_name', l: '联系人姓名' }, { k: 'contact_rel', l: '关系' },

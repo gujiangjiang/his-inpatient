@@ -212,3 +212,8 @@
 .icd-pop .diag-pop-item:last-child { border-bottom: none; }
 .diag-pop-form { margin-top: 8px; border-top: 1px dashed #e2e8f0; padding-top: 8px; }
 .diag-pop-empty { color: #b0b8c4; font-size: 13px; padding: 4px 2px; }
+
+/* 病案首页·省市县级联 (独立字典库: 省市县+邮编; 选完区县自动关联邮编) */
+.cf-region { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.cf-region .form-control { flex: 1; min-width: 90px; }
+.cf-region-zip { font-size: 12px; color: #149a9a; white-space: nowrap; }
