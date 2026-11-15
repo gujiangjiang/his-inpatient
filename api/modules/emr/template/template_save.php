@@ -23,6 +23,19 @@ if ($schemaJson !== null && $schemaJson !== '') {
     $schemaJson = is_string($schemaJson) ? $schemaJson : json_encode($schemaArr, JSON_UNESCAPED_UNICODE);
 }
 
+/* 自动计算项校验: 公式引用的字段代码必须在本模板中存在 (否则该模板新建文书无法保存) */
+if ($schemaJson !== null && $schemaJson !== '') {
+    $schemaCheck = is_string($schemaJson) ? json_decode($schemaJson, true) : $schemaJson;
+    if (is_array($schemaCheck) && is_array($schemaCheck['body'] ?? null)) {
+        $maintMissing = emr_calc_missing(['body' => $schemaCheck['body']]);
+        if ($maintMissing) {
+            $msgs = [];
+            foreach ($maintMissing as $mm) $msgs[] = '「' . $mm[0] . '」缺少字段: ' . implode('、', $mm[1]);
+            Response::error('自动计算项校验失败: ' . implode('; ', $msgs));
+        }
+    }
+}
+
 $pdo = DB::getPDO();
 $userId = Auth::user()['id'];
 $id = isset($data['id']) && $data['id'] ? $data['id'] : null;
