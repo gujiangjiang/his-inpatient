@@ -2,7 +2,7 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.36.0-blue)
+![version](https://img.shields.io/badge/version-0.36.1-blue)
 
 ## 技术栈
 
@@ -11,7 +11,7 @@
 - **前端**: 原生 JS/CSS SPA
 - **病历编辑器**: 自研字处理编辑器（借鉴 Quire/Word 模型：纯 JSON 文档模型 + 固定抬头/固定标签/填写槽 + 自动分页打印），**全站零第三方前端库**
 - **PDF**: 浏览器打印（打印对话框可选「另存为 PDF」，分页与打印件完全一致）
-- **数据存储**: 主业务库 `data/hospital.sqlite` + 系统配置库 `data/config.db` + **独立基础字典库 `data/dicts.sqlite`**（省市县+邮编 3100+ 条 / 职业分类大典2022 / 院级字典；首次使用自动建库导入，数据不写入 PHP；管理员「字典管理」维护、修改即时生效）
+- **数据存储**: 主业务库 `data/hospital.sqlite` + 系统配置库 `data/config.db` + **独立基础字典库 `data/dicts.sqlite`**（省市县+邮编 3104 条 / 职业分类大典2022 全量 / 院级字典；**固定字典库随仓库分发** `tools/dict_data/dicts.sqlite`（构建工具 `tools/build_dicts.php`，数据不在 PHP 中），首次使用自动复制到 `data/`；管理员「字典管理」维护、修改即时生效）
 - **消息推送**: SSE 长连接（非轮询）——审核/维护/待核医嘱等业务事件定向推送（顶栏铃铛 + 未读角标），处理完成自动消失
 
 ## 核心技术特性
