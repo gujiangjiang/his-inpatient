@@ -1,12 +1,12 @@
 <?php
-// tools/build_dicts.php - 固定字典库构建工具 (一次性/数据更新时运行)
+// tools/build_dicts.php - 固定字典库构建工具 (数据更新时运行一次, 产物提交仓库)
 // 用法: php tools/build_dicts.php  (或 frankenphp php-cli tools/build_dicts.php)
-// 输入: tools/dict_data/{regions,occupations,dicts}.json (打包种子, 数据不在 PHP 代码中)
-// 输出: tools/dict_data/dicts.sqlite (固定字典库, 随仓库分发; 部署时复制到 data/dicts.sqlite)
-// 说明: 造数逻辑仅存在于本工具; 运行时 (api/core) 只读取/复制该数据库, 不做数据构造。
+// 输入: tools/dict_data/{regions,occupations,dicts}.json (种子数据, 不在 PHP 代码中)
+// 输出: data/dicts.sqlite (固定字典库本身, 随仓库提交远程; 运行时直接使用, 不做复制)
+// 说明: 造数逻辑仅存在于本工具; 运行时 (api/core) 只读取该数据库。
 $base = dirname(__DIR__);
 $dir = __DIR__ . '/dict_data';
-$outFile = $dir . '/dicts.sqlite';
+$outFile = $base . '/data/dicts.sqlite';
 
 function seed_read($dir, $name)
 {
@@ -77,4 +77,4 @@ echo 'dicts: ' . count($dicts) . "\n";
 $pdo->exec('VACUUM');
 $pdo = null;
 $size = round(filesize($outFile) / 1024, 1);
-echo "构建完成: tools/dict_data/dicts.sqlite ({$size} KB)\n";
+echo "构建完成: data/dicts.sqlite ({$size} KB) — 请提交该文件随仓库分发\n";

@@ -1,25 +1,18 @@
 <?php
 // api/core/dict_db.php - 独立基础字典数据库 (data/dicts.sqlite, 与主业务库/配置库分离)
 // 内容: 省市县+邮编 (regions) / 职业分类大典2022 (occupations) / 基础字典 (dicts)
-// 数据: **固定字典库随仓库分发** (tools/dict_data/dicts.sqlite, 由 tools/build_dicts.php
-//       从 tools/dict_data/*.json 种子构建) — 运行时首次使用直接复制到 data/, 不做数据构造;
-//       core 仅保留读取/复制逻辑, 造数与种子数据均在 tools/。
+// 数据: **固定字典库即 data/dicts.sqlite 本身, 随仓库提交远程** (tools/dict_data/*.json
+//       为种子, tools/build_dicts.php 为构建工具 — 数据与造数逻辑均在 tools/)
 // 决策: 字典体量大且相对静态 — 独立库便于主库瘦身、单独更新/备份、与业务库解耦。
-// 升级路径: 迁移 057 建库(复制固定库)并将旧 emr_dicts (主库) 自定义键合并迁移后移除旧表。
+// 升级路径: 迁移 057 将旧 emr_dicts (主库) 自定义键合并迁移后移除旧表 (固定库随代码一起更新)。
 
-/** 固定字典库 (仓库内分发) */
-function dict_db_fixed_path()
-{
-    return BASE_DIR . '/tools/dict_data/dicts.sqlite';
-}
-
-/** 运行期字典库路径 */
+/** 字典库路径 (固定库与运行库为同一文件, 随仓库分发) */
 function dict_db_path()
 {
     return DATA_DIR . '/dicts.sqlite';
 }
 
-/** 字典库 PDO (首次访问: 从固定库复制; 缺失时建空结构兜底) */
+/** 字典库 PDO */
 function dict_db()
 {
     static $pdo = null;
@@ -27,13 +20,6 @@ function dict_db()
     $path = dict_db_path();
     $dir = dirname($path);
     if (!is_dir($dir)) @mkdir($dir, 0775, true);
-    if (!is_file($path)) {
-        $fixed = dict_db_fixed_path();
-        if (is_file($fixed)) {
-            /* 直接复制固定字典库 (随仓库分发的基准数据) */
-            @copy($fixed, $path);
-        }
-    }
     $pdo = new PDO('sqlite:' . $path);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->exec('PRAGMA journal_mode = WAL');
@@ -64,7 +50,7 @@ function dict_db_schema()
         builtin INTEGER DEFAULT 0, updated_at TEXT, updated_by INTEGER)");
 }
 
-/** 首次使用: 确保结构与基准数据可用 (复制固定库; 固定库缺失时记日志, 功能降级) */
+/** 确保结构可用 (固定库随仓库提供; 数据缺失时记日志提示用构建工具重建, core 不做造数) */
 function dict_db_ensure()
 {
     static $done = false;
@@ -73,13 +59,8 @@ function dict_db_ensure()
     try {
         $wasMissing = !is_file(dict_db_path());
         dict_db_schema();
-        if ($wasMissing) {
-            if (!is_file(dict_db_fixed_path())) {
-                error_log('[dict_db] 固定字典库缺失 (tools/dict_data/dicts.sqlite); 可运行 php tools/build_dicts.php 重建');
-            } else {
-                $n = (int)dict_db()->query('SELECT COUNT(*) FROM regions')->fetchColumn();
-                error_log('[dict_db] 已从固定库初始化 data/dicts.sqlite (regions=' . $n . ')');
-            }
+        if ($wasMissing || (int)dict_db()->query('SELECT COUNT(*) FROM regions')->fetchColumn() === 0) {
+            error_log('[dict_db] 字典数据缺失 (data/dicts.sqlite); 请运行 php tools/build_dicts.php 重建');
         }
     } catch (Exception $e) {
         error_log('[dict_db] ensure 失败: ' . $e->getMessage());

@@ -1,7 +1,7 @@
 node_modules/
-data/
+data/*
 *.sqlite
-!tools/dict_data/dicts.sqlite
+!data/dicts.sqlite
 public/uploads/
 .vly-run/
 .env

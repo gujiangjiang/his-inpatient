@@ -8,13 +8,11 @@
 
 ### 变更
 - **字典数据与构建工具迁移至 `tools/`（架构整理）**：
-  - 种子数据 `tools/dict_data/{regions,occupations,dicts}.json` + **固定字典库
-    `tools/dict_data/dicts.sqlite`（728KB，随仓库分发上传远程）**；
-  - `tools/build_dicts.php` 为唯一构建入口（造数逻辑仅在 tools，core 不再含造数代码）；
-  - 运行时 `api/core/dict_db.php` 仅保留读取/复制：首次使用将固定库复制为
-    `data/dicts.sqlite`，固定库缺失时功能降级并提示重建（日志）；
-  - `.gitignore` 放行该固定库（`*.sqlite` 例外）；实测删除运行库后首个请求自动
-    复制固定库（3104 区县 / 2176 职业 / 9 字典 完整）。
+  - 种子数据 `tools/dict_data/{regions,occupations,dicts}.json`（数据不在 PHP 代码中）；
+  - **固定字典库即 `data/dicts.sqlite` 本身（728KB），随仓库提交远程**，运行时直接
+    使用，不做任何复制；`.gitignore` 放行该文件（其余 `data/*` 仍忽略）；
+  - `tools/build_dicts.php` 为唯一构建入口（造数逻辑仅在 tools，core 只读取）；
+  - 数据缺失时降级运行（日志提示用构建工具重建），院级字典回退种子默认值。
 
 ## [0.36.0] - 2026-11-15
 
