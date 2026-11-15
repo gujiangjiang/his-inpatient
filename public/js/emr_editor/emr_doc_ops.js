@@ -580,6 +580,8 @@
   O.recalcBmi = (body) => {
     const bPara = O.findParaWithItem(body, 'dyn', 'vital_bmi_value');
     if (!bPara) return;
+    const bItem = bPara.runs.find((it) => it.t === 'dyn' && it.key === 'vital_bmi_value');
+    if (bItem && bItem.calc) return; /* 已升级为自动计算项: 由 recalcCalcs 负责 */
     const hPara = O.findParaWithItem(body, 'slot', 'vital_height_val');
     const wPara = O.findParaWithItem(body, 'slot', 'vital_weight_val');
     const num = (s) => {

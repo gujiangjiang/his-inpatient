@@ -176,8 +176,18 @@ function bindToolbar() {
         });
     })();
     bind('btn-dsn-select', function () { emr_dsnInsertField(true); });
-    bind('btn-dsn-heading', emr_dsnInsertHeading);
-    bind('btn-dsn-ref', emr_dsnInsertRef);
+    bind('dsn-sec-heading', function () {
+        const head = document.getElementById('dsn-sec-heading');
+        const open = head.classList.toggle('open');
+        document.getElementById('dsn-heading').style.display = open ? '' : 'none';
+    });
+    bind('dsn-sec-ref', function () {
+        const head = document.getElementById('dsn-sec-ref');
+        const open = head.classList.toggle('open');
+        document.getElementById('dsn-ref').style.display = open ? '' : 'none';
+    });
+    document.querySelector('#dsn-heading .emr-dsn-field').addEventListener('click', emr_dsnInsertHeading);
+    document.querySelector('#dsn-ref .emr-dsn-field').addEventListener('click', emr_dsnInsertRef);
     bind('btn-dsn-save', emr_saveTemplateDesign);
     bind('btn-dsn-import', emr_tplImport);
     bind('btn-dsn-export', emr_tplExport);

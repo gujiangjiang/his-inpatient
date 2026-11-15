@@ -40,8 +40,18 @@
                     <div class="emr-dsn-field" data-calc="custom" title="按字段代码编写公式（如 BMI = 体重 / (身高/100)^2），书写时自动计算">自动计算项（公式组合字段代码，如 BMI）</div>
                 </div>
             </div>
-            <div class="emr-dsn-item" id="btn-dsn-heading">插入标题</div>
-            <div class="emr-dsn-item" id="btn-dsn-ref">插入字段引用</div>
+            <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-heading"><span class="emr-dsn-caret"></span>插入标题</div>
+                <div class="emr-dsn-sub" id="dsn-heading" style="display:none">
+                    <div class="emr-dsn-field" data-heading="1" title="居中加粗、上方带分隔线的段落标题（如「体格检查」）">标题（居中加粗、上带分隔线）</div>
+                </div>
+            </div>
+            <div class="emr-dsn-sec">
+                <div class="emr-dsn-head" id="dsn-sec-ref"><span class="emr-dsn-caret"></span>插入字段引用</div>
+                <div class="emr-dsn-sub" id="dsn-ref" style="display:none">
+                    <div class="emr-dsn-field" data-ref="1" title="自动调用患者其他文书的字段值（如【姓名】【主诉】【既往史】）">字段引用（自动调用其他文书字段值）</div>
+                </div>
+            </div>
         </div>
         <div class="emr-tree-foot" id="emr-tree-foot">
             <button type="button" class="btn btn-small" id="btn-template-mgr">模板</button>
