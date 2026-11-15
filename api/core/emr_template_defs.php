@@ -7,9 +7,15 @@ return function ($hospital) {
     $fx = function ($key, $text) { return ['t' => 'fx', 'key' => $key, 'text' => $text]; };
     $slot = function ($key, $ph) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph]; };
     $sel = function ($key, $ph, array $opts) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph, 'opts' => $opts]; };
+    /* 全局字典下拉 (全院统一选项, 模板不内嵌): 字典定义见 api/core/emr_dicts.php */
+    $dsel = function ($key, $ph, $dict) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph, 'dict' => $dict]; };
     /* 日期元素: mode = datetime|date|time (书写时可弹日期选择器, 右击属性可改类型/格式/占位) */
     $dtslot = function ($key, $ph, $mode = 'datetime') { return ['t' => 'slot', 'key' => $key, 'ph' => $ph, 'dt' => ['mode' => $mode, 'fmt' => '']]; };
     $dyn = function ($key, $text = '') { return ['t' => 'dyn', 'key' => $key, 'text' => $text]; };
+    /* 自动计算项: 公式依据本模板字段代码, 书写时自动计算 (BMI = 体重kg / (身高cm/100)^2) */
+    $calc = function ($key, $name, $expr, $dec = 1, $fmt = 'num') {
+        return ['t' => 'dyn', 'key' => $key, 'name' => $name, 'text' => '', 'calc' => ['expr' => $expr, 'dec' => $dec, 'fmt' => $fmt]];
+    };
     /* 字段引用: 自动调用患者其他文书的字段值 (如【姓名】【年龄】【主诉】); fb 为无值时的占位提示 */
     $ref = function ($key, $fb) { return ['t' => 'ref', 'key' => $key, 'fb' => $fb]; };
     $head = function ($text) { return ['t' => 'p', 'pPr' => ['align' => 'center', 'borders' => ['top' => true]], 'rPr' => ['b' => true, 'sz' => 13], 'runs' => [['t' => 'text', 'text' => $text]]]; };
@@ -33,14 +39,11 @@ return function ($hospital) {
             'body' => $body];
     };
 
-    $NATION = ['汉族', '蒙古族', '回族', '藏族', '维吾尔族', '苗族', '彝族', '壮族', '布依族', '朝鲜族', '满族', '侗族', '瑶族', '白族', '土家族', '其他'];
-    $MARRIAGE = ['未婚', '已婚', '离异', '丧偶'];
-    $OCCUPATION = ['工人', '农民', '学生', '教师', '职员', '军人', '自由职业', '退休', '无业', '其他'];
-    $TELLER = ['患者本人', '家属', '同事', '其他'];
-    $YESNO = ['无', '有'];
+    /* 说明: 民族/婚姻/职业/病史陈述者/有无 等选项已迁移为全局字典 (slot.dict, 见 emr_dicts.php),
+       模板 schema 不再内嵌选项列表; 导出/导入更干净, 字典更新全院模板即时生效 */
 
     /** 入院记录正文 (通用) */
-    $admissionBody = function () use ($fx, $slot, $sel, $dtslot, $dyn, $head, $row, $line, $P, $sig, $cText, $cItem, $NATION, $MARRIAGE, $OCCUPATION, $TELLER, $YESNO) {
+    $admissionBody = function () use ($fx, $slot, $sel, $dsel, $dtslot, $dyn, $calc, $head, $row, $line, $P, $sig, $cText, $cItem) {
         $body = [];
         /* 患者信息 12 项 (两列: 左 姓名/性别/年龄/婚姻/籍贯/民族, 右 职业/单位/住址/病史陈述者/入院日期/记录日期)
            编辑状态下与病案首页单项同步 (未手动修改过的字段自动更新, 手动修改并保存后停止同步) */
@@ -50,26 +53,26 @@ return function ($hospital) {
             'grid' => [46, 188, 80, 186],
             'rows' => [
                 ['cells' => [$cText('姓名：', 46), $cItem($dyn('p_name', ''), 188),
-                    $cText('职业：', 80), $cItem($sel('p_occupation_val', '请选择职业', $OCCUPATION), 186)]],
+                    $cText('职业：', 80), $cItem($dsel('p_occupation_val', '请选择职业', 'occupation'), 186)]],
                 ['cells' => [$cText('性别：', 46), $cItem($dyn('p_gender', ''), 188),
                     $cText('单位：', 80), $cItem($slot('p_workunit_val', '请输入工作单位'), 186)]],
                 ['cells' => [$cText('年龄：', 46), $cItem($dyn('p_age', ''), 188),
                     $cText('住址：', 80), $cItem($slot('p_address_val', '请输入住址'), 186)]],
-                ['cells' => [$cText('婚姻：', 46), $cItem($sel('p_marriage_val', '请选择婚姻状况', $MARRIAGE), 188),
-                    $cText('病史陈述者：', 80), $cItem($sel('p_teller_val', '请选择', $TELLER), 186)]],
+                ['cells' => [$cText('婚姻：', 46), $cItem($dsel('p_marriage_val', '请选择婚姻状况', 'marriage'), 188),
+                    $cText('病史陈述者：', 80), $cItem($dsel('p_teller_val', '请选择', 'teller'), 186)]],
                 ['cells' => [$cText('籍贯：', 46), $cItem($slot('p_native_val', '请输入籍贯'), 188),
                     $cText('入院日期：', 80), $cItem($dtslot('p_admitdate_val', '请选择入院日期和时间'), 186)]],
-                ['cells' => [$cText('民族：', 46), $cItem($sel('p_nation_val', '请选择民族', $NATION), 188),
+                ['cells' => [$cText('民族：', 46), $cItem($dsel('p_nation_val', '请选择民族', 'nation'), 188),
                     $cText('记录日期：', 80), $cItem($dtslot('p_recorddate_val', '请选择记录日期和时间'), 186)]],
             ],
         ];
         $body[] = $line('主诉：', 'chief_complaint', '主要症状（或体征）及持续时间');
         $body[] = $line('现病史：', 'present_illness', '发病情况、症状特点及演变、伴随症状、诊疗经过、一般情况变化等（按时间顺序）');
         $body[] = $line('既往史：', 'past_history', '既往健康状况、疾病史、预防接种史等');
-        $body[] = $row([$fx('infect_dis', '传染病史：'), $sel('infect_dis_val', '无/有', $YESNO),
-            $fx('surgery_hx', '手术外伤史：'), $sel('surgery_hx_val', '无/有', $YESNO),
-            $fx('transfusion', '输血史：'), $sel('transfusion_val', '无/有', $YESNO),
-            $fx('allergy', '药物过敏史：'), $sel('allergy_val', '无/有/不详', ['无', '有', '不详'])]);
+        $body[] = $row([$fx('infect_dis', '传染病史：'), $dsel('infect_dis_val', '无/有', 'yesno'),
+            $fx('surgery_hx', '手术外伤史：'), $dsel('surgery_hx_val', '无/有', 'yesno'),
+            $fx('transfusion', '输血史：'), $dsel('transfusion_val', '无/有', 'yesno'),
+            $fx('allergy', '药物过敏史：'), $dsel('allergy_val', '无/有/不详', 'yesno_unknown')]);
         $body[] = $line('个人史：', 'personal_history', '居住、生活、嗜好等');
         $body[] = $line('婚育史：', 'marital_history', '婚姻、生育情况');
         $body[] = $line('月经史：', 'menstrual_history', '女性患者填写（正常/异常/已绝经）');
@@ -81,7 +84,7 @@ return function ($hospital) {
             $fx('vital_bp', '血压：'), $slot('vital_bp_val', 'mmHg')]);
         $body[] = $row([$fx('vital_height', '身高：'), $slot('vital_height_val', 'cm'),
             $fx('vital_weight', '体重：'), $slot('vital_weight_val', 'kg'),
-            $fx('vital_bmi', 'BMI：'), $dyn('vital_bmi_value', '')]);
+            $fx('vital_bmi', 'BMI：'), $calc('vital_bmi_value', 'BMI', 'vital_weight_val / (vital_height_val / 100) ^ 2', 1)]);
         $body[] = $line('一般情况：', 'exam_general', '发育、营养、神志、体位等');
         $body[] = $line('皮肤、粘膜：', 'exam_skin');
         $body[] = $line('全身浅表淋巴结：', 'exam_nodes');

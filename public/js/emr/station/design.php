@@ -399,13 +399,25 @@ function emrPropDtBlock(item) {
     };
 }
 
-/** 属性对话框·下拉选项块 (slot.opts): 选项逐行编辑 + 单选/复选 + 默认选中勾选
- *  默认选中 = 模板勾选 (新建文书时自动填入; 单选/复选均可再取消), 替代旧「默认内容」 */
+/** 属性对话框·下拉选项块 (slot.opts / slot.dict): 选项来源(自定义/全局字典) + 单选复选 + 默认选中勾选
+ *  全局字典 = 全院统一选项 (民族/婚姻/职业/病史陈述者/有无等): 模板仅存字典键, 选项不随模板导出;
+ *  默认选中 = 模板勾选 (新建文书时自动填入; 单选/复选均可再取消) */
 function emrPropOptsBlock(item) {
     const isMulti = !!item.multi;
     let picked = Array.isArray(item.defPick) ? item.defPick.slice() : [];
-    const html = '<div class="form-group"><label class="form-label">选项内容（每行一个，也可用顿号/逗号分隔）</label>'
-        + '<textarea id="prop-opts" class="form-control" rows="5" placeholder="承认&#10;否认&#10;不详">' + Format.escape(item.opts.join('\n')) + '</textarea></div>'
+    const dictNames = { nation: '民族', marriage: '婚姻状况', occupation: '职业', teller: '病史陈述者', yesno: '无/有', yesno_unknown: '无/有/不详' };
+    const curDict = item.dict || '';
+    const dictOpts = Object.keys(dictNames).map(function (k) {
+        return '<option value="' + k + '"' + (curDict === k ? ' selected' : '') + '>' + dictNames[k] + '（全局字典）</option>';
+    }).join('');
+    const html = '<div class="form-group"><label class="form-label">选项来源</label><div class="emr-prop-radios">'
+        + '<label class="emr-prop-radio"><input type="radio" name="opt-src" value="custom"' + (!curDict ? ' checked' : '') + '> 自定义选项</label>'
+        + '<label class="emr-prop-radio"><input type="radio" name="opt-src" value="dict"' + (curDict ? ' checked' : '') + '> 全局字典（全院统一）</label>'
+        + '</div></div>'
+        + '<div class="form-group" id="prop-dict-row"' + (curDict ? '' : ' style="display:none"') + '><label class="form-label">选择字典（全院统一数据源，模板不内嵌选项）</label>'
+        + '<select id="prop-dict" class="form-control">' + dictOpts + '</select></div>'
+        + '<div class="form-group" id="prop-opts-row"' + (curDict ? ' style="display:none"' : '') + '><label class="form-label">选项内容（每行一个，也可用顿号/逗号分隔）</label>'
+        + '<textarea id="prop-opts" class="form-control" rows="5" placeholder="承认&#10;否认&#10;不详">' + Format.escape((item.opts || []).join('\n')) + '</textarea></div>'
         + '<div class="form-group"><label class="form-label">选择类型</label><div class="emr-prop-radios">'
         + [['single', '单选（下拉选择）'], ['multi', '复选（多选、顿号拼接）']].map(function (m) {
             const on = (m[0] === 'multi') === isMulti;
@@ -417,12 +429,23 @@ function emrPropOptsBlock(item) {
         const sel = sub.querySelector('input[name="sel-type"]:checked');
         return !!(sel && sel.value === 'multi');
     };
+    const srcNow = function (sub) {
+        const r = sub.querySelector('input[name="opt-src"]:checked');
+        return r ? r.value : 'custom';
+    };
+    const linesNow = function (sub) {
+        if (srcNow(sub) === 'dict') {
+            const k = sub.querySelector('#prop-dict').value;
+            return (window.EmrDicts && window.EmrDicts[k]) ? window.EmrDicts[k].slice() : [];
+        }
+        return emrParseOpts(sub.querySelector('#prop-opts').value);
+    };
     return {
         html: html,
         bind: function (sub) {
             const box = sub.querySelector('#prop-defpick');
             const renderPick = function () {
-                const lines = emrParseOpts(sub.querySelector('#prop-opts').value);
+                const lines = linesNow(sub);
                 if (!lines.length) { box.innerHTML = '<span class="emr-prop-testempty">暂无选项</span>'; return; }
                 box.innerHTML = lines.map(function (o2) {
                     return '<label class="emr-prop-radio"><input type="checkbox" value="' + Format.escape(o2) + '"' + (picked.indexOf(o2) >= 0 ? ' checked' : '') + '> ' + Format.escape(o2) + '</label>';
@@ -443,6 +466,15 @@ function emrPropOptsBlock(item) {
                 });
             };
             sub.querySelector('#prop-opts').addEventListener('input', renderPick);
+            sub.querySelector('#prop-dict').addEventListener('change', renderPick);
+            sub.querySelectorAll('input[name="opt-src"]').forEach(function (r) {
+                r.addEventListener('change', function () {
+                    const dict = srcNow(sub) === 'dict';
+                    sub.querySelector('#prop-dict-row').style.display = dict ? '' : 'none';
+                    sub.querySelector('#prop-opts-row').style.display = dict ? 'none' : '';
+                    renderPick();
+                });
+            });
             sub.querySelectorAll('input[name="sel-type"]').forEach(function (r) {
                 r.addEventListener('change', function () {
                     if (!isMultiNow(sub) && picked.length > 1) picked = picked.slice(0, 1);
@@ -452,11 +484,12 @@ function emrPropOptsBlock(item) {
             renderPick();
         },
         read: function (sub) {
-            const lines = emrParseOpts(sub.querySelector('#prop-opts').value);
+            const dict = srcNow(sub) === 'dict';
+            const lines = linesNow(sub);
             const multi = isMultiNow(sub);
             let dp = picked.filter(function (x) { return lines.indexOf(x) >= 0; });
             if (!multi) dp = dp.slice(0, 1);
-            return { opts: lines, multi: multi, defPick: dp };
+            return { dict: dict ? sub.querySelector('#prop-dict').value : '', opts: dict ? [] : lines, multi: multi, defPick: dp };
         }
     };
 }
@@ -468,7 +501,7 @@ function emr_dsnShowProps(item, p, o) {
     const TYPE_NAME = { fx: '固定文字', slot: '填写字段', ref: '字段引用', dyn: '动态项' };
     const parts = [];
     const dtBlk = (item.t === 'slot' && item.dt) ? emrPropDtBlock(item) : null;
-    const optsBlk = (item.t === 'slot' && Array.isArray(item.opts)) ? emrPropOptsBlock(item) : null;
+    const optsBlk = (item.t === 'slot' && (Array.isArray(item.opts) || item.dict)) ? emrPropOptsBlock(item) : null;
     const calcBlk = (item.t === 'dyn' && item.calc) ? emrCalcBlock(item, false) : null;
 
     if (item.t === 'dyn' && item.calc) {
@@ -487,7 +520,7 @@ function emr_dsnShowProps(item, p, o) {
         parts.push('<div class="form-group"><label class="form-label">占位描述（未填写时显示的灰色提示，打印不可见）</label>'
             + '<input id="prop-ph" class="form-control" value="' + Format.escape(item.ph || '') + '" placeholder="如：请输入 / 请选择日期和时间"></div>');
         /* 下拉/复选等可供选择的项目: 默认值改为在下方选项里勾选 (不再使用「默认内容」预填) */
-        if (!Array.isArray(item.opts)) {
+        if (!Array.isArray(item.opts) && !item.dict) {
             parts.push('<div class="form-group"><label class="form-label">默认内容（新建文书时自动预填，可打印、可修改）</label>'
                 + '<input id="prop-def" class="form-control" value="' + Format.escape(item.def || '') + '" placeholder="可留空"></div>');
         }
@@ -530,7 +563,8 @@ function emr_dsnShowProps(item, p, o) {
                 if (dtBlk) item.dt = dtBlk.read(sub);
                 if (optsBlk) {
                     const r0 = optsBlk.read(sub);
-                    item.opts = r0.opts;
+                    if (r0.dict) { item.dict = r0.dict; delete item.opts; }
+                    else { delete item.dict; item.opts = r0.opts; }
                     if (r0.multi) item.multi = true; else delete item.multi;
                     if (r0.defPick.length) item.defPick = r0.defPick; else delete item.defPick;
                 }

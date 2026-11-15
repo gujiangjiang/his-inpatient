@@ -290,6 +290,13 @@
 
     const ui = window.EmrEditorUI; /* 弹层 UI: 下拉/复选/日期 (emr_editor_ui.js) */
 
+    /** 槽位可选项: opts 自定义 或 dict 全局字典 (全院统一数据源) */
+    const optsOf = (it) => {
+      if (Array.isArray(it.opts) && it.opts.length) return it.opts;
+      if (it.dict && window.EmrDictsOf) return window.EmrDictsOf(it.dict);
+      return [];
+    };
+
     /** 弹层选择/日期: 把选项写入槽位 (供空槽点击与已填值改选共用) */
     const applySlotChoice = (info, key, o, val) => {
       apply('选择', () => {
@@ -444,14 +451,15 @@
             const loc2 = M.locate(info2.p, before);
             const prev = info2.p.runs[loc2.i];
             if (prev && prev.t === 'slot') {
-              if (Array.isArray(prev.opts) && prev.opts.length) {
+              const prevOpts = optsOf(prev);
+              if (prevOpts.length) {
                 e.preventDefault();
                 deactivateSlot();
                 if (prev.multi) {
                   const cur = O.valueAfterSlot(info2.p, prev.key).trim();
-                  ui.openMultiChoice(span, prev.opts, cur, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
+                  ui.openMultiChoice(span, prevOpts, cur, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
                 } else {
-                  ui.openChoice(span, prev.opts, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
+                  ui.openChoice(span, prevOpts, (val) => applySlotChoice(info2, prev.key, +span.dataset.o - 1, val));
                 }
                 return;
               }
@@ -495,11 +503,12 @@
       const loc = M.locate(info.p, o);
       const item = info.p.runs[loc.i];
       /* 带选项的填写槽: 单选弹下拉选项即选即填; 复选弹勾选层, 确定后顿号拼接 */
-      if (item && item.t === 'slot' && Array.isArray(item.opts) && item.opts.length) {
+      const itemOpts = (item && item.t === 'slot') ? optsOf(item) : [];
+      if (itemOpts.length) {
         deactivateSlot();
         if (item.multi) {
           const cur = O.valueAfterSlot(info.p, item.key).trim();
-          ui.openMultiChoice(slot, item.opts, cur, (val) => {
+          ui.openMultiChoice(slot, itemOpts, cur, (val) => {
             apply('选择', () => {
               O.setSlotValue(info.p, item.key, val);
               O.assertGuard(inst.doc.body, inst.guard);
@@ -507,7 +516,7 @@
             });
           });
         } else {
-          ui.openChoice(slot, item.opts, (val) => {
+          ui.openChoice(slot, itemOpts, (val) => {
             apply('选择', () => {
               O.setSlotValue(info.p, item.key, val);
               O.assertGuard(inst.doc.body, inst.guard);

@@ -34,6 +34,7 @@ class Asset {
         '/js/core/dom.js',
         '/js/core/components.js',
         '/js/core/scroll_load.js',
+        '/js/core/emr_dicts_js.php',
         '/js/core/datetime_picker.js',
         '/js/core/select_picker.js',
         '/js/core/rich_editor.js',
