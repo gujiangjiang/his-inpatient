@@ -85,12 +85,13 @@
 .emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
 /* 必选未完成: 红色下划线+红字提示 (已填写则占位隐藏, 值下划线为常规样式) */
 .emr-body .emr-slot.emr-req { border-bottom-color: #e5484d; color: #e5484d; }
-/* 点击激活: 占位槽收拢为窄条并保留下划线 (光标紧贴标签, 仍提示此处可编辑) */
+/* 点击激活: 占位槽收拢为窄条并保留下划线 (光标紧贴标签, 仍提示此处可编辑)
+   注意: 不得添加纵向 padding/inline-block 高度变化 — 会引起所在行行距突然变宽 (实测确认) */
 .emr-slot-active {
   color: transparent !important;
   font-size: 0 !important;
-  min-width: 2.5em !important;
-  padding: 0 0 2px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
   border-bottom: 1px dashed #c3c8d1 !important;
   background: transparent !important;
 }
@@ -126,13 +127,10 @@
 }
 /* 弹性行(体温/脉搏等): 标签与槽位不被压缩换行 */
 .pc.emr-flx > .emr-fx, .pc.emr-flx > .emr-slot, .pc.emr-flx > .emr-dyn { flex-shrink: 0; white-space: nowrap; }
-/* 光标零宽锚点: 原子项边界处承载可见光标 (零宽零占位; 重渲染自动清除) */
+/* 光标零宽锚点: 原子项边界处承载可见光标 (零宽零占位; 重渲染自动清除)
+   注意: 不可用 display:inline-block + width:0 — Chrome 会因此不绘制光标 (实测确认)；
+   纯 inline + 零宽字符 (ZWSP) 即可保持零占位且光标可见 */
 .emr-anchor {
-  display: inline-block;
-  width: 0;
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
   pointer-events: none;
 }
 /* 下拉弹层 */
@@ -197,6 +195,8 @@
 /* 动态只读项 (BMI/签名/诊断): 普通显示; 诊断同步项可点击 */
 .emr-dyn { user-select: none; -webkit-user-select: none; }
 .emr-dyn:empty { min-width: 3em; display: inline-block; }
+/* 自动计算项(设计模式): 不显示名称描述, 仅虚线占位 (书写时自动显示结果) */
+.emr-dyn-des.emr-dyn-calc { border-bottom: 1px dashed #c3c8d1; }
 
 /* 表格: 框线样式 (默认细线/加粗/无框线) 与单元格编辑 */
 .emr-body .emr-tbl { border-collapse: collapse; margin: 6px 0; table-layout: fixed; width: auto; }

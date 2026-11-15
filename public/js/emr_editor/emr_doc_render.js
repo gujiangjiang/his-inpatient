@@ -43,6 +43,13 @@
   };
 
   /* ---------- 段内 run → HTML ---------- */
+  /** 下拉/日期可选项: opts 自定义 或 dict 全局字典 (全院统一) */
+  const optsOf = (it) => {
+    if (Array.isArray(it.opts) && it.opts.length) return it.opts;
+    if (it.dict && window.EmrDictsOf) return window.EmrDictsOf(it.dict);
+    return [];
+  };
+  const isSelect = (it) => optsOf(it).length > 0 || !!it.dt;
   /** 槽位是否已填写: 紧邻其后的 val 值 run 存在 (普通正文紧邻不影响, 支持混排; 留痕删除不计) */
   const paraHasTextAfter = (p, idx) => {
     for (let k = idx + 1; k < p.runs.length; k++) {
@@ -68,7 +75,7 @@
     const runs = p.runs;
     for (let i = 0; i < runs.length; i++) {
       const it = runs[i];
-      if (it.t !== 'slot' || !((Array.isArray(it.opts) && it.opts.length) || it.dt)) continue;
+      if (it.t !== 'slot' || !isSelect(it)) continue;
       let j = i + 1;
       while (j < runs.length && runs[j].t === 'br') j++;
       let tail = -1;
@@ -105,7 +112,7 @@
       }
       if (it.t === 'slot') {
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
-        const cls = 'emr-slot' + ((Array.isArray(it.opts) && it.opts.length) || it.dt ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '') + (it.req ? ' emr-req' : '');
+        const cls = 'emr-slot' + (isSelect(it) ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '') + (it.req ? ' emr-req' : '');
         out.push(filled
           ? '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>'
           : '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');
@@ -122,11 +129,11 @@
         const sync = it.key === 'initial_diagnosis_value' || it.key === 'diag_admission' || it.key === 'diag_discharge';
         const syncTitle = it.key === 'diag_discharge' ? '点击同步出院诊断（来源：左侧诊断 → 出院诊断）'
           : '点击同步诊断（来源：左侧诊断；按优先级 修正诊断 > 入院诊断 > 初步诊断）';
-        /* 自动计算项: 设计模式显示名称占位 (如 BMI), 书写模式显示计算结果 (悬停可见公式) */
-        const calcName = it.calc ? (it.name || '自动计算') : null;
-        const txt = design ? ('（' + (calcName || DYN_PH[it.key] || it.key) + '）') : it.text;
-        const calcTitle = it.calc && !design ? ' title="自动计算：' + esc(it.calc.expr || '') + '"' : '';
-        out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + (design ? ' emr-dyn-des' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
+        /* 自动计算项: 设计模式仅虚线占位 (不显示名称描述; 悬停说明), 书写模式显示计算结果 */
+        const txt = design ? (it.calc ? '' : ('（' + (DYN_PH[it.key] || it.key) + '）')) : it.text;
+        const calcTitle = it.calc ? (' title="自动计算' + (it.name ? '：' + esc(it.name) : '') + '（' + esc(it.calc.expr || '') + '）'
+          + (design ? '，书写时此处自动显示结果' : '') + '"') : '';
+        out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + (design ? ' emr-dyn-des' : '') + (it.calc ? ' emr-dyn-calc' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
           + ' data-o="' + o + '" data-n="1" contenteditable="false"'
           + (sync && !design ? ' title="' + syncTitle + '"' : '') + calcTitle + '>' + esc(txt) + '</span>');
         continue;
