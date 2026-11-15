@@ -18,6 +18,7 @@ require_once __DIR__ . '/core/helpers/dept_helper.php';
 require_once __DIR__ . '/core/helpers/emr_guard_helper.php';
 require_once __DIR__ . '/core/helpers/emr_slot_value.php';
 require_once __DIR__ . '/core/helpers/emr_calc_helper.php';
+require_once __DIR__ . '/core/helpers/emr_diagnosis_helper.php';
 require_once __DIR__ . '/core/helpers/pub_helper.php';
 require_once __DIR__ . '/core/helpers/integration_helper.php';
 require_once __DIR__ . '/core/helpers/opd_helper.php';

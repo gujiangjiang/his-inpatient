@@ -21,6 +21,11 @@ $dup = DB::selectOne(
 );
 if ($dup) Response::error('该分类下已存在相同诊断');
 
+/* 修正诊断约束: 不能单独存在 — 需先有初步诊断或入院诊断 */
+if ($category === 'corrected' && !emr_diag_has_initial_or_admission($patientId)) {
+    Response::error('修正诊断不能单独创建：请先添加初步诊断或入院诊断');
+}
+
 $id = (int)DB::insert('patient_diagnoses', [
     'patient_id' => $patientId,
     'admission_no' => $patient['admission_no'],
@@ -34,8 +39,6 @@ $id = (int)DB::insert('patient_diagnoses', [
     'created_at' => DateHelper::now(),
 ]);
 
-// 入院诊断: 患者主档无入院诊断时同步 (供患者卡片/病历头展示)
-if ($category === 'admission' && trim((string)$patient['admission_diagnosis']) === '') {
-    DB::execute("UPDATE patients SET admission_diagnosis = ?, admission_icd_code = ? WHERE id = ?", [$name, $icdCode, $patientId]);
-}
+// 主档展示诊断重算 (优先级: 修正 > 入院 > 初步 > 门急诊; 患者卡片/信息横栏/会诊同步更新)
+emr_diag_recompute_patient($patientId);
 Response::success(['id' => $id], '诊断已添加');

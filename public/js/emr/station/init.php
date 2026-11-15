@@ -380,7 +380,7 @@ async function syncFromFrontPage(doc) {
     }
 }
 
-/** 诊断文本 (按分类过滤+多诊断序号拼接; 入院诊断为空时兜底患者入院诊断; 无记录返回 '') */
+/** 分类诊断文本 (多诊断带序号拼接; 无记录返回 '') */
 async function emrDiagTextOf(category) {
     let rows = [];
     try {
@@ -388,20 +388,44 @@ async function emrDiagTextOf(category) {
         rows = r.data || [];
     } catch (e) { rows = []; }
     const list = rows.filter(function (x) { return x.category === category; });
-    if (!list.length && category === 'admission' && _emrPatient && _emrPatient.admission_diagnosis) {
-        return String(_emrPatient.admission_diagnosis);
-    }
     return list.map(function (x, i) { return list.length > 1 ? (i + 1) + '.' + x.name : x.name; }).join('；');
 }
 
-/** 诊断引用元素自动填充: diag_admission/diag_discharge dyn 取左侧「诊断」模块 (未签文档每次打开刷新) */
+/** 病历自动引用诊断口径: 修正 > 入院 > 初步 (不含门急诊); {text, cat, label} 或 null */
+async function emrDiagRefInfo() {
+    let rows = [];
+    try {
+        const r = await AjaxLoader.api('emr/diagnosis-list?patient_id=' + _emrPatient.id, { silent: true });
+        rows = r.data || [];
+    } catch (e) { rows = []; }
+    const order = [['corrected', '修正诊断'], ['admission', '入院诊断'], ['initial', '初步诊断']];
+    for (const pair of order) {
+        const list = rows.filter(function (x) { return x.category === pair[0]; });
+        if (list.length) {
+            return {
+                cat: pair[0], label: pair[1],
+                text: list.map(function (x, i) { return list.length > 1 ? (i + 1) + '.' + x.name : x.name; }).join('；')
+            };
+        }
+    }
+    return null;
+}
+
+/** 诊断引用元素自动填充 (未签文档每次打开刷新):
+ *  diag_admission / initial_diagnosis_value → 优先级口径 修正 > 入院 > 初步 (不含门急诊)
+ *  diag_discharge → 出院诊断分类 */
 async function syncDiagDyns(doc) {
-    const need = ['diag_admission', 'diag_discharge'].filter(function (k) {
-        return EmrOps.findParaWithItem(doc.body, 'dyn', k);
-    });
-    if (!need.length) return;
-    if (need.indexOf('diag_admission') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_admission', await emrDiagTextOf('admission'));
-    if (need.indexOf('diag_discharge') >= 0) EmrOps.setDynTextByKey(doc.body, 'diag_discharge', await emrDiagTextOf('discharge'));
+    const needAdm = EmrOps.findParaWithItem(doc.body, 'dyn', 'diag_admission');
+    const needInit = EmrOps.findParaWithItem(doc.body, 'dyn', 'initial_diagnosis_value');
+    const needDis = EmrOps.findParaWithItem(doc.body, 'dyn', 'diag_discharge');
+    if (!needAdm && !needInit && !needDis) return;
+    if (needAdm || needInit) {
+        const info = await emrDiagRefInfo();
+        const text = info ? info.text : '';
+        if (needAdm) EmrOps.setDynTextByKey(doc.body, 'diag_admission', text);
+        if (needInit) EmrOps.setDynTextByKey(doc.body, 'initial_diagnosis_value', text);
+    }
+    if (needDis) EmrOps.setDynTextByKey(doc.body, 'diag_discharge', await emrDiagTextOf('discharge'));
 }
 
 /** 字段引用解析: 【姓名】【主诉】等自动调用患者其他文书里的字段值

@@ -51,6 +51,12 @@ if ($id) {
         $prepay, $overdraft,
         $id
     ]);
+    /* 修改患者自带诊断: 同步门(急)诊诊断行 (无更高级诊断时主档展示随之更新) */
+    try {
+        $seedName = trim((string)($data['admission_diagnosis'] ?? ''));
+        if ($seedName !== '') emr_diag_seed_outpatient((int)$id, '', $seedName, (string)($data['admission_icd_code'] ?? ''));
+        emr_diag_recompute_patient((int)$id);
+    } catch (Exception $e) { /* 同步失败不阻断保存 */ }
     Response::success(['id' => $id]);
 } else {
     $patientNo = 'P' . date('Ymd') . str_pad(DB::selectOne("SELECT COUNT(*) as c FROM patients")['c'] + 1, 4, '0', STR_PAD_LEFT);
@@ -79,11 +85,19 @@ if ($id) {
         'active',
         DateHelper::now()
     ]);
-    $newId = $pdo->lastInsertId();
+    $newId = (int)$pdo->lastInsertId();
 
     if (!empty($data['bed_no'])) {
         $bedUpdate = $pdo->prepare("UPDATE beds SET status = 'occupied', patient_id = ? WHERE ward_id = ? AND bed_no = ?");
         $bedUpdate->execute([$newId, $wardId, $data['bed_no']]);
+    }
+
+    /* 入院自带诊断 = 门(急)诊诊断: 归入诊断模块 (供优先级联动与病历引用) */
+    $seedName = trim((string)($data['admission_diagnosis'] ?? ''));
+    if ($seedName !== '') {
+        try {
+            emr_diag_seed_outpatient($newId, $admissionNo, $seedName, (string)($data['admission_icd_code'] ?? ''));
+        } catch (Exception $e) { /* 诊断联动失败不阻断入院办理 */ }
     }
 
     Response::success(['id' => $newId, 'patient_no' => $patientNo, 'admission_no' => $admissionNo]);

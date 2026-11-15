@@ -38,4 +38,5 @@ foreach ($sourceRows as $s) {
     $exists[$key] = true;
     $copied++;
 }
+emr_diag_recompute_patient($patientId); /* 主档展示按优先级重算 */
 Response::success(['copied' => $copied], $copied ? ('已同步 ' . $copied . ' 条诊断') : '目标分类已包含全部诊断，无需同步');

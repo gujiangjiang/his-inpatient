@@ -121,8 +121,7 @@
       if (it.t === 'dyn') {
         const sync = it.key === 'initial_diagnosis_value' || it.key === 'diag_admission' || it.key === 'diag_discharge';
         const syncTitle = it.key === 'diag_discharge' ? '点击同步出院诊断（来源：左侧诊断 → 出院诊断）'
-          : it.key === 'diag_admission' ? '点击同步入院诊断（来源：左侧诊断 → 入院诊断）'
-          : '点击同步诊断（来源：左侧诊断 → 入院诊断）';
+          : '点击同步诊断（来源：左侧诊断；按优先级 修正诊断 > 入院诊断 > 初步诊断）';
         /* 自动计算项: 设计模式显示名称占位 (如 BMI), 书写模式显示计算结果 (悬停可见公式) */
         const calcName = it.calc ? (it.name || '自动计算') : null;
         const txt = design ? ('（' + (calcName || DYN_PH[it.key] || it.key) + '）') : it.text;

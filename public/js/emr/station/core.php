@@ -10,15 +10,24 @@ function emr_showQc(catId) {
     Dom.modal((cat ? cat.name : '') + ' · 质控提醒', html, [{ text: '知道了', type: 'primary' }]);
 }
 
-/** 一键同步诊断: 按 dyn key 取左侧「诊断」模块对应分类拼为文本 (diag_discharge→出院诊断, 其余→入院诊断) */
+/** 一键同步诊断 (来源: 左侧「诊断」模块):
+ *  出院诊断 → discharge 分类; 其余 → 优先级口径 修正 > 入院 > 初步 (不含门急诊)
+ *  三类全空时给出完善诊断的引导提示 */
 async function fetchAdmissionDiagText(dynKey) {
-    const cat = dynKey === 'diag_discharge' ? 'discharge' : 'admission';
-    const text = await emrDiagTextOf(cat);
-    if (!text) {
-        Dom.toast('诊断中暂无' + (cat === 'discharge' ? '出院诊断' : '入院诊断') + '，请先在左侧「诊断」中添加', 'error');
+    if (dynKey === 'diag_discharge') {
+        const text = await emrDiagTextOf('discharge');
+        if (!text) {
+            Dom.toast('诊断中暂无出院诊断，请先在左侧「诊断」中添加', 'error');
+            return null;
+        }
+        return text;
+    }
+    const info = await emrDiagRefInfo();
+    if (!info) {
+        Dom.toast('暂无初步诊断/入院诊断/修正诊断，请先到左侧「诊断」完善后再刷新', 'error');
         return null;
     }
-    return text;
+    return info.text;
 }
 
 /** 状态栏保存状态 (自动保存静默进行, 不再全屏加载遮罩) */

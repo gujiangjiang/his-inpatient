@@ -2,7 +2,7 @@
 <div class="page-head flex-between">
     <div>
         <h3 class="page-title">诊断</h3>
-        <p class="page-desc">患者诊断分类管理、诊断同步与诊断符合情况（点击行内「＋」添加）</p>
+        <p class="page-desc">患者诊断分类管理、诊断同步与诊断符合情况（点击行内「＋」添加）；展示优先级：修正诊断 &gt; 入院诊断 &gt; 初步诊断 &gt; 门(急)诊诊断；修正诊断需先有初步或入院诊断，且两者至少保留一项</p>
     </div>
     <div>
         <button class="btn" onclick="emr_diagnosis_sync('discharge')">出院诊断同步</button>
