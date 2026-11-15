@@ -34,6 +34,28 @@ $items[] = [
     'detail' => $ping['ok'] ? ('在线 · ' . ($ping['data']['system'] ?? '')) : $ping['msg'],
 ];
 
+// 3b. 逐资源探针: HIS 用到的 FHIR 资源是否开放且可读 (诊断/检验/处方/检查报告/影像)
+$aProbe = opd_fhir_request('Patient', ['_count' => 1]);
+$probePid = ($aProbe['ok'] && !empty($aProbe['entries'][0]['id'])) ? $aProbe['entries'][0]['id'] : '';
+$fhirResources = [
+    ['Condition', '诊断 Condition'],
+    ['Observation', '检验 Observation', ['category' => 'laboratory']],
+    ['MedicationRequest', '处方 MedicationRequest'],
+    ['DiagnosticReport', '检查报告 DiagnosticReport'],
+    ['ImagingStudy', '影像 ImagingStudy'],
+];
+foreach ($fhirResources as $fr) {
+    $res = $fr[0];
+    $params = array_merge(['_count' => 1], $fr[2] ?? []);
+    if ($probePid !== '') $params['patient'] = $probePid;
+    $r = opd_fhir_request($res, $params);
+    $items[] = [
+        'name' => 'FHIR ' . $fr[1],
+        'ok' => $r['ok'],
+        'detail' => $r['ok'] ? ('可读 · ' . $r['total'] . ' 条') : $r['error'],
+    ];
+}
+
 // 4. PACS 阅片服务
 $viewerBase = $s['pacs_viewer_url'] !== '' ? strtok($s['pacs_viewer_url'], '?') : '';
 $resp4 = $viewerBase !== '' ? opd_http('GET', $viewerBase, [], null, 8) : [0, ''];

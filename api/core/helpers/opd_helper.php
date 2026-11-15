@@ -85,6 +85,16 @@ function opd_http($method, $url, $headers = [], $body = null, $timeout = 8) {
     return [$code, (string)$resp];
 }
 
+/** FHIR 访问失败 → 可执行的中文提示 (定位: 网络/Token/Scope/版本) */
+function opd_fhir_error_hint($http, $msg) {
+    if ($http === 0) return '无法连接门诊服务（检查服务地址与网络）';
+    if ($http === 401) return '鉴权失败：Token 无效或缺失（检查接口管理中 FHIR Token）';
+    if ($http === 403) return '权限不足：门诊系统未授权该资源（检查该 Token 的 Scope / IP 白名单配置）';
+    if ($http === 404) return '门诊系统不支持该资源（版本过旧？请升级门诊一体化系统）';
+    if ($http >= 500) return '门诊系统内部错误（请查看门诊系统日志）';
+    return $msg !== '' ? $msg : ('HTTP ' . $http);
+}
+
 /** FHIR 检索: 返回 {ok, http, total, entries, error} */
 function opd_fhir_request($resource, $params = []) {
     $settings = opd_settings();
@@ -97,9 +107,9 @@ function opd_fhir_request($resource, $params = []) {
     list($code, $body) = opd_http('GET', $url, $headers);
     $json = json_decode((string)$body, true);
     if ($code !== 200 || !is_array($json)) {
-        $msg = 'HTTP ' . $code;
-        if (is_array($json) && isset($json['issue'][0]['diagnostics'])) $msg = $json['issue'][0]['diagnostics'];
-        return ['ok' => false, 'http' => $code, 'total' => 0, 'entries' => [], 'error' => $msg];
+        $msg = '';
+        if (is_array($json) && isset($json['issue'][0]['diagnostics'])) $msg = (string)$json['issue'][0]['diagnostics'];
+        return ['ok' => false, 'http' => $code, 'total' => 0, 'entries' => [], 'error' => opd_fhir_error_hint($code, $msg)];
     }
     if (($json['resourceType'] ?? '') === 'Bundle') {
         $entries = [];
