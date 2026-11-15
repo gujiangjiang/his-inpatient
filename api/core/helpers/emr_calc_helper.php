@@ -3,7 +3,8 @@
 // 与前端 EmrCalc 同语义: 公式仅可引用当前文书内的字段代码 (slot/dyn/ref) 与内置函数
 function emr_calc_funcs()
 {
-    return ['round', 'abs', 'sqrt', 'min', 'max', 'ceil', 'floor'];
+    /* 数值函数 + 时间差函数 (minutes/hours 取两字段原始时间值 → 分钟/小时) */
+    return ['round', 'abs', 'sqrt', 'min', 'max', 'ceil', 'floor', 'minutes', 'hours'];
 }
 
 /** 公式引用的字段代码 (排除函数名); 表达式含非法字符返回 ['__INVALID__'] */

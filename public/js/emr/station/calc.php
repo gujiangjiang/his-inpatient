@@ -24,16 +24,30 @@ function emrCalcVars() {
     return out;
 }
 
-/** 自动计算项配置块 (插入对话框/属性对话框共用); withName=false 省略名称输入 (属性框已有名称行) */
+/** 自动计算项配置块 (插入对话框/属性对话框共用); withName=false 省略名称输入 (属性框已有名称行)
+ *  支持 数值计算 (加减乘除幂 + 数值函数) 与 时间计算 (minutes/hours 取字段原始时间值);
+ *  输出格式: 数值(小数位) | 时长(分钟智能分段: <60 → X分钟, ≥60 → X小时X分钟) */
 function emrCalcBlock(item, withName) {
     const calc = item.calc || {};
+    const isDur = calc.fmt === 'dur';
     const vars = emrCalcVars();
     const html = (withName === false ? '' :
-            '<div class="form-group"><label class="form-label">显示名称（自由命名，如 BMI）</label>'
+            '<div class="form-group"><label class="form-label">显示名称（自由命名，如 BMI / 手术时长）</label>'
             + '<input id="calc-name" class="form-control" value="' + Format.escape(item.name || '') + '" placeholder="如：BMI"></div>')
-        + '<div class="form-group"><label class="form-label">计算公式（点击下方字段代码插入；支持 + - * / ^ 与 round/abs/sqrt/min/max）</label>'
-        + '<input id="calc-expr" class="form-control" value="' + Format.escape(calc.expr || '') + '" placeholder="如：vital_weight_val / (vital_height_val / 100) ^ 2"></div>'
-        + '<div class="form-group"><label class="form-label">小数位</label>'
+        + '<div class="form-group"><label class="form-label">计算公式（点击下方字段代码/函数插入）</label>'
+        + '<input id="calc-expr" class="form-control" value="' + Format.escape(calc.expr || '') + '" placeholder="数值如 vital_weight_val / (vital_height_val / 100) ^ 2；时间如 minutes(surgery_start_val, surgery_end_val)"></div>'
+        + '<div class="form-group"><label class="form-label">可用函数（点击插入）</label><div class="emr-calc-vars">'
+        + ['round(', 'abs(', 'sqrt(', 'min(', 'max('].map(function (f) {
+            return '<span class="emr-calc-var emr-calc-fn" data-f="' + f + '" title="数值函数">' + f.replace('(', '') + '</span>';
+        }).join('')
+        + '<span class="emr-calc-var emr-calc-fn" data-f="minutes(" title="两字段时间差(分钟): minutes(开始字段, 结束字段)">时间差·分钟</span>'
+        + '<span class="emr-calc-var emr-calc-fn" data-f="hours(" title="两字段时间差(小时): hours(开始字段, 结束字段)">时间差·小时</span>'
+        + '</div></div>'
+        + '<div class="form-group"><label class="form-label">输出格式</label><div class="emr-prop-radios">'
+        + '<label class="emr-prop-radio"><input type="radio" name="calc-fmt" value="num"' + (!isDur ? ' checked' : '') + '> 数值</label>'
+        + '<label class="emr-prop-radio"><input type="radio" name="calc-fmt" value="dur"' + (isDur ? ' checked' : '') + '> 时长（60分钟内显示「X分钟」，超过显示「X小时X分钟」）</label>'
+        + '</div></div>'
+        + '<div class="form-group" id="calc-dec-row"' + (isDur ? ' style="display:none"' : '') + '><label class="form-label">小数位（数值格式）</label>'
         + '<input id="calc-dec" type="number" min="0" max="4" class="form-control emr-calc-dec" value="' + (calc.dec != null ? calc.dec : 1) + '"></div>'
         + '<div class="form-group"><label class="form-label">可用字段（点击插入代码）</label>'
         + '<div class="emr-calc-vars" id="calc-vars">'
@@ -41,23 +55,34 @@ function emrCalcBlock(item, withName) {
             return '<span class="emr-calc-var" data-k="' + Format.escape(v.key) + '" title="' + Format.escape(v.key) + '">'
                 + Format.escape(v.label) + ' <i>' + Format.escape(v.key) + '</i></span>';
         }).join('') : '<span class="emr-prop-testempty">当前模板暂无可用字段（请先在模板中插入字段）</span>')
-        + '</div><p class="emr-tpl-hint">计算仅依据当前病历内字段值（含混排下拉/日期）；保存时若公式涉及字段在文书中不存在将报错。</p></div>';
+        + '</div><p class="emr-tpl-hint">计算仅依据当前病历内字段值（含混排下拉/日期）；时间计算取日期/时间字段原始值（手术开始/结束时自动支持跨零点）；保存时若公式涉及字段在文书中不存在将报错。</p></div>';
+    const insertAt = function (sub, text) {
+        const inp = sub.querySelector('#calc-expr');
+        const s = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
+        const e = inp.selectionEnd != null ? inp.selectionEnd : s;
+        inp.value = inp.value.slice(0, s) + text + inp.value.slice(e);
+        inp.focus();
+    };
     return {
         html: html,
         bind: function (sub) {
-            sub.querySelectorAll('.emr-calc-var').forEach(function (chip) {
-                chip.addEventListener('click', function () {
-                    const inp = sub.querySelector('#calc-expr');
-                    const s = inp.selectionStart != null ? inp.selectionStart : inp.value.length;
-                    const e = inp.selectionEnd != null ? inp.selectionEnd : s;
-                    inp.value = inp.value.slice(0, s) + chip.dataset.k + inp.value.slice(e);
-                    inp.focus();
+            sub.querySelectorAll('.emr-calc-var[data-k]').forEach(function (chip) {
+                chip.addEventListener('click', function () { insertAt(sub, chip.dataset.k); });
+            });
+            sub.querySelectorAll('.emr-calc-fn').forEach(function (chip) {
+                chip.addEventListener('click', function () { insertAt(sub, chip.dataset.f); });
+            });
+            sub.querySelectorAll('input[name="calc-fmt"]').forEach(function (r) {
+                r.addEventListener('change', function () {
+                    const row = sub.querySelector('#calc-dec-row');
+                    if (row) row.style.display = (sub.querySelector('input[name="calc-fmt"]:checked') || {}).value === 'dur' ? 'none' : '';
                 });
             });
         },
         /** 读取并校验; 校验失败返回 null (调用方保留弹窗) */
         read: function (sub) {
             const expr = (sub.querySelector('#calc-expr').value || '').trim();
+            const fmt = (sub.querySelector('input[name="calc-fmt"]:checked') || {}).value === 'dur' ? 'dur' : 'num';
             let dec = parseInt(sub.querySelector('#calc-dec').value, 10);
             if (isNaN(dec) || dec < 0) dec = 0;
             if (dec > 4) dec = 4;
@@ -68,8 +93,18 @@ function emrCalcBlock(item, withName) {
             const known = emrCalcVars().map(function (v) { return v.key; });
             const unknown = keys.filter(function (k) { return known.indexOf(k) < 0; });
             if (unknown.length) { Dom.toast('公式引用了当前模板中不存在的字段: ' + unknown.join('、'), 'error'); return null; }
+            /* 时间函数参数需为两个字段代码: minutes(开始, 结束) */
+            const timeFnRe = /\b(?:minutes|hours)\s*\(\s*([^,()]+?)\s*,\s*([^,()]+?)\s*\)/g;
+            let tm;
+            while ((tm = timeFnRe.exec(expr))) {
+                const a = tm[1].trim(), b = tm[2].trim();
+                if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(a) || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(b)) {
+                    Dom.toast('时间差函数的两个参数需为字段代码，如 minutes(开始字段, 结束字段)', 'error');
+                    return null;
+                }
+            }
             const nameEl = sub.querySelector('#calc-name');
-            return { name: nameEl ? ((nameEl.value || '').trim() || '自动项') : null, expr: expr, dec: dec };
+            return { name: nameEl ? ((nameEl.value || '').trim() || '自动项') : null, expr: expr, dec: dec, fmt: fmt };
         }
     };
 }
@@ -87,7 +122,7 @@ function emr_dsnInsertCalc() {
                 t: 'dyn',
                 key: 'calc_' + Date.now().toString(36) + Math.floor(Math.random() * 90 + 10),
                 name: r.name, text: '',
-                calc: { expr: r.expr, dec: r.dec }
+                calc: { expr: r.expr, dec: r.dec, fmt: r.fmt }
             });
         } },
         { text: '取消', type: 'default' }

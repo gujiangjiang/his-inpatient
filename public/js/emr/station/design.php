@@ -67,6 +67,12 @@ function emr_exitTemplateDesign() {
 async function emr_saveTemplateDesign() {
     if (!_emrDesign || !_emrEditor) return;
     const doc = _emrEditor.getDoc();
+    /* 自动计算项预检: 公式涉及的字段必须在模板中存在 (否则该模板无法用于新建文书) */
+    const missCalc = (window.EmrCalc && EmrCalc.missing(doc.body)) || [];
+    if (missCalc.length) {
+        Dom.toast('自动计算项缺少字段: ' + missCalc.map(function (m) { return m.name + '（' + m.keys.join('、') + '）'; }).join('；'), 'error');
+        return;
+    }
     /* 文书标题 = 抬头 doc_name (与模板名称分离, 属性弹窗可改); schema.title 与之一致 */
     const docTitle = (doc.header && doc.header.doc_name) || _emrDesign.name;
     doc.title = docTitle;
@@ -533,7 +539,7 @@ function emr_dsnShowProps(item, p, o) {
             if (calcBlk) {
                 const rc = calcBlk.read(sub);
                 if (!rc) return false;
-                item.calc = { expr: rc.expr, dec: rc.dec };
+                item.calc = { expr: rc.expr, dec: rc.dec, fmt: rc.fmt };
             }
             if (_emrEditor) _emrEditor.refresh();
             Dom.toast('属性已更新', 'success');

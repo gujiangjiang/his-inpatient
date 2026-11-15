@@ -1,19 +1,37 @@
-// public/js/emr_editor/emr_doc_calc.js - 自动计算项 (dyn.calc): 公式词法/求值/缺失校验
+// public/js/emr_editor/emr_doc_calc.js - 自动计算项 (dyn.calc): 表达式解析/求值/缺失校验
 // 公式仅依据「当前文书」内的字段代码 (slot 值/dyn/ref 文本); 变量全部有效才出结果, 否则回退为空
-// 安全: 词法白名单 (数字/标识符/运算符/括号), 标识符仅限变量键与内置函数; 不允许任意脚本
+// 数值函数: round/abs/sqrt/min/max/ceil/floor ; 时间函数: minutes(a,b)/hours(a,b) (取字段原始时间值)
+// 输出格式: num 数值(小数位) | dur 时长(分钟智能分段: <60 → "X分钟"; ≥60 → "X小时X分钟")
+// 安全: 自研词法+递归下降解析 (白名单), 不使用 eval/Function
 (function () {
   'use strict';
   const M = window.EmrDoc;
   const EC = (window.EmrCalc = {});
-  EC.FUNCS = ['round', 'abs', 'sqrt', 'min', 'max', 'ceil', 'floor'];
-  const TOKEN_RE = /\d+(?:\.\d+)?|[A-Za-z_][A-Za-z0-9_]*|\*\*|[+\-*/^(),\s]+/g;
+  EC.NUM_FUNCS = ['round', 'abs', 'sqrt', 'min', 'max', 'ceil', 'floor'];
+  EC.TIME_FUNCS = ['minutes', 'hours'];
+  EC.FUNCS = EC.NUM_FUNCS.concat(EC.TIME_FUNCS);
 
-  /** 词法校验: 返回 token 数组 (含空白 token); 存在非法字符返回 null */
+  /* ---------- 词法: number / ident / ( ) , / 运算符 (空白忽略; 非法字符整体拒绝) ---------- */
+  const TOKEN_RE = /(\d+(?:\.\d+)?)|([A-Za-z_][A-Za-z0-9_]*)|(\*\*|[+\-*/^(),])|(\s+)/g;
   EC.lex = (expr) => {
     const src = String(expr || '');
     if (!src) return null;
-    const tokens = src.match(TOKEN_RE);
-    if (!tokens || tokens.join('') !== src) return null;
+    const tokens = [];
+    let consumed = 0;
+    let m;
+    TOKEN_RE.lastIndex = 0;
+    while ((m = TOKEN_RE.exec(src))) {
+      if (m.index !== consumed) return null; /* 存在未覆盖的非法字符 */
+      consumed = TOKEN_RE.lastIndex;
+      if (m[4]) continue; /* 空白 */
+      if (m[1]) tokens.push({ t: 'num', v: parseFloat(m[1]) });
+      else if (m[2]) tokens.push({ t: 'id', v: m[2] });
+      else if (m[3] === '(') tokens.push({ t: 'lp' });
+      else if (m[3] === ')') tokens.push({ t: 'rp' });
+      else if (m[3] === ',') tokens.push({ t: 'comma' });
+      else tokens.push({ t: 'op', v: m[3] === '**' ? '^' : m[3] });
+    }
+    if (consumed !== src.length) return null;
     return tokens;
   };
   /** 公式引用的字段代码 (排除函数名); 非法表达式返回 null */
@@ -22,26 +40,26 @@
     if (!tokens) return null;
     const keys = [];
     tokens.forEach((tk) => {
-      if (!/^[A-Za-z_]/.test(tk) || EC.FUNCS.indexOf(tk) >= 0) return;
-      if (keys.indexOf(tk) < 0) keys.push(tk);
+      if (tk.t !== 'id' || EC.FUNCS.indexOf(tk.v) >= 0) return;
+      if (keys.indexOf(tk.v) < 0) keys.push(tk.v);
     });
     return keys;
   };
-  /** 槽位严格值 (val 标记 run; 与 EmrOps.valueAfterSlot 同语义) */
+
+  /* ---------- 变量取值: slot → 值文本 (val, 留痕删除不计); dyn/ref → 文本 ---------- */
   const slotValue = (p, key) => {
     let on = false, s = '';
     for (const it of p.runs) {
       if (!on) { if (it.t === 'slot' && it.key === key) on = true; continue; }
       if (it.t === 'br') continue;
       if (it.t === 'text') {
-        if (it.del) continue; /* 留痕删除的值不参与计算 */
+        if (it.del) continue;
         if (it.val) { s += it.text; continue; }
       }
       break;
     }
     return s;
   };
-  /** 当前文书内变量取值: slot → 值文本; dyn/ref → 文本; 不存在 → null */
   const varValue = (body, key) => {
     let out = null;
     M.walk(body || [], (b) => {
@@ -55,47 +73,168 @@
     return out;
   };
   EC.value = varValue;
-  /** 数值提取: 去掉单位等非数字字符; 无效返回 null */
   const numOf = (s) => {
     if (s == null) return null;
     const m = String(s).replace(/[^\d.\-]/g, '');
     const v = parseFloat(m);
     return isFinite(v) ? v : null;
   };
-  /** 求值: 任一变量缺失/非数值或表达式非法 → null (调用方回退为空) */
+
+  /* ---------- 时间解析: 'YYYY-MM-DD[ HH:mm[:ss]]' / 'YYYY年M月D日…' / 'HH:mm[:ss]' ---------- */
+  const parseTime = (s) => {
+    const str = String(s == null ? '' : s).trim();
+    if (!str) return null;
+    let m = str.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
+    if (m) return { d: new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)) };
+    m = str.match(/^(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日(?:\s*(\d{1,2})[时:](\d{1,2})分?(?::(\d{1,2}))?)?/);
+    if (m) return { d: new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0)) };
+    m = str.match(/^(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+    if (m) return { only: true, mins: +m[1] * 60 + +m[2] + (+(m[3] || 0)) / 60 };
+    return null;
+  };
+  /** 时间差(分钟): 纯时间跨零点自动 +1440; 结束早于开始(完整日期) → null (视为无效/回退) */
+  const diffMinutes = (a, b) => {
+    const ta = parseTime(a), tb = parseTime(b);
+    if (!ta || !tb) return null;
+    if (ta.only || tb.only) {
+      if (!(ta.only && tb.only)) return null; /* 纯时间与完整日期混用不支持 */
+      let d = tb.mins - ta.mins;
+      if (d < 0) d += 1440;
+      return d;
+    }
+    const d = (tb.d.getTime() - ta.d.getTime()) / 60000;
+    return d < 0 ? null : d;
+  };
+
+  /* ---------- 递归下降求值 ---------- */
+  const evalTokens = (tokens, lookup) => {
+    let i = 0;
+    const peek = () => tokens[i];
+    const next = () => tokens[i++];
+    const fail = () => { throw 'calc'; };
+
+    const parseExpr = () => {
+      let v = parseTerm();
+      while (peek() && peek().t === 'op' && (peek().v === '+' || peek().v === '-')) {
+        const op = next().v; const r = parseTerm();
+        v = op === '+' ? v + r : v - r;
+      }
+      return v;
+    };
+    const parseTerm = () => {
+      let v = parseFactor();
+      while (peek() && peek().t === 'op' && (peek().v === '*' || peek().v === '/')) {
+        const op = next().v; const r = parseFactor();
+        v = op === '*' ? v * r : v / r;
+      }
+      return v;
+    };
+    const parseFactor = () => {
+      const v = parseUnary();
+      if (peek() && peek().t === 'op' && peek().v === '^') { next(); return Math.pow(v, parseFactor()); }
+      return v;
+    };
+    const parseUnary = () => {
+      if (peek() && peek().t === 'op' && peek().v === '-') { next(); return -parseUnary(); }
+      if (peek() && peek().t === 'op' && peek().v === '+') { next(); return parseUnary(); }
+      return parsePrimary();
+    };
+    /** 函数参数: 裸字段代码 → 原始字符串值 (供时间函数); 其余 → 数值表达式 */
+    const parseArg = () => {
+      const tk = peek();
+      const nx = tokens[i + 1];
+      if (tk && tk.t === 'id' && EC.FUNCS.indexOf(tk.v) < 0 && nx && (nx.t === 'comma' || nx.t === 'rp')) {
+        i++;
+        const raw = lookup(tk.v);
+        return { raw: raw == null ? null : String(raw), num: numOf(raw) };
+      }
+      const num = parseExpr();
+      return { raw: null, num };
+    };
+    const callFn = (name, args) => {
+      if (EC.TIME_FUNCS.indexOf(name) >= 0) {
+        if (args.length !== 2 || args[0].raw == null || args[1].raw == null) fail();
+        const d = diffMinutes(args[0].raw, args[1].raw);
+        if (d == null) fail();
+        return name === 'hours' ? d / 60 : d;
+      }
+      const nums = args.map((a) => a.num);
+      if (nums.some((x) => x == null || !isFinite(x))) fail();
+      switch (name) {
+        case 'round': return nums.length >= 2 ? Math.round(nums[0] * Math.pow(10, nums[1])) / Math.pow(10, nums[1]) : Math.round(nums[0]);
+        case 'abs': return Math.abs(nums[0]);
+        case 'sqrt': return Math.sqrt(nums[0]);
+        case 'ceil': return Math.ceil(nums[0]);
+        case 'floor': return Math.floor(nums[0]);
+        case 'min': return Math.min.apply(null, nums);
+        case 'max': return Math.max.apply(null, nums);
+        default: fail();
+      }
+    };
+    const parsePrimary = () => {
+      const tk = peek();
+      if (!tk) fail();
+      if (tk.t === 'num') { next(); return tk.v; }
+      if (tk.t === 'lp') { next(); const v = parseExpr(); if (!peek() || peek().t !== 'rp') fail(); next(); return v; }
+      if (tk.t === 'id') {
+        next();
+        const name = tk.v;
+        if (peek() && peek().t === 'lp') {
+          next();
+          const args = [];
+          if (!peek() || peek().t !== 'rp') {
+            for (;;) {
+              args.push(parseArg());
+              if (peek() && peek().t === 'comma') { next(); continue; }
+              break;
+            }
+          }
+          if (!peek() || peek().t !== 'rp') fail();
+          next();
+          return callFn(name, args);
+        }
+        if (EC.FUNCS.indexOf(name) >= 0) fail(); /* 函数名后缺括号 */
+        const raw = lookup(name);
+        const v = numOf(raw);
+        if (v == null) fail();
+        return v;
+      }
+      fail();
+    };
+
+    const out = parseExpr();
+    if (i !== tokens.length) fail(); /* 存在未消费 token (表达式不完整/非法) */
+    return out;
+  };
+
+  /** 求值: 任一变量缺失/非数值/时间无效或表达式非法 → null (调用方回退为空) */
   EC.eval = (expr, body) => {
     const tokens = EC.lex(expr);
     if (!tokens) return null;
-    let js = '';
-    let hasVar = false;
-    for (const tk of tokens) {
-      if (/^\s+$/.test(tk)) { js += ' '; continue; }
-      if (/^\d/.test(tk)) { js += tk; continue; }
-      if (/^[A-Za-z_]/.test(tk)) {
-        if (EC.FUNCS.indexOf(tk) >= 0) { js += 'Math.' + tk; continue; }
-        const v = numOf(varValue(body, tk));
-        if (v == null) return null;
-        hasVar = true;
-        js += '(' + v + ')';
-        continue;
-      }
-      /* 运算符/括号/空白 token: ^ → JS 幂运算 ** (token 可能与其它运算符连写, 需整体替换) */
-      js += tk.replace(/\^/g, '**');
-    }
-    if (!hasVar) return null;
     try {
-      const fn = new Function('return (' + js + ');');
-      const r = fn();
+      const r = evalTokens(tokens, (k) => varValue(body, k));
       return (typeof r === 'number' && isFinite(r)) ? r : null;
     } catch (e) { return null; }
   };
-  /** 计算项显示文本: 按 dec 小数位格式化; 失败回退空字符串 */
+
+  /** 时长智能分段: <60 → 'X分钟'; ≥60 → 'X小时X分钟' (整分为 0 时省略) */
+  EC.formatDuration = (minutes) => {
+    if (minutes == null || !isFinite(minutes) || minutes < 0) return '';
+    const m = Math.round(minutes);
+    if (m < 60) return m + '分钟';
+    const h = Math.floor(m / 60), rem = m % 60;
+    return rem === 0 ? (h + '小时') : (h + '小时' + rem + '分钟');
+  };
+
+  /** 计算项显示文本: fmt=dur → 时长分段; fmt=num(默认) → 按 dec 小数位; 失败回退空 */
   EC.calcText = (calc, body) => {
     const v = EC.eval(calc && calc.expr, body);
     if (v == null) return '';
+    if (calc && calc.fmt === 'dur') return EC.formatDuration(v);
     const dec = calc && calc.dec != null ? parseInt(calc.dec, 10) : -1;
     return dec >= 0 ? v.toFixed(dec) : String(v);
   };
+
   /** 保存前校验: [{name, keys}] — 公式引用了当前文书中不存在的字段代码 */
   EC.missing = (body) => {
     const out = [];
