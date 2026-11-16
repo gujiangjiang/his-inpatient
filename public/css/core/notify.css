@@ -5,9 +5,12 @@
     width: 30px; height: 30px;
     display: inline-flex; align-items: center; justify-content: center;
     border: none; border-radius: 50%;
-    background: transparent; color: #606266; cursor: pointer;
+    background: transparent;
+    color: inherit; /* 随顶栏文字色 (深色/绿色顶栏下均为浅色, 对比清晰) */
+    opacity: .92;
+    cursor: pointer;
 }
-.notify-bell:hover { background: #eef4ff; color: #149a9a; }
+.notify-bell:hover { background: rgba(255, 255, 255, 0.18); color: inherit; opacity: 1; }
 .notify-badge {
     position: absolute; top: -3px; right: -3px;
     min-width: 16px; height: 16px; line-height: 16px;

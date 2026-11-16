@@ -85,15 +85,10 @@
 .emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
 /* 必选未完成: 红色下划线+红字提示 (已填写则占位隐藏, 值下划线为常规样式) */
 .emr-body .emr-slot.emr-req { border-bottom-color: #e5484d; color: #e5484d; }
-/* 点击激活: 占位槽收拢为窄条并保留下划线 (光标紧贴标签, 仍提示此处可编辑)
-   注意: 不得添加纵向 padding/inline-block 高度变化 — 会引起所在行行距突然变宽 (实测确认) */
+/* 点击激活: 占位文字隐藏 (透明), 下划线宽度/位置与点击前完全一致 (不缩短不跳动)
+   注意: 不得改 font-size/min-width/padding — 会造成下划线突然变短/行距变宽 (实测确认) */
 .emr-slot-active {
   color: transparent !important;
-  font-size: 0 !important;
-  min-width: 36px !important;
-  padding: 0 !important;
-  border-bottom: 1px dashed #c3c8d1 !important;
-  background: transparent !important;
 }
 /* 填写槽的值 (已输入内容): 编辑状态常显浅色下划线提示可编辑; 只读(已签名)/打印不显示 */
 .emr-body[contenteditable="true"] .emr-val { border-bottom: 1px dashed #c3c8d1; }
