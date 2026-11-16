@@ -94,7 +94,11 @@ const CaseHome = {
             };
             selProv.addEventListener('change', () => { fillCity(); this.collect(); applyZip(); });
             selCity.addEventListener('change', () => { fillCounty(); this.collect(); applyZip(); });
-            if (selCounty) selCounty.addEventListener('change', () => { this.collect(); applyZip(); });
+            if (selCounty) {
+                /* 选定区县 → 重填邮编; 原生 select 重选同一区县不触发 change, 用点击兜底 */
+                selCounty.addEventListener('change', () => { this.collect(); applyZip(); });
+                selCounty.addEventListener('click', () => setTimeout(() => { this.collect(); applyZip(); }, 0));
+            }
         });
     },
 
