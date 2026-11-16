@@ -187,6 +187,9 @@ function getRoutes() {
         'case/autofill' => ['case_front_page/autofill.php', ['admin', 'doctor']],
         'case/surgery-save' => ['case_front_page/surgery_save.php', ['admin', 'doctor']],
         'case/surgery-list' => ['case_front_page/surgery_list.php', ['admin', 'doctor']],
+        'surgery/apply' => ['surgery/apply.php', ['admin', 'doctor']],
+        'surgery/list' => ['surgery/list.php', ['admin', 'doctor', 'nurse']],
+        'surgery/cancel' => ['surgery/cancel.php', ['admin', 'doctor']],
 
         // 门诊病历查询
         'outpatient/search' => ['outpatient/outpatient_search.php', ['admin', 'doctor']],

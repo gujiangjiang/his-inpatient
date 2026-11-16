@@ -8,7 +8,7 @@
 <div class="menu-item" onclick="navigateTo('outpatient','labs')"><span class="menu-ico"><?= icon('clinic/nav', 'lab', 16) ?></span><span class="menu-text">检验</span></div>
 <div class="menu-item" onclick="navigateTo('outpatient','exams')"><span class="menu-ico"><?= icon('clinic/nav', 'exam', 16) ?></span><span class="menu-text">检查</span></div>
 <div class="menu-item" onclick="navigateTo('clinic','rx')"><span class="menu-ico"><?= icon('clinic/nav', 'prescription', 16) ?></span><span class="menu-text">处方</span></div>
-<div class="menu-item" onclick="openPlaceholder('手术')" data-placeholder="手术"><span class="menu-ico"><?= icon('clinic/nav', 'surgery', 16) ?></span><span class="menu-text">手术</span></div>
+<div class="menu-item" onclick="navigateTo('doctor','surgery')"><span class="menu-ico"><?= icon('clinic/nav', 'surgery', 16) ?></span><span class="menu-text">手术</span></div>
 <div class="menu-item" onclick="openPlaceholder('护理')" data-placeholder="护理"><span class="menu-ico"><?= icon('clinic/nav', 'nursing', 16) ?></span><span class="menu-text">护理</span></div>
 <div class="menu-item" onclick="navigateTo('clinic','consult')"><span class="menu-ico"><?= icon('clinic/nav', 'consult', 16) ?></span><span class="menu-text">会诊</span></div>
 <div class="menu-item" onclick="navigateTo('case_front_page','main')"><span class="menu-ico"><?= icon('clinic/nav', 'home', 16) ?></span><span class="menu-text">首页</span></div>

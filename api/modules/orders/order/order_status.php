@@ -38,6 +38,18 @@ if ($status === 'stopped') {
     }
 }
 
+/* 手术医嘱不可直接作废: 需在「手术」页面取消手术申请 */
+if ($status === 'invalid_pending') {
+    $checkIds = [(int)$id];
+    if (!empty($order['parent_id'])) $checkIds[] = (int)$order['parent_id'];
+    $phS = implode(',', array_fill(0, count($checkIds), '?'));
+    $isSurgeryOrder = (($order['category'] ?? '') === 'surgery') || ((int)(DB::selectOne(
+        "SELECT COUNT(*) AS n FROM surgeries WHERE order_id IN ($phS)", $checkIds)['n'] ?? 0) > 0);
+    if ($isSurgeryOrder) {
+        Response::error('手术医嘱不可直接作废：请在「手术」页面「已申请手术」列表中取消手术（取消后该医嘱自动作废）');
+    }
+}
+
 $pdo->beginTransaction();
 try {
     $now = DateHelper::now();
