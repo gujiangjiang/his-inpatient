@@ -5,17 +5,33 @@ $data = Validator::all();
 $name = trim((string)Validator::get('name', ''));
 $category = Validator::get('category', 'medication');
 $items = Validator::get('items');
+$id = (int)Validator::get('id', 0);
 
 if ($name === '') Response::error('请输入组套名称');
 if (!is_array($items) || count($items) === 0) Response::error('组套至少包含一条医嘱');
 
 $user = Auth::user();
 $pdo = DB::getPDO();
+
+/* 编辑: 仅创建人 (或管理员) 可改 */
+if ($id) {
+    $exists = DB::selectOne("SELECT id, created_by FROM order_sets WHERE id = ?", [$id]);
+    if (!$exists) Response::error('组套不存在', 404);
+    if ($user['role'] !== 'admin' && (int)$exists['created_by'] !== (int)$user['id']) Response::error('仅创建人可编辑组套', 403);
+}
+
 $pdo->beginTransaction();
 try {
-    $stmt = $pdo->prepare("INSERT INTO order_sets (name, category, department_id, is_active, created_by, created_at) VALUES (?,?,?,?,?,?)");
-    $stmt->execute([$name, $category, $user['department_id'] ?? null, 1, $user['id'], DateHelper::now()]);
-    $setId = $pdo->lastInsertId();
+    if ($id) {
+        $stmt = $pdo->prepare("UPDATE order_sets SET name = ?, category = ? WHERE id = ?");
+        $stmt->execute([$name, $category, $id]);
+        DB::execute("DELETE FROM order_set_items WHERE set_id = ?", [$id]);
+        $setId = $id;
+    } else {
+        $stmt = $pdo->prepare("INSERT INTO order_sets (name, category, department_id, is_active, created_by, created_at) VALUES (?,?,?,?,?,?)");
+        $stmt->execute([$name, $category, $user['department_id'] ?? null, 1, $user['id'], DateHelper::now()]);
+        $setId = $pdo->lastInsertId();
+    }
 
     $itemStmt = $pdo->prepare("INSERT INTO order_set_items (set_id, category, drug_id, content, dosage, dosage_unit, usage_name, usage_rate, freq_code, freq_detail, order_period, group_seq, sort_no, notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     foreach ($items as $i => $item) {
@@ -25,7 +41,9 @@ try {
             $item['content'], $item['dosage'] ?? '', $item['dosage_unit'] ?? '',
             $item['usage_name'] ?? '', $item['usage_rate'] ?? '',
             $item['freq_code'] ?? '', $item['freq_detail'] ?? '',
-            $item['order_period'] ?? 'long', $i, $i, $item['notes'] ?? ''
+            $item['order_period'] ?? 'long',
+            isset($item['group_seq']) ? (int)$item['group_seq'] : 0,
+            $i, $item['notes'] ?? ''
         ]);
     }
     $pdo->commit();

@@ -13,13 +13,39 @@ $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在');
 if (!is_patient_admitted($patientId)) Response::error('患者尚未入科（未指派主管医师），不能开医嘱');
 
-$items = DB::select("SELECT * FROM order_set_items WHERE set_id = ? ORDER BY sort_no ASC, id ASC", [$setId]);
+$clientItems = Validator::get('items');
+if (is_array($clientItems) && count($clientItems)) {
+    /* 开嘱端勾选/修改后的医嘱 (group_seq: 0=独立; 相同正数=同一组) */
+    $items = [];
+    foreach ($clientItems as $it) {
+        if (empty($it['content'])) continue;
+        $items[] = [
+            'category' => ($it['category'] ?? 'nonmedication'),
+            'drug_id' => $it['drug_id'] ?? null,
+            'content' => (string)$it['content'],
+            'dosage' => (string)($it['dosage'] ?? ''),
+            'dosage_unit' => (string)($it['dosage_unit'] ?? ''),
+            'usage_name' => (string)($it['usage_name'] ?? ''),
+            'usage_rate' => (string)($it['usage_rate'] ?? ''),
+            'freq_code' => (string)($it['freq_code'] ?? ''),
+            'freq_detail' => (string)($it['freq_detail'] ?? ''),
+            'order_period' => ($it['order_period'] === 'temp') ? 'temp' : 'long',
+            'group_seq' => (int)($it['group_seq'] ?? 0),
+            'notes' => (string)($it['notes'] ?? ''),
+        ];
+    }
+    if (!$items) Response::error('请至少勾选一条医嘱');
+} else {
+    $items = DB::select("SELECT * FROM order_set_items WHERE set_id = ? ORDER BY sort_no ASC, id ASC", [$setId]);
+}
 if (!$items) Response::error('组套内容为空');
 
 $userId = Auth::user()['id'];
 $now = DateHelper::now();
 $status = (int)Validator::get('submit', 0) ? 'pending' : 'draft';
-$isGroup = count($items) > 1 && $set['category'] === 'medication'; // 仅药品成组, 非药品逐条独立
+/* 成组判定: 客户端勾选成组 (相同 group_seq>0) 按组分; 兼容旧组套 (无分组的药品组套整体成组) */
+$hasGroupSeq = is_array($clientItems) && count($clientItems);
+$legacyGroup = !$hasGroupSeq && count($items) > 1 && $set['category'] === 'medication';
 
 $pdo = DB::getPDO();
 $pdo->beginTransaction();
@@ -30,6 +56,7 @@ try {
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     $mainId = null;
     $ids = [];
+    $groupMain = []; /* group_seq>0 → 该组主医嘱 id (首个) */
     foreach ($items as $i => $item) {
         $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
         $itemPeriod = $item['order_period'] ?: 'long';
@@ -37,21 +64,39 @@ try {
         $freqDetail = $item['freq_detail'];
         // 临时医嘱无频次/执行时间
         if ($itemPeriod === 'temp') { $freqCode = ''; $freqDetail = ''; }
+        $gseq = (int)($item['group_seq'] ?? 0);
+        $inGroup = $legacyGroup || $gseq > 0;
+        $parent = null;
+        $isMain = 0;
+        if ($inGroup) {
+            if ($legacyGroup) {
+                $parent = ($i > 0) ? $mainId : null;
+                $isMain = ($i === 0) ? 1 : 0;
+            } else {
+                $key = 'g' . $gseq;
+                if (isset($groupMain[$key])) { $parent = $groupMain[$key]; }
+                else { $groupMain[$key] = -1; $isMain = 1; }
+            }
+        }
         $stmt->execute([
             $patientId, $patient['admission_no'],
-            ($isGroup && $i > 0) ? $mainId : null,
-            ($isGroup && $i === 0) ? 1 : 0,
+            $parent,
+            $isMain,
             ($item['category'] === 'medication') ? 'medication' : 'general',
             $itemPeriod,
             $orderNo, $item['content'], $item['category'], $status,
             $item['drug_id'], $item['dosage'], $item['dosage_unit'],
             $item['usage_name'], $item['usage_rate'],
             $freqCode, $freqDetail, '',
-            $i, 0, $now, $userId, $now, $now
+            $gseq, 0, $now, $userId, $now, $now
         ]);
         $id = $pdo->lastInsertId();
+        if (!empty($item['notes'])) {
+            DB::execute("UPDATE orders SET notes = ? WHERE id = ?", [(string)$item['notes'], $id]);
+        }
         $ids[] = $id;
         if ($i === 0) $mainId = $id;
+        if ($inGroup && !$legacyGroup && $isMain) $groupMain['g' . $gseq] = $id;
     }
     $pdo->commit();
     Response::success(['id' => $mainId, 'ids' => $ids, 'count' => count($ids)]);
