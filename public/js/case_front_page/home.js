@@ -56,7 +56,6 @@ const CaseHome = {
         const county = this.raw(base + '_county');
         const cities = this.cityList(prov);
         const counties = this.countyList(prov, city);
-        const zip = f.zip ? this.zipOf(prov, city, county) : '';
         return '<div class="form-group cf-span-' + (f.span || 1) + '"><label class="form-label">' + Format.escape(f.l) + '</label>'
             + '<div class="cf-region" data-cf-region="' + Format.escape(base) + '"' + (f.zip ? ' data-cf-region-zip="' + Format.escape(f.zip) + '"' : '') + '>'
             + '<select class="form-control" data-cf="' + base + '_prov" data-region-level="prov">'
@@ -66,7 +65,6 @@ const CaseHome = {
             + (f.county === false ? '' :
                 '<select class="form-control" data-cf="' + base + '_county" data-region-level="county">'
                 + '<option value="">区县</option>' + this.regionOptions(counties, county, x => x[0]) + '</select>')
-            + (zip ? '<span class="cf-region-zip">邮编 ' + Format.escape(zip) + '</span>' : '')
             + '</div></div>';
     },
     /* 级联联动 + 区县选择后自动关联邮编 */
@@ -84,17 +82,15 @@ const CaseHome = {
             const fillCounty = () => {
                 if (selCounty) selCounty.innerHTML = '<option value="">区县</option>' + this.regionOptions(this.countyList(selProv.value, selCity.value), '', x => x[0]);
             };
+            /* 选定区县 → 邮编直接写入对应邮编输入框 (如 现住址→现住址邮编 / 户口→户口邮编);
+               输入框保持普通可编辑, 用户可手动修改; 无区县或无邮编时不改动 */
             const applyZip = () => {
                 if (!zipKey) return;
-                const zip = box.querySelector('.cf-region-zip');
-                if (selCounty && selCounty.value) {
-                    const z = this.zipOf(selProv.value, selCity.value, selCounty.value);
-                    if (zip) zip.textContent = z ? ('邮编 ' + z) : '';
-                    if (z) {
-                        const zipInput = document.querySelector('[data-cf="' + zipKey + '"]');
-                        if (zipInput) { zipInput.value = z; this.data[zipKey] = z; }
-                    }
-                } else if (zip) zip.textContent = '';
+                if (!selCounty || !selCounty.value) return;
+                const z = this.zipOf(selProv.value, selCity.value, selCounty.value);
+                if (!z) return;
+                const zipInput = document.querySelector('[data-cf="' + zipKey + '"]');
+                if (zipInput) { zipInput.value = z; this.data[zipKey] = z; }
             };
             selProv.addEventListener('change', () => { fillCity(); this.collect(); applyZip(); });
             selCity.addEventListener('change', () => { fillCounty(); this.collect(); applyZip(); });

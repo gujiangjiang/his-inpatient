@@ -59,7 +59,7 @@ const CaseHomeFields = {
         ] },
         { title: '地址与联系人', fields: [
             { k: 'addr_region', l: '现住址', t: 'region', base: 'addr', county: true, zip: 'zip', span: 2 },
-            { k: 'addr_detail', l: '现住址详址', span: 2 }, { k: 'phone', l: '电话' }, { k: 'zip', l: '邮编' },
+            { k: 'addr_detail', l: '现住址详址', span: 2 }, { k: 'phone', l: '电话' }, { k: 'zip', l: '现住址邮编' },
             { k: 'hukou_region', l: '户口地址', t: 'region', base: 'hukou', county: true, zip: 'hukou_zip', span: 2 },
             { k: 'hukou_detail', l: '户口地址详址', span: 2 }, { k: 'hukou_zip', l: '户口邮编' },
             { k: 'work_unit', l: '工作单位及地址', span: 2 }, { k: 'work_phone', l: '单位电话' }, { k: 'work_zip', l: '单位邮编' },
