@@ -146,7 +146,7 @@ async function surgery_showList() {
             const op = cancelled ? '<span class="text-muted fs-12">—</span>'
                 : '<button type="button" class="btn btn-small btn-danger" data-cancel="' + s.id + '">取消手术</button>';
             return '<tr><td>' + (catLabel[s.category] || '-') + '</td><td>' + Format.escape(s.surgery_name) + '</td>'
-                + '<td>' + Format.escape(emrStamp(s.planned_at || s.surgery_date || '')) + '</td>'
+                + '<td>' + Format.escape(String(s.planned_at || s.surgery_date || '').slice(0, 16)) + '</td>'
                 + '<td>' + Format.escape(s.anesthesia_type || '-') + (s.patient_position ? ' / ' + Format.escape(s.patient_position) : '') + '</td>'
                 + '<td>' + Format.escape(s.surgeon_name || '-') + '</td><td>' + st + '</td><td>' + op + '</td></tr>';
         }).join('') + '</tbody></table>')
