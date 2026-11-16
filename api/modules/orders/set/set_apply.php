@@ -35,10 +35,35 @@ if (is_array($clientItems) && count($clientItems)) {
         ];
     }
     if (!$items) Response::error('请至少勾选一条医嘱');
+    /* 服务端兜底: 引用快照以库内组套为准 (客户端勾选可能未回传 ref 字段) */
+    $stored = DB::select("SELECT * FROM order_set_items WHERE set_id = ? ORDER BY sort_no ASC, id ASC", [$setId]);
+    foreach ($items as &$it) {
+        foreach ($stored as $st) {
+            $sameDrug = !empty($st['drug_id']) && (int)$st['drug_id'] === (int)($it['drug_id'] ?? 0);
+            $sameText = empty($st['drug_id']) && (string)$st['content'] === (string)$it['content'] && (string)$st['category'] === (string)$it['category'];
+            if ($sameDrug || $sameText) {
+                $it['ref_id'] = $st['ref_id'] ?? null;
+                $it['ref_name'] = (string)($st['ref_name'] ?? '');
+                $it['ref_spec'] = (string)($st['ref_spec'] ?? '');
+                $it['ref_manufacturer'] = (string)($st['ref_manufacturer'] ?? '');
+                break;
+            }
+        }
+    }
+    unset($it);
 } else {
     $items = DB::select("SELECT * FROM order_set_items WHERE set_id = ? ORDER BY sort_no ASC, id ASC", [$setId]);
 }
 if (!$items) Response::error('组套内容为空');
+
+/* 可用性校验: 已下架/变更的医嘱不可套用 (前端已禁选, 服务端兜底) */
+$checkedAvail = order_set_items_with_avail($items);
+$badItems = array_filter($checkedAvail, function ($i) { return empty($i['avail']['ok']); });
+if ($badItems) {
+    $names = array_map(function ($i) { return $i['content'] . '（' . $i['avail']['reason'] . '）'; }, array_slice($badItems, 0, 3));
+    Response::error('组套内存在已下架/变更的医嘱：' . implode('、', $names) . '，请先编辑组套更新后再套用');
+}
+$items = $checkedAvail;
 
 $userId = Auth::user()['id'];
 $now = DateHelper::now();

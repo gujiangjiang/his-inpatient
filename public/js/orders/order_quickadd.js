@@ -168,6 +168,11 @@ const OrderQuickAdd = {
             category: it.result_type
         };
         if (this.onPickCb) {
+            /* 组套等引用场景: 附带引用快照 (名称/规格/厂家) 供后续可用性校验 */
+            item.ref_id = it.id || null;
+            item.ref_name = isMed ? it.name : String(it.content || it.name || '');
+            item.ref_spec = it.specification || '';
+            item.ref_manufacturer = it.manufacturer || '';
             const cb = this.onPickCb;
             this.close();
             cb(item);

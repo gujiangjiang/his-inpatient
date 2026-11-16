@@ -664,3 +664,25 @@
 .osets-editor-list { height: 340px; overflow: auto; border: 1px solid #e4e7ed; border-radius: 8px; }
 .osets-editor-foot { display: flex; align-items: center; }
 .osets-editor-hint { font-size: 12px; color: #909399; }
+
+/* 组套: 子医嘱缩进 / 下架变更禁用 / 表格固定布局 */
+.osets-table { table-layout: fixed; }
+.osets-table td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.osets-table td > * { vertical-align: middle; }
+.osets-sub-caret { display: inline-block; margin-right: 3px; color: #a8abb2; }
+.osets-sub-content { padding-left: 8px; }
+.osets-row-bad { background: #fbf7f7; }
+.osets-row-bad .osets-content, .osets-row-bad .osets-apply-content { color: #c0c4cc; text-decoration: line-through; }
+.osets-row-bad .osets-input, .osets-row-bad .osets-cell { opacity: .55; }
+.osets-bad { font-size: 11px; color: #f56c6c; background: #f56c6c14; border-radius: 7px; padding: 1px 6px; margin-left: 6px; flex-shrink: 0; }
+.osets-subadd { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #149a9a1a; color: #149a9a; cursor: pointer; margin-left: 6px; }
+.osets-subadd:hover { background: #149a9a; color: #fff; }
+.osets-apply-content { overflow: hidden; text-overflow: ellipsis; }
+
+/* 组套模态: 右表列多, 需要更宽面板 */
+.osets-modal { max-width: 1120px; width: 96vw; }
+
+/* 组套行内 flex (名称省略号 + 标签常显) */
+.osets-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.osets-line-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.osets-line .osets-bad, .osets-line .os-tag { flex-shrink: 0; }

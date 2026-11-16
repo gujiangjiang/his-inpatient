@@ -1,11 +1,11 @@
 // public/js/orders/order_sets.js - 医嘱组套(路径): 选择/勾选修改套用 + 新建/编辑编辑器
-// 主模态框: 左(搜索+组套列表+新增/编辑) / 右(组套医嘱: 勾选/修改/成组/套用)
+// 主模态框: 左(搜索+组套列表+新增/编辑) / 右(组套医嘱: 只读预览 + 勾选套用)
 // 编辑器: 套餐名 + 药品/非药品加入 + 行内编辑(剂量/途径/频次/长临/备注/成组/删除)
 const OrderSets = {
     overlay: null,
     sets: [],
     currentId: null,
-    work: [],          // 右栏工作副本 [{...,_checked,_group}]
+    work: [],          // 右栏工作副本 [{...,_checked, group_seq, avail}]
     search: '',
     editorOverlay: null,
     editorItems: [],   // 编辑器工作项
@@ -35,14 +35,14 @@ const OrderSets = {
             + '</div>'
             + '<div class="osets-right">'
             + '<div class="osets-right-head"><label class="osets-ck"><input type="checkbox" id="osets-all"> 全选</label>'
-            + '<span class="osets-right-title" id="osets-title">组套医嘱</span><span class="osets-right-hint">勾选要开具的医嘱；可修改剂量/途径/频次/长临/备注与成组</span></div>'
+            + '<span class="osets-right-title" id="osets-title">组套医嘱</span><span class="osets-right-hint">勾选要开具的医嘱；内容与用法请到左侧「编辑」中修改</span></div>'
             + '<div class="osets-items" id="osets-items"><div class="osets-empty">请从左侧选择组套</div></div>'
             + '<div class="osets-right-foot"><span class="osets-right-count" id="osets-count"></span>'
             + '<button type="button" class="btn btn-small btn-success" id="osets-apply" disabled>套用到医嘱</button></div>'
             + '</div></div>';
         this.overlay = Dom.modal('路径 / 组套', content, [{ text: '关闭', type: 'default' }]);
         const modal = this.overlay.querySelector('.modal');
-        if (modal) modal.classList.add('modal-lg');
+        if (modal) { modal.classList.add('modal-lg'); modal.classList.add('osets-modal'); }
 
         const search = this.overlay.querySelector('#osets-search');
         search.addEventListener('input', () => { this.search = search.value.trim(); this.renderLeft(); });
@@ -51,7 +51,10 @@ const OrderSets = {
             if (this.currentId) this.openEditor(this.currentId, e);
         });
         this.overlay.querySelector('#osets-all').addEventListener('change', (e) => {
-            this.work.forEach(w => { w._checked = e.target.checked; });
+            this.work.forEach(w => {
+                if (w.avail && w.avail.ok === false) { w._checked = false; return; }
+                w._checked = e.target.checked;
+            });
             this.renderRight();
         });
         this.overlay.querySelector('#osets-apply').addEventListener('click', () => this.apply());
@@ -81,9 +84,11 @@ const OrderSets = {
         } else {
             box.innerHTML = list.map(s => {
                 const cat = s.category === 'medication' ? '药品' : (s.category === 'nonmedication' ? '非药品' : '混合');
+                const badTag = s.invalid_count ? '<span class="osets-bad" title="存在已下架/变更的医嘱，需编辑更新">' + s.invalid_count + ' 项变更</span>' : '';
                 return '<div class="osets-row' + (String(s.id) === String(this.currentId) ? ' active' : '') + '" data-id="' + s.id + '">'
                     + '<span class="osets-row-name" title="' + Format.escape(s.name) + '">' + Format.escape(s.name) + '</span>'
                     + '<span class="os-tag os-tag-yufang">' + cat + '</span>'
+                    + badTag
                     + '<span class="osets-row-meta">' + s.item_count + ' 条</span></div>';
             }).join('');
             box.querySelectorAll('.osets-row').forEach(row => {
@@ -104,6 +109,10 @@ const OrderSets = {
         this.work = ((set && set.items) || []).map(it => ({
             category: it.category || 'nonmedication',
             drug_id: it.drug_id || null,
+            ref_id: it.ref_id || null,
+            ref_name: it.ref_name || '',
+            ref_spec: it.ref_spec || '',
+            ref_manufacturer: it.ref_manufacturer || '',
             content: it.content || '',
             dosage: it.dosage || '',
             dosage_unit: it.dosage_unit || '',
@@ -113,11 +122,27 @@ const OrderSets = {
             freq_detail: it.freq_detail || '',
             order_period: it.order_period === 'temp' ? 'temp' : 'long',
             notes: it.notes || '',
-            _checked: true,
-            _group: (parseInt(it.group_seq, 10) || 0) > 0, /* 还原组套内已保存的成组标记 */
+            group_seq: parseInt(it.group_seq, 10) || 0,
+            avail: it.avail || { ok: true, reason: '', detail: '' },
+            _checked: !it.avail || it.avail.ok !== false, /* 下架/变更项默认不可选 */
         }));
         this.renderLeft();
         this.renderRight();
+    },
+
+    /* ---------- 组结构工具 (相同 group_seq>0 为一组, 首个为主医嘱) ---------- */
+    groupLeaderIndex(list, i) {
+        const g = list[i] && list[i].group_seq;
+        if (!g) return -1;
+        for (let k = 0; k <= i; k++) if (list[k].group_seq === g) return k;
+        return -1;
+    },
+    groupMembers(list, leaderIdx) {
+        const g = list[leaderIdx] && list[leaderIdx].group_seq;
+        if (!g) return [];
+        const out = [];
+        list.forEach((w, i) => { if (w.group_seq === g) out.push(i); });
+        return out;
     },
 
     renderRight() {
@@ -128,9 +153,12 @@ const OrderSets = {
         if (title) title.textContent = set ? ('组套医嘱 · ' + set.name) : '组套医嘱';
         const all = this.overlay.querySelector('#osets-all');
         const checkedCount = this.work.filter(w => w._checked).length;
+        const selectable = this.work.filter(w => !(w.avail && w.avail.ok === false));
+        const countEl = this.overlay.querySelector('#osets-count');
+        if (countEl) countEl.textContent = '共 ' + this.work.length + ' 条' + (selectable.length < this.work.length ? '（' + (this.work.length - selectable.length) + ' 条不可选）' : '');
         if (all) {
-            all.checked = this.work.length > 0 && checkedCount === this.work.length;
-            all.disabled = this.work.length === 0;
+            all.checked = selectable.length > 0 && selectable.every(w => w._checked);
+            all.disabled = selectable.length === 0;
         }
         const applyBtn = this.overlay.querySelector('#osets-apply');
         if (applyBtn) {
@@ -141,32 +169,58 @@ const OrderSets = {
             box.innerHTML = '<div class="osets-empty">' + (set ? '该组套暂无内容' : '请从左侧选择组套') + '</div>';
             return;
         }
-        box.innerHTML = '<table class="osets-table"><thead><tr>'
-            + '<th style="width:34px"></th><th style="width:52px">长临</th><th>医嘱内容</th><th style="width:110px">剂量</th>'
-            + '<th style="width:96px">途径</th><th style="width:72px">频次</th><th style="width:92px">执行时间</th>'
-            + '<th style="width:120px">备注</th><th style="width:44px">成组</th><th style="width:30px"></th>'
-            + '</tr></thead><tbody>'
-            + this.work.map((w, i) => this.rowHtml(w, i, true)).join('')
+        box.innerHTML = '<table class="osets-table osets-apply-table"><colgroup>'
+            + '<col style="width:36px"><col style="width:52px"><col><col style="width:92px"><col style="width:86px">'
+            + '<col style="width:66px"><col style="width:86px"><col style="width:100px"></colgroup>'
+            + '<thead><tr><th></th><th>长临</th><th>医嘱内容</th><th>剂量</th><th>途径</th><th>频次</th><th>执行时间</th><th>备注</th></tr></thead><tbody>'
+            + this.work.map((w, i) => this.applyRowHtml(w, i)).join('')
             + '</tbody></table>';
-        this.bindRows(box, this.work, () => this.renderRight());
+        this.bindApplyRows(box);
     },
 
-    rowHtml(w, i, withCheck) {
+    applyRowHtml(w, i) {
         const isTemp = w.order_period === 'temp';
-        return '<tr data-i="' + i + '">'
-            + (withCheck === false ? '' : '<td><input type="checkbox" class="osets-ck" ' + (w._checked ? 'checked' : '') + '></td>')
-            + '<td><span class="os-period ' + (isTemp ? 'os-period-temp' : 'os-period-long') + ' osets-period" title="点击切换长期/临时">' + (isTemp ? '临' : '长') + '</span></td>'
-            + '<td><span class="osets-content" title="' + Format.escape(w.content) + '">' + Format.escape(w.content) + '</span>'
-            + (w.category === 'medication' ? ' <span class="os-tag os-tag-yufang">药</span>' : '') + '</td>'
-            + '<td><input type="text" class="osets-input osets-dosage" value="' + Format.escape(w.dosage + (w.dosage_unit ? ' ' + w.dosage_unit : '')) + '" placeholder="如 1片"></td>'
-            + '<td><span class="osets-cell osets-usage" title="点击修改途径">' + (Format.escape(w.usage_name) || '<i class="osets-ph">途径</i>') + '</span></td>'
-            + '<td><span class="osets-cell osets-freq" title="' + (isTemp ? '临时医嘱无频次' : '点击修改频次') + '">' + (isTemp ? '—' : (Format.escape(w.freq_code) || '<i class="osets-ph">频次</i>')) + '</span></td>'
-            + '<td><span class="osets-cell osets-detail" title="' + (isTemp ? '临时医嘱无执行时间' : '点击修改执行时间') + '">' + (isTemp ? '—' : (Format.escape(w.freq_detail) || '<i class="osets-ph">时间</i>')) + '</span></td>'
-            + '<td><input type="text" class="osets-input osets-notes" value="' + Format.escape(w.notes) + '" placeholder="备注"></td>'
-            + '<td><input type="checkbox" class="osets-group"' + (w._group ? ' checked' : '') + ' title="勾选后与其他勾选项成组开具"></td>'
-            + '<td><span class="osets-del" title="移除">' + svgIcon('common/actions/close', 10) + '</span></td>'
+        const bad = w.avail && w.avail.ok === false;
+        const leader = this.groupLeaderIndex(this.work, i);
+        const isSub = leader >= 0 && leader !== i;
+        const groupHint = isSub ? '<span class="osets-sub-caret">' + svgIcon('common/arrows/caret-right', 10) + '</span>' : '';
+        const badTag = bad ? '<span class="osets-bad" title="' + Format.escape(w.avail.detail || w.avail.reason) + '">' + Format.escape(w.avail.reason) + '</span>' : '';
+        return '<tr data-i="' + i + '"' + (bad ? ' class="osets-row-bad"' : '') + (isSub ? ' data-sub="1"' : '') + '>'
+            + '<td><input type="checkbox" class="osets-ck"' + (w._checked ? ' checked' : '') + (bad ? ' disabled' : '') + '></td>'
+            + '<td><span class="os-period ' + (isTemp ? 'os-period-temp' : 'os-period-long') + '">' + (isTemp ? '临' : '长') + '</span></td>'
+            + '<td><div class="osets-line' + (isSub ? ' osets-sub-content' : '') + '">'
+            + groupHint + '<span class="osets-line-name" title="' + Format.escape(w.content) + '">' + Format.escape(w.content) + '</span>'
+            + (w.category === 'medication' ? '<span class="os-tag os-tag-yufang">药</span>' : '') + badTag + '</div></td>'
+            + '<td>' + Format.escape((w.dosage || '') + (w.dosage_unit ? ' ' + w.dosage_unit : '')) + '</td>'
+            + '<td>' + (isTemp ? '' : Format.escape(w.usage_name || '')) + '</td>'
+            + '<td>' + (isTemp ? '—' : Format.escape(w.freq_code || '')) + '</td>'
+            + '<td>' + (isTemp ? '—' : Format.escape(w.freq_detail || '')) + '</td>'
+            + '<td>' + Format.escape(w.notes || '') + '</td>'
             + '</tr>';
     },
+
+    /** 勾选联动: 取消主医嘱 → 组内子医嘱一并取消; 勾选子医嘱 → 主医嘱自动勾选 */
+    bindApplyRows(box) {
+        box.querySelectorAll('tr[data-i]').forEach(tr => {
+            const i = +tr.dataset.i;
+            const w = this.work[i];
+            if (!w) return;
+            tr.querySelector('.osets-ck').addEventListener('change', (e) => {
+                const checked = e.target.checked;
+                w._checked = checked;
+                const leader = this.groupLeaderIndex(this.work, i);
+                if (leader === i) {
+                    /* 主医嘱: 联动组内全部 */
+                    this.groupMembers(this.work, i).forEach(k => { this.work[k]._checked = checked; });
+                } else if (leader >= 0) {
+                    /* 子医嘱: 勾选则主医嘱随之勾选 */
+                    if (checked) this.work[leader]._checked = true;
+                }
+                this.renderRight();
+            });
+        });
+    },
+
 
     bindRows(box, list, rerender) {
         box.querySelectorAll('tr[data-i]').forEach(tr => {
@@ -183,8 +237,12 @@ const OrderSets = {
                 w.dosage_unit = m ? (m[2] || '') : '';
             });
             tr.querySelector('.osets-notes').addEventListener('change', (e) => { w.notes = e.target.value.trim(); });
-            tr.querySelector('.osets-group').addEventListener('change', (e) => { w._group = e.target.checked; });
-            tr.querySelector('.osets-del').addEventListener('click', () => { list.splice(i, 1); rerender(); });
+            tr.querySelector('.osets-del').addEventListener('click', () => { this.removeEditorItem(list, i); rerender(); });
+            const plus = tr.querySelector('.osets-subadd');
+            if (plus) plus.addEventListener('click', (e) => {
+                e.stopPropagation();
+                OrderQuickAdd.openPick('medication', e, (item) => this.addSub(list, i, item));
+            });
             /* 途径/频次/执行时间: 悬浮选择器 (与医嘱列表一致) */
             const usageCell = tr.querySelector('.osets-usage');
             usageCell.addEventListener('click', (e) => {
@@ -213,15 +271,26 @@ const OrderSets = {
         if (typeof OrderStation === 'undefined' || !OrderStation.patientId) { Dom.toast('请先选择患者', 'error'); return; }
         const picked = this.work.filter(w => w._checked);
         if (!picked.length) { Dom.toast('请至少勾选一条医嘱', 'error'); return; }
-        /* 成组: 勾了成组的项共享 group_seq=1 */
-        const items = picked.map(w => ({
-            category: w.category, drug_id: w.drug_id, content: w.content,
-            dosage: w.dosage, dosage_unit: w.dosage_unit,
-            usage_name: w.usage_name, usage_rate: w.usage_rate,
-            freq_code: w.freq_code, freq_detail: w.freq_detail,
-            order_period: w.order_period, notes: w.notes,
-            group_seq: w._group ? 1 : 0,
-        }));
+        /* 成组: 每组 (主+勾选子) 分配一个递增 group_seq; 独立项 0; 下架/变更项兜底过滤 */
+        const seqMap = {};
+        let seq = 0;
+        const items = this.work.map((w, i) => {
+            if (!w._checked || (w.avail && w.avail.ok === false)) return null;
+            const leader = this.groupLeaderIndex(this.work, i);
+            let gseq = 0;
+            if (leader >= 0) {
+                if (seqMap[leader] == null) seqMap[leader] = ++seq;
+                gseq = seqMap[leader];
+            }
+            return {
+                category: w.category, drug_id: w.drug_id, content: w.content,
+                dosage: w.dosage, dosage_unit: w.dosage_unit,
+                usage_name: w.usage_name, usage_rate: w.usage_rate,
+                freq_code: w.freq_code, freq_detail: w.freq_detail,
+                order_period: w.order_period, notes: w.notes,
+                group_seq: gseq,
+            };
+        }).filter(Boolean);
         try {
             const r = await AjaxLoader.api('orders/set-apply', { method: 'POST', data: {
                 set_id: this.currentId, patient_id: OrderStation.patientId, submit: 0, items: items
@@ -247,13 +316,16 @@ const OrderSets = {
         this.editorItems = set ? (set.items || []).map(it => ({
             category: it.category || 'nonmedication',
             drug_id: it.drug_id || null,
+            ref_id: it.ref_id || null, ref_name: it.ref_name || '',
+            ref_spec: it.ref_spec || '', ref_manufacturer: it.ref_manufacturer || '',
             content: it.content || '',
             dosage: it.dosage || '', dosage_unit: it.dosage_unit || '',
             usage_name: it.usage_name || '', usage_rate: it.usage_rate || '',
             freq_code: it.freq_code || '', freq_detail: it.freq_detail || '',
             order_period: it.order_period === 'temp' ? 'temp' : 'long',
             notes: it.notes || '',
-            _group: (parseInt(it.group_seq, 10) || 0) > 0,
+            group_seq: parseInt(it.group_seq, 10) || 0,
+            avail: it.avail || { ok: true, reason: '', detail: '' },
         })) : [];
 
         const content = '<div class="osets-editor">'
@@ -264,14 +336,14 @@ const OrderSets = {
             + '<button type="button" class="btn btn-small" id="osets-ed-non">＋ 非药品</button></div>'
             + '</div>'
             + '<div class="osets-editor-list" id="osets-ed-list"></div>'
-            + '<div class="osets-editor-foot"><span class="osets-editor-hint">行内可改剂量/途径/频次/长临/备注；勾选「成组」的医嘱开具时作为一组</span>'
+            + '<div class="osets-editor-foot"><span class="osets-editor-hint">行内可改剂量/途径/频次/长临/备注；药品行「＋」可加入成组子的子医嘱，开具时同组联动</span>'
             + '<span class="osets-right-count" id="osets-ed-count"></span></div></div>';
         this.editorOverlay = Dom.modal(setId ? '编辑组套' : '新增组套', content, [
             { text: '保存', type: 'primary', onclick: () => this.saveEditor() },
             { text: '取消', type: 'default' }
         ]);
         const modal = this.editorOverlay.querySelector('.modal');
-        if (modal) modal.classList.add('modal-lg');
+        if (modal) { modal.classList.add('modal-lg'); modal.classList.add('osets-modal'); }
         this.editorOverlay.querySelector('#osets-ed-med').addEventListener('click', (e) => this.editorAdd('medication', e));
         this.editorOverlay.querySelector('#osets-ed-non').addEventListener('click', (e) => this.editorAdd('nonmedication', e));
         this.renderEditor();
@@ -280,11 +352,46 @@ const OrderSets = {
     editorAdd(mode, event) {
         OrderQuickAdd.openPick(mode, event, (item) => {
             this.editorItems.push(Object.assign({}, item, {
-                order_period: 'long', freq_detail: item.freq_detail || '', notes: '', _group: false,
-                dosage_unit: item.dosage_unit || ''
+                order_period: 'long', freq_detail: item.freq_detail || '', notes: '', group_seq: 0,
+                dosage_unit: item.dosage_unit || '',
+                avail: { ok: true, reason: '', detail: '' },
             }));
             this.renderEditor();
         });
+    },
+
+    /** 「+」加入成组子医嘱 (仅药品): 分配/复用组的 group_seq, 插入到该组末尾 */
+    addSub(list, leaderIdx, item) {
+        const leader = list[leaderIdx];
+        if (!leader) return;
+        if (leader.group_seq === 0) {
+            let max = 0;
+            list.forEach(w => { if ((w.group_seq || 0) > max) max = w.group_seq; });
+            leader.group_seq = max + 1;
+        }
+        const seq = leader.group_seq;
+        let insertAt = leaderIdx + 1;
+        list.forEach((w, k) => { if (w.group_seq === seq && k >= insertAt) insertAt = k + 1; });
+        list.splice(insertAt, 0, Object.assign({}, item, {
+            order_period: leader.order_period === 'temp' ? 'temp' : (item.order_period || 'long'),
+            freq_detail: item.freq_detail || '',
+            notes: '',
+            group_seq: seq,
+            dosage_unit: item.dosage_unit || '',
+            avail: { ok: true, reason: '', detail: '' },
+        }));
+        this.renderEditor();
+    },
+
+    /** 删除编辑器条目: 主医嘱连同其组内子医嘱一并删除 */
+    removeEditorItem(list, i) {
+        const leader = this.groupLeaderIndex(list, i);
+        if (leader === i) {
+            const members = this.groupMembers(list, i);
+            members.sort((a, b) => b - a).forEach(k => list.splice(k, 1));
+            return;
+        }
+        list.splice(i, 1);
     },
 
     renderEditor() {
@@ -297,17 +404,50 @@ const OrderSets = {
             return;
         }
         const w = this;
-        box.innerHTML = '<table class="osets-table"><thead><tr>'
-            + '<th style="width:52px">长临</th><th>医嘱内容</th><th style="width:110px">剂量</th>'
-            + '<th style="width:96px">途径</th><th style="width:72px">频次</th><th style="width:92px">执行时间</th>'
-            + '<th style="width:120px">备注</th><th style="width:44px">成组</th><th style="width:30px"></th>'
-            + '</tr></thead><tbody>'
-            + this.editorItems.map((it, i) => this.rowHtml(it, i, false)).join('')
+        box.innerHTML = '<table class="osets-table"><colgroup>'
+            + '<col style="width:52px"><col><col style="width:92px"><col style="width:86px"><col style="width:66px">'
+            + '<col style="width:86px"><col style="width:100px"><col style="width:36px"><col style="width:30px"></colgroup>'
+            + '<thead><tr><th>长临</th><th>医嘱内容</th><th>剂量</th><th>途径</th><th>频次</th><th>执行时间</th><th>备注</th><th></th><th></th></tr></thead><tbody>'
+            + this.editorItems.map((it, i) => this.editorRowHtml(it, i)).join('')
             + '</tbody></table>';
         this.bindRows(box, this.editorItems, () => this.renderEditor());
     },
 
+    editorRowHtml(w, i) {
+        const isTemp = w.order_period === 'temp';
+        const leader = this.groupLeaderIndex(this.editorItems, i);
+        const isSub = leader >= 0 && leader !== i;
+        /* 「+」加子医嘱: 仅药品主医嘱 (与开医嘱一致) */
+        const plusBtn = (!isSub && w.category === 'medication')
+            ? '<span class="os-row-act os-group-add osets-subadd" title="加入成组医嘱（子医嘱，仅药品）">' + svgIcon('common/actions/plus', 11) + '</span>'
+            : '';
+        const glyph = isSub ? '<span class="osets-sub-caret">' + svgIcon('common/arrows/caret-right', 10) + '</span>' : '';
+        const bad = w.avail && w.avail.ok === false;
+        const badTag = bad ? '<span class="osets-bad" title="' + Format.escape(w.avail.detail || w.avail.reason) + '">' + Format.escape(w.avail.reason) + '</span>' : '';
+        return '<tr data-i="' + i + '"' + (isSub ? ' data-sub="1"' : '') + (bad ? ' class="osets-row-bad"' : '') + '>'
+            + '<td><span class="os-period ' + (isTemp ? 'os-period-temp' : 'os-period-long') + ' osets-period" title="点击切换长期/临时">' + (isTemp ? '临' : '长') + '</span></td>'
+            + '<td><div class="osets-line' + (isSub ? ' osets-sub-content' : '') + '">'
+            + glyph + '<span class="osets-line-name osets-content" title="' + Format.escape(w.content) + '">' + Format.escape(w.content) + '</span>'
+            + (w.category === 'medication' ? '<span class="os-tag os-tag-yufang">药</span>' : '') + badTag + '</div></td>'
+            + '<td><input type="text" class="osets-input osets-dosage" value="' + Format.escape(w.dosage + (w.dosage_unit ? ' ' + w.dosage_unit : '')) + '" placeholder="如 1片"></td>'
+            + '<td><span class="osets-cell osets-usage" title="点击修改途径">' + (Format.escape(w.usage_name) || '<i class="osets-ph">途径</i>') + '</span></td>'
+            + '<td><span class="osets-cell osets-freq" title="' + (isTemp ? '临时医嘱无频次' : '点击修改频次') + '">' + (isTemp ? '—' : (Format.escape(w.freq_code) || '<i class="osets-ph">频次</i>')) + '</span></td>'
+            + '<td><span class="osets-cell osets-detail" title="' + (isTemp ? '临时医嘱无执行时间' : '点击修改执行时间') + '">' + (isTemp ? '—' : (Format.escape(w.freq_detail) || '<i class="osets-ph">时间</i>')) + '</span></td>'
+            + '<td><input type="text" class="osets-input osets-notes" value="' + Format.escape(w.notes) + '" placeholder="备注"></td>'
+            + '<td>' + plusBtn + '</td>'
+            + '<td><span class="osets-del" title="移除">' + svgIcon('common/actions/close', 10) + '</span></td>'
+            + '</tr>';
+    },
+
     async saveEditor() {
+        /* 组序号归一 (0=独立; 组从 1 起连续) */
+        const map = {}; let seqN = 0;
+        this.editorItems.forEach(w => {
+            const g = w.group_seq || 0;
+            if (!g) { w.group_seq = 0; return; }
+            if (!map[g]) map[g] = ++seqN;
+            w.group_seq = map[g];
+        });
         const nameEl = this.editorOverlay && this.editorOverlay.querySelector('#osets-ed-name');
         const name = (nameEl ? nameEl.value : '').trim();
         if (!name) { Dom.toast('请输入套餐名', 'error'); return false; }
@@ -320,7 +460,9 @@ const OrderSets = {
             usage_name: it.usage_name, usage_rate: it.usage_rate,
             freq_code: it.freq_code, freq_detail: it.freq_detail,
             order_period: it.order_period, notes: it.notes,
-            group_seq: it._group ? 1 : 0,
+            group_seq: it.group_seq || 0,
+            ref_id: it.ref_id || null, ref_name: it.ref_name || '',
+            ref_spec: it.ref_spec || '', ref_manufacturer: it.ref_manufacturer || '',
         }));
         try {
             const r = await AjaxLoader.api('orders/set-save', { method: 'POST', data: {

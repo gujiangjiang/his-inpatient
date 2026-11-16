@@ -26,7 +26,9 @@ $stmt->execute($params);
 $sets = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 foreach ($sets as &$set) {
-    $set['items'] = DB::select("SELECT * FROM order_set_items WHERE set_id = ? ORDER BY sort_no ASC, id ASC", [$set['id']]);
+    $items = DB::select("SELECT * FROM order_set_items WHERE set_id = ? ORDER BY sort_no ASC, id ASC", [$set['id']]);
+    $set['items'] = order_set_items_with_avail($items); /* 下架/变更 → avail.ok=false */
+    $set['invalid_count'] = count(array_filter($set['items'], function ($i) { return empty($i['avail']['ok']); }));
 }
 unset($set);
 

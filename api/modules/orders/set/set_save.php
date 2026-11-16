@@ -33,7 +33,7 @@ try {
         $setId = $pdo->lastInsertId();
     }
 
-    $itemStmt = $pdo->prepare("INSERT INTO order_set_items (set_id, category, drug_id, content, dosage, dosage_unit, usage_name, usage_rate, freq_code, freq_detail, order_period, group_seq, sort_no, notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+    $itemStmt = $pdo->prepare("INSERT INTO order_set_items (set_id, category, drug_id, content, dosage, dosage_unit, usage_name, usage_rate, freq_code, freq_detail, order_period, group_seq, sort_no, notes, ref_id, ref_name, ref_spec, ref_manufacturer) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
     foreach ($items as $i => $item) {
         if (empty($item['content'])) continue;
         $itemStmt->execute([
@@ -43,7 +43,8 @@ try {
             $item['freq_code'] ?? '', $item['freq_detail'] ?? '',
             $item['order_period'] ?? 'long',
             isset($item['group_seq']) ? (int)$item['group_seq'] : 0,
-            $i, $item['notes'] ?? ''
+            $i, $item['notes'] ?? '',
+            $item['ref_id'] ?? null, (string)($item['ref_name'] ?? ''), (string)($item['ref_spec'] ?? ''), (string)($item['ref_manufacturer'] ?? '')
         ]);
     }
     $pdo->commit();
