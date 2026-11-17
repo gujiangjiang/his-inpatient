@@ -4,6 +4,15 @@ Auth::requireRole(['admin']);
 $s = opd_settings();
 $items = [];
 
+// 0. 网络栈诊断: 门诊服务地址 DNS 解析 + IPv4/IPv6 双栈连通性
+//    (域名互调失败时第一眼定位: 是解析不到, 还是某一协议栈出口缺失)
+$diag = net_diag_url(opd_base_url());
+$items[] = [
+    'name' => '网络栈诊断（门诊服务地址）',
+    'ok' => !empty($diag['ok']),
+    'detail' => $diag['summary'],
+];
+
 // 1. 门诊 FHIR 元数据 (免认证)
 list($code, $body) = opd_http('GET', opd_base_url() . '/api/fhir/r4/metadata', ['Accept: application/fhir+json'], null, 8);
 $json = json_decode((string)$body, true);
@@ -56,8 +65,9 @@ foreach ($fhirResources as $fr) {
     ];
 }
 
-// 4. PACS 阅片服务
-$viewerBase = $s['pacs_viewer_url'] !== '' ? strtok($s['pacs_viewer_url'], '?') : '';
+// 4. PACS 阅片服务 (模板归一化多余斜杠后再探测)
+$viewerTpl = opd_viewer_template();
+$viewerBase = $viewerTpl !== '' ? strtok($viewerTpl, '?') : '';
 $resp4 = $viewerBase !== '' ? opd_http('GET', $viewerBase, [], null, 8) : [0, ''];
 $code4 = (int)$resp4[0];
 $items[] = ['name' => 'PACS 阅片服务', 'ok' => $code4 === 200, 'detail' => $code4 === 200 ? '在线' : ('HTTP ' . $code4 . '（检查阅片地址）')];
