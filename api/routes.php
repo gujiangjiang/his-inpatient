@@ -110,6 +110,7 @@ function getRoutes() {
         'orders/set-list' => ['orders/set/set_list.php', ['admin', 'doctor']],
         'orders/set-save' => ['orders/set/set_save.php', ['admin', 'doctor']],
         'orders/set-apply' => ['orders/set/set_apply.php', ['admin', 'doctor']],
+        'orders/set-delete' => ['orders/set/set_delete.php', ['admin', 'doctor']],
 
         // 病历 (结构化)
         'emr/category-list' => ['emr/station/category_list.php', ['admin', 'doctor']],

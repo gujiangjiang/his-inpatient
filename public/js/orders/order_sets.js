@@ -31,7 +31,8 @@ const OrderSets = {
             + '<input type="text" class="form-control osets-search" id="osets-search" placeholder="搜索组套名称…">'
             + '<div class="osets-list" id="osets-list"><div class="osets-empty">加载中…</div></div>'
             + '<div class="osets-left-foot"><button type="button" class="btn btn-small btn-primary" id="osets-new">＋ 新增</button>'
-            + '<button type="button" class="btn btn-small" id="osets-edit" style="display:none">编辑</button></div>'
+            + '<button type="button" class="btn btn-small" id="osets-edit" style="display:none">编辑</button>'
+            + '<button type="button" class="btn btn-small btn-danger" id="osets-del" style="display:none">删除</button></div>'
             + '</div>'
             + '<div class="osets-right">'
             + '<div class="osets-right-head"><label class="osets-ck"><input type="checkbox" id="osets-all"> 全选</label>'
@@ -50,6 +51,10 @@ const OrderSets = {
         this.overlay.querySelector('#osets-edit').addEventListener('click', (e) => {
             if (this.currentId) this.openEditor(this.currentId, e);
         });
+        this.overlay.querySelector('#osets-del').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.confirmDelete();
+        });
         this.overlay.querySelector('#osets-all').addEventListener('change', (e) => {
             this.work.forEach(w => {
                 if (w.avail && w.avail.ok === false) { w._checked = false; return; }
@@ -63,6 +68,27 @@ const OrderSets = {
         this.renderLeft();
         if (this.sets.length) this.select(this.sets[0].id);
         else this.renderRight();
+    },
+
+    /** 删除当前组套 (确认后执行) */
+    confirmDelete() {
+        const set = this.currentSet();
+        if (!set) return;
+        Dom.modal('删除确认', '<p>确认删除组套「' + Format.escape(set.name) + '」？（条目一并删除，不可恢复）</p>', [
+            { text: '删除', type: 'danger', onclick: async () => {
+                try {
+                    await AjaxLoader.api('orders/set-delete', { method: 'POST', data: { id: set.id } });
+                    Dom.toast('已删除组套', 'success');
+                    this.currentId = null;
+                    this.work = [];
+                    await this.reload();
+                    this.renderLeft();
+                    if (this.sets.length) this.select(this.sets[0].id);
+                    else this.renderRight();
+                } catch (err) { /* 已提示 */ }
+            } },
+            { text: '取消', type: 'default' }
+        ]);
     },
 
     async reload() {
@@ -83,11 +109,9 @@ const OrderSets = {
             box.innerHTML = '<div class="osets-empty">' + (this.sets.length ? '无匹配组套' : '暂无组套，点击下方「＋ 新增」创建') + '</div>';
         } else {
             box.innerHTML = list.map(s => {
-                const cat = s.category === 'medication' ? '药品' : (s.category === 'nonmedication' ? '非药品' : '混合');
                 const badTag = s.invalid_count ? '<span class="osets-bad" title="存在已下架/变更的医嘱，需编辑更新">' + s.invalid_count + ' 项变更</span>' : '';
                 return '<div class="osets-row' + (String(s.id) === String(this.currentId) ? ' active' : '') + '" data-id="' + s.id + '">'
                     + '<span class="osets-row-name" title="' + Format.escape(s.name) + '">' + Format.escape(s.name) + '</span>'
-                    + '<span class="os-tag os-tag-yufang">' + cat + '</span>'
                     + badTag
                     + '<span class="osets-row-meta">' + s.item_count + ' 条</span></div>';
             }).join('');
@@ -96,11 +120,11 @@ const OrderSets = {
             });
         }
         const editBtn = this.overlay.querySelector('#osets-edit');
-        if (editBtn) {
-            const s = this.currentSet();
-            const mine = s && typeof Auth !== 'undefined' && Auth.user && (String(s.created_by) === String(Auth.user.id) || Auth.user.role === 'admin');
-            editBtn.style.display = (s && mine) ? '' : 'none';
-        }
+        const delBtn = this.overlay.querySelector('#osets-del');
+        const s = this.currentSet();
+        const mine = s && typeof Auth !== 'undefined' && Auth.user && (String(s.created_by) === String(Auth.user.id) || Auth.user.role === 'admin');
+        if (editBtn) editBtn.style.display = (s && mine) ? '' : 'none';
+        if (delBtn) delBtn.style.display = (s && mine) ? '' : 'none';
     },
 
     select(id) {
