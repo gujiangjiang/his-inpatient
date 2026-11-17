@@ -38,6 +38,8 @@ const Dom = {
         modal.className = 'modal';
         const closeHtml = '<button type="button" class="modal-close" title="关闭">' +
             (window.svgIcon ? svgIcon('common/actions/close', 14) : '×') + '</button>';
+        /* 安全关闭: onclick 可能已自行关闭弹窗 (remove) → 再次移除会抛 NotFoundError */
+        const closeOverlay = () => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
         modal.innerHTML = `
             <div class="modal-header"><span class="modal-title">${title}</span>${closeHtml}</div>
             <div class="modal-body">${content}</div>
@@ -56,13 +58,13 @@ const Dom = {
                         /* 校验语义: onclick 返回 false (同步) 或 Promise 解析为 false → 保留弹窗 */
                         if (r === false) return;
                         if (r && typeof r.then === 'function') {
-                            r.then((v) => { if (v !== false) document.body.removeChild(overlay); });
+                            r.then((v) => { if (v !== false) closeOverlay(); });
                             return;
                         }
-                        document.body.removeChild(overlay);
+                        closeOverlay();
                     });
                 } else {
-                    b.addEventListener('click', () => document.body.removeChild(overlay));
+                    b.addEventListener('click', () => closeOverlay());
                 }
                 footer.appendChild(b);
             });
