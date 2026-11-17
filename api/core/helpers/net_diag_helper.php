@@ -42,7 +42,7 @@ function net_diag_url($url, $timeout = 2) {
     if ($raw === '') { $res['summary'] = '地址为空'; return $res; }
 
     // 拆 host / port（兼容完整 URL 与裸 host[:port]）
-    if (preg_match('#^([a-z][a-z0-9+.\-]*://)?([^/?#]+)#i', $raw, $m)) {
+    if (preg_match('#^([a-z][a-z0-9+.\-]*://)?([^/?\#]+)#i', $raw, $m)) {
         $auth = $m[2];
     } else {
         $auth = $raw;
@@ -103,15 +103,18 @@ function net_diag_url($url, $timeout = 2) {
     $res['ok'] = ($v4ok === true) || ($v6ok === true);
 
     $stack = 'A×' . count($res['a']) . ' AAAA×' . count($res['aaaa']);
-    if ($v4ok === true && $v6ok !== false) $res['verdict'] = 'IPv4 可达' . ($v6ok === true ? '，IPv6 可达（双栈正常）' : '');
-    elseif ($v6ok === true && $v4ok === false) $res['verdict'] = 'IPv6 可达；IPv4 连接失败：' . $res['v4']['detail'];
-    elseif ($v6ok === false && $v4ok === null) {
+    if ($v4ok === true && $v6ok === true) $res['verdict'] = 'IPv4/IPv6 双栈均可达';
+    elseif ($v4ok === true && $v6ok === null) $res['verdict'] = 'IPv4 可达（目标无 IPv6 解析）';
+    elseif ($v4ok === true && $v6ok === false) $res['verdict'] = 'IPv4 可达；IPv6 连接失败：' . $res['v6']['detail'];
+    elseif ($v4ok === null && $v6ok === true) $res['verdict'] = '仅 IPv6 可达（目标无 IPv4 解析，本机 IPv6 出口正常）';
+    elseif ($v4ok === false && $v6ok === true) $res['verdict'] = 'IPv6 可达；IPv4 连接失败：' . $res['v4']['detail'];
+    elseif ($v4ok === null && $v6ok === false) {
         $res['verdict'] = '域名仅解析到 IPv6（无 A 记录），IPv6 连接失败：' . $res['v6']['detail']
             . ' —— 本机环境缺少 IPv6 出口时，系统间互调填域名不可达';
-    } elseif ($v4ok === false && $v6ok === false) {
-        $res['verdict'] = 'IPv4 与 IPv6 均连接失败（' . $res['v4']['detail'] . ' / ' . $res['v6']['detail'] . '）';
+    } elseif ($v4ok === false && $v6ok === null) {
+        $res['verdict'] = '仅解析到 IPv4，IPv4 连接失败：' . $res['v4']['detail'];
     } else {
-        $res['verdict'] = '存在可连通协议栈';
+        $res['verdict'] = 'IPv4 与 IPv6 均连接失败（' . $res['v4']['detail'] . ' / ' . $res['v6']['detail'] . '）';
     }
     $res['summary'] = $stack . '；' . $res['verdict'];
     return $res;
