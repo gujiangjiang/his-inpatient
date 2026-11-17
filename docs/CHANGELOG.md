@@ -4,6 +4,29 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.43.0] - 2026-11-18
+
+### 新增
+- **出站网络栈双栈诊断**（`api/core/helpers/net_diag_helper.php`）：对目标地址做 DNS
+  A/AAAA 解析与 IPv4/IPv6 双栈 TCP 连通探测，静默容错不影响主流程；定位「填 IP 通、
+  填域名不通」类问题（典型：域名仅 AAAA 而运行环境无 IPv6 出口，如 Docker bridge 容器）。
+- 接口测试页首项新增「网络栈诊断（门诊服务地址）」：直接展示解析矩阵与双栈连通结论。
+- 新增网络诊断脚本 `api/scripts/net_check.php`：无参诊断接口管理已配置的门诊/PACS 地址，
+  传参可诊断任意地址；输出解析矩阵、双栈连通明细、结论与三选一修复建议，退出码可巡检。
+- 部署文档 `docs/DEPLOY.md` 新增《IPv6 域名与系统间互调》：现象/根因/诊断/三种修复
+  （容器 extra_hosts 内网映射、内网 DNS 分离解析、容器启用 IPv6 出口）。
+
+### 修复
+- 门诊业务接口（`opd_his_read` / `opd_his_push_catalog` / `opd_his_push_orders`）连接层
+  失败时不再只显示 `HTTP 0`：统一经 `opd_transport_msg` 透出 cURL 错误与网络栈诊断。
+- FHIR 检索连接失败（HTTP 0）时错误提示透出原始失败文本（含诊断），不再笼统。
+- PACS 阅片地址模板归一化（`opd_viewer_template`）：去掉首尾空白与多余斜杠
+  （如 `http://10.0.0.91:10022//?r=viewer` → `/?r=viewer`），协议头 `//` 不受影响。
+
+### 验证
+- `php tools/lint/php-lint.php` 全量 342 个 PHP 文件语法通过。
+- `net_check` 实测：IPv6-only 域名（AAAA 解析 + IPv6 连接）与内网 IPv4 地址均可达。
+
 ## [0.42.0] - 2026-11-17
 
 ### 新增
