@@ -70,11 +70,12 @@
   };
 
   /* ---------- 删除 ---------- */
-  /** 擦除单段 [from,to) 内文本; 保护项(含完全在范围内)一律保留 */
+  /** 擦除单段 [from,to) 内文本; 保护项(含完全在范围内)一律保留; 返回是否实际擦除了内容 */
   const eraseInPara = (p, from, to) => {
-    if (from === to) return;
+    if (from === to) return false;
     const out = [];
     let pos = 0;
+    let changed = false;
     for (const it of p.runs) {
       const n = M.itemLen(it);
       const s = pos, e = pos + n;
@@ -82,15 +83,18 @@
       if (M.isProtected(it)) { out.push(it); continue; }
       if (it.t !== 'text') {
         if (s < from || e > to) out.push(it);
+        else changed = true;
         continue;
       }
       if (e <= from || s >= to) { out.push(it); continue; }
       const keepL = Math.max(0, from - s);
       const keepR = Math.max(0, e - to);
       const t = it.text.slice(0, keepL) + it.text.slice(n - keepR);
+      changed = true;
       if (t) out.push(Object.assign({}, it, { text: t }));
     }
     p.runs = out;
+    return changed;
   };
 
   /** 段内是否含保护项 */
@@ -142,6 +146,7 @@
   const deleteRangeTracked = (a, b) => {
     if (a.p === b.p) {
       const lo = Math.min(a.o, b.o), hi = Math.max(a.o, b.o);
+      if (!hasLiveText(a.p, lo, hi)) return deleteRangePlain(a, b);
       trackEraseInPara(a.p, lo, hi);
       M.normalize(a.p);
       return { p: a.p, o: lo, cont: a.cont };
@@ -174,11 +179,12 @@
   const deleteRangePlain = (a, b) => {
     if (a.p === b.p) {
       const lo = Math.min(a.o, b.o), hi = Math.max(a.o, b.o);
-      eraseInPara(a.p, lo, hi);
+      const erased = eraseInPara(a.p, lo, hi);
       M.normalize(a.p);
-      return { p: a.p, o: lo, cont: a.cont };
+      /* 未擦除任何内容 (如仅覆盖受保护项): 标记 noop, 调用方保持原光标 */
+      return { p: a.p, o: lo, cont: a.cont, noop: !erased };
     }
-    /* 跨段: 中间整段不可含固定元素或内容 (设计模式同样保护, 删除固定元素用右击菜单) */
+    /* 跨段: 固定元素始终保留; 中间普通段可删除 */
     const paras = O.paragraphs(a.cont);
     const ia = paras.findIndex((x) => x.p === a.p);
     const ib = paras.findIndex((x) => x.p === b.p);
@@ -190,75 +196,77 @@
       M.normalize(b.p);
       return { p: a.p, o: Math.min(a.o, M.paraLen(a.p)), cont: a.cont };
     }
+    /* 中间整段: 无固定元素 → 整体移除; 含固定元素 → 仅清空文字保留结构 (Word: 固定控件不被整段删除) */
+    const removals = [];
+    let keptMiddle = false;
     for (let k = ia + 1; k < ib; k++) {
-      if (hasProtected(paras[k].p) || paras[k].p.runs.length) {
-        const e = new Error('该区域包含固定元素, 不可整段删除');
-        e.code = 'protected'; throw e;
+      const mp = paras[k].p;
+      if (hasProtected(mp)) {
+        eraseInPara(mp, 0, M.paraLen(mp));
+        M.normalize(mp);
+        keptMiddle = true;
+      } else {
+        removals.push(mp);
       }
     }
+    removals.sort((x, y) => paras.findIndex((z) => z.p === y) - paras.findIndex((z) => z.p === x));
+    removals.forEach((mp) => {
+      const idx = mp.cont.indexOf(mp);
+      if (idx >= 0) mp.cont.splice(idx, 1);
+    });
     eraseInPara(a.p, a.o, M.paraLen(a.p));
     eraseInPara(b.p, 0, b.o);
     M.normalize(a.p);
     M.normalize(b.p);
-    const contA = paras[ia], contB = paras[ib];
+    if (keptMiddle) {
+      /* 中间保留固定段: 不合并首尾 (保持结构完整), 光标回到 a 段 */
+      return { p: a.p, o: Math.min(a.o, M.paraLen(a.p)), cont: a.cont };
+    }
     /* b 已空: 只删 b, 保留 a (a 的格式不变) */
     if (!b.p.runs.length) {
-      contB.cont.splice(contB.i, 1);
+      const iB = b.cont.indexOf(b.p);
+      if (iB >= 0) b.cont.splice(iB, 1);
       return { p: a.p, o: a.o, cont: a.cont };
     }
     /* a 已空: 只删 a, 保留 b (保留 b 的段落格式: 右对齐等) */
     if (!a.p.runs.length) {
-      contA.cont.splice(contA.i, 1);
+      const iA = a.cont.indexOf(a.p);
+      if (iA >= 0) a.cont.splice(iA, 1);
       return { p: b.p, o: 0, cont: b.cont };
     }
     /* 双方均有内容: 合并进左侧段落 (保护项随 run 迁移, 顺序不变) */
     const tail = b.p.runs.slice();
     a.p.runs = a.p.runs.concat(tail);
-    contB.cont.splice(contB.i, 1);
+    const iB2 = b.cont.indexOf(b.p);
+    if (iB2 >= 0) b.cont.splice(iB2, 1);
     M.normalize(a.p);
     return { p: a.p, o: a.o, cont: a.cont };
   };
 
-  /** Backspace: 删光标前一个字符 */
+  /** Backspace: 删光标前一个字符; 段首合并前段 (固定元素随 run 原样保留, 不可被删除) */
   O.deleteBackward = (pos) => {
-    if (pos.o > 0) return O.deleteRange({ p: pos.p, o: pos.o - 1, cont: pos.cont }, pos);
+    if (pos.o > 0) {
+      const r = O.deleteRange({ p: pos.p, o: pos.o - 1, cont: pos.cont }, pos);
+      return r.noop ? pos : r;
+    }
     const paras = O.paragraphs(pos.cont);
     const info = paras.find((x) => x.p === pos.p);
     if (!info || info.i === 0) return pos;
     const prev = paras[info.i - 1].p;
-    if (hasProtected(prev)) {
-      /* 当前段为空 (如槽位行后回车产生的空行): 只删空段, 不影响固定段 */
-      if (!pos.p.runs.length) {
-        const cur = paras[info.i];
-        cur.cont.splice(cur.i, 1);
-        return { p: prev, o: M.paraLen(prev), cont: pos.cont };
-      }
-      const e = new Error('上一段含固定元素, 不可整段删除');
-      e.code = 'protected'; throw e;
-    }
     const end = { p: prev, o: M.paraLen(prev), cont: pos.cont };
     return O.deleteRange(end, pos);
   };
 
-  /** Delete: 删光标后一个字符 */
+  /** Delete: 删光标后一个字符; 段尾合并后段 (固定元素随 run 原样保留) */
   O.deleteForward = (pos) => {
-    if (pos.o < M.paraLen(pos.p)) return O.deleteRange(pos, { p: pos.p, o: pos.o + 1, cont: pos.cont });
+    if (pos.o < M.paraLen(pos.p)) {
+      const r = O.deleteRange(pos, { p: pos.p, o: pos.o + 1, cont: pos.cont });
+      return r.noop ? pos : r;
+    }
     const paras = O.paragraphs(pos.cont);
     const info = paras.find((x) => x.p === pos.p);
     if (!info || info.i >= paras.length - 1) return pos;
     const next = paras[info.i + 1].p;
-    if (hasProtected(next)) {
-      /* 当前段为空: 只删空段, 不动固定段 */
-      if (!pos.p.runs.length) {
-        const cur = paras[info.i];
-        cur.cont.splice(cur.i, 1);
-        const prevInfo = info.i > 0 ? paras[info.i - 1] : null;
-        if (prevInfo) return { p: prevInfo.p, o: M.paraLen(prevInfo.p), cont: pos.cont };
-        return { p: next, o: 0, cont: pos.cont };
-      }
-      const e = new Error('下一段含固定元素, 不可整段删除');
-      e.code = 'protected'; throw e;
-    }
     return O.deleteRange(pos, { p: next, o: 0, cont: pos.cont });
   };
 

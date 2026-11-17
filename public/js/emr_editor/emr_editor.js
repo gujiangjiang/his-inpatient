@@ -112,14 +112,92 @@
       if (inst.onChange) inst.onChange(inst);
     };
 
+    /* ---------- 书写模式可编辑域 (Word 式: 仅填写槽值区可编辑) ----------
+       模板固定区 (标签/标题/正文模板文字) 一律不可输入; 点击/输入落在固定区时
+       自动重定向到同段最近的填写槽值位置; 段落内无填写槽 → 完全锁定 */
+    const valueCtx = (p, o) => {
+      const loc = M.locate(p, o);
+      const at = p.runs[loc.i];
+      if (at && at.t === 'text') return !!at.val;
+      let k = loc.i - 1;
+      while (k >= 0 && p.runs[k].t === 'br') k--;
+      const prev = p.runs[k];
+      return !!(prev && (prev.t === 'slot' || (prev.t === 'text' && prev.val)));
+    };
+    /** 值区原样返回; 固定区重定向到同段最近填写槽的值起点 */
+    const writePos = (pos) => {
+      const p = pos.p;
+      const o = Math.max(0, Math.min(pos.o, M.paraLen(p)));
+      if (valueCtx(p, o)) return { p, o, cont: pos.cont, redir: false };
+      let best = -1, bestD = Infinity, so = 0;
+      for (const it of p.runs) {
+        if (it.t === 'slot') { const d = Math.abs(so - o); if (d < bestD) { bestD = d; best = so; } }
+        so += M.itemLen(it);
+      }
+      return best < 0 ? null : { p, o: best + 1, cont: pos.cont, redir: true };
+    };
+    const firstSlotPos = (info) => {
+      let so = 0;
+      for (const it of info.p.runs) {
+        if (it.t === 'slot') return { p: info.p, o: so + 1, cont: info.cont, redir: true };
+        so += M.itemLen(it);
+      }
+      return null;
+    };
+    /** 表格模板可将标签与输入拆到相邻单元格/段落; 点击标签时定位对应输入槽 */
+    const writePosAt = (pos, pElHint) => {
+      const wp = writePos(pos);
+      if (wp) return wp;
+      try {
+        const pEl = (pElHint && pElHint.closest && pElHint.closest('.p'))
+          || inst.bodyEl.querySelector('.p[data-pid="' + pos.p.id + '"]');
+        const td = pEl && pEl.closest ? pEl.closest('td') : null;
+        if (!td) return null;
+        const cells = [td, td.nextElementSibling, td.previousElementSibling].filter(Boolean);
+        for (const cell of cells) {
+          const paras = Array.from(cell.querySelectorAll('.p'));
+          const at = paras.indexOf(pEl);
+          const order = at >= 0 ? paras.slice(at + 1).concat(paras.slice(0, at).reverse()) : paras;
+          for (const pel of order) {
+            const info = inst.index.get(+pel.dataset.pid);
+            const hit = info && firstSlotPos(info);
+            if (hit) return hit;
+          }
+        }
+      } catch (e) { /* 忽略 */ }
+      return null;
+    };
+
     /* ---------- 输入操作 ---------- */
+    /** 当前模型选区; 浏览器在不可编辑元素内输入会把选区"回收"到编辑宿主 →
+     *  此时退回最近一次可靠光标 (_lastPos), 保证输入不丢 */
+    const modelSel = () => {
+      const sel = C.rangeToModel(inst.bodyEl, inst.index);
+      if (sel) return sel;
+      if (!inst._lastPos) return null;
+      const s = window.getSelection();
+      const r0 = (s && s.rangeCount) ? s.getRangeAt(0) : null;
+      const inside = (r0 && inst.bodyEl.contains(r0.startContainer)) || document.activeElement === inst.bodyEl;
+      if (!inside) return null;
+      /* 位置重解析: 撤销/重渲染会替换文档对象 */
+      const p = O.findBlockById(inst.doc.body, inst._lastPos.p.id);
+      if (!p || p.t !== 'p') return null;
+      const info = inst.index.get(p.id);
+      const pos = { p, o: Math.min(inst._lastPos.o, M.paraLen(p)), cont: info ? info.cont : inst.doc.body };
+      return { a: pos, b: pos, collapsed: true };
+    };
     inst.insertText = (text) => {
       if (!text) return;
-      const sel = C.rangeToModel(inst.bodyEl, inst.index);
+      const sel = modelSel();
       if (!sel) return;
       let target = sel.a;
+      if (!inst.design) {
+        const wp = writePosAt(sel.a);
+        if (!wp) return; /* 固定区: 不可输入 */
+        target = wp;
+      }
       apply('typing', () => {
-        if (!sel.collapsed) target = O.deleteRange(sel.a, sel.b);
+        if (!sel.collapsed) target = O.deleteRange(target, sel.b);
         const np = O.insertTextAt(target, text, rPrOf(target));
         O.assertGuard(inst.doc.body, inst.guard);
         return np;
@@ -130,8 +208,22 @@
       const sel = C.rangeToModel(inst.bodyEl, inst.index);
       if (!sel) return;
       let target = sel.a;
+      if (!inst.design) {
+        const wp = writePosAt(sel.a);
+        if (!wp) return;
+        target = wp;
+      }
+      /* 值上下文内回车 = 值内换行 (br), 归属该槽位值 (Word: 控件内新行);
+         普通段落回车 = 新段落 */
+      const inValue = !inst.design && valueCtx(target.p, target.o);
       apply('换行', () => {
-        if (!sel.collapsed) target = O.deleteRange(sel.a, sel.b);
+        if (!sel.collapsed) target = O.deleteRange(target, sel.b);
+        if (inValue) {
+          const i = M.splitAt(target.p, target.o);
+          target.p.runs.splice(i, 0, M.item('br'));
+          O.assertGuard(inst.doc.body, inst.guard);
+          return { p: target.p, o: target.o + 1, cont: target.cont };
+        }
         const np = O.insertParaAt(target);
         O.assertGuard(inst.doc.body, inst.guard);
         return np;
@@ -142,8 +234,13 @@
       const sel = C.rangeToModel(inst.bodyEl, inst.index);
       if (!sel) return;
       let target = sel.a;
+      if (!inst.design) {
+        const wp = writePosAt(sel.a);
+        if (!wp) return;
+        target = wp;
+      }
       apply('换行', () => {
-        if (!sel.collapsed) target = O.deleteRange(sel.a, sel.b);
+        if (!sel.collapsed) target = O.deleteRange(target, sel.b);
         const i = M.splitAt(target.p, target.o);
         target.p.runs.splice(i, 0, M.item('br'));
         O.assertGuard(inst.doc.body, inst.guard);
@@ -152,10 +249,16 @@
     };
 
     inst.insertTab = () => {
-      const sel = C.rangeToModel(inst.bodyEl, inst.index);
+      const sel = modelSel();
       if (!sel) return;
+      let start = sel.a;
+      if (!inst.design) {
+        const wp = writePosAt(sel.a);
+        if (!wp) return;
+        start = wp;
+      }
       apply('制表', () => {
-        let pos = sel.collapsed ? sel.a : O.deleteRange(sel.a, sel.b);
+        const pos = sel.collapsed ? start : O.deleteRange(start, sel.b);
         return O.insertTabAt(pos);
       });
     };
@@ -262,11 +365,16 @@
       e.preventDefault();
       const text = (e.clipboardData && e.clipboardData.getData('text/plain')) || '';
       if (!text) return;
-      const sel = C.rangeToModel(inst.bodyEl, inst.index);
+      const sel = modelSel();
       if (!sel) return;
       let target = sel.a;
+      if (!inst.design) {
+        const wp = writePosAt(sel.a);
+        if (!wp) return;
+        target = wp;
+      }
       apply('typing', () => {
-        if (!sel.collapsed) target = O.deleteRange(sel.a, sel.b);
+        if (!sel.collapsed) target = O.deleteRange(target, sel.b);
         let p = target;
         for (const ch of text) p = O.insertTextAt(p, ch, rPrOf(p));
         O.assertGuard(inst.doc.body, inst.guard);
@@ -410,7 +518,7 @@
           if ((r.bottom - e.clientY) <= 5) { startTableResize(e, td, false); return; }
         }
       }
-      if (t.closest && (t.closest('.emr-slot') || t.closest('.emr-dyn'))) return; /* 槽位/动态项走 click 逻辑 */
+      if (t.closest && (t.closest('.emr-slot') || t.closest('.emr-ph') || t.closest('.emr-dyn'))) return; /* 槽位/占位/动态项走 click 逻辑 */
       const x = e.clientX, y = e.clientY;
       setTimeout(() => {
         if (!inst.bodyEl.isConnected) return;
@@ -425,16 +533,77 @@
           }
         } catch (err) { range = null; }
         if (range && inst.bodyEl.contains(range.startContainer)) {
+          const sClick = window.getSelection();
+          sClick.removeAllRanges();
+          sClick.addRange(range);
+          let m = C.rangeToModel(inst.bodyEl, inst.index);
+          let geom = false; /* 几何回退解析: 原生光标不可解析 (点击固定标签等) */
+          if (!m) {
+            const pEl = (t.closest && t.closest('.p'))
+              || (function () { const e2 = document.elementFromPoint(x, y); return e2 && e2.closest ? e2.closest('.p') : null; })();
+            const infoG = pEl ? inst.index.get(+pEl.dataset.pid) : null;
+            if (!infoG) {
+              window.getSelection().removeAllRanges();
+              inst._lastPos = null;
+              deactivateSlot();
+              return;
+            }
+            let bestEl = null, bestD = Infinity;
+            const kids = pEl.querySelectorAll('.pc > *');
+            for (const el2 of kids) {
+              if (isNaN(+el2.dataset.o)) continue;
+              const r2 = el2.getBoundingClientRect();
+              const d2 = x < r2.left ? r2.left - x : (x > r2.right ? x - r2.right : 0);
+              if (d2 < bestD) { bestD = d2; bestEl = el2; }
+            }
+            let geO = bestEl ? +bestEl.dataset.o : 0;
+            if (bestEl && bestEl.classList.contains('emr-fx')) {
+              /* 点击标签: 定位到其后最近填写槽 (该标签对应的控件) */
+              let seen = false, so = 0, hitO = -1;
+              for (const it2 of infoG.p.runs) {
+                if (it2.t === 'fx' && it2.key === bestEl.dataset.key) { seen = true; so += M.itemLen(it2); continue; }
+                if (seen && it2.t === 'slot') { hitO = so + 1; break; }
+                so += M.itemLen(it2);
+              }
+              if (hitO >= 0) geO = hitO;
+            }
+            m = { a: { p: infoG.p, o: Math.min(Math.max(geO, 0), M.paraLen(infoG.p)), cont: infoG.cont }, collapsed: true };
+            geom = true;
+          }
+          /* 书写模式: 位置整形 (固定区点击 → 重定向到最近槽位值; 锁定区 → 保持原光标) */
+          let wp = null;
+          if (!inst.design) {
+            const pElHint = (t.closest && t.closest('.p')) || null;
+            wp = writePosAt(m.a, pElHint);
+            if (!wp) {
+              window.getSelection().removeAllRanges();
+              inst._lastPos = null;
+              deactivateSlot();
+              return;
+            }
+          }
+          if ((wp && wp.redir) || geom) {
+            const t2 = (wp && wp.redir) ? { p: wp.p, o: wp.o, cont: wp.cont } : m.a;
+            C.restore(inst.bodyEl, t2);
+            inst._lastPos = t2;
+            /* 落在空槽占位处 → 激活 (占位透明, 立即可输入) */
+            const pEl = inst.bodyEl.querySelector('.p[data-pid="' + t2.p.id + '"]');
+            const phEl = pEl ? pEl.querySelector('.emr-ph[data-o="' + t2.o + '"]') : null;
+            if (phEl) activateSlot(phEl); else deactivateSlot();
+            return;
+          }
           const s = window.getSelection();
           s.removeAllRanges();
           s.addRange(range);
-          const m = C.rangeToModel(inst.bodyEl, inst.index);
-          if (m) {
-            inst._lastPos = m.a;
-            /* 点击落在原子项边界(如体征行槽位)时, 浏览器不渲染光标:
-               按模型位置重放一次 → 注入零宽锚点, 光标可见 */
-            if (m.collapsed) C.restore(inst.bodyEl, m.a);
-          }
+          inst._lastPos = m.a;
+          /* 点击落在原子项边界(如体征行槽位)时, 浏览器不渲染光标:
+             按模型位置重放一次 → 注入零宽锚点, 光标可见 */
+          if (m.collapsed) C.restore(inst.bodyEl, m.a);
+          deactivateSlot();
+        } else {
+          window.getSelection().removeAllRanges();
+          inst._lastPos = null;
+          deactivateSlot();
         }
       }, 0);
     };
@@ -492,23 +661,35 @@
         }).catch(() => {});
         return;
       }
-      const slot = e.target.closest && e.target.closest('.emr-slot');
-      if (!slot) { deactivateSlot(); return; }
+      /* 填写槽 (已填写点击值文本走上一分支): 空槽点击其占位/槽位元素 */
+      const slotEl = e.target.closest && (e.target.closest('.emr-slot') || e.target.closest('.emr-ph'));
+      if (!slotEl) {
+        /* 点击标签/行内空白: mousedown 已重定向到占位框内 → 保持激活; 否则解除激活 */
+        const sNow = window.getSelection();
+        const c0 = sNow && sNow.rangeCount ? sNow.getRangeAt(0).startContainer : null;
+        const elNow = c0 ? (c0.nodeType === 3 ? c0.parentElement : c0) : null;
+        const phNow = elNow && elNow.closest ? elNow.closest('.emr-ph') : null;
+        if (phNow) { activateSlot(phNow); return; }
+        deactivateSlot();
+        return;
+      }
       e.preventDefault();
-      const sp = slot.closest('.p');
+      const isPh = slotEl.classList.contains('emr-ph');
+      const sp = slotEl.closest('.p');
       const info = inst.index.get(+sp.dataset.pid);
       if (!info) return;
       if (inst.readonly) return;
-      const o = +slot.dataset.o;
+      const o = isPh ? (+slotEl.dataset.o - 1) : +slotEl.dataset.o; /* 占位 span 紧跟槽位 (占位 o = 槽位 o + 1) */
       const loc = M.locate(info.p, o);
       const item = info.p.runs[loc.i];
+      if (!item || item.t !== 'slot') { deactivateSlot(); return; }
       /* 带选项的填写槽: 单选弹下拉选项即选即填; 复选弹勾选层, 确定后顿号拼接 */
-      const itemOpts = (item && item.t === 'slot') ? optsOf(item) : [];
+      const itemOpts = optsOf(item);
       if (itemOpts.length) {
         deactivateSlot();
         if (item.multi) {
           const cur = O.valueAfterSlot(info.p, item.key).trim();
-          ui.openMultiChoice(slot, itemOpts, cur, (val) => {
+          ui.openMultiChoice(slotEl, itemOpts, cur, (val) => {
             apply('选择', () => {
               O.setSlotValue(info.p, item.key, val);
               O.assertGuard(inst.doc.body, inst.guard);
@@ -516,7 +697,7 @@
             });
           });
         } else {
-          ui.openChoice(slot, itemOpts, (val) => {
+          ui.openChoice(slotEl, itemOpts, (val) => {
             apply('选择', () => {
               O.setSlotValue(info.p, item.key, val);
               O.assertGuard(inst.doc.body, inst.guard);
@@ -527,13 +708,11 @@
         return;
       }
       /* 日期类填写槽: dt 属性(设计期配置) 或 opts.datePickers(内置键) 弹出日期时间选择框 */
-      const dtCfg = item && item.t === 'slot'
-        ? (item.dt || (opts.datePickers && opts.datePickers[item.key] ? { mode: opts.datePickers[item.key] } : null))
-        : null;
+      const dtCfg = (item.dt || (opts.datePickers && opts.datePickers[item.key] ? { mode: opts.datePickers[item.key] } : null));
       if (dtCfg) {
         deactivateSlot();
         const cur = O.valueAfterSlot(info.p, item.key).trim();
-        const opened = ui.openDatePicker(slot, dtCfg.mode || 'datetime', cur, (val) => {
+        const opened = ui.openDatePicker(slotEl, dtCfg.mode || 'datetime', cur, (val) => {
           const shown = O.fmtDateTime(val, dtCfg.fmt);
           apply('日期', () => {
             O.setSlotValue(info.p, item.key, shown);
@@ -544,10 +723,11 @@
         if (opened) return;
         /* 无选择器组件时退化为普通输入 */
       }
+      /* 普通填写槽: 光标落在槽内左侧 (占位框内), 激活后占位透明 (Word 式: 立即可输入) */
       inst.bodyEl.focus();
       C.restore(inst.bodyEl, { p: info.p, o: o + 1, cont: info.cont });
       inst._lastPos = { p: info.p, o: o + 1, cont: info.cont };
-      activateSlot(slot);
+      if (isPh) activateSlot(slotEl);
     };
 
     /** 写入动态只读项 (如 初步诊断同步) */
@@ -726,19 +906,29 @@
       C.restore(inst.bodyEl, pos); /* 元素边界自动注入零宽锚点, 保证光标可见 */
       return true;
     };
-    /** 多行文本整块插入: 按行分段, 单事务一次重渲染 (引用写回用; 不逐行闪跳) */
+    /** 多行文本整块插入: 值内以 br 分行 (与填写槽值模型一致, 可继续编辑删除);
+     *  单事务一次重渲染 (引用写回用; 不逐行闪跳) */
     inst.insertBlockText = (text) => {
       const raw = String(text || '').replace(/\r/g, '');
       if (!raw) return false;
       const sel = C.rangeToModel(inst.bodyEl, inst.index);
       if (!sel) return false;
       let target = sel.a;
+      if (!inst.design) {
+        const wp = writePosAt(sel.a);
+        if (!wp) return false;
+        target = wp;
+      }
       apply('引用', () => {
-        if (!sel.collapsed) target = O.deleteRange(sel.a, sel.b);
+        if (!sel.collapsed) target = O.deleteRange(target, sel.b);
         let pos = target;
         const lines = raw.split('\n');
         lines.forEach((ln, i) => {
-          if (i > 0) pos = O.insertParaAt(pos);
+          if (i > 0) {
+            const li = M.splitAt(pos.p, pos.o);
+            pos.p.runs.splice(li, 0, M.item('br'));
+            pos = { p: pos.p, o: pos.o + 1, cont: pos.cont };
+          }
           if (ln) for (const ch of ln) pos = O.insertTextAt(pos, ch, rPrOf(pos));
         });
         O.assertGuard(inst.doc.body, inst.guard);

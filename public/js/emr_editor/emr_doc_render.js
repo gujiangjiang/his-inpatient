@@ -113,9 +113,15 @@
       if (it.t === 'slot') {
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
         const cls = 'emr-slot' + (isSelect(it) ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '') + (it.req ? ' emr-req' : '');
-        out.push(filled
-          ? '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>'
-          : '<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.ph || '填写') + '</span>');
+        out.push('<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>');
+        if (!filled) {
+          /* 未填写: 占位文字独立渲染 (零模型宽度 data-n=0), 光标可落在框内左侧;
+             点击激活后占位透明化 (保留下划线宽度), 输入首个字符即消失 */
+          const phCls = 'emr-ph' + (isSelect(it) ? ' emr-ph-sel' : '') + (it.dt ? ' emr-ph-dt' : '') + (it.multi ? ' emr-ph-multi' : '') + (it.req ? ' emr-req' : '');
+          /* 注意: 占位 span 必须保持可编辑 (不可 contenteditable=false) —
+             否则浏览器在输入时会把选区"回收"到编辑宿主, 光标跳走且打不进字 (实测确认) */
+          out.push('<span class="' + phCls + '" data-n="0" data-o="' + (o + 1) + '" data-slot="' + esc(it.key) + '">' + esc(it.ph || '填写') + '</span>');
+        }
         continue;
       }
       if (it.t === 'ref') {
@@ -159,7 +165,7 @@
     /* emr-flx: 弹性行标记 (标签/槽位不压缩换行) */
     const fm = p.pPr && p.pPr.flex === 'between' ? ' emr-flx' : '';
     return '<div class="p" data-pid="' + p.id + '"><div class="pc' + fm + '"' + (ps ? ' style="' + ps + '"' : '') + '>'
-      + (inner || '<br>') + '</div></div>';
+      + (inner || '<br data-n="0" data-o="0">') + '</div></div>';
   };
 
   /** 块列表 → HTML (表格递归) */

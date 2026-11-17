@@ -44,7 +44,7 @@
       '.emr-infobar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 20px; margin-top: 8px; padding: 6px 4px 6px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 11pt; }',
       '.pg-body { position: absolute; left: ' + d.bodyLeft + 'px; top: ' + d.bodyTop + 'px; width: ' + d.bodyW + 'px; height: ' + d.bodyH + 'px; overflow: hidden; font-family: ' + (doc.page.font || 'serif') + '; font-size: ' + (doc.page.sz || 12) + 'pt; line-height: ' + (doc.page.line || 1.5) + '; white-space: pre-wrap; overflow-wrap: break-word; }',
       '.pg-body .p { margin: 0; }',
-      '.pg-body .emr-slot { display: none !important; } /* 打印不显示填写占位符 */',
+      '.pg-body .emr-slot, .pg-body .emr-ph { display: none !important; } /* 打印不显示填写槽/占位符 */',
       '.pg-body .emr-tbl-plain .emr-fx { font-weight: normal; } /* 信息表标签保持常规字重 (与预览一致) */',
       '.pg-body .emr-val { border-bottom: none !important; } /* 打印不显示可编辑下划线 */',
       '.pg-body .emr-ref { border-bottom: none !important; }',
@@ -56,7 +56,7 @@
       '.emr-tbl-none td { border: none !important; }',
       '.emr-tbl-plain { margin: 2px 0 6px; table-layout: fixed; }',
       '.emr-tbl-plain td { border: none !important; padding: 1px 6px 1px 0; vertical-align: top; white-space: nowrap; }',
-      '.emr-tbl-plain .emr-slot:not(:empty) { display: inline; min-width: 0; }',
+      '.emr-tbl-plain .emr-ph { display: none !important; }',
     ].join('\n');
 
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(doc.title || '病历') + '</title>'

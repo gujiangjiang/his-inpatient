@@ -72,8 +72,9 @@
       if (child.nodeType === 1) {
         const co = +child.dataset.o, cn = +child.dataset.n;
         if (child.classList && child.classList.contains('emr-anchor')) {
-          /* 零宽锚点: 直接用其文本节点 */
-          return { tn: child.firstChild || child, rel: 0 };
+          /* 零宽锚点: 仅当目标偏移与其一致时使用 (防止旧锚点劫持光标) */
+          if (o === co) return { tn: child.firstChild || child, rel: 0 };
+          continue;
         }
         if (child.dataset.item) {
           if (o === co) return { el: child, after: false };
@@ -119,6 +120,8 @@
     return { tn, rel: start ? 0 : tn.textContent.length };
   };
   const injectAnchor = (pc, ref, o) => {
+    /* 光标唯一: 清除同段遗留锚点 (防止累积与布局扰动) */
+    for (const a0 of pc.querySelectorAll('.emr-anchor')) a0.remove();
     const span = document.createElement('span');
     span.className = 'emr-anchor';
     span.setAttribute('data-n', '0');

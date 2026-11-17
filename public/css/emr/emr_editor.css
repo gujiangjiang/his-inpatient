@@ -71,7 +71,11 @@
   -webkit-user-select: none;
   color: #000;
 }
-.emr-slot {
+/* 填写槽: 模型原子项, 无自身视觉 (值/占位由相邻 .emr-val / .emr-ph 呈现);
+   恒为空 → 隐藏, 光标由零宽锚点/相邻文本承载 */
+.emr-slot { display: none; }
+/* 未填写占位文字: 独立渲染 (不占模型位), 承载下划线输入框外观; 光标可落在框内左侧 */
+.emr-ph {
   user-select: none;
   -webkit-user-select: none;
   color: #8a8f99;
@@ -79,12 +83,11 @@
   padding: 0 6px;
   cursor: text;
   min-width: 3em;
+  box-sizing: border-box;
   display: inline-block;
 }
-.emr-slot[data-key] { font-style: normal; }
-.emr-slot:empty { display: none; } /* 已填写: 隐藏占位 */
-/* 必选未完成: 红色下划线+红字提示 (已填写则占位隐藏, 值下划线为常规样式) */
-.emr-body .emr-slot.emr-req { border-bottom-color: #e5484d; color: #e5484d; }
+/* 必选未完成: 红色下划线+红字提示 */
+.emr-body .emr-ph.emr-req { border-bottom-color: #e5484d; color: #e5484d; }
 /* 点击激活: 占位文字隐藏 (透明), 下划线宽度/位置与点击前完全一致 (不缩短不跳动)
    注意: 不得改 font-size/min-width/padding — 会造成下划线突然变短/行距变宽 (实测确认) */
 .emr-slot-active {
@@ -98,10 +101,10 @@
 .emr-body[contenteditable="true"] .emr-ref { border-bottom: 1px dotted #c9d4e6; }
 
 /* 下拉选项槽: 点击弹出选项 (是否/婚姻状况/民族等) */
-.emr-slot-sel { cursor: pointer; background: #f5f8ff; }
+.emr-ph-sel { cursor: pointer; background: #f5f8ff; }
 /* 下拉/日期槽整体不折行: 占位文字与箭头同行 (混排时不被压缩挤出换行) */
-.emr-slot-sel, .emr-slot-dt { white-space: nowrap; flex-shrink: 0; }
-.emr-slot-sel::after {
+.emr-ph-sel, .emr-ph-dt, .emr-ph-multi { white-space: nowrap; flex-shrink: 0; }
+.emr-ph-sel::after {
   content: '';
   display: inline-block;
   margin-left: 5px;
@@ -121,7 +124,7 @@
   border-top: 4px solid #8aa8d8;
 }
 /* 弹性行(体温/脉搏等): 标签与槽位不被压缩换行 */
-.pc.emr-flx > .emr-fx, .pc.emr-flx > .emr-slot, .pc.emr-flx > .emr-dyn { flex-shrink: 0; white-space: nowrap; }
+.pc.emr-flx > .emr-fx, .pc.emr-flx > .emr-slot, .pc.emr-flx > .emr-ph, .pc.emr-flx > .emr-dyn { flex-shrink: 0; white-space: nowrap; }
 /* 光标零宽锚点: 原子项边界处承载可见光标 (零宽零占位; 重渲染自动清除)
    注意: 不可用 display:inline-block + width:0 — Chrome 会因此不绘制光标 (实测确认)；
    纯 inline + 零宽字符 (ZWSP) 即可保持零占位且光标可见 */
@@ -220,8 +223,8 @@
 
 /* 制表位 */
 .emr-tab { white-space: pre; }
-/* 信息表占位态: 行内化 (已填写槽保持 :empty 隐藏) */
-.emr-tbl-plain .emr-slot:not(:empty) { display: inline-block; min-width: 0; }
+/* 信息表: 占位行内化 (紧凑) */
+.emr-tbl-plain .emr-ph { min-width: 2em; padding: 0 4px; }
 
 /* 隐藏测量容器 (分页引擎) */
 .emr-measure { contain: layout style; }
