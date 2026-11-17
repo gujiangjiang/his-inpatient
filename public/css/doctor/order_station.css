@@ -562,7 +562,7 @@
 .osets-head { display: flex; align-items: center; gap: 8px; }
 .osets-name { font-weight: 600; font-size: 14px; color: #303133; }
 .osets-meta { font-size: 12px; color: #909399; margin-left: auto; margin-right: 10px; }
-.osets-items { margin-top: 6px; font-size: 12px; color: #606266; max-height: 120px; overflow-y: auto; }
+.osets-set .osets-items { margin-top: 6px; font-size: 12px; color: #606266; max-height: 120px; overflow-y: auto; }
 .osets-item { line-height: 19px; }
 
 /* 医嘱内容文字: 仅此区域可点击打开详情 (下划线提示) */
@@ -626,10 +626,10 @@
 .dose-hint { margin-left: auto; font-size: 11px; color: #a8abb2; }
 
 /* ===== 路径/组套 模态框 (两栏: 左列表 / 右医嘱勾选与修改) ===== */
-.osets { display: flex; gap: 12px; align-items: stretch; }
-.osets-left { width: 270px; max-height: 440px; flex-shrink: 0; display: flex; flex-direction: column; border: 1px solid #e4e7ed; border-radius: 8px; overflow: hidden; }
+.osets { display: flex; gap: 12px; align-items: stretch; height: 460px; }
+.osets-left { width: 270px; flex-shrink: 0; display: flex; flex-direction: column; border: 1px solid #e4e7ed; border-radius: 8px; overflow: hidden; }
 .osets-search { border: none; border-bottom: 1px solid #eef0f4; border-radius: 0; }
-.osets-list { flex: 1 1 auto; min-height: 0; max-height: 360px; overflow-y: auto; padding: 6px; }
+.osets-list { flex: 1; min-height: 0; overflow-y: auto; padding: 6px; }
 .osets-row { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 6px; cursor: pointer; }
 .osets-row:hover { background: #eef4ff; }
 .osets-row.active { background: #149a9a1a; }
@@ -637,12 +637,12 @@
 .osets-row.active .osets-row-name { color: #149a9a; font-weight: 600; }
 .osets-row-meta { font-size: 11px; color: #909399; flex-shrink: 0; }
 .osets-left-foot { display: flex; gap: 8px; padding: 8px; border-top: 1px solid #eef0f4; }
-.osets-right { flex: 1; min-width: 0; max-height: 440px; display: flex; flex-direction: column; border: 1px solid #e4e7ed; border-radius: 8px; overflow: hidden; }
+.osets-right { flex: 1; min-width: 0; display: flex; flex-direction: column; border: 1px solid #e4e7ed; border-radius: 8px; overflow: hidden; }
 .osets-right-head { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid #eef0f4; background: #fafbfd; }
 .osets-right-title { font-size: 13px; font-weight: 600; color: #303133; }
 .osets-right-hint { font-size: 12px; color: #909399; }
 .osets-right-count { font-size: 12px; color: #909399; margin-left: auto; }
-.osets-items { flex: 1; overflow: auto; }
+.osets-items { flex: 1; min-height: 0; overflow: auto; }
 .osets-right-foot { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid #eef0f4; }
 .osets-empty { padding: 30px 12px; text-align: center; color: #909399; font-size: 13px; }
 .osets-ck { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #606266; cursor: pointer; }
