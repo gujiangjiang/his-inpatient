@@ -57,21 +57,44 @@ function updateUserInfo() {
     }
 }
 
-/**
- * 设置医院名称 (来自 sys_config) - 同时更新登录页标题
- */
+/** 应用医院品牌到登录页、左上角、标题栏和 PWA 元数据 */
+function applyHospitalBranding(brand) {
+    const name = (brand && brand.hospital_name) || '开源通用医院信息系统';
+    const name2 = (brand && brand.hospital_name2) || '';
+    const logo = brand && brand.logo_url;
+    const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+    setText('hospital-name', name);
+    setText('login-title', name);
+    ['hospital-name2', 'login-second-name'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = name2;
+        el.style.display = name2 ? '' : 'none';
+    });
+    if (logo) {
+        ['hospital-logo', 'login-hospital-logo'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.src = logo;
+        });
+    }
+    const icon = brand && brand.icon_192_url;
+    if (icon) {
+        const fav = document.getElementById('app-favicon');
+        const touch = document.getElementById('app-touch-icon');
+        if (fav) fav.href = icon;
+        if (touch) touch.href = icon;
+    }
+    const manifest = document.getElementById('pwa-manifest');
+    if (manifest && brand && brand.brand_revision) manifest.href = '/manifest?v=' + encodeURIComponent(brand.brand_revision);
+    document.title = name + (name2 ? ' - ' + name2 : ' - 住院一体化系统');
+}
+
+/** 获取公开品牌信息并刷新界面 */
 function setupHospitalName() {
-    AjaxLoader.api('auth/setup-status', { silent: true }).then(r => {
-        const name = r.data && r.data.hospital_name ? r.data.hospital_name : '';
-        const el = document.getElementById('hospital-name');
-        if (el && name) {
-            el.textContent = name;
-        }
-        const loginTitle = document.getElementById('login-title');
-        if (loginTitle && name) {
-            loginTitle.textContent = name;
-        }
-    }).catch(() => {});
+    return AjaxLoader.api('auth/setup-status', { silent: true }).then(r => {
+        if (r.data) applyHospitalBranding(r.data);
+        return r.data;
+    }).catch(() => null);
 }
 
 /**

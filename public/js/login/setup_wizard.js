@@ -80,6 +80,7 @@ var SetupWizard = (function () {
             renderTimezones(d.timezones || [], d.site.timezone);
             el('wz-db-path').value = d.default_sqlite_path || '';
             if (d.site.hospital_name) el('wz-site-name').value = d.site.hospital_name;
+            if (d.site.hospital_name2) el('wz-site-name2').value = d.site.hospital_name2;
             if (d.site.hospital_code) el('wz-site-code').value = d.site.hospital_code;
             // 阶段续填
             var stageMap = { env: 'env', migrate: 'migrate', site: 'site', admin: 'admin', done: 'finish' };
@@ -125,6 +126,7 @@ var SetupWizard = (function () {
         el('wz-site-submit').addEventListener('click', function () {
             api('setup/site', {
                 hospital_name: el('wz-site-name').value.trim(),
+                hospital_name2: el('wz-site-name2').value.trim(),
                 hospital_code: el('wz-site-code').value.trim(),
                 timezone: el('wz-site-tz').value
             }).then(function () {

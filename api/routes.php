@@ -29,6 +29,7 @@ function getRoutes() {
         'admin/api-config-save' => ['admin/config/api_config_save.php', ['admin']],
         'admin/sys-config-list' => ['admin/config/sys_config_list.php', ['admin']],
         'admin/sys-config-save' => ['admin/config/sys_config_save.php', ['admin']],
+        'admin/branding-save' => ['admin/config/branding_save.php', ['admin']],
         'admin/timezone-get' => ['admin/config/timezone_get.php', ['admin']],
         'admin/timezone-save' => ['admin/config/timezone_save.php', ['admin']],
         'admin/integration-list' => ['admin/integration/integration_list.php', ['admin']],

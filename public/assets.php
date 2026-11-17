@@ -78,6 +78,7 @@ class Asset {
         '/js/admin/integrations.js',
         '/js/login/login.js',
         '/js/login/setup_wizard.js',
+        '/js/core/pwa.js',
     ];
 
     /** /lib/ 本地第三方库缺失时跳过 (页面自动降级: Quill→文本域 / html2pdf→浏览器打印), 避免 404 噪音 */

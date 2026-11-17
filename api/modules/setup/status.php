@@ -38,11 +38,13 @@ if ($db['configured']) {
 }
 
 // 站点信息回显（可达时读业务库；失败静默）
-$site = array('hospital_name' => '', 'hospital_code' => '', 'timezone' => ConfigDB::timezone('Asia/Shanghai'));
+$site = array('hospital_name' => '', 'hospital_name2' => '', 'hospital_code' => '', 'timezone' => ConfigDB::timezone('Asia/Shanghai'));
 if ($stage === 'admin' || $stage === 'done' || $stage === 'site') {
     try {
         $row = DB::selectOne("SELECT config_value FROM system_config WHERE config_key='hospital_name'");
         if ($row) $site['hospital_name'] = (string)$row['config_value'];
+        $row = DB::selectOne("SELECT config_value FROM system_config WHERE config_key='hospital_name2'");
+        if ($row) $site['hospital_name2'] = (string)$row['config_value'];
         $row = DB::selectOne("SELECT config_value FROM system_config WHERE config_key='hospital_code'");
         if ($row) $site['hospital_code'] = (string)$row['config_value'];
     } catch (Exception $e) { /* 忽略 */ }

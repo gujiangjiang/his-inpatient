@@ -26,13 +26,15 @@ const AjaxLoader = {
         const silent = options.silent || false;
         const method = (options.method || 'GET').toUpperCase();
         const data = options.data;
+        const isForm = typeof FormData !== 'undefined' && data instanceof FormData;
 
         const opts = {
             method: method,
             headers: {
-                'Content-Type': 'application/json; charset=utf-8',
+                'X-Requested-With': 'XMLHttpRequest',
             }
         };
+        if (!isForm) opts.headers['Content-Type'] = 'application/json; charset=utf-8';
         // GET 请求禁用缓存, 避免读到陈旧数据
         if (method === 'GET') opts.cache = 'no-store';
 
@@ -43,7 +45,7 @@ const AjaxLoader = {
         }
 
         if (data !== undefined) {
-            opts.body = method === 'GET' ? undefined : JSON.stringify(data);
+            opts.body = method === 'GET' ? undefined : (isForm ? data : JSON.stringify(data));
         }
 
         if (!silent) {

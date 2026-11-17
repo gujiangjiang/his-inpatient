@@ -77,6 +77,15 @@ server {
    （Nginx 配置）与 PHP `upload_max_filesize` / `post_max_size` 一致。
 8. **访问初始化**：浏览器打开 `http://<地址>/`，首次自动进入初始化向导。
 
+## PWA 与医院 Logo
+
+- PWA 安装要求生产站点使用 **HTTPS**（`localhost` 开发环境除外）。
+- `/manifest`、`/service-worker`、`/branding/icon` 为扩展名为空的动态公开路由，现有
+  `try_files $uri $uri/ /index.php?$query_string;` 配置即可正常分发。
+- 医院自定义 Logo 与 PWA 图标保存在 `public/uploads/branding/`，请确保该目录可写；
+  删除 Logo 后会自动恢复仓库内置的默认 SVG/PNG 图标。
+- Service Worker 仅缓存带 `APP_VERSION` 的静态 CSS/JS，不缓存页面、API、登录态或患者数据。
+
 ## 更新升级（无需任何命令）
 
 覆盖更新代码后**不需要执行任何命令**（无 npm / 无终端环境同样适用）：

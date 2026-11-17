@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="医院">
+  <rect width="24" height="24" rx="5" fill="#149a9a"/>
+  <g fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 21V7.5L12 3l8 4.5V21"/>
+    <path d="M2.5 21h19M12 7.5v6M9 10.5h6M9 21v-5h6v5"/>
+  </g>
+</svg>

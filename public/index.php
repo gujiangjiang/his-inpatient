@@ -5,6 +5,12 @@
 
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
+// PWA/品牌公开资源（扩展名检查与认证之前分发）
+if (in_array($uri, ['/manifest', '/service-worker', '/branding/icon'], true)) {
+    require_once __DIR__ . '/pwa.php';
+    if (pwa_dispatch($uri)) return;
+}
+
 if (strpos($uri, '/api/') === 0) {
     require __DIR__ . '/../api/index.php';
     return;
@@ -19,14 +25,27 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 }
 
 require_once __DIR__ . '/../api/config.php';
+require_once __DIR__ . '/../api/core/db.php';
+require_once __DIR__ . '/../api/core/branding.php';
 require_once __DIR__ . '/icons/icon.php';
 require_once __DIR__ . '/assets.php';
+$brand = branding_public();
+$esc = function ($s) { return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); };
+$pageTitle = $brand['hospital_name'] . ($brand['hospital_name2'] !== '' ? ' - ' . $brand['hospital_name2'] : ' - 住院一体化系统');
+header('Cache-Control: no-store');
 ?><!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HIS 住院一体化系统</title>
+    <meta name="theme-color" content="#149a9a">
+    <meta name="application-name" content="<?= $esc($brand['hospital_name']) ?>">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <link rel="manifest" id="pwa-manifest" href="/manifest?v=<?= $esc($brand['brand_revision']) ?>">
+    <link rel="icon" id="app-favicon" type="image/png" href="<?= $esc($brand['icon_192_url']) ?>">
+    <link rel="apple-touch-icon" id="app-touch-icon" href="<?= $esc($brand['icon_192_url']) ?>">
+    <title><?= $esc($pageTitle) ?></title>
 <?php Asset::css(); ?>
 </head>
 <body>
@@ -37,8 +56,9 @@ require_once __DIR__ . '/assets.php';
         <div class="login-deco login-deco-3"></div>
         <div class="login-form-wrapper">
             <div class="login-brand">
-                <div class="login-logo"><?= icon('medical/objects', 'hospital', 30) ?></div>
-                <h1 class="login-title" id="login-title">住院一体化系统</h1>
+                <div class="login-logo"><img id="login-hospital-logo" src="<?= $esc($brand['logo_url']) ?>" alt="医院 Logo"></div>
+                <h1 class="login-title" id="login-title"><?= $esc($brand['hospital_name']) ?></h1>
+                <p class="login-second-name" id="login-second-name"<?= $brand['hospital_name2'] === '' ? ' style="display:none"' : '' ?>><?= $esc($brand['hospital_name2']) ?></p>
                 <p class="login-subtitle">HOSPITAL INPATIENT INFORMATION SYSTEM</p>
             </div>
             <div id="login-box">
@@ -100,6 +120,7 @@ require_once __DIR__ . '/assets.php';
                     <!-- ④ 站点信息 -->
                     <div class="wizard-pane" data-pane="site" style="display:none">
                         <div class="form-group"><input type="text" id="wz-site-name" placeholder="医院名称"></div>
+                        <div class="form-group"><input type="text" id="wz-site-name2" placeholder="医院第二名称（选填）"></div>
                         <div class="form-group"><input type="text" id="wz-site-code" placeholder="组织机构代码"></div>
                         <div class="form-group">
                             <label class="login-label">全站时区</label>
@@ -130,7 +151,13 @@ require_once __DIR__ . '/assets.php';
         <!-- 顶部全局导航栏 -->
         <div class="topbar">
             <div class="topbar-left">
-                <span id="hospital-name" class="hospital-name">开源通用医院信息系统</span>
+                <div class="hospital-brand">
+                    <img id="hospital-logo" class="hospital-logo" src="<?= $esc($brand['logo_url']) ?>" alt="医院 Logo">
+                    <span class="hospital-title-wrap">
+                        <span id="hospital-name" class="hospital-name"><?= $esc($brand['hospital_name']) ?></span>
+                        <small id="hospital-name2" class="hospital-name2"<?= $brand['hospital_name2'] === '' ? ' style="display:none"' : '' ?>><?= $esc($brand['hospital_name2']) ?></small>
+                    </span>
+                </div>
                 <!-- 患者上下文切换浮动面板 -->
                 <div id="patient-switcher" class="patient-switcher" style="display:none">
                     <div id="patient-switcher-trigger" class="patient-switcher-trigger">
@@ -193,6 +220,7 @@ require_once __DIR__ . '/assets.php';
         </div>
     </div>
 </div>
+<script>window.HIS_APP_VERSION = <?= json_encode(APP_VERSION) ?>;</script>
 <?php Asset::js(); ?>
 </body>
 </html>
