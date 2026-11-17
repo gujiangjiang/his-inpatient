@@ -4,6 +4,17 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.41.2] - 2026-11-17
+
+### 修复
+- 病历工作站主页面已输出 HTML 后，`tplio.php`、`calc.php`、`maint.php` 三个被包含的脚本
+  分片再次调用 `header()`，生产环境开启警告显示时出现 `headers already sent`；分片不再发送
+  独立响应头，由 `station.php` 统一设置 `Content-Type`。
+
+### 验证
+- 直接请求病历工作站分片返回 `200` 和正确 `text/html; charset=utf-8`，响应正文无 PHP Warning；
+  339 个 PHP 文件语法检查全部通过。
+
 ## [0.41.1] - 2026-11-17
 
 ### 修复
