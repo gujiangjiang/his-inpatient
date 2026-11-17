@@ -20,6 +20,7 @@ return function ($hospital) {
     $ref = function ($key, $fb) { return ['t' => 'ref', 'key' => $key, 'fb' => $fb]; };
     $head = function ($text) { return ['t' => 'p', 'pPr' => ['align' => 'center', 'borders' => ['top' => true]], 'rPr' => ['b' => true, 'sz' => 13], 'runs' => [['t' => 'text', 'text' => $text]]]; };
     $row = function (array $runs) { return ['t' => 'p', 'pPr' => ['flex' => 'between'], 'runs' => $runs]; };
+    $vitalRow = function (array $runs) { return ['t' => 'p', 'pPr' => ['flex' => 'center'], 'runs' => $runs]; };
     $line = function ($label, $key, $ph = '') use ($fx, $slot, $P) {
         return $P([$fx($key, $label), $slot($key . '_val', $ph !== '' ? $ph : ('请输入' . rtrim($label, '：')))]);
     };
@@ -43,7 +44,7 @@ return function ($hospital) {
        模板 schema 不再内嵌选项列表; 导出/导入更干净, 字典更新全院模板即时生效 */
 
     /** 入院记录正文 (通用) */
-    $admissionBody = function () use ($fx, $slot, $sel, $dsel, $dtslot, $dyn, $calc, $head, $row, $line, $P, $sig, $cText, $cItem) {
+    $admissionBody = function () use ($fx, $slot, $sel, $dsel, $dtslot, $dyn, $calc, $head, $row, $vitalRow, $line, $P, $sig, $cText, $cItem) {
         $body = [];
         /* 患者信息 12 项 (两列: 左 姓名/性别/年龄/婚姻/籍贯/民族, 右 职业/单位/住址/病史陈述者/入院日期/记录日期)
            编辑状态下与病案首页单项同步 (未手动修改过的字段自动更新, 手动修改并保存后停止同步) */
@@ -78,13 +79,14 @@ return function ($hospital) {
         $body[] = $line('月经史：', 'menstrual_history', '女性患者填写（正常/异常/已绝经）');
         $body[] = $line('家族史：', 'family_history', '家族中同类疾病等');
         $body[] = $head('体格检查');
-        $body[] = $row([$fx('vital_temp', '体温：'), $slot('vital_temp_val', '℃'),
-            $fx('vital_pulse', '脉搏：'), $slot('vital_pulse_val', '次/分'),
-            $fx('vital_resp', '呼吸：'), $slot('vital_resp_val', '次/分'),
-            $fx('vital_bp', '血压：'), $slot('vital_bp_val', 'mmHg')]);
-        $body[] = $row([$fx('vital_height', '身高：'), $slot('vital_height_val', 'cm'),
-            $fx('vital_weight', '体重：'), $slot('vital_weight_val', 'kg'),
-            $fx('vital_bmi', 'BMI：'), $calc('vital_bmi_value', 'BMI', 'vital_weight_val / (vital_height_val / 100) ^ 2', 1)]);
+        $body[] = $vitalRow([$fx('vital_temp', '体温：'), $slot('vital_temp_val', '　'), $fx('vital_temp_unit', '℃'),
+            $fx('vital_pulse', '脉搏：'), $slot('vital_pulse_val', '　'), $fx('vital_pulse_unit', '次/分'),
+            $fx('vital_resp', '呼吸：'), $slot('vital_resp_val', '　'), $fx('vital_resp_unit', '次/分'),
+            $fx('vital_bp', '血压：'), $slot('vital_bp_val', '　'), $fx('vital_bp_unit', 'mmHg')]);
+        $body[] = $vitalRow([$fx('vital_height', '身高：'), $slot('vital_height_val', '　'), $fx('vital_height_unit', 'cm'),
+            $fx('vital_weight', '体重：'), $slot('vital_weight_val', '　'), $fx('vital_weight_unit', 'kg'),
+            $fx('vital_bmi', 'BMI：'), $calc('vital_bmi_value', 'BMI', 'vital_weight_val / (vital_height_val / 100) ^ 2', 1),
+            $fx('vital_bmi_unit', 'kg/m²')]);
         $body[] = $line('一般情况：', 'exam_general', '发育、营养、神志、体位等');
         $body[] = $line('皮肤、粘膜：', 'exam_skin');
         $body[] = $line('全身浅表淋巴结：', 'exam_nodes');

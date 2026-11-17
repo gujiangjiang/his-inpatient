@@ -34,6 +34,7 @@
     if (p.sp) s.push('line-height:' + p.sp);
     /* flex: 'between' = 弹性行: 字段居中且两侧对齐 (体征行等) */
     if (p.flex === 'between') s.push('display:flex', 'justify-content:space-between', 'align-items:baseline', 'gap:10px', 'padding:0 2px');
+    if (p.flex === 'center') s.push('display:flex', 'justify-content:center', 'align-items:baseline', 'gap:0', 'padding:0 2px');
     if (p.borders) {
       if (p.borders.top) s.push('border-top:1px solid #000');
       if (p.borders.bottom) s.push('border-bottom:1px solid #000');
@@ -107,17 +108,21 @@
         continue;
       }
       if (it.t === 'fx') {
-        out.push('<span class="emr-fx" data-item="fx" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.text) + '</span>');
+        const unitCls = /_unit$/.test(it.key || '') ? ' emr-vital-unit' : '';
+        out.push('<span class="emr-fx' + unitCls + '" data-item="fx" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.text) + '</span>');
         continue;
       }
       if (it.t === 'slot') {
         const filled = paraHasTextAfter(p, p.runs.indexOf(it));
-        const cls = 'emr-slot' + (isSelect(it) ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '') + (it.req ? ' emr-req' : '');
+        const vital = /^vital_(temp|pulse|resp|bp|height|weight)_val$/.test(it.key || '');
+        const cls = 'emr-slot' + (isSelect(it) ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '')
+          + (it.req ? ' emr-req' : '') + (vital ? ' emr-vital-slot' : '') + (filled ? ' emr-slot-filled' : ' emr-slot-empty');
         out.push('<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>');
         if (!filled) {
           /* 未填写: 占位文字独立渲染 (零模型宽度 data-n=0), 光标可落在框内左侧;
              点击激活后占位透明化 (保留下划线宽度), 输入首个字符即消失 */
-          const phCls = 'emr-ph' + (isSelect(it) ? ' emr-ph-sel' : '') + (it.dt ? ' emr-ph-dt' : '') + (it.multi ? ' emr-ph-multi' : '') + (it.req ? ' emr-req' : '');
+          const phCls = 'emr-ph' + (isSelect(it) ? ' emr-ph-sel' : '') + (it.dt ? ' emr-ph-dt' : '') + (it.multi ? ' emr-ph-multi' : '')
+            + (it.req ? ' emr-req' : '') + (vital ? ' emr-vital-ph' : '');
           /* 注意: 占位 span 必须保持可编辑 (不可 contenteditable=false) —
              否则浏览器在输入时会把选区"回收"到编辑宿主, 光标跳走且打不进字 (实测确认) */
           out.push('<span class="' + phCls + '" data-n="0" data-o="' + (o + 1) + '" data-slot="' + esc(it.key) + '">' + esc(it.ph || '填写') + '</span>');
@@ -163,7 +168,8 @@
     const inner = runsToHTML(p, design, opts);
     const ps = R.pPrStyle(p.pPr);
     /* emr-flx: 弹性行标记 (标签/槽位不压缩换行) */
-    const fm = p.pPr && p.pPr.flex === 'between' ? ' emr-flx' : '';
+    const flex = p.pPr && p.pPr.flex;
+    const fm = flex ? (' emr-flx' + (flex === 'center' ? ' emr-flx-center' : '')) : '';
     return '<div class="p" data-pid="' + p.id + '"><div class="pc' + fm + '"' + (ps ? ' style="' + ps + '"' : '') + '>'
       + (inner || '<br data-n="0" data-o="0">') + '</div></div>';
   };

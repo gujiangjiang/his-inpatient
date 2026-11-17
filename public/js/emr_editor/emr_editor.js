@@ -557,7 +557,7 @@
               if (d2 < bestD) { bestD = d2; bestEl = el2; }
             }
             let geO = bestEl ? +bestEl.dataset.o : 0;
-            if (bestEl && bestEl.classList.contains('emr-fx')) {
+            if (bestEl && bestEl.classList.contains('emr-fx') && !bestEl.classList.contains('emr-vital-unit')) {
               /* 点击标签: 定位到其后最近填写槽 (该标签对应的控件) */
               let seen = false, so = 0, hitO = -1;
               for (const it2 of infoG.p.runs) {

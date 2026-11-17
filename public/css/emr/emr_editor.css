@@ -93,6 +93,14 @@
 .emr-slot-active {
   color: transparent !important;
 }
+/* 普通输入槽激活后仅保留光标附近短下划线; 下拉/日期槽不会进入该状态 */
+.emr-ph.emr-slot-active {
+  width: 1.35em;
+  min-width: 1.35em;
+  max-width: 1.35em;
+  padding: 0 2px;
+  overflow: hidden;
+}
 /* 填写槽的值 (已输入内容): 编辑状态常显浅色下划线提示可编辑; 只读(已签名)/打印不显示 */
 .emr-body[contenteditable="true"] .emr-val { border-bottom: 1px dashed #c3c8d1; }
 /* 修改留痕: 修订模式下删除的文字 (红删除线; 打印/快照不输出, 见 paginate hideDel) */
@@ -125,6 +133,11 @@
 }
 /* 弹性行(体温/脉搏等): 标签与槽位不被压缩换行 */
 .pc.emr-flx > .emr-fx, .pc.emr-flx > .emr-slot, .pc.emr-flx > .emr-ph, .pc.emr-flx > .emr-dyn { flex-shrink: 0; white-space: nowrap; }
+/* 体征行: 每组“标题 + 数值 + 单位”紧密排列，各组整体居中 */
+.pc.emr-flx-center { justify-content: center !important; gap: 0 !important; }
+.pc.emr-flx-center > .emr-fx:not(.emr-vital-unit) { margin-left: 30px; }
+.pc.emr-flx-center > .emr-fx:first-child { margin-left: 0; }
+.emr-vital-unit { font-weight: normal; color: #606266; margin-left: 4px; }
 /* 光标零宽锚点: 原子项边界处承载可见光标 (零宽零占位; 重渲染自动清除)
    注意: 不可用 display:inline-block + width:0 — Chrome 会因此不绘制光标 (实测确认)；
    纯 inline + 零宽字符 (ZWSP) 即可保持零占位且光标可见 */

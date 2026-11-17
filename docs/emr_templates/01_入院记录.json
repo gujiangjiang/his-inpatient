@@ -60,9 +60,9 @@
         },
         "grid": [
           46,
-          204,
-          76,
-          174
+          188,
+          80,
+          186
         ],
         "rows": [
           {
@@ -76,7 +76,8 @@
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_姓名：",
                         "text": "姓名："
                       }
                     ]
@@ -85,7 +86,7 @@
               },
               {
                 "tcPr": {
-                  "w": 204
+                  "w": 188
                 },
                 "blocks": [
                   {
@@ -102,14 +103,15 @@
               },
               {
                 "tcPr": {
-                  "w": 76
+                  "w": 80
                 },
                 "blocks": [
                   {
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_职业：",
                         "text": "职业："
                       }
                     ]
@@ -118,7 +120,7 @@
               },
               {
                 "tcPr": {
-                  "w": 174
+                  "w": 186
                 },
                 "blocks": [
                   {
@@ -147,7 +149,8 @@
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_性别：",
                         "text": "性别："
                       }
                     ]
@@ -156,7 +159,7 @@
               },
               {
                 "tcPr": {
-                  "w": 204
+                  "w": 188
                 },
                 "blocks": [
                   {
@@ -173,14 +176,15 @@
               },
               {
                 "tcPr": {
-                  "w": 76
+                  "w": 80
                 },
                 "blocks": [
                   {
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_单位：",
                         "text": "单位："
                       }
                     ]
@@ -189,7 +193,7 @@
               },
               {
                 "tcPr": {
-                  "w": 174
+                  "w": 186
                 },
                 "blocks": [
                   {
@@ -217,7 +221,8 @@
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_年龄：",
                         "text": "年龄："
                       }
                     ]
@@ -226,7 +231,7 @@
               },
               {
                 "tcPr": {
-                  "w": 204
+                  "w": 188
                 },
                 "blocks": [
                   {
@@ -243,14 +248,15 @@
               },
               {
                 "tcPr": {
-                  "w": 76
+                  "w": 80
                 },
                 "blocks": [
                   {
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_住址：",
                         "text": "住址："
                       }
                     ]
@@ -259,7 +265,7 @@
               },
               {
                 "tcPr": {
-                  "w": 174
+                  "w": 186
                 },
                 "blocks": [
                   {
@@ -287,7 +293,8 @@
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_婚姻：",
                         "text": "婚姻："
                       }
                     ]
@@ -296,7 +303,7 @@
               },
               {
                 "tcPr": {
-                  "w": 204
+                  "w": 188
                 },
                 "blocks": [
                   {
@@ -314,14 +321,15 @@
               },
               {
                 "tcPr": {
-                  "w": 76
+                  "w": 80
                 },
                 "blocks": [
                   {
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_病史陈述者：",
                         "text": "病史陈述者："
                       }
                     ]
@@ -330,7 +338,7 @@
               },
               {
                 "tcPr": {
-                  "w": 174
+                  "w": 186
                 },
                 "blocks": [
                   {
@@ -359,7 +367,8 @@
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_籍贯：",
                         "text": "籍贯："
                       }
                     ]
@@ -368,7 +377,7 @@
               },
               {
                 "tcPr": {
-                  "w": 204
+                  "w": 188
                 },
                 "blocks": [
                   {
@@ -385,14 +394,15 @@
               },
               {
                 "tcPr": {
-                  "w": 76
+                  "w": 80
                 },
                 "blocks": [
                   {
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_入院日期：",
                         "text": "入院日期："
                       }
                     ]
@@ -401,7 +411,7 @@
               },
               {
                 "tcPr": {
-                  "w": 174
+                  "w": 186
                 },
                 "blocks": [
                   {
@@ -410,7 +420,11 @@
                       {
                         "t": "slot",
                         "key": "p_admitdate_val",
-                        "ph": "请输入"
+                        "ph": "请选择入院日期和时间",
+                        "dt": {
+                          "mode": "datetime",
+                          "fmt": ""
+                        }
                       }
                     ]
                   }
@@ -429,7 +443,8 @@
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_民族：",
                         "text": "民族："
                       }
                     ]
@@ -438,7 +453,7 @@
               },
               {
                 "tcPr": {
-                  "w": 204
+                  "w": 188
                 },
                 "blocks": [
                   {
@@ -456,14 +471,15 @@
               },
               {
                 "tcPr": {
-                  "w": 76
+                  "w": 80
                 },
                 "blocks": [
                   {
                     "t": "p",
                     "runs": [
                       {
-                        "t": "text",
+                        "t": "fx",
+                        "key": "il_记录日期：",
                         "text": "记录日期："
                       }
                     ]
@@ -472,7 +488,7 @@
               },
               {
                 "tcPr": {
-                  "w": 174
+                  "w": 186
                 },
                 "blocks": [
                   {
@@ -481,7 +497,11 @@
                       {
                         "t": "slot",
                         "key": "p_recorddate_val",
-                        "ph": "请输入"
+                        "ph": "请选择记录日期和时间",
+                        "dt": {
+                          "mode": "datetime",
+                          "fmt": ""
+                        }
                       }
                     ]
                   }
@@ -677,7 +697,7 @@
       {
         "t": "p",
         "pPr": {
-          "flex": "between"
+          "flex": "center"
         },
         "runs": [
           {
@@ -688,7 +708,12 @@
           {
             "t": "slot",
             "key": "vital_temp_val",
-            "ph": "℃"
+            "ph": "　"
+          },
+          {
+            "t": "fx",
+            "key": "vital_temp_unit",
+            "text": "℃"
           },
           {
             "t": "fx",
@@ -698,7 +723,12 @@
           {
             "t": "slot",
             "key": "vital_pulse_val",
-            "ph": "次/分"
+            "ph": "　"
+          },
+          {
+            "t": "fx",
+            "key": "vital_pulse_unit",
+            "text": "次/分"
           },
           {
             "t": "fx",
@@ -708,7 +738,12 @@
           {
             "t": "slot",
             "key": "vital_resp_val",
-            "ph": "次/分"
+            "ph": "　"
+          },
+          {
+            "t": "fx",
+            "key": "vital_resp_unit",
+            "text": "次/分"
           },
           {
             "t": "fx",
@@ -718,14 +753,19 @@
           {
             "t": "slot",
             "key": "vital_bp_val",
-            "ph": "mmHg"
+            "ph": "　"
+          },
+          {
+            "t": "fx",
+            "key": "vital_bp_unit",
+            "text": "mmHg"
           }
         ]
       },
       {
         "t": "p",
         "pPr": {
-          "flex": "between"
+          "flex": "center"
         },
         "runs": [
           {
@@ -736,7 +776,12 @@
           {
             "t": "slot",
             "key": "vital_height_val",
-            "ph": "cm"
+            "ph": "　"
+          },
+          {
+            "t": "fx",
+            "key": "vital_height_unit",
+            "text": "cm"
           },
           {
             "t": "fx",
@@ -746,7 +791,12 @@
           {
             "t": "slot",
             "key": "vital_weight_val",
-            "ph": "kg"
+            "ph": "　"
+          },
+          {
+            "t": "fx",
+            "key": "vital_weight_unit",
+            "text": "kg"
           },
           {
             "t": "fx",
@@ -756,13 +806,18 @@
           {
             "t": "dyn",
             "key": "vital_bmi_value",
-            "text": "",
             "name": "BMI",
+            "text": "",
             "calc": {
               "expr": "vital_weight_val / (vital_height_val / 100) ^ 2",
               "dec": 1,
               "fmt": "num"
             }
+          },
+          {
+            "t": "fx",
+            "key": "vital_bmi_unit",
+            "text": "kg/m²"
           }
         ]
       },
