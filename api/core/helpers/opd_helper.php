@@ -60,7 +60,7 @@ function opd_http($method, $url, $headers = [], $body = null, $timeout = 8) {
         $resp = curl_exec($ch);
         $code = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
         $error = curl_error($ch);
-        if ($resp === false) return [0, '请求失败: ' . $error];
+        if ($resp === false) return [0, '请求失败: ' . $error . net_diag_hint($url)];
         return [$code, $resp];
     }
     $opts = ['http' => [
@@ -71,7 +71,7 @@ function opd_http($method, $url, $headers = [], $body = null, $timeout = 8) {
     ]];
     if ($body !== null) $opts['http']['content'] = $body;
     $fp = @fopen($url, 'r', false, stream_context_create($opts));
-    if ($fp === false) return [0, '请求失败'];
+    if ($fp === false) return [0, '请求失败' . net_diag_hint($url)];
     $meta = stream_get_meta_data($fp);
     $resp = stream_get_contents($fp);
     fclose($fp);
@@ -87,7 +87,7 @@ function opd_http($method, $url, $headers = [], $body = null, $timeout = 8) {
 
 /** FHIR 访问失败 → 可执行的中文提示 (定位: 网络/Token/Scope/版本) */
 function opd_fhir_error_hint($http, $msg) {
-    if ($http === 0) return '无法连接门诊服务（检查服务地址与网络）';
+    if ($http === 0) return $msg !== '' ? '无法连接门诊服务（' . $msg . '）' : '无法连接门诊服务（检查服务地址与网络）';
     if ($http === 401) return '鉴权失败：Token 无效或缺失（检查接口管理中 FHIR Token）';
     if ($http === 403) return '权限不足：门诊系统未授权该资源（检查该 Token 的 Scope / IP 白名单配置）';
     if ($http === 404) return '门诊系统不支持该资源（版本过旧？请升级门诊一体化系统）';
@@ -109,6 +109,7 @@ function opd_fhir_request($resource, $params = []) {
     if ($code !== 200 || !is_array($json)) {
         $msg = '';
         if (is_array($json) && isset($json['issue'][0]['diagnostics'])) $msg = (string)$json['issue'][0]['diagnostics'];
+        if ($code === 0 && $msg === '') $msg = trim((string)$body);   // 连接层失败: 透出 cURL 错误与网络栈诊断
         return ['ok' => false, 'http' => $code, 'total' => 0, 'entries' => [], 'error' => opd_fhir_error_hint($code, $msg)];
     }
     if (($json['resourceType'] ?? '') === 'Bundle') {
@@ -156,11 +157,24 @@ function opd_extension($resource, $url) {
     return '';
 }
 
+/** PACS 阅片地址模板 (归一化: 去首尾空白与多余斜杠, 保留协议头的 //) */
+function opd_viewer_template() {
+    $s = opd_settings();
+    return preg_replace('#(?<!:)/{2,}#', '/', trim((string)$s['pacs_viewer_url']));
+}
+
 /** 拼 PACS 阅片直链 (模板占位符 {study_uid}) */
 function opd_viewer_url($studyUid) {
     $s = opd_settings();
     if ($s['pacs_enabled'] !== '1' || $studyUid === '') return '';
-    return str_replace('{study_uid}', rawurlencode($studyUid), $s['pacs_viewer_url']);
+    return str_replace('{study_uid}', rawurlencode($studyUid), opd_viewer_template());
+}
+
+/** 业务接口失败消息: 连接层失败(0)时透出 cURL 错误与网络栈诊断, 其余回退 HTTP 状态 */
+function opd_transport_msg($json, $code, $body) {
+    if (is_array($json) && isset($json['msg']) && $json['msg'] !== '') return (string)$json['msg'];
+    if ($code === 0 && trim((string)$body) !== '') return trim((string)$body);
+    return 'HTTP ' . $code;
 }
 
 /** 门诊业务只读接口 (action=ping/patient_get/visit_list/order_list...) */
@@ -172,7 +186,7 @@ function opd_his_read($action, $params = []) {
     list($code, $body) = opd_http('GET', opd_base_url() . '/api/external/his/read?' . $query, $headers);
     $json = json_decode((string)$body, true);
     $ok = $code === 200 && is_array($json) && !empty($json['ok']);
-    return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => $json['msg'] ?? ('HTTP ' . $code)];
+    return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => opd_transport_msg($json, $code, $body)];
 }
 
 /** 门诊字典同步 (sync-catalog): 药品/检验/检查/处置项目 */
@@ -183,7 +197,7 @@ function opd_his_push_catalog($payload) {
     list($code, $body) = opd_http('POST', opd_base_url() . '/api/external/his/sync-catalog', $headers, json_encode($payload, JSON_UNESCAPED_UNICODE), 20);
     $json = json_decode((string)$body, true);
     $ok = $code === 200 && is_array($json) && !empty($json['ok']);
-    return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => $json['msg'] ?? ('HTTP ' . $code)];
+    return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => opd_transport_msg($json, $code, $body)];
 }
 
 /** 住院检验/检查单推送 (sync-orders): 门诊登记出报告（住院开单即计费，一律视为已缴费） */
@@ -194,7 +208,7 @@ function opd_his_push_orders($payload) {
     list($code, $body) = opd_http('POST', opd_base_url() . '/api/external/his/sync-orders', $headers, json_encode($payload, JSON_UNESCAPED_UNICODE), 15);
     $json = json_decode((string)$body, true);
     $ok = $code === 200 && is_array($json) && !empty($json['ok']);
-    return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => $json['msg'] ?? ('HTTP ' . $code)];
+    return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => opd_transport_msg($json, $code, $body)];
 }
 
 /** 对方系统（门诊）时间 → 本系统站点时区显示（Y-m-d H:i）。
