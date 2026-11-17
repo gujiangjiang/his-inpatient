@@ -4,7 +4,7 @@
 function getRoutes() {
     return [
         // 认证
-        'auth/check' => ['auth/check.php', ['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']],
+        'auth/check' => ['auth/check.php', []],
         'auth/login' => ['auth/login.php', []],
         'auth/logout' => ['auth/logout.php', ['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']],
         'auth/setup-status' => ['auth/setup_status.php', []],

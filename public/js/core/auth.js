@@ -13,7 +13,7 @@ const Auth = {
         const silent = opts.silent === true;
         try {
             const result = await AjaxLoader.api('auth/check', { silent: true });
-            if (result.status === 'success') {
+            if (result.status === 'success' && result.data) {
                 this.user = result.data;
                 return true;
             }
