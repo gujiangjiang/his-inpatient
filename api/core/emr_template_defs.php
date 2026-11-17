@@ -1,8 +1,8 @@
 <?php
 // api/core/emr_template_defs.php - 内置住院病历模板定义 (字处理 word 模式)
-// 返回 function(string $hospital): array<[name, recordType, categoryCode, schema]>
+// 返回 function(string $hospital, string $hospital2=''): array<[name, recordType, categoryCode, schema]>
 // 依据《病历书写基本规范》: 入院记录(4 类) / 病程记录 / 出院记录
-return function ($hospital) {
+return function ($hospital, $hospital2 = '') {
     $P = function (array $runs, array $pPr = []) { return ['t' => 'p', 'pPr' => $pPr, 'runs' => $runs]; };
     $fx = function ($key, $text) { return ['t' => 'fx', 'key' => $key, 'text' => $text]; };
     $slot = function ($key, $ph) { return ['t' => 'slot', 'key' => $key, 'ph' => $ph]; };
@@ -34,9 +34,9 @@ return function ($hospital) {
         'font' => '仿宋_GB2312, FangSong, SimSun, serif', 'sz' => 12, 'line' => 1.5];
     $infoFields = [['姓名', 'name'], ['性别', 'gender'], ['科别', 'department'], ['病区', 'ward_name'],
         ['年龄', 'age'], ['床号', 'bed_no'], ['住院号', 'admission_no']];
-    $mk = function ($docName, array $body) use ($hospital, $infoFields, $page) {
+    $mk = function ($docName, array $body) use ($hospital, $hospital2, $infoFields, $page) {
         return ['mode' => 'word', 'title' => $docName, 'page' => $page,
-            'header' => ['hospital' => $hospital, 'doc_name' => $docName, 'info_fields' => $infoFields],
+            'header' => ['hospital' => $hospital, 'hospital2' => $hospital2, 'doc_name' => $docName, 'info_fields' => $infoFields],
             'body' => $body];
     };
 

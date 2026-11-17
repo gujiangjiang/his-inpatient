@@ -89,7 +89,7 @@ $payType = $payMap[$feeType] ?? (preg_match('/^\d$/', $feeType) ? $feeType : '')
 
 // 机构信息
 $conf = [];
-foreach (DB::select("SELECT config_key, config_value FROM system_config WHERE config_key IN ('hospital_name', 'hospital_code')") as $c) {
+foreach (DB::select("SELECT config_key, config_value FROM system_config WHERE config_key IN ('hospital_name', 'hospital_name2', 'hospital_code')") as $c) {
     $conf[$c['config_key']] = $c['config_value'];
 }
 
@@ -139,6 +139,7 @@ Response::success([
         'match4' => $matchMap['clin_path'] ?? '',
         'match5' => $matchMap['rad_path'] ?? '',
         'hospital_name' => $conf['hospital_name'] ?? '',
+        'hospital_name2' => $conf['hospital_name2'] ?? '',
         'hospital_code' => $conf['hospital_code'] ?? '',
     ],
     'diagnoses' => [

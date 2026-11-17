@@ -76,6 +76,8 @@
     box-shadow: 0 6px 16px rgba(20, 154, 154, 0.35);
 }
 .login-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }
+.login-name-lockup { max-inline-size: 100%; }
+.login-name-lockup .brand-name-line { white-space: normal; overflow-wrap: anywhere; }
 .login-title {
     font-size: 21px;
     font-weight: 700;

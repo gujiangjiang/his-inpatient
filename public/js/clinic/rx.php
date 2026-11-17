@@ -86,7 +86,7 @@ function clinic_rx_load() {
             const st = _rxStatus(g.items);
             const canVoid = g.items.some(it => ['pending', 'verified', 'executing'].includes(it.status));
             const drafts = g.items.filter(it => it.status === 'draft');
-            const acts = [];
+            const acts = [`<button class="btn btn-small" onclick="clinic_rx_print(${i})">打印</button>`];
             if (canVoid) acts.push(`<button class="btn btn-small btn-danger" onclick="clinic_rx_void(${i})">毁方</button>`);
             if (drafts.length) acts.push(`<button class="btn btn-small" onclick="clinic_rx_delete(${i})">删除</button>`);
             return `<tr>
@@ -100,6 +100,30 @@ function clinic_rx_load() {
             </tr>`;
         }).join('');
     }).catch(() => {});
+}
+
+function clinic_rx_print(idx) {
+    const g = _rxGroups[idx];
+    const p = PatientContext.current();
+    if (!g || !p) return;
+    let total = 0;
+    const rows = g.items.map((it, i) => {
+        const price = Number(_rxPriceMap[it.content] || 0); total += price;
+        const dose = [it.dosage || '', it.dosage_unit || ''].join('');
+        const usage = [it.usage_name || '', it.usage_rate || ''].filter(Boolean).join(' ');
+        const freq = [it.freq_code || '', it.freq_detail || ''].filter(Boolean).join(' ');
+        return `<tr><td>${i + 1}</td><td>${Format.escape(it.content || '')}</td><td>${Format.escape(dose)}</td>
+            <td>${Format.escape(usage)}</td><td>${Format.escape(freq)}</td><td>¥${price.toFixed(2)}</td></tr>`;
+    }).join('');
+    const html = `${PrintHelper.brandHeaderHtml()}
+        <h2 class="doc-title">处方笺</h2>
+        <div class="doc-sub">${Format.escape(g.rx_no || '处方草稿')}</div>
+        <div class="doc-meta"><span>患者：${Format.escape(p.name || '')}</span><span>床号：${Format.escape(p.bed_no || '-')}</span>
+            <span>住院号：${Format.escape(p.admission_no || '')}</span><span>开方时间：${Format.escape(g.created_at || '')}</span></div>
+        <table class="doc-table"><thead><tr><th>#</th><th>药品</th><th>剂量</th><th>途径</th><th>频次</th><th>参考金额</th></tr></thead>
+            <tbody>${rows}</tbody></table>
+        <div class="doc-foot"><span>处方医师：${Format.escape((g.items[0] || {}).creator_name || '')}</span><span>合计：¥${total.toFixed(2)}</span></div>`;
+    PrintHelper.printHtml('处方笺', html);
 }
 
 /* 毁方: 整方作废 (护士未核对也可毁方), 作废后同步护士站 */

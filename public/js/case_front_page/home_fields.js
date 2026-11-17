@@ -156,5 +156,5 @@ const CaseHomeFields = {
         'age_y', 'age_m', 'age_d', 'admit_time', 'admit_dept', 'admit_ward', 'transfer_dept',
         'discharge_time', 'discharge_dept', 'discharge_ward', 'stay_days', 'allergy', 'allergy_drugs',
         'diagnose_date', 'injury_reason', 'injury_code', 'pathology_diagnosis', 'pathology_code',
-        'pathology_no', 'match1', 'match2', 'match3', 'match4', 'match5', 'hospital_name', 'hospital_code'],
+        'pathology_no', 'match1', 'match2', 'match3', 'match4', 'match5', 'hospital_name', 'hospital_name2', 'hospital_code'],
 };

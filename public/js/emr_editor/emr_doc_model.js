@@ -182,7 +182,7 @@
       v: M.MODEL_V,
       title: schema.title || '',
       page: Object.assign({}, M.DEFAULT_PAGE, schema.page || {}),
-      header: Object.assign({}, { hospital: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
+      header: Object.assign({}, { hospital: '', hospital2: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
       body,
     };
   };
@@ -220,7 +220,7 @@
       v: M.MODEL_V,
       title: title || '',
       page: Object.assign({}, M.DEFAULT_PAGE),
-      header: { hospital: '', doc_name: title || '', info_fields: M.DEFAULT_INFO_FIELDS },
+      header: { hospital: '', hospital2: '', doc_name: title || '', info_fields: M.DEFAULT_INFO_FIELDS },
       body: body,
     };
   };

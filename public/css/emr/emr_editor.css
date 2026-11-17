@@ -31,6 +31,9 @@
   letter-spacing: 4px;
   line-height: 1.4;
 }
+.emr-brand-lockup { display: grid; margin-inline: auto; max-inline-size: 100%; }
+.emr-brand-lockup .brand-name-line { white-space: normal; overflow-wrap: anywhere; }
+.emr-hos2 { font-size: 12pt; font-weight: normal; line-height: 1.35; }
 .emr-docname {
   font-size: 16pt;
   font-weight: bold;

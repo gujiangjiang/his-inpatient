@@ -59,18 +59,12 @@ function updateUserInfo() {
 
 /** 应用医院品牌到登录页、左上角、标题栏和 PWA 元数据 */
 function applyHospitalBranding(brand) {
-    const name = (brand && brand.hospital_name) || '开源通用医院信息系统';
-    const name2 = (brand && brand.hospital_name2) || '';
+    const names = HospitalBranding.setCurrent(brand || {});
+    const name = names.hospital_name;
+    const name2 = names.hospital_name2;
     const logo = brand && brand.logo_url;
-    const setText = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
-    setText('hospital-name', name);
-    setText('login-title', name);
-    ['hospital-name2', 'login-second-name'].forEach(id => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.textContent = name2;
-        el.style.display = name2 ? '' : 'none';
-    });
+    HospitalBranding.applyPair(document.getElementById('hospital-name'), document.getElementById('hospital-name2'));
+    HospitalBranding.applyPair(document.getElementById('login-title'), document.getElementById('login-second-name'));
     if (logo) {
         ['hospital-logo', 'login-hospital-logo'].forEach(id => {
             const el = document.getElementById(id);

@@ -2,6 +2,10 @@
 // print(elementId): 打印页面内元素 (旧用法)
 // printHtml(title, bodyHtml): 打开新窗口打印任意 HTML (申请单等, 不破坏当前页面上下文)
 const PrintHelper = {
+    brandHeaderHtml(extraClass) {
+        return HospitalBranding.headerHtml(extraClass || '');
+    },
+
     print(elementId) {
         const el = document.getElementById(elementId);
         if (!el) { window.print(); return; }
@@ -19,6 +23,11 @@ const PrintHelper = {
         win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${title}</title>
 <style>
     body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; margin: 24px; }
+    .brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0,1fr); width: max-content; max-width: 100%; min-width: 0; }
+    .brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }
+    .print-brand-lockup { display: grid; margin: 0 auto 8px; }
+    .print-hospital { font-size: 18pt; font-weight: 700; letter-spacing: 2px; line-height: 1.35; }
+    .print-hospital2 { font-size: 11pt; font-weight: 400; line-height: 1.35; }
     h2.doc-title { text-align: center; font-size: 16pt; margin: 0 0 4px; letter-spacing: 2px; }
     .doc-sub { text-align: center; font-size: 9pt; color: #666; margin-bottom: 16px; }
     table.doc-table { width: 100%; border-collapse: collapse; margin-top: 10px; }

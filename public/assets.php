@@ -30,6 +30,7 @@ class Asset {
         '/js/core/app.js',
         '/icons/js.php',
         '/js/core/format.js',
+        '/js/core/branding.js',
         '/js/core/ajax.js',
         '/js/core/auth.js',
         '/js/core/dom.js',

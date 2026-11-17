@@ -30,7 +30,7 @@ Object.assign(CaseHome, {
 <div class="cf-page">
     <div class="cf-head">
         <div class="cf-head-top">
-            <span class="cf-org">医疗机构 <span class="cf-fill-line">${this.h('hospital_name') || '—'}</span></span>
+            <span class="cf-org">医疗机构 <span class="cf-fill-line">${this.hospitalDisplay() || '—'}</span></span>
             <span class="cf-orgcode">（组织机构代码：<span class="cf-fill-line">${this.h('hospital_code') || '—'}</span>）</span>
         </div>
         <div class="cf-title-row">

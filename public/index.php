@@ -57,8 +57,10 @@ header('Cache-Control: no-store');
         <div class="login-form-wrapper">
             <div class="login-brand">
                 <div class="login-logo"><img id="login-hospital-logo" src="<?= $esc($brand['logo_url']) ?>" alt="医院 Logo"></div>
-                <h1 class="login-title" id="login-title"><?= $esc($brand['hospital_name']) ?></h1>
-                <p class="login-second-name" id="login-second-name"<?= $brand['hospital_name2'] === '' ? ' style="display:none"' : '' ?>><?= $esc($brand['hospital_name2']) ?></p>
+                <div class="brand-name-lockup login-name-lockup">
+                    <h1 class="brand-name-line login-title" id="login-title"><?= $esc($brand['hospital_name']) ?></h1>
+                    <p class="brand-name-line login-second-name" id="login-second-name"<?= $brand['hospital_name2'] === '' ? ' hidden' : '' ?>><?= $esc($brand['hospital_name2']) ?></p>
+                </div>
                 <p class="login-subtitle">HOSPITAL INPATIENT INFORMATION SYSTEM</p>
             </div>
             <div id="login-box">
@@ -153,9 +155,9 @@ header('Cache-Control: no-store');
             <div class="topbar-left">
                 <div class="hospital-brand">
                     <img id="hospital-logo" class="hospital-logo" src="<?= $esc($brand['logo_url']) ?>" alt="医院 Logo">
-                    <span class="hospital-title-wrap">
-                        <span id="hospital-name" class="hospital-name"><?= $esc($brand['hospital_name']) ?></span>
-                        <small id="hospital-name2" class="hospital-name2"<?= $brand['hospital_name2'] === '' ? ' style="display:none"' : '' ?>><?= $esc($brand['hospital_name2']) ?></small>
+                    <span class="brand-name-lockup hospital-title-wrap">
+                        <span id="hospital-name" class="brand-name-line hospital-name"><?= $esc($brand['hospital_name']) ?></span>
+                        <small id="hospital-name2" class="brand-name-line hospital-name2"<?= $brand['hospital_name2'] === '' ? ' hidden' : '' ?>><?= $esc($brand['hospital_name2']) ?></small>
                     </span>
                 </div>
                 <!-- 患者上下文切换浮动面板 -->
@@ -220,7 +222,7 @@ header('Cache-Control: no-store');
         </div>
     </div>
 </div>
-<script>window.HIS_APP_VERSION = <?= json_encode(APP_VERSION) ?>;</script>
+<script>window.HIS_APP_VERSION = <?= json_encode(APP_VERSION) ?>; window.HIS_BRAND = <?= json_encode(['hospital_name' => $brand['hospital_name'], 'hospital_name2' => $brand['hospital_name2']], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;</script>
 <?php Asset::js(); ?>
 </body>
 </html>

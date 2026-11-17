@@ -4,7 +4,7 @@
 // 无需在服务器执行任何命令 (无 npm / 无终端环境的部署同样生效)。
 // 变更内置模板定义后: 递增 VERSION, 下个请求自动重新落库 (按模板名更新, 既有文书不受影响)。
 class EmrTemplatesGuard {
-    const VERSION = '8'; /* 内置模板定义/版式变更时 +1 */
+    const VERSION = '9'; /* 内置模板定义/版式变更时 +1 */
     private static $checked = false;
 
     public static function ensure() {
@@ -49,15 +49,11 @@ class EmrTemplatesGuard {
      * 返回内置模板名称列表。
      */
     public static function provision() {
-        $hospital = '';
-        try {
-            $h = DB::selectOne("SELECT config_value FROM system_config WHERE config_key = 'hospital_name'");
-            if ($h) $hospital = (string)$h['config_value'];
-        } catch (Exception $e) { /* 忽略 */ }
-        if ($hospital === '') $hospital = '医院名称';
+        require_once __DIR__ . '/branding.php';
+        $names = branding_names();
 
         $defsFn = require __DIR__ . '/emr_template_defs.php';
-        $defs = $defsFn($hospital);
+        $defs = $defsFn($names['hospital_name'], $names['hospital_name2']);
 
         $pdo = DB::getPDO();
 

@@ -123,6 +123,7 @@ function outpatient_labs_printBlock(rep) {
     const rows = (rep.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${Format.escape(it.item_name)}</td>
         <td>${Format.escape(rep.specimen_type || '')}</td><td>${Format.escape(it.result || '')}</td><td>${Format.escape(it.reference_range || '')}</td></tr>`).join('');
     return `
+        ${PrintHelper.brandHeaderHtml()}
         <h2 class="doc-title">检验申请单</h2>
         <div class="doc-sub">${Format.escape(rep.report_no)}</div>
         <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>

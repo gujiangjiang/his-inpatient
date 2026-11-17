@@ -195,6 +195,7 @@ function clinic_consult_print(id) {
     const x = _consultRows.find(r2 => r2.id == id);
     if (!x) return;
     const html = `
+        ${PrintHelper.brandHeaderHtml()}
         <h2 class="doc-title">会诊申请单</h2>
         <div class="doc-sub">会诊ID ${x.id}</div>
         <div class="doc-meta">

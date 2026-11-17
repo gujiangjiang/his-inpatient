@@ -19,6 +19,7 @@
         },
         "header": {
             "hospital": "淮海省人民医院",
+            "hospital2": "",
             "doc_name": "24小时内入院死亡记录",
             "info_fields": [
                 [

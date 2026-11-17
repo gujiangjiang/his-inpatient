@@ -14,7 +14,7 @@
 .topbar-right { display: flex; align-items: center; gap: 15px; }
 .hospital-brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .hospital-logo { width: auto; max-width: 86px; height: 34px; object-fit: contain; border-radius: 8px; flex-shrink: 0; }
-.hospital-title-wrap { display: flex; flex-direction: column; min-width: 0; max-width: 320px; line-height: 1.1; }
+.hospital-title-wrap { min-width: 0; max-width: 320px; line-height: 1.1; }
 .hospital-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hospital-name2 { margin-top: 3px; font-size: 10px; font-weight: 400; opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #user-info { font-size: 13px; white-space: nowrap; }

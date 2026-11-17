@@ -28,6 +28,23 @@
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 .hidden { display: none; }
+/* 医院双名称锁定框: 宽度由较长名称决定，两行自动拉伸到相同左右边界 */
+.brand-name-lockup {
+    display: inline-grid;
+    grid-template-columns: minmax(0, 1fr);
+    inline-size: max-content;
+    max-inline-size: 100%;
+    min-inline-size: 0;
+    vertical-align: middle;
+}
+.brand-name-line {
+    inline-size: 100%;
+    min-inline-size: 0;
+    text-align: justify;
+    text-align-last: justify;
+    text-justify: inter-character;
+}
+.brand-name-line[hidden] { display: none !important; }
 /* 全局设计变量 (与登录/下拉/卡片墙的青色体系统一, 视觉逻辑参考门诊一体化) */
 :root {
     --primary: #149a9a;

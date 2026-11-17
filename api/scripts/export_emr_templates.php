@@ -6,15 +6,11 @@ require_once __DIR__ . '/../core/db.php';
 require_once __DIR__ . '/../core/helpers/time_helper.php';
 require_once __DIR__ . '/../core/helpers/date_helper.php';
 
-$hospital = '';
-try {
-    $h = DB::selectOne("SELECT config_value FROM system_config WHERE config_key = 'hospital_name'");
-    if ($h) $hospital = (string)$h['config_value'];
-} catch (Exception $e) { /* 忽略 */ }
-if ($hospital === '') $hospital = '医院名称';
+require_once __DIR__ . '/../core/branding.php';
+$names = branding_names();
 
 $defsFn = require __DIR__ . '/../core/emr_template_defs.php';
-$defs = $defsFn($hospital);
+$defs = $defsFn($names['hospital_name'], $names['hospital_name2']);
 
 $dir = dirname(dirname(__DIR__)) . '/docs/emr_templates';
 if (!is_dir($dir)) mkdir($dir, 0755, true);

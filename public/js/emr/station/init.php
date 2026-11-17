@@ -216,6 +216,7 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
     const doc = (schema.mode === 'word')
         ? EmrDoc.fromSchema(schema)
         : EmrDoc.fromSections(schema.sections || [], template.name);
+    HospitalBranding.stampHeader(doc.header);
     /* 文书标题优先取模板的抬头 doc_name (与模板名称分离); 上级医师查房等可显式指定 */
     doc.title = opts.title || (doc.header && doc.header.doc_name) || template.name;
     /* 槽位默认值预填: 下拉/复选用模板勾选的「默认选中」(defPick), 其余用默认内容 (def) */
@@ -445,6 +446,7 @@ async function resolveRefFields(doc) {
 }
 
 async function openWordDoc(doc, signed) {
+    if (!signed && doc.doc_json) HospitalBranding.stampHeader(doc.doc_json.header || (doc.doc_json.header = {}));
     applyPageCss(doc.doc_json.page);
     _emrEditMode = !signed;
     /* 编辑状态: 患者信息与病案首页单项同步 (已签名=快照, 不动) */

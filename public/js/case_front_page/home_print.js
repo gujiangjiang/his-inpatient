@@ -55,6 +55,12 @@ Object.assign(CaseHome, {
         return (x === '' || x === undefined || x === null) ? '' : Format.escape(String(x));
     },
 
+    hospitalDisplay() {
+        const name = this.h('hospital_name');
+        const name2 = this.h('hospital_name2');
+        return name2 ? name + '（' + name2 + '）' : name;
+    },
+
     /* 值: 空值显示 — */
     vd(k) {
         const x = this.data[k];

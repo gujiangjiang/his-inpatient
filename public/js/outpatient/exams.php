@@ -119,6 +119,7 @@ function outpatient_exams_applyDetail(id) {
 
 function outpatient_exams_printBlock(rep) {
     return `
+        ${PrintHelper.brandHeaderHtml()}
         <h2 class="doc-title">检查申请单</h2>
         <div class="doc-sub">${Format.escape(rep.report_no)}</div>
         <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>

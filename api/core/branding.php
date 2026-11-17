@@ -75,16 +75,22 @@ function branding_icon_path($size)
     return is_file($paths[$size]) ? $paths[$size] : branding_default_icon_path($size);
 }
 
-function branding_public()
+function branding_names()
 {
     $name = trim(branding_config_value('hospital_name', ''));
     if ($name === '') $name = '开源通用医院信息系统';
-    $name2 = trim(branding_config_value('hospital_name2', ''));
-    $revision = branding_revision();
-    $custom = branding_has_custom_logo();
     return [
         'hospital_name' => $name,
-        'hospital_name2' => $name2,
+        'hospital_name2' => trim(branding_config_value('hospital_name2', '')),
+    ];
+}
+
+function branding_public()
+{
+    $names = branding_names();
+    $revision = branding_revision();
+    $custom = branding_has_custom_logo();
+    return array_merge($names, [
         'has_custom_logo' => $custom,
         'brand_revision' => $revision,
         'logo_url' => $custom
@@ -92,5 +98,5 @@ function branding_public()
             : '/icons/brand/default-hospital.svg?v=' . rawurlencode(defined('APP_VERSION') ? APP_VERSION : '1'),
         'icon_192_url' => '/branding/icon?size=192&v=' . rawurlencode($revision),
         'icon_512_url' => '/branding/icon?size=512&v=' . rawurlencode($revision),
-    ];
+    ]);
 }

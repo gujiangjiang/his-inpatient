@@ -203,6 +203,13 @@
   };
 
   /* ---------- 抬头 ---------- */
+  R.brandToHTML = (header) => {
+    if (!header || !header.hospital) return '';
+    return '<div class="brand-name-lockup emr-brand-lockup">'
+      + '<div class="brand-name-line emr-hos">' + esc(header.hospital) + '</div>'
+      + (header.hospital2 ? '<div class="brand-name-line emr-hos2">' + esc(header.hospital2) + '</div>' : '')
+      + '</div>';
+  };
   /** 固定抬头 HTML: 医院名/文书名/患者信息栏; patientInfo 键: name/gender/age/admission_no/ward_name/bed_no
    *  design=true (设计模板) 时信息栏以占位符呈现, 不显示真实患者 */
   R.headerToHTML = (header, patientInfo, design) => {
@@ -213,7 +220,7 @@
       return '<span class="emr-hf"><b>' + esc(label) + '</b><span class="emr-hf-val' + (design ? ' emr-ph-des' : '') + '">' + esc(val) + '</span></span>';
     }).join('');
     return '<div class="emr-page-head">'
-      + (header.hospital ? '<div class="emr-hos">' + esc(header.hospital) + '</div>' : '')
+      + R.brandToHTML(header)
       + (header.doc_name ? '<div class="emr-docname">' + esc(header.doc_name) + '</div>' : '')
       + (fields ? '<div class="emr-infobar">' + fields + '</div>' : '')
       + '</div>';
