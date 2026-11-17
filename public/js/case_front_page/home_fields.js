@@ -28,7 +28,7 @@ const CaseHomeFields = {
     initDicts() {
         const D = window.EmrDicts || {};
         if (D.nation && D.nation.length) this.nationDict = D.nation.map(n => [n, n]);
-        if (D.occupation && D.occupation.length) this.occupationDict = D.occupation.map(n => [n, n]);
+        if (D.occupation && D.occupation.length) this.occupationDict = [['', '请选择职业']].concat(D.occupation.map(n => [n, n]));
     },
 
     /* 首页(一) 编辑分组: auto=1 由系统自动抓取 (只读) */
