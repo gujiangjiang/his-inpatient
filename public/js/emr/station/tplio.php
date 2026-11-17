@@ -1,4 +1,3 @@
-<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <script>
 /* ================= 模板导入 / 导出 (设计工具条右上角) =================
  * 导出: 当前设计模板 → 文件 <名称>.emr-tpl.json { app, kind:'word', mv, name, doc_name, record_type, category_id, schema }

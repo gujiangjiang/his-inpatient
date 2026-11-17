@@ -1,4 +1,3 @@
-<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <script>
 /** 病历维护申请: 已签名病历发起 编辑/删除 申请, 管理员审核通过后解锁 (批准编辑→退回草稿; 批准删除→删除文书) */
 function emr_maintDialog(doc) {

@@ -1,4 +1,3 @@
-<?php header("Content-Type: text/html; charset=utf-8"); ?>
 <script>
 /** 可用字段字典: 当前模板文书中的字段代码 (slot/dyn/ref) + 显示名 (取前导固定标签) */
 function emrCalcVars() {
