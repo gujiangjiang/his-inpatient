@@ -121,3 +121,45 @@ RewriteRule ^ /index.php [L,QSA]
 | 500 / 白屏，日志出现 `open_basedir restriction in effect` | 防跨站攻击限制在 `public` | 关闭「防跨站攻击」或将其路径改为项目根 |
 | 安装向导可打开但初始化失败 | `data/` 不可写 | `chown -R www:www` 项目目录 |
 | 数据库连接失败 | 未开启 SQLite 扩展 | 宝塔 PHP 设置中开启 `pdo_sqlite` / `sqlite3` |
+
+## 五、IPv6 域名与系统间互调（填域名不通、填 IP 通的排查与修复）
+
+**现象**：浏览器用 `http://<域名>:端口` 能打开门诊一体化 / PACS / HIS，但在 HIS「接口管理」
+里把门诊服务地址或 PACS 阅片地址填成域名就连接失败，换回 `http://10.0.0.91:端口` 立即正常。
+
+**原因**：互调请求由**服务端 PHP 发起**，与浏览器无关。若域名是纯 IPv6（仅 AAAA 记录、
+无 A 记录），而服务端运行环境（Docker bridge 容器、部分面板容器）**没有 IPv6 出口**，
+则容器内解析到 AAAA 后无法路由 → 必然连接失败；填内网 IPv4 则不走该环节。
+另外 `ping` 走 ICMP 且 Windows/macOS 对 IPv6-only 域名的 ping 常失败，**ping 不通 ≠ HTTP 不通**，
+正确测法：`curl -v http://<域名>:端口/api/fhir/r4/metadata` 或本仓库诊断脚本（见下）。
+
+**诊断**：在部署机上执行（容器内执行更准）：
+
+```bash
+php api/scripts/net_check.php                                  # 诊断接口管理已配置的地址
+php api/scripts/net_check.php http://<域名>:端口 http://10.0.0.91:端口   # 诊断指定地址
+```
+
+**修复（三选一，按运维成本排序）**：
+
+1. **容器 hosts 映射（推荐，最精准）**：让容器内该域名直接解析为内网 IPv4，互调、
+   浏览器均不受影响。docker-compose 中为目标容器加：
+
+   ```yaml
+   extra_hosts:
+     - "synology.gujiangjiang.com:10.0.0.91"
+   ```
+
+   宝塔容器可在 容器管理 → 该容器 → 编辑 中添加；DSM `docker run` 加
+   `--add-host synology.gujiangjiang.com:10.0.0.91`。改完**重启容器**生效。
+
+2. **内网 DNS 分离解析**：内网 DNS（群晖 DNS Server 套件 / 路由器 DNS）为该域名添加
+   `A 10.0.0.91` 记录，外网 DNS 保持仅 AAAA；容器 DNS 指向内网 DNS。互调走内网 IPv4，
+   外部访问不受影响。
+
+3. **为容器启用 IPv6 出口**：Docker `daemon.json` 加
+   `{"ipv6": true, "fixed-cidr-v6": "fd00:beef::/64", "ip6tables": true}` 后重启 Docker
+   （群晖需 SSH 修改 `/var/packages/ContainerManager/etc/dockerd.json`，改动较大需自评估）。
+
+> 接口测试页首项「网络栈诊断」会直接给出当前环境的解析矩阵与双栈连通结论，
+> 出站失败提示中也会附带对应诊断，可据此判断采用了哪种修复。
