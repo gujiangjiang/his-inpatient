@@ -88,8 +88,7 @@
 }
 /* 必选未完成: 红色下划线+红字提示 */
 .emr-body .emr-ph.emr-req { border-bottom-color: #e5484d; color: #e5484d; }
-/* 点击激活: 占位文字隐藏 (透明), 下划线宽度/位置与点击前完全一致 (不缩短不跳动)
-   注意: 不得改 font-size/min-width/padding — 会造成下划线突然变短/行距变宽 (实测确认) */
+/* 点击激活: 占位文字透明，普通输入槽由下一条规则缩为光标宽度 */
 .emr-slot-active {
   color: transparent !important;
 }
@@ -99,7 +98,9 @@
   min-width: 1.35em;
   max-width: 1.35em;
   padding: 0 2px;
-  overflow: hidden;
+  white-space: nowrap;
+  overflow: visible;
+  caret-color: #000;
 }
 /* 填写槽的值 (已输入内容): 编辑状态常显浅色下划线提示可编辑; 只读(已签名)/打印不显示 */
 .emr-body[contenteditable="true"] .emr-val { border-bottom: 1px dashed #c3c8d1; }
