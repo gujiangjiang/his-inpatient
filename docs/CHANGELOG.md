@@ -4,6 +4,31 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.44.0] - 2026-11-19
+
+### 新增
+- **中心/门诊双药房全流程**：
+  - 迁移 064：orders 增加药房归属(pharmacy_type/outpatient)/摆药发药状态机
+    (dispense_status)/扣费(charge_amount/charged_at)/执行预留(plan_time/execute_batch_no)；
+    medications 对齐门诊拆零/规格口径(spec_pack_qty/warn_qty/allow_split/is_active)；
+    dispensing_records 增加 stage(prepared/dispensed/delivered)+amount；
+    新增 charge_records 扣费流水表、opd_drug_cache 门诊药房降级缓存表。
+  - 中心药房摆药（`pharmacy/dispense2`）：自动算量(剂量/基准×频次×天数)、
+    欠费拦截(预缴金不足摆药失败)、扣 prepay 写 charge_records、扣库存、发药送达；
+    药房页重写为队列+批量摆药+发药记录送达。
+  - 护士站预摆药（`nurse/prepare`）：已核对待摆药列表、单条/批量申请(可填计划时间)、
+    取消；侧边栏新增「预摆药」入口。
+  - 开处方选药房（`rx/catalog`+`rx.php`）：中心药房(本地库存实时)/门诊药房(实时调
+    门诊 catalog_list 含库存，失败降级缓存并标注离线)；order_save 落库药房归属。
+  - 管理员药品管理（`admin/drugs`）：中心药房 CRUD(规格/拆零/警戒库存)、
+    门诊药房只读双 tab（未启用门诊接口时不显示门诊）。
+  - 门诊侧开放库存字段：catalog_list type=drugs 现返回 qty/warn_qty/spec_pack_qty/
+    allow_split 等（配套变更，需门诊同步升级）。
+- **全局请求加载指示**：顶部进度条+转圈覆盖含 silent 的所有请求（300ms 阈值防闪烁）。
+
+### 验证
+- php-lint 全量通过；迁移 064 本地跑通；自动算量单元实测（tid×3 天 1g/0.5g=12 最小单位）。
+
 ## [0.43.3] - 2026-11-19
 
 ### 修复
