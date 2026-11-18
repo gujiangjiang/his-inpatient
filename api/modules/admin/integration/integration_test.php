@@ -4,14 +4,27 @@ Auth::requireRole(['admin']);
 $s = opd_settings();
 $items = [];
 
+// -1. 门诊接口启用开关: 链路全绿但开关未开时, 开单目录/门诊记录仍会回退内置——
+//     此前测试不含此项, 曾造成「测试全通过但功能提示未启用」的排查死角
+$opdOn = $s['opd_enabled'] === '1';
+$items[] = [
+    'name' => '门诊接口启用开关',
+    'ok' => $opdOn,
+    'detail' => $opdOn
+        ? '已启用（开单项目目录自动同步门诊 / 住院医生可查门诊记录）'
+        : '未启用：请在下方「连接配置」勾选「门诊接口」并保存（当前开单目录与门诊记录回退内置数据）',
+];
+
 // 0. 网络栈诊断: 门诊服务地址 DNS 解析 + IPv4/IPv6 双栈连通性
 //    (域名互调失败时第一眼定位: 是解析不到, 还是某一协议栈出口缺失)
-$diag = net_diag_url(opd_base_url());
-$items[] = [
-    'name' => '网络栈诊断（门诊服务地址）',
-    'ok' => !empty($diag['ok']),
-    'detail' => $diag['summary'],
-];
+if ($opdOn) {
+    $diag = net_diag_url(opd_base_url());
+    $items[] = [
+        'name' => '网络栈诊断（门诊服务地址）',
+        'ok' => !empty($diag['ok']),
+        'detail' => $diag['summary'],
+    ];
+}
 
 // 1. 门诊 FHIR 元数据 (免认证)
 list($code, $body) = opd_http('GET', opd_base_url() . '/api/fhir/r4/metadata', ['Accept: application/fhir+json'], null, 8);
