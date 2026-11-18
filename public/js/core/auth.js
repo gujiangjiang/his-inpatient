@@ -28,9 +28,9 @@ const Auth = {
         }
     },
 
-    async login(username, password) {
+    async login(username, password, captcha = '', needCaptcha = '0') {
         try {
-            const result = await AjaxLoader.api('auth/login', { method: 'POST', data: { username, password } });
+            const result = await AjaxLoader.api('auth/login', { method: 'POST', data: { username, password, captcha, need_captcha: needCaptcha } });
             if (result.status === 'success') {
                 this.user = result.data.user;
                 sessionStorage.setItem('session_id', result.data.session_id);

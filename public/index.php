@@ -67,11 +67,18 @@ header('Cache-Control: no-store');
                 <form id="login-form" class="login-form">
                     <div class="form-group">
                         <label class="login-label">用户名</label>
-                        <input type="text" name="username" placeholder="请输入用户名" autocomplete="username" required>
+                        <input type="text" name="username" id="username" placeholder="请输入用户名" autocomplete="username" required>
                     </div>
                     <div class="form-group">
                         <label class="login-label">密码</label>
-                        <input type="password" name="password" placeholder="请输入密码" autocomplete="current-password" required>
+                        <input type="password" name="password" id="password" placeholder="请输入密码" autocomplete="current-password" required>
+                    </div>
+                    <div class="form-group login-captcha-group" id="captcha-group" style="display:none">
+                        <label class="login-label">验证码</label>
+                        <div class="login-captcha-box">
+                            <input type="text" id="login-captcha" placeholder="请输入右侧字符" maxlength="4" autocomplete="off">
+                            <span id="login-captcha-svg" title="看不清？点击刷新" style="cursor:pointer;flex:0 0 auto;width:110px;height:40px;display:flex;align-items:center;justify-content:center;border-left:1px solid #e8edf3"></span>
+                        </div>
                     </div>
                     <button type="submit" class="login-btn">登 录</button>
                 </form>

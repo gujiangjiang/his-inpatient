@@ -157,20 +157,77 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const username = this.username.value;
     const password = this.password.value;
+    const captcha = document.getElementById('login-captcha').value.trim();
+    const captchaVisible = document.getElementById('captcha-group').style.display !== 'none';
     if (!username || !password) {
         Dom.toast('请输入用户名和密码', 'error');
         return;
     }
-    Auth.login(username, password).then(success => {
+    if (captchaVisible && !captcha) {
+        Dom.toast('请输入验证码', 'error');
+        return;
+    }
+    Auth.login(username, password, captcha, captchaVisible ? '1' : '0').then(success => {
         if (success) {
+            localStorage.setItem('his_login_fail_flag', '0');
             const role = Auth.getRole();
             initWorkstation(role);
             const route = App.roleRoutes[role] || App.roleRoutes.admin;
             window.location.hash = route.module + '/' + route.page;
         } else {
+            localStorage.setItem('his_login_fail_flag', '1');
+            showCaptcha(true);
             Dom.toast('登录失败', 'error');
         }
     });
 });
+
+/* ===== 验证码（参照门诊一体化）===== */
+var _captchaMode = '';
+function loadCaptchaMode() {
+    // 从后端嗅探模式：直接请求 check-captcha?flag 探测
+    AjaxLoader.api('auth/captcha?action=check&flag=0', { silent: true }).then(r => {
+        if (r.data && r.data.require_captcha) { _captchaMode = 'force'; showCaptcha(); }
+        else if (localStorage.getItem('his_login_fail_flag') === '1') { showCaptcha(); }
+    }).catch(() => {});
+}
+function loadCaptchaSvg() {
+    const box = document.getElementById('login-captcha-svg');
+    if (!box) return;
+    AjaxLoader.api('auth/captcha?action=gen', { silent: true }).then(r => {
+        if (r.data && r.data.disabled) { box.innerHTML = ''; return; }
+        box.innerHTML = r.data.svg || '';
+    }).catch(() => {});
+}
+function showCaptcha(force) {
+    const g = document.getElementById('captcha-group');
+    if (!g) return;
+    g.style.display = '';
+    loadCaptchaSvg();
+}
+function hideCaptcha() {
+    const g = document.getElementById('captcha-group');
+    if (g) g.style.display = 'none';
+}
+function probeCaptcha() {
+    const username = document.getElementById('username') ? document.getElementById('username').value.trim() : '';
+    const flag = localStorage.getItem('his_login_fail_flag') === '1' ? 1 : 0;
+    AjaxLoader.api('auth/captcha?action=check&username=' + encodeURIComponent(username) + '&flag=' + flag, { silent: true }).then(r => {
+        if (r.data && r.data.require_captcha) showCaptcha();
+        else hideCaptcha();
+    }).catch(() => {});
+}
+document.getElementById('login-captcha-svg').addEventListener('click', loadCaptchaSvg);
+if (document.getElementById('username')) {
+    document.getElementById('username').addEventListener('blur', probeCaptcha);
+    document.getElementById('username').addEventListener('input', function () {
+        clearTimeout(_captchaTimer);
+        _captchaTimer = setTimeout(probeCaptcha, 400);
+    });
+}
+if (document.getElementById('password')) {
+    document.getElementById('password').addEventListener('focus', probeCaptcha);
+}
+loadCaptchaMode();
 
 // 初始化向导逻辑见 setup_wizard.js（多步：环境→数据库→初始化→站点→管理员→完成）
