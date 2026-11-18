@@ -18,6 +18,10 @@
 
 <div class="rv-page" id="rv-pending">
     <div class="rv-sec">
+        <div class="rv-sec-head">统一审核（药品/设置等提交）<span class="rv-count" id="rv-audit-count"></span></div>
+        <div id="rv-audit"></div>
+    </div>
+    <div class="rv-sec">
         <div class="rv-sec-head">病历模板待审核<span class="rv-count" id="rv-tpls-count"></span></div>
         <div id="rv-tpls"></div>
     </div>
@@ -42,7 +46,58 @@ async function admin_review_init() {
     await rvLoad('tpls', 'rv-tpls', 'emr/template-list?review=1', '模板');
     await rvLoad('cons', 'rv-cons', 'emr/content-list?review=1', '内容');
     await rvLoadMaint();
+    await rvLoadAudit();
     rvRenderStats();
+}
+
+/* 统一审核（audits pending：药品/设置等） */
+async function rvLoadAudit() {
+    const r = await AjaxLoader.api('admin/audit?action=list&status=pending&per=50', { silent: true });
+    const rows = (r.data && r.data.rows) || [];
+    const countEl = document.getElementById('rv-audit-count');
+    const el = document.getElementById('rv-audit');
+    _rvAuditLen = rows.length;
+    if (countEl) countEl.textContent = rows.length ? '(' + rows.length + ')' : '';
+    if (!el) return;
+    if (!rows.length) { el.innerHTML = '<div style="padding:18px;color:#909399;font-size:13px">暂无待审核项</div>'; return; }
+    const typeMap = { item_drug: '药品', item_lab: '检验', item_exam: '检查', drugsetting: '药品设置', template: '模板', content: '内容库', user_unlock: '账号解锁', pwd_reset: '密码重置' };
+    el.innerHTML = rows.map(function (a) {
+        return '<div class="rv-row" data-aid="' + a.id + '">'
+            + '<div class="rv-name"><b>' + Format.escape(a.title) + '</b>'
+            + '<span class="rv-prev">' + Format.escape(a.content || '') + '</span></div>'
+            + '<span class="badge badge-info">' + Format.escape(typeMap[a.type] || a.type) + '</span>'
+            + '<span class="rv-meta">' + Format.escape((a.proposer || '') + ' · ' + (a.created_at ? Format.datetime(a.created_at) : '')) + '</span>'
+            + '<span class="rv-act"><button class="btn btn-small btn-success" data-a="ok">通过</button>'
+            + '<button class="btn btn-small" data-a="no">驳回</button></span></div>';
+    }).join('');
+    el.querySelectorAll('.rv-row[data-aid]').forEach(function (row) {
+        const aid = row.dataset.aid;
+        row.querySelectorAll('button[data-a]').forEach(function (b) {
+            b.addEventListener('click', function () {
+                if (b.dataset.a === 'ok') {
+                    Dom.modal('审核通过', '<p>确认通过「' + Format.escape(row.querySelector('.rv-name b').textContent) + '」？</p>', [
+                        { text: '通过', type: 'primary', onclick: async function () {
+                            await AjaxLoader.api('admin/audit', { method: 'POST', data: { action: 'apply', id: aid, approve: 1 } });
+                            Dom.toast('已通过', 'success');
+                            rvLoadAudit(); rvRenderStats();
+                        } },
+                        { text: '取消', type: 'default' }
+                    ]);
+                    return;
+                }
+                Dom.modal('驳回', '<div class="form-group"><label class="form-label">驳回理由（必填）</label><input id="rv-a-reason" class="form-control" placeholder="请输入驳回理由"></div>', [
+                    { text: '确认驳回', type: 'danger', onclick: async function () {
+                        const reason = (document.getElementById('rv-a-reason').value || '').trim();
+                        if (!reason) { Dom.toast('请填写驳回理由', 'error'); return; }
+                        await AjaxLoader.api('admin/audit', { method: 'POST', data: { action: 'apply', id: aid, approve: 0, note: reason } });
+                        Dom.toast('已驳回', 'success');
+                        rvLoadAudit(); rvRenderStats();
+                    } },
+                    { text: '取消', type: 'default' }
+                ]);
+            });
+        });
+    });
 }
 
 function admin_review_tab(t) {
@@ -66,18 +121,20 @@ function rvRenderStats() {
 
 async function admin_review_loadHandled() {
     const box = document.getElementById('rv-handled-body');
-    const r = await AjaxLoader.api('admin/review-history', { silent: true });
-    const list = (r.data && r.data.list) || [];
-    if (!list.length) { box.innerHTML = '<div class="empty-tip">暂无已处理记录</div>'; return; }
+    const r = await AjaxLoader.api('admin/audit?action=list&status=handled&per=50', { silent: true });
+    const list = (r.data && r.data.rows) || [];
+    if (!list.length) { box.innerHTML = '<div class="empty-tip">暂无已处理审核记录</div>'; return; }
+    const typeMap = { item_drug: '药品', item_lab: '检验', item_exam: '检查', drugsetting: '药品设置', template: '模板', content: '内容库', user_unlock: '账号解锁', pwd_reset: '密码重置' };
     const rows = list.map(function (h) {
         const statusBadge = h.status === 'approved'
             ? '<span class="badge badge-success">已通过</span>'
             : (h.status === 'rejected' ? '<span class="badge badge-danger">已驳回</span>' : '<span class="badge badge-default">' + Format.escape(h.status) + '</span>');
-        const meta = [h.type, h.audited_by, h.audited_at ? Format.datetime(h.audited_at) : ''].filter(Boolean).join(' · ');
+        const typeBadge = '<span class="badge badge-info">' + Format.escape(typeMap[h.type] || h.type) + '</span>';
+        const meta = [h.proposer, h.handled_by, h.handled_at ? Format.datetime(h.handled_at) : ''].filter(Boolean).join(' · ');
         return '<div class="rv-row">'
-            + '<div class="rv-name"><b>' + Format.escape(h.name) + '</b>'
+            + '<div class="rv-name"><b>' + Format.escape(h.title) + '</b>'
             + (h.note ? '<span class="rv-prev">驳回原因：' + Format.escape(h.note) + '</span>' : '') + '</div>'
-            + statusBadge
+            + typeBadge + statusBadge
             + '<span class="rv-meta">' + Format.escape(meta) + '</span></div>';
     }).join('');
     box.innerHTML = '<div class="rv-holder">' + rows + '</div>';
