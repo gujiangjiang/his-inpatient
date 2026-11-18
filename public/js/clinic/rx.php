@@ -173,7 +173,8 @@ var RxPanel = {
         this.kw = '';
         this.catalog = [];
         this.listTotal = 0;
-        this.source = 'local';
+        this.source = '';
+        this.renderSource();   // 初始渲染「加载中」，fetch 完成后按真实 source 更新
         Dom.modal('新方（处方开具）', this.html(), [
             { text: '开具', type: 'primary', onclick: () => this.submit() },
             { text: '取消', type: 'default' }
@@ -181,6 +182,16 @@ var RxPanel = {
         this._scroll = ScrollLoad.attach(document.getElementById('rx-list'), () => this.fetchList(false));
         this.renderSelected();
         await this.fetchList(true);
+    },
+
+    /* 横幅按当前 source 渲染（fetch 返回后必须调用，
+       此前只在 modal 打开时渲染一次初始值，导致横幅永远显示「未启用」） */
+    renderSource() {
+        const el = document.getElementById('rx-source');
+        if (!el) return;
+        el.innerHTML = (this.source === 'opd'
+            ? '项目库来源：门诊一体化系统（审核通过项，实时同步）'
+            : '项目库来源：本地药品目录（' + (this.source === '' ? '加载中…' : '门诊接口未启用/不可用') + '）');
     },
 
     /* 分页拉取目录 (滚动触底续载, 一次 30 条) */
@@ -194,6 +205,7 @@ var RxPanel = {
             this.source = r.source || this.source;
             this.listTotal = r.total != null ? Number(r.total) : (r.data || []).length;
             this.catalog = this.catalog.concat(r.data || []);
+            this.renderSource();   // 横幅按真实 source 更新（此前漏调用）
             this.renderList();
             if (this._scroll) ScrollLoad.check(this._scroll);
             return this.catalog.length < this.listTotal;
@@ -206,7 +218,7 @@ var RxPanel = {
         <div class="apply-panel">
             <div class="apply-left">
                 <input class="form-control" id="rx-kw" placeholder="搜索药品名称 / 规格 / 厂家（F9）" oninput="RxPanel.onKw(this.value)">
-                <div class="apply-source">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地药品目录（门诊接口未启用/不可用）'}</div>
+                <div class="apply-source" id="rx-source"></div>
                 <div class="apply-cats" id="rx-cats">
                     ${cats.map((c, i) => `<button type="button" class="apply-chip${i === 0 ? ' active' : ''}" data-cat="${i === 0 ? '' : Format.escape(c)}" onclick="RxPanel.onCat(this)">${Format.escape(c)}</button>`).join('')}
                 </div>

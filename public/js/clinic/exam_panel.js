@@ -21,8 +21,9 @@ const ExamPanel = {
         }).catch(() => {});
         this.catalog = [];
         this.listTotal = 0;
-        this.source = 'local';
+        this.source = '';
         this.sourceDetail = '';
+        this.renderSource();   // 初始渲染「加载中」，fetch 完成后按真实 source 更新
         Dom.modal('检查申请', this.html(), [
             { text: '开具', type: 'primary', onclick: () => this.submit() },
             { text: '取消', type: 'default' }
@@ -30,6 +31,17 @@ const ExamPanel = {
         this._scroll = ScrollLoad.attach(document.getElementById('exam-list'), () => this.fetchList(false));
         this.renderSelected();
         await this.fetchList(true);
+    },
+
+    /* 横幅按当前 source/sourceDetail 渲染（fetch 返回后必须调用，
+       此前只在 modal 打开时渲染一次初始值，导致横幅永远显示「未启用」） */
+    renderSource() {
+        const el = document.getElementById('exam-source');
+        if (!el) return;
+        el.innerHTML = (this.source === 'opd'
+            ? '项目库来源：门诊一体化系统（审核通过项，实时同步）'
+            : '项目库来源：本地虚拟数据（' + Format.escape(this.sourceDetail || (this.source === '' ? '加载中…' : '门诊接口未启用')) + '）')
+            + ' <span class="apply-warn">注：请一次性开好所有的项目！</span>';
     },
 
     /* 分页拉取目录 (滚动触底续载, 一次 30 条) */
@@ -44,6 +56,7 @@ const ExamPanel = {
             this.sourceDetail = r.source_detail || '';
             this.listTotal = r.total != null ? Number(r.total) : (r.data || []).length;
             this.catalog = this.catalog.concat(r.data || []);
+            this.renderSource();   // 横幅按真实 source 更新（此前漏调用）
             this.renderList();
             if (this._scroll) ScrollLoad.check(this._scroll);
             return this.catalog.length < this.listTotal;
@@ -60,7 +73,7 @@ const ExamPanel = {
                     ${cats.map((c, i) => `<button type="button" class="apply-chip${i === 0 ? ' active' : ''}" data-cat="${i === 0 ? '' : Format.escape(c)}" onclick="ExamPanel.onCat(this)">${Format.escape(c)}</button>`).join('')}
                 </div>
                 <div class="apply-list" id="exam-list"></div>
-                <div class="apply-hint">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地虚拟数据（' + Format.escape(this.sourceDetail || '门诊接口未启用') + '）'} <span class="apply-warn">注：请一次性开好所有的项目！</span></div>
+                <div class="apply-hint" id="exam-source"></div>
             </div>
             <div class="apply-right">
                 <div class="flex-between apply-sel-head">
