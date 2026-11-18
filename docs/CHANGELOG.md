@@ -4,7 +4,30 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.47.0] - 2026-11-19
+
+### 新增
+- **登录安全基础设施**（参照门诊一体化 LoginSecurity）：
+  - 迁移 067 users 加锁定字段（login_fail_count/locked_at/locked_until/lock_reason/lock_ip）
+  - 验证码后端（auth/captcha?action=gen 返回 SVG，action=check 嗅探 off/auto/force，
+    配置键 login.captcha_mode）
+  - 登录页验证码 UI：SVG 内联渲染、blur/输入嗅探、失败 localStorage 标记、
+    点击刷新；auth.js login 支持 captcha/need_captcha
+  - 登录锁定：阈值 5 次（ConfigDB fail_lock_count 可调）超限锁 15 分钟，
+    返回 423+剩余分钟；登录成功清零
+- **通用缓存系统**（参照门诊一体化 Cache.php）：file 驱动 get/set(ttl)/delete/flush/stats，
+  存储 data/cache/{md5}.php
+- **统一审核流**（参照门诊一体化 audits）：
+  - 迁移 068 audits 表；audit_helper（submit/apply 原子防并发/list/type_name）
+  - admin/audit 后端（list 待审/已处理分页、apply 通过/驳回必填理由、all 一键全部）
+  - 审核中心接入统一 audits：待审核页顶部新增「统一审核」区（药品/设置类提交，
+    通过/驳回），已处理 tab 显示 audits 已处理（类型徽章+驳回原因）
+
+### 验证
+- php-lint 全量通过；迁移 067/068 跑通；Cache 实测 set/get/delete/stats；JS 全过。
+
 ## [0.46.0] - 2026-11-19
+
 
 ### 新增
 - **后续三项补全 + 药品规格编辑器**：
