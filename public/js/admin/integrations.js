@@ -13,11 +13,24 @@ async function admin_integrations_init() {
 }
 
 function admin_integrations_switch(name) {
-    ['opd', 'pacs', 'endpoints', 'audit', 'help'].forEach(function(k) {
-        document.getElementById('itg-pane-' + k).classList.toggle('hidden', k !== name);
-        document.getElementById('itg-tab-' + k).classList.toggle('active', k === name);
+    ['opd', 'pacs', 'catalog', 'endpoints'].forEach(function(k) {
+        const pane = document.getElementById('itg-pane-' + k);
+        const tab = document.getElementById('itg-tab-' + k);
+        if (pane) pane.classList.toggle('hidden', k !== name);
+        if (tab) tab.classList.toggle('active', k === name);
     });
     if (name === 'audit') admin_integrations_auditList();
+    if (name === 'catalog') admin_itg_catalog_load();
+}
+
+/* 门诊一体化子导航切换（状态/配置/审计/帮助） */
+function admin_itg_sub(pane) {
+    document.querySelectorAll('#itg-pane-opd .pn-item').forEach(function (el) {
+        el.classList.toggle('active', el.dataset.pane === pane);
+    });
+    document.querySelectorAll('#itg-pane-opd .db-pane').forEach(function (el) {
+        el.style.display = el.dataset.pane === pane ? '' : 'none';
+    });
 }
 
 async function admin_integrations_load_config() {
@@ -82,12 +95,53 @@ async function admin_integrations_save() {
 async function admin_integrations_test() {
     const r = await AjaxLoader.api('admin/integration-test', { silent: true });
     const items = (r.data && r.data.items) || [];
-    document.getElementById('itg-test-result').innerHTML = items.map(it =>
-        '<div class="tr-row"><span class="badge ' + (it.ok ? 'badge-success' : 'badge-danger') + '">' + (it.ok ? '通过' : '未通过') + '</span>' +
-        '<span class="tr-name">' + Format.escape(it.name) + '</span><span class="tr-detail">' + Format.escape(it.detail) + '</span></div>'
-    ).join('');
-    Dom.toast(r.data && r.data.ok ? '连通性全部通过' : '存在未通过项，请检查配置', r.data && r.data.ok ? 'success' : 'error');
+    const allOk = !!(r.data && r.data.ok);
+    const body = '<div class="test-result">' + items.map(it =>
+        '<div class="tr-row" style="border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:8px">' +
+        '<span class="badge ' + (it.ok ? 'badge-success' : 'badge-danger') + '">' + (it.ok ? '通过' : '未通过') + '</span>' +
+        '<span class="tr-name">' + Format.escape(it.name) + '</span>' +
+        '<div class="tr-detail">' + Format.escape(it.detail) + '</div></div>'
+    ).join('') + '</div>';
+    Dom.modal('连通性测试', body, [
+        { text: '重新测试', type: 'primary', onclick: async function () { admin_integrations_test(); return false; } },
+        { text: '关闭', type: 'default' }
+    ]);
+    Dom.toast(allOk ? '连通性全部通过' : '存在未通过项，请检查配置', allOk ? 'success' : 'error');
     admin_integrations_load_config();
+}
+
+/* 检查/检验项目列表（外部接口开启时显示） */
+var _itgCatalogType = 'lab';
+async function admin_itg_catalog_load() {
+    const kw = (document.getElementById('itg-catalog-kw').value || '').trim();
+    const r = await AjaxLoader.api('admin/query', { silent: true, data: { kind: _itgCatalogType, kw: kw, limit: 100 } });
+    const rows = (r.data && r.data.rows) || [];
+    const src = (r.data && r.data.source) || '';
+    document.getElementById('itg-catalog-source').textContent = src ? '来源：' + src : '';
+    document.getElementById('itg-catalog-hint').textContent = src && src.indexOf('内置') !== -1 ? '外部接口未开启或无数据，当前显示本地内置目录' : '';
+    const tbody = document.getElementById('itg-catalog-body');
+    tbody.innerHTML = '';
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-tip">暂无项目</div></td></tr>'; }
+    rows.forEach(x => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + Format.escape(x.category || '') + '</td>' +
+            '<td>' + Format.escape(x.name) + '</td>' +
+            '<td>' + Format.escape(x.spec || '') + '</td>' +
+            '<td>¥' + Number(x.price || 0).toFixed(2) + '</td>' +
+            '<td><span class="badge badge-success">可用</span></td>';
+        tbody.appendChild(tr);
+    });
+}
+function admin_itg_catalog_type(t) {
+    _itgCatalogType = t;
+    document.querySelectorAll('#itg-pane-catalog .sub-tab').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.type === t);
+    });
+    admin_itg_catalog_load();
+}
+function admin_itg_catalog_debounced() {
+    clearTimeout(_itgCatTimer);
+    _itgCatTimer = setTimeout(admin_itg_catalog_load, 250);
 }
 
 async function admin_integrations_auditList() {
