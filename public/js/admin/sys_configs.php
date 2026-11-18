@@ -1,51 +1,93 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="page-head">
     <h3 class="page-title">系统设置</h3>
-    <p class="page-desc">医院信息与全局参数（分组保存，修改后即时生效）</p>
+    <p class="page-desc">医院机构信息 · 数据库中心 · 缓存与性能 · 安全与加密（参照门诊一体化系统设置）</p>
 </div>
 
-<div class="card syscfg-brand-card">
-    <div class="card-header">医院品牌</div>
-    <div class="form-grid">
-        <div class="form-group">
-            <label class="form-label">医院名称 <span class="text-danger">*</span></label>
-            <input class="form-control" id="syscfg-hospital-name" maxlength="100" placeholder="请输入医院名称" required>
-            <div class="hint">显示于左上角、浏览器标题和 PWA 名称</div>
-        </div>
-        <div class="form-group">
-            <label class="form-label">医院第二名称（选填）</label>
-            <input class="form-control" id="syscfg-hospital-name2" maxlength="100" placeholder="如英文名、院区名或简称">
-            <div class="hint">显示于主名称下方，可留空</div>
-        </div>
+<div class="card" style="padding:10px 16px">
+    <div class="sub-tabs" id="syscfg-tabs">
+        <button class="sub-tab active" data-stab="clinic" onclick="admin_syscfg_stab('clinic')">医院机构信息</button>
+        <button class="sub-tab" data-stab="db" onclick="admin_syscfg_stab('db')">数据库中心</button>
+        <button class="sub-tab" data-stab="cache" onclick="admin_syscfg_stab('cache')">缓存与性能</button>
+        <button class="sub-tab" data-stab="security" onclick="admin_syscfg_stab('security')">安全与加密</button>
     </div>
-    <div class="syscfg-brand-logo">
-        <div class="syscfg-logo-box"><img id="syscfg-logo-preview" alt="医院 Logo 预览"></div>
-        <div class="syscfg-logo-main">
-            <div class="syscfg-logo-state" id="syscfg-logo-state">加载中...</div>
-            <div class="hint">支持 PNG、JPG、WebP、SVG，最大 4MB；浏览器会安全转换为 PNG 并生成 PWA 图标</div>
-            <input type="file" id="syscfg-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
-            <div class="syscfg-logo-actions">
-                <button type="button" class="btn" onclick="document.getElementById('syscfg-logo-file').click()">选择 Logo</button>
-                <button type="button" class="btn btn-primary" onclick="admin_sys_configs_uploadLogo()">上传 / 更新</button>
-                <button type="button" class="btn btn-danger" id="syscfg-logo-remove" onclick="admin_sys_configs_removeLogo()">恢复默认</button>
+</div>
+
+<!-- 医院机构信息 -->
+<div class="stab-pane" data-stab="clinic">
+    <div class="pane-wrap">
+        <div class="pane-nav" id="syscfg-clinic-nav">
+            <div class="pn-item active" data-cltab="info" onclick="admin_syscfg_cltab('info')">医院信息</div>
+            <div class="pn-item" data-cltab="brand" onclick="admin_syscfg_cltab('brand')">医院标志</div>
+            <div class="pn-item" data-cltab="params" onclick="admin_syscfg_cltab('params')">系统参数</div>
+            <div class="pn-item" data-cltab="tz" onclick="admin_syscfg_cltab('tz')">网站时区</div>
+        </div>
+        <div class="pane-main">
+            <div class="db-pane" data-cltab="info">
+                <div class="card">
+                    <div class="card-header">医院信息</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">医院名称 <span class="text-danger">*</span></label>
+                            <input class="form-control" id="syscfg-hospital-name" maxlength="100" placeholder="请输入医院名称" required>
+                            <div class="hint">显示于左上角、浏览器标题和 PWA 名称</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">医院第二名称（选填）</label>
+                            <input class="form-control" id="syscfg-hospital-name2" maxlength="100" placeholder="如英文名、院区名或简称">
+                            <div class="hint">显示于主名称下方，可留空</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="admin_sys_configs_saveBrandNames()">保存医院名称</button>
+                </div>
+            </div>
+            <div class="db-pane" data-cltab="brand" style="display:none">
+                <div class="card">
+                    <div class="card-header">医院标志（Logo）</div>
+                    <div class="syscfg-brand-logo">
+                        <div class="syscfg-logo-box"><img id="syscfg-logo-preview" alt="医院 Logo 预览"></div>
+                        <div class="syscfg-logo-main">
+                            <div class="syscfg-logo-state" id="syscfg-logo-state">加载中...</div>
+                            <div class="hint">支持 PNG、JPG、WebP、SVG，最大 4MB；浏览器会安全转换为 PNG 并生成 PWA 图标</div>
+                            <input type="file" id="syscfg-logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+                            <div class="syscfg-logo-actions">
+                                <button type="button" class="btn" onclick="document.getElementById('syscfg-logo-file').click()">选择 Logo</button>
+                                <button type="button" class="btn btn-primary" onclick="admin_sys_configs_uploadLogo()">上传 / 更新</button>
+                                <button type="button" class="btn btn-danger" id="syscfg-logo-remove" onclick="admin_sys_configs_removeLogo()">恢复默认</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="db-pane" data-cltab="params" style="display:none">
+                <div id="syscfg-groups"></div>
+            </div>
+            <div class="db-pane" data-cltab="tz" style="display:none">
+                <div class="card">
+                    <div class="card-header">时间与时区</div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">全站时区（显示口径）</label>
+                            <select class="form-control" id="syscfg-tz"></select>
+                            <div class="hint">存储与对外接口均为标准 UTC；此处仅决定全站显示时间</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="admin_sys_configs_saveTz()">保存</button>
+                </div>
             </div>
         </div>
     </div>
-    <button class="btn btn-primary" onclick="admin_sys_configs_saveBrandNames()">保存医院名称</button>
 </div>
 
-<div id="syscfg-groups"></div>
-
-<div class="card">
-    <div class="card-header">时间与时区</div>
-    <div class="form-grid">
-        <div class="form-group">
-            <label class="form-label">全站时区（显示口径）</label>
-            <select class="form-control" id="syscfg-tz"></select>
-            <div class="hint">存储与对外接口均为标准 UTC；此处仅决定全站显示时间</div>
-        </div>
-    </div>
-    <button class="btn btn-primary" onclick="admin_sys_configs_saveTz()">保存</button>
+<!-- 数据库中心 / 缓存 / 安全占位（后续逐步补全） -->
+<div class="stab-pane" data-stab="db" style="display:none">
+    <div class="card"><div class="card-header">数据库中心</div><p class="fs-13 text-muted">数据库驱动与连接配置（规划中，后续版本开放）</p></div>
+</div>
+<div class="stab-pane" data-stab="cache" style="display:none">
+    <div class="card"><div class="card-header">缓存与性能</div><p class="fs-13 text-muted">缓存驱动与清空（规划中，后续版本开放）</p></div>
+</div>
+<div class="stab-pane" data-stab="security" style="display:none">
+    <div class="card"><div class="card-header">安全与加密</div><p class="fs-13 text-muted">登录安全与加密配置（规划中，后续版本开放）</p></div>
 </div>
 
 <script>
@@ -63,6 +105,26 @@ async function admin_sys_configs_init() {
     await Promise.all([loadConfigs(), loadTimezone(), loadBranding()]);
     const file = document.getElementById('syscfg-logo-file');
     if (file) file.addEventListener('change', admin_sys_configs_previewLogo);
+}
+
+/* 主 tab 切换（医院机构信息/数据库中心/缓存/安全） */
+function admin_syscfg_stab(name) {
+    document.querySelectorAll('#syscfg-tabs .sub-tab').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.stab === name);
+    });
+    document.querySelectorAll('.stab-pane').forEach(function (el) {
+        el.style.display = el.dataset.stab === name ? '' : 'none';
+    });
+}
+
+/* 医院机构信息左栏子导航（医院信息/标志/参数/时区） */
+function admin_syscfg_cltab(name) {
+    document.querySelectorAll('#syscfg-clinic-nav .pn-item').forEach(function (el) {
+        el.classList.toggle('active', el.dataset.cltab === name);
+    });
+    document.querySelectorAll('#syscfg-clinic-nav ~ .pane-main .db-pane').forEach(function (el) {
+        el.style.display = el.dataset.cltab === name ? '' : 'none';
+    });
 }
 
 async function loadTimezone() {
