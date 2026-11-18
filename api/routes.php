@@ -47,6 +47,7 @@ function getRoutes() {
         'admin/drugs' => ['admin/drugs.php', ['admin']],
         'admin/logs' => ['admin/logs.php', ['admin']],
         'admin/review-history' => ['admin/review_history.php', ['admin']],
+        'admin/audit' => ['admin/audit.php', ['admin']],
         'admin/db-center' => ['admin/db_center.php', ['admin']],
         'admin/cache-center' => ['admin/cache_center.php', ['admin']],
         'admin/dict-list' => ['admin/dict/dict_list.php', ['admin']],
