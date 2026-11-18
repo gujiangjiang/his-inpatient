@@ -109,6 +109,8 @@ try {
     }
 
     $pdo->commit();
+    log_write('operation', 'order', '开医嘱：' . count($items) . ' 条', $patient['name'], 'info',
+        ['action' => $submit ? 'order_submit' : 'order_draft']);
     Response::success(['id' => $mainId, 'ids' => $ids]);
 } catch (Exception $e) {
     $pdo->rollback();

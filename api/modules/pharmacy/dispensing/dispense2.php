@@ -66,5 +66,6 @@ if ($action === 'deliver') {
     if (!$rec) Response::error('发药记录不存在');
     $r = dual_deliver_order((int)$rec['order_id'], Auth::user()['id']);
     if (!$r['ok']) Response::error($r['msg']);
+    log_write('operation', 'pharmacy', '发药送达', '发药记录 #' . $id, 'info', ['action' => 'deliver']);
     Response::success([], $r['msg']);
 }

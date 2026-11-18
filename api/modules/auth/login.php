@@ -12,12 +12,14 @@ if (!$username || !$password) {
 
 $user = Auth::login($username, $password);
 if (!$user) {
+    log_write('operation', 'login', '登录失败：' . $username, '', 'warning');
     Response::error('用户名或密码错误');
 }
 
 // 返回 session_id 用于令牌回退
 $sessionId = Auth::getSessionId();
 unset($user['password']);
+log_write('operation', 'login', '登录成功：' . ($user['name'] ?? ''), $username, 'info', ['action' => 'login']);
 
 Response::json([
     'status' => 'success',
