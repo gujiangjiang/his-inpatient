@@ -163,4 +163,41 @@ class ConfigDB {
             return $fallback;
         }
     }
+
+    /* ==================== 缓存驱动（参照门诊 ConfigStore::cacheDriver） ==================== */
+
+    /** 当前缓存驱动（config.db cache.driver，缺省 file） */
+    public static function cacheDriver() {
+        $d = trim((string)self::get('cache.driver', 'file'));
+        return in_array($d, array('file', 'apcu', 'redis', 'memcached'), true) ? $d : 'file';
+    }
+
+    /** Redis 连接参数（config.db cache.redis.*，缺省默认） */
+    public static function redisParams() {
+        return array(
+            'host' => (string)self::get('cache.redis.host', '127.0.0.1'),
+            'port' => (int)self::get('cache.redis.port', 6379),
+            'auth' => (string)self::get('cache.redis.auth', ''),
+            'prefix' => (string)self::get('cache.redis.prefix', 'his_sess:'),
+            'timeout' => (float)self::get('cache.redis.timeout', 2.0),
+        );
+    }
+
+    /** Memcached 连接参数（config.db cache.memcached.*，缺省默认） */
+    public static function memcachedParams() {
+        return array(
+            'servers' => (string)self::get('cache.memcached.servers', '127.0.0.1:11211'),
+            'prefix' => (string)self::get('cache.memcached.prefix', 'his_sess:'),
+        );
+    }
+
+    /** 驱动注册表（drivers.php 唯一数据源；供缓存中心前端渲染） */
+    public static function driverOptions() {
+        $f = BASE_DIR . '/api/config/drivers.php';
+        if (is_file($f)) {
+            $opt = include $f;
+            return is_array($opt) ? $opt : array();
+        }
+        return array();
+    }
 }
