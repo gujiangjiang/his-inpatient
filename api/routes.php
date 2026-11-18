@@ -82,6 +82,8 @@ function getRoutes() {
         'pharmacy/pending-queue' => ['pharmacy/queue/pending_queue.php', ['admin', 'pharmacist']],
         'pharmacy/dispensing-save' => ['pharmacy/dispensing/dispensing_save.php', ['admin', 'pharmacist']],
         'pharmacy/dispensing-list' => ['pharmacy/dispensing/dispensing_list.php', ['admin', 'pharmacist']],
+        // 双药房：中心药房摆药/发药（queue/dispense/deliver）
+        'pharmacy/dispense2' => ['pharmacy/dispensing/dispense2.php', ['admin', 'pharmacist']],
 
         // 处方 (药品项目库来自门诊一体化)
         'rx/catalog' => ['rx/rx_catalog.php', ['admin', 'doctor', 'pharmacist']],
@@ -92,6 +94,8 @@ function getRoutes() {
         'nurse/nursing-action' => ['nurse/nursing_action.php', ['admin', 'nurse']],
         'nurse/vitals-save' => ['nurse/vitals_save.php', ['admin', 'nurse']],
         'nurse/vitals-list' => ['nurse/vitals_list.php', ['admin', 'nurse']],
+        // 护士站预摆药（申请/取消/列表）
+        'nurse/prepare' => ['nurse/prepare.php', ['admin', 'nurse']],
 
         // 医嘱
         'orders/save' => ['orders/order/order_save.php', ['admin', 'doctor']],
