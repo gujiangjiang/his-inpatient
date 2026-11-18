@@ -177,13 +177,13 @@ function opd_transport_msg($json, $code, $body) {
     return 'HTTP ' . $code;
 }
 
-/** 门诊业务只读接口 (action=ping/patient_get/visit_list/order_list...) */
-function opd_his_read($action, $params = []) {
+/** 门诊业务只读接口 (action=ping/patient_get/visit_list/order_list...; $timeout 秒) */
+function opd_his_read($action, $params = [], $timeout = 8) {
     $settings = opd_settings();
     $query = http_build_query(array_merge(['action' => $action], $params));
     $headers = [];
     if ($settings['opd_his_token'] !== '') $headers[] = 'X-HIS-Token: ' . $settings['opd_his_token'];
-    list($code, $body) = opd_http('GET', opd_base_url() . '/api/external/his/read?' . $query, $headers);
+    list($code, $body) = opd_http('GET', opd_base_url() . '/api/external/his/read?' . $query, $headers, null, $timeout);
     $json = json_decode((string)$body, true);
     $ok = $code === 200 && is_array($json) && !empty($json['ok']);
     return ['ok' => $ok, 'http' => $code, 'data' => $json['data'] ?? null, 'msg' => opd_transport_msg($json, $code, $body)];

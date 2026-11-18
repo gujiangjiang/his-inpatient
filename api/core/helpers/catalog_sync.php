@@ -46,7 +46,10 @@ function catalog_sync_from_opd($type, $force = false) {
     if (!$force && !catalog_sync_due($type)) {
         return ['ok' => true, 'count' => -1, 'error' => ''];
     }
-    $r = opd_his_read('catalog_list', ['type' => $type]);
+    // 全量目录（含组合成员）响应体较大，容器/低配服务器构建耗时可能超过
+    // 默认 8s——HIS 超时放弃而门诊仍会完成并记「成功」日志，造成
+    // 「门诊日志正常、HIS 却回退内置目录」的假性不通；此处放宽到 20s
+    $r = opd_his_read('catalog_list', ['type' => $type], 20);
     if (!$r['ok'] || !isset($r['data']['list']) || !is_array($r['data']['list'])) {
         return ['ok' => false, 'count' => 0, 'error' => $r['msg']];
     }
