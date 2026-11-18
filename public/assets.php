@@ -77,6 +77,7 @@ class Asset {
         '/js/case_front_page/home_page1.js',
         '/js/case_front_page/home_page2.js',
         '/js/admin/integrations.js',
+        '/js/admin/drugform.js',
         '/js/login/login.js',
         '/js/login/setup_wizard.js',
         '/js/core/pwa.js',

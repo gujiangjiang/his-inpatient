@@ -125,10 +125,14 @@ function admin_drugs_form(d) {
         '<div class="form-grid">' +
         '<div class="form-group"><label class="form-label">分类</label><input class="form-control" id="dform-cat" value="' + Format.escape(d.category || '西药') + '"></div>' +
         '<div class="form-group"><label class="form-label">剂型</label><input class="form-control" id="dform-form" value="' + Format.escape(d.form || '') + '"></div>' +
-        '<div class="form-group"><label class="form-label">规格</label><input class="form-control" id="dform-spec" value="' + Format.escape(d.spec || '') + '"></div>' +
+        '<div class="form-group"><label class="form-label">规格</label>' +
+        '<div class="flex gap-4"><input class="form-control" id="dform-spec" value="' + Format.escape(d.spec || '') + '" placeholder="如 0.5g×24粒">' +
+        '<button type="button" class="btn" onclick="openSpecEditor()">规格编辑</button></div></div>' +
         '<div class="form-group"><label class="form-label">包装单位</label><input class="form-control" id="dform-unit" value="' + Format.escape(d.unit || '') + '"></div>' +
         '<div class="form-group"><label class="form-label">每包装数量</label><input class="form-control" id="dform-packqty" type="number" min="1" value="' + (d.spec_pack_qty || 1) + '"></div>' +
         '<div class="form-group"><label class="form-label">最小单位</label><input class="form-control" id="dform-packunit" value="' + Format.escape(d.spec_pack_unit || '') + '"></div>' +
+        '<input type="hidden" id="dform-dosed" value="' + (d.spec_dose || '') + '">' +
+        '<input type="hidden" id="dform-doseunit" value="' + Format.escape(d.spec_dose_unit || '') + '">' +
         '<div class="form-group"><label class="form-label">单价（包装价）</label><input class="form-control" id="dform-price" type="number" step="0.01" min="0" value="' + (d.price || 0) + '"></div>' +
         '<div class="form-group"><label class="form-label">库存（最小单位）</label><input class="form-control" id="dform-stock" type="number" min="0" value="' + (d.stock || 0) + '"></div>' +
         '<div class="form-group"><label class="form-label">警戒库存</label><input class="form-control" id="dform-warn" type="number" min="0" value="' + (d.warn_qty || 0) + '"></div>' +
@@ -136,7 +140,13 @@ function admin_drugs_form(d) {
         '<div class="form-group"><label class="form-label">默认频次</label><input class="form-control" id="dform-freq" value="' + Format.escape(d.frequency || '') + '"></div>' +
         '<div class="form-group"><label class="form-label">默认用法</label><input class="form-control" id="dform-route" value="' + Format.escape(d.route || '') + '"></div>' +
         '</div>' +
-        '<div class="form-group"><label class="form-checkbox"><input type="checkbox" id="dform-split" ' + (d.allow_split ? 'checked' : '') + '> 允许拆零销售</label></div>';
+        '<div class="form-group"><label class="form-checkbox"><input type="checkbox" id="dform-split" ' + (d.allow_split ? 'checked' : '') + '> 允许拆零销售</label>' +
+        '<div id="dform-split-box" style="display:none;margin-top:8px;padding:10px 12px;border:1px dashed var(--border);border-radius:8px;background:#f8fafc">' +
+        '<div class="flex-between"><span class="text-muted">包装售价</span><b id="dform-sp-packprice">—</b><span id="dform-sp-packunit"></span></div>' +
+        '<div class="flex-between" style="margin-top:4px"><span class="text-muted">拆零单价（' + (d.spec_pack_qty || 1) + ' ' + Format.escape(d.spec_pack_unit || '') + '/包装）</span><b id="dform-sp-minprice">—</b><span id="dform-sp-minunit"></span></div></div></div>' +
+        '<div class="form-group"><label class="form-label">警戒库存（包装数）</label>' +
+        '<input class="form-control" id="dform-warn" type="number" min="0" value="' + (d.warn_qty || 0) + '">' +
+        '<div class="hint" id="dform-warn-hint"></div></div>';
     Dom.modal(d.id ? '编辑药品' : '新增药品', content, [
         { text: '保存', type: 'primary', onclick: async function () {
             const data = {
@@ -148,9 +158,11 @@ function admin_drugs_form(d) {
                 unit: document.getElementById('dform-unit').value.trim(),
                 spec_pack_qty: document.getElementById('dform-packqty').value,
                 spec_pack_unit: document.getElementById('dform-packunit').value.trim(),
+                spec_dose: document.getElementById('dform-dosed').value,
+                spec_dose_unit: document.getElementById('dform-doseunit').value.trim(),
                 price: document.getElementById('dform-price').value,
                 stock: document.getElementById('dform-stock').value,
-                warn_qty: document.getElementById('dform-warn').value,
+                warn_qty: (parseInt(document.getElementById('dform-warn').value, 10) || 0) * (parseInt(document.getElementById('dform-packqty').value, 10) || 1),   // 包装数×每包装数量 → 最小单位
                 single_dose: document.getElementById('dform-dose').value.trim(),
                 frequency: document.getElementById('dform-freq').value.trim(),
                 route: document.getElementById('dform-route').value.trim(),
@@ -162,6 +174,11 @@ function admin_drugs_form(d) {
         } },
         { text: '取消', type: 'default' }
     ]);
+    if (typeof bindDrugSpecEditor === 'function') {
+        bindDrugSpecEditor();
+        syncSplitBox();
+        syncWarn();
+    }
 }
 
 async function admin_drugs_toggle(id, on) {

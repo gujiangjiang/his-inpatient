@@ -52,6 +52,8 @@ if ($action === 'list') {
                 'warn_qty' => (int)($m['warn_qty'] ?? 0),
                 'spec_pack_qty' => (int)($m['spec_pack_qty'] ?? 1),
                 'spec_pack_unit' => (string)($m['spec_pack_unit'] ?? ''),
+                'spec_dose' => (float)($m['spec_dose'] ?? 0),
+                'spec_dose_unit' => (string)($m['spec_dose_unit'] ?? ''),
                 'allow_split' => (int)($m['allow_split'] ?? 0),
                 'form' => (string)($m['dosage_form'] ?? ''),
                 'single_dose' => (string)($m['default_dosage'] ?? ''),
@@ -94,6 +96,8 @@ if ($action === 'save') {
     $specPackUnit = trim((string)Validator::get('spec_pack_unit', ''));
     $allowSplit = (int)Validator::get('allow_split', 0) ? 1 : 0;
     $warnQty = (int)Validator::get('warn_qty', 0);
+    $specDose = (float)Validator::get('spec_dose', 0);
+    $specDoseUnit = trim((string)Validator::get('spec_dose_unit', ''));
     $category = trim((string)Validator::get('category', '西药'));
     $form = trim((string)Validator::get('form', ''));
     $defaultDosage = trim((string)Validator::get('single_dose', ''));
@@ -108,19 +112,19 @@ if ($action === 'save') {
         $exists = DB::selectOne("SELECT id FROM medications WHERE id = ?", [$id]);
         if (!$exists) Response::error('药品不存在');
         DB::execute("UPDATE medications SET name=?, specification=?, unit=?, price=?, stock_quantity=?,
-                     spec_pack_qty=?, spec_pack_unit=?, allow_split=?, warn_qty=?, drug_class=?, dosage_form=?,
+                     spec_pack_qty=?, spec_pack_unit=?, spec_dose=?, spec_dose_unit=?, allow_split=?, warn_qty=?, drug_class=?, dosage_form=?,
                      default_dosage=?, default_freq=?, default_route=?, is_active=1 WHERE id=?",
-            [$name, $spec, $unit, $price, $stock, $specPackQty, $specPackUnit, $allowSplit, $warnQty, $category, $form,
+            [$name, $spec, $unit, $price, $stock, $specPackQty, $specPackUnit, $specDose, $specDoseUnit, $allowSplit, $warnQty, $category, $form,
              $defaultDosage, $defaultFreq, $defaultRoute, $id]);
         Response::success([], '药品已更新');
     } else {
         // 新增：自动生成编码
         $code = 'M' . date('YmdHis') . mt_rand(100, 999);
         DB::execute("INSERT INTO medications (code, name, specification, unit, price, stock_quantity,
-                       spec_pack_qty, spec_pack_unit, allow_split, warn_qty, drug_class, dosage_form,
+                       spec_pack_qty, spec_pack_unit, spec_dose, spec_dose_unit, allow_split, warn_qty, drug_class, dosage_form,
                        default_dosage, default_freq, default_route, is_active, pharmacy, created_at)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,'中心药房',?)",
-            [$code, $name, $spec, $unit, $price, $stock, $specPackQty, $specPackUnit, $allowSplit, $warnQty,
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,'中心药房',?)",
+            [$code, $name, $spec, $unit, $price, $stock, $specPackQty, $specPackUnit, $specDose, $specDoseUnit, $allowSplit, $warnQty,
              $category, $form, $defaultDosage, $defaultFreq, $defaultRoute, DateHelper::now()]);
         Response::success([], '药品已新增');
     }
