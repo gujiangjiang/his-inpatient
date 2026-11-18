@@ -15,4 +15,5 @@
 <div class="menu-item" onclick="navigateTo('admin','api_configs')"><span class="menu-ico"><?= icon('common/nav', 'link', 16) ?></span><span class="menu-text">接口配置</span></div>
 <div class="menu-group">系统设置</div>
 <div class="menu-item" onclick="navigateTo('admin','sys_configs')"><span class="menu-ico"><?= icon('common/nav', 'sliders', 16) ?></span><span class="menu-text">系统设置</span></div>
+<div class="menu-item" onclick="navigateTo('admin','logs')"><span class="menu-ico"><?= icon('common/nav', 'checklist', 16) ?></span><span class="menu-text">日志中心</span></div>
 <div class="menu-item" onclick="navigateTo('admin','query')"><span class="menu-ico"><?= icon('common/actions', 'search', 16) ?></span><span class="menu-text">数据查询</span></div>
