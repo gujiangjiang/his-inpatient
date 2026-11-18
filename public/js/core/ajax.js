@@ -102,15 +102,16 @@ const AjaxLoader = {
             opts.body = method === 'GET' ? undefined : (isForm ? data : JSON.stringify(data));
         }
 
-        // 统一轻量加载指示：silent 与非 silent 都计入（快速请求 300ms 阈值防闪烁）
-        this.showBar();
+        // 轻量加载指示（顶部进度条+右上转圈）：
+        // 仅 silent 请求使用（非 silent 已有全屏遮罩，两者并存会重复转圈）
+        if (silent) this.showBar();
         if (!silent) {
             this.initLoading();
         }
 
         return fetch('/api/' + path, opts)
             .then(async (resp) => {
-                this.hideBar();
+                if (silent) this.hideBar();
                 if (!silent) this.removeLoading();
                 const result = await resp.json();
                 // 按 HTTP 状态码判断 401
@@ -124,7 +125,7 @@ const AjaxLoader = {
                 return result;
             })
             .catch(err => {
-                this.hideBar();
+                if (silent) this.hideBar();
                 if (!silent) this.removeLoading();
                 // silent 模式不弹 toast (防登录页重复toast)
                 if (!silent) {
@@ -137,11 +138,9 @@ const AjaxLoader = {
     loadPage(module, page) {
         const v = (typeof App !== 'undefined' && App.version) ? App.version : '';
         const url = '/js/' + module + '/' + page + '.php' + (v ? '?v=' + v : '');
-        this.showBar();
         this.initLoading();
         return fetch(url, { cache: 'no-store' })
             .then(resp => {
-                this.hideBar();
                 if (!resp.ok) throw new Error('页面加载失败: ' + resp.status);
                 return resp.text();
             })
