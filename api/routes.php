@@ -6,6 +6,7 @@ function getRoutes() {
         // 认证
         'auth/check' => ['auth/check.php', []],
         'auth/login' => ['auth/login.php', []],
+        'auth/captcha' => ['auth/captcha.php', []],
         'auth/logout' => ['auth/logout.php', ['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']],
         'auth/setup-status' => ['auth/setup_status.php', []],
         'auth/setup' => ['auth/setup.php', []],
