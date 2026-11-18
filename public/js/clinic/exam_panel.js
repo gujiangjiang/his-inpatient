@@ -22,6 +22,7 @@ const ExamPanel = {
         this.catalog = [];
         this.listTotal = 0;
         this.source = 'local';
+        this.sourceDetail = '';
         Dom.modal('检查申请', this.html(), [
             { text: '开具', type: 'primary', onclick: () => this.submit() },
             { text: '取消', type: 'default' }
@@ -40,6 +41,7 @@ const ExamPanel = {
         if (this.cat) params.set('category', this.cat);
         return AjaxLoader.api('exam/catalog?' + params.toString(), { silent: true }).then(r => {
             this.source = r.source || this.source;
+            this.sourceDetail = r.source_detail || '';
             this.listTotal = r.total != null ? Number(r.total) : (r.data || []).length;
             this.catalog = this.catalog.concat(r.data || []);
             this.renderList();
@@ -58,7 +60,7 @@ const ExamPanel = {
                     ${cats.map((c, i) => `<button type="button" class="apply-chip${i === 0 ? ' active' : ''}" data-cat="${i === 0 ? '' : Format.escape(c)}" onclick="ExamPanel.onCat(this)">${Format.escape(c)}</button>`).join('')}
                 </div>
                 <div class="apply-list" id="exam-list"></div>
-                <div class="apply-hint">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地虚拟数据（预留接口对接门诊一体化检查项目库）'} <span class="apply-warn">注：请一次性开好所有的项目！</span></div>
+                <div class="apply-hint">${this.source === 'opd' ? '项目库来源：门诊一体化系统（审核通过项，实时同步）' : '项目库来源：本地虚拟数据（' + Format.escape(this.sourceDetail || '门诊接口未启用') + '）'} <span class="apply-warn">注：请一次性开好所有的项目！</span></div>
             </div>
             <div class="apply-right">
                 <div class="flex-between apply-sel-head">

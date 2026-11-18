@@ -8,9 +8,15 @@ $offset = max(0, (int)Validator::get('offset', 0));
 $category = trim((string)Validator::get('category', ''));
 
 $source = 'local';
+$sourceDetail = '门诊接口未启用';
 if (opd_settings()['opd_enabled'] === '1') {
     $sync = catalog_sync_from_opd('exam_items');
-    if ($sync['ok']) $source = 'opd';
+    if ($sync['ok']) {
+        $source = 'opd';
+        $sourceDetail = '';
+    } else {
+        $sourceDetail = '门诊接口暂不可用：' . $sync['error'];
+    }
 }
 
 $sql = "SELECT * FROM exam_catalog WHERE is_active = 1";
@@ -54,4 +60,5 @@ Response::json([
     'data' => $rows,
     'total' => $total,
     'source' => $source,
+    'source_detail' => $sourceDetail,
 ]);

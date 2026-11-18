@@ -7,9 +7,15 @@ $limit = max(1, min(200, (int)Validator::get('limit', 30) ?: 30));
 $offset = max(0, (int)Validator::get('offset', 0));
 
 $source = 'local';
+$sourceDetail = '门诊接口未启用';
 if (opd_settings()['opd_enabled'] === '1') {
     $sync = catalog_sync_from_opd('lab_items');
-    if ($sync['ok']) $source = 'opd';
+    if ($sync['ok']) {
+        $source = 'opd';
+        $sourceDetail = '';
+    } else {
+        $sourceDetail = '门诊接口暂不可用：' . $sync['error'];
+    }
 }
 
 $sql = "SELECT * FROM lab_catalog WHERE is_active = 1";
@@ -53,4 +59,5 @@ Response::json([
     'data' => $rows,
     'total' => $total,
     'source' => $source,
+    'source_detail' => $sourceDetail,
 ]);
