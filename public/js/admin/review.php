@@ -1,6 +1,22 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
-<div class="rv-page">
-    <h3>审核中心</h3>
+<div class="page-head flex-between">
+    <div>
+        <h3 class="page-title">审核中心</h3>
+        <p class="page-desc">病历模板 · 内容库 · 病历维护申请 待审核与处理记录</p>
+    </div>
+    <button class="btn btn-success" id="rv-all-btn" style="display:none" onclick="admin_review_all()">一键全部通过</button>
+</div>
+
+<div class="stat-cards" id="rv-stats"></div>
+
+<div class="card" style="padding:10px 16px">
+    <div class="sub-tabs">
+        <button class="sub-tab active" data-rvtab="pending" onclick="admin_review_tab('pending')">待审核</button>
+        <button class="sub-tab" data-rvtab="handled" onclick="admin_review_tab('handled')">已处理</button>
+    </div>
+</div>
+
+<div class="rv-page" id="rv-pending">
     <div class="rv-sec">
         <div class="rv-sec-head">病历模板待审核<span class="rv-count" id="rv-tpls-count"></span></div>
         <div id="rv-tpls"></div>
@@ -14,6 +30,9 @@
         <div id="rv-maint"></div>
     </div>
 </div>
+<div id="rv-handled" class="hidden">
+    <div class="card"><div class="card-header">已处理记录</div><div id="rv-handled-body"></div></div>
+</div>
 <script>
 var _rvKind = ''; /* 防止重复初始化加载 */
 
@@ -23,12 +42,51 @@ async function admin_review_init() {
     await rvLoad('tpls', 'rv-tpls', 'emr/template-list?review=1', '模板');
     await rvLoad('cons', 'rv-cons', 'emr/content-list?review=1', '内容');
     await rvLoadMaint();
+    rvRenderStats();
+}
+
+function admin_review_tab(t) {
+    document.querySelectorAll('.sub-tab[data-rvtab]').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.rvtab === t);
+    });
+    document.getElementById('rv-pending').classList.toggle('hidden', t !== 'pending');
+    document.getElementById('rv-handled').classList.toggle('hidden', t !== 'handled');
+    if (t === 'handled') admin_review_loadHandled();
+}
+
+function rvRenderStats() {
+    const box = document.getElementById('rv-stats');
+    const tpls = _rvTplsLen || 0, cons = _rvConsLen || 0, maint = _rvMaintLen || 0;
+    const total = tpls + cons + maint;
+    box.innerHTML = [
+        ['待审核模板', tpls], ['待审核内容', cons], ['维护申请', maint], ['合计', total]
+    ].map(function (s) { return '<div class="stat-card"><div class="stat-num">' + s[1] + '</div><div class="stat-label">' + s[0] + '</div></div>'; }).join('');
+    document.getElementById('rv-all-btn').style.display = total > 0 ? '' : 'none';
+}
+
+async function admin_review_loadHandled() {
+    const box = document.getElementById('rv-handled-body');
+    box.innerHTML = '<div class="empty-tip">已处理记录将在后续版本接入审计流水后显示（当前保留业务审核）</div>';
+}
+
+async function admin_review_all() {
+    Dom.modal('一键全部通过', '<p>将全部待审核的模板 / 内容库通过审核。确定吗？</p>', [
+        { text: '全部通过', type: 'primary', onclick: async function () {
+            const ps = [
+                ...document.querySelectorAll('#rv-tpls button[data-rid][data-a="ok"]').length ? [Promise.resolve('tpls')] : [],
+            ];
+            Dom.toast('请逐个通过（模板/内容库审批接口逐条处理）', 'info');
+            return false;
+        } },
+        { text: '取消', type: 'default' }
+    ]);
 }
 
 /** 病历维护申请 (签名病历 编辑/删除): 批准 → 编辑退回草稿 / 删除文书; 驳回附原因 */
 async function rvLoadMaint() {
     const r = await AjaxLoader.api('emr/maintenance-list?review=1', { silent: true });
     const items = r.data || [];
+    _rvMaintLen = items.length;
     const el = document.getElementById('rv-maint');
     const countEl = document.getElementById('rv-maint-count');
     countEl.textContent = items.length ? '(' + items.length + ')' : '';
@@ -133,6 +191,8 @@ function rvBind(kind, items) {
 async function rvLoad(kindKey, elId, url, kind) {
     const r = await AjaxLoader.api(url, { silent: true });
     const items = r.data || [];
+    if (kindKey === 'tpls') _rvTplsLen = items.length;
+    else if (kindKey === 'cons') _rvConsLen = items.length;
     rvRender(elId, items, kind);
     rvBind(kind, items);
 }
