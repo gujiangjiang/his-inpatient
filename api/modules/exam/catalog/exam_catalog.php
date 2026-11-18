@@ -8,7 +8,7 @@ $offset = max(0, (int)Validator::get('offset', 0));
 $category = trim((string)Validator::get('category', ''));
 
 $source = 'local';
-$sourceDetail = '门诊接口未启用';
+$sourceDetail = '门诊接口未启用：接口管理 → 门诊一体化 → 勾选「启用」并保存';
 if (opd_settings()['opd_enabled'] === '1') {
     $sync = catalog_sync_from_opd('exam_items');
     if ($sync['ok']) {
