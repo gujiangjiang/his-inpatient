@@ -12,6 +12,8 @@
     </div>
 </div>
 
+<div class="stat-cards" id="drug-stats"></div>
+
 <div class="card">
     <div class="card-header" id="drug-source-bar">加载中…</div>
     <div class="flex-between mb-10">
@@ -86,6 +88,26 @@ async function admin_drugs_load() {
         tbody.appendChild(tr);
     });
     if (!_drugRows.length) tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state">暂无药品</div></td></tr>';
+    renderDrugStats(data);
+}
+
+function renderDrugStats(data) {
+    const box = document.getElementById('drug-stats');
+    if (!box) return;
+    const rows = _drugRows;
+    const total = data.total || 0;
+    const low = rows.filter(d => d.warn_qty > 0 && d.stock <= d.warn_qty).length;
+    const stock = rows.reduce((s, d) => s + Number(d.stock || 0), 0);
+    const cats = new Set(rows.map(d => d.category).filter(Boolean)).size;
+    if (_drugType === 'center') {
+        box.innerHTML = [
+            ['药品总数', total], ['库存合计', stock], ['低库存', low], ['分类数', cats]
+        ].map(s => `<div class="stat-card"><div class="stat-num">${s[1]}</div><div class="stat-label">${s[0]}</div></div>`).join('');
+    } else {
+        box.innerHTML = [
+            ['门诊药品', total], ['库存合计', stock], ['低库存', low]
+        ].map(s => `<div class="stat-card"><div class="stat-num">${s[1]}</div><div class="stat-label">${s[0]}</div></div>`).join('');
+    }
 }
 
 function admin_drugs_new() { admin_drugs_form({}); }
