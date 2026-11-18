@@ -63,8 +63,8 @@ try {
     $sql = "INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period,
                 order_no, content, category, status, drug_id, dosage, dosage_unit, base_dosage, usage_name, usage_rate,
                 freq_code, freq_detail, billing_flags, group_seq, sort_no, start_date, end_date, notes, rx_no,
-                created_by, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                pharmacy_type, outpatient, created_by, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     $stmt = $pdo->prepare($sql);
 
     // 成组规则: 仅多药品且未显式禁用成组 (处方等多药品独立开具时前端传 group=0)
@@ -99,6 +99,8 @@ try {
             $freqCode, $freqDetail,
             $item['billing_flags'] ?? '', $i, 0,
             $item['start_date'] ?? $startDate, $endDate, $notes, $rxNo,
+            $item['pharmacy_type'] ?? Validator::get('pharmacy_type', 'center'), // 处方选药房：center/outpatient
+            $item['pharmacy_type'] ?? Validator::get('pharmacy_type', 'center') === 'outpatient' ? 1 : 0,
             $userId, $now, $now
         ]);
         $id = $pdo->lastInsertId();

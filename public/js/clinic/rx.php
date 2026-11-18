@@ -173,6 +173,8 @@ var RxPanel = {
         this.kw = '';
         this.catalog = [];
         this.listTotal = 0;
+        this.pharmacyType = 'center';
+        this.offline = false;
         this.source = '';
         this.renderSource();   // 初始渲染「加载中」，fetch 完成后按真实 source 更新
         Dom.modal('新方（处方开具）', this.html(), [
@@ -189,9 +191,30 @@ var RxPanel = {
     renderSource() {
         const el = document.getElementById('rx-source');
         if (!el) return;
-        el.innerHTML = (this.source === 'opd'
-            ? '项目库来源：门诊一体化系统（审核通过项，实时同步）'
-            : '项目库来源：本地药品目录（' + (this.source === '' ? '加载中…' : '门诊接口未启用/不可用') + '）');
+        if (this.pharmacyType === 'outpatient') {
+            el.innerHTML = (this.source === 'opd'
+                ? '项目库来源：门诊药房（实时库存，防止超发）'
+                : '项目库来源：门诊药房（' + (this.source === '' ? '加载中…' : this.source === 'cache' ? '离线缓存：实时查询失败，库存/价格可能过期' : '门诊接口未启用/不可用') + '）');
+        } else {
+            el.innerHTML = '项目库来源：中心药房（本地库存实时）';
+        }
+    },
+
+    /* 切换药房（中心/门诊） */
+    switchPharmacy(type) {
+        if (this.pharmacyType === type) return;
+        this.pharmacyType = type;
+        this.offline = false;
+        this.catalog = [];
+        this.listTotal = 0;
+        this.selected = [];
+        this.source = '';
+        document.querySelectorAll('.rx-ph-type').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+        this.renderSource();
+        this.renderList();
+        this.renderSelected();
+        ScrollLoad.reset(this._scroll);
+        this.fetchList(true);
     },
 
     /* 分页拉取目录 (滚动触底续载, 一次 30 条) */
@@ -201,8 +224,10 @@ var RxPanel = {
         const params = new URLSearchParams({ limit: 30, offset: this.catalog.length });
         if (this.kw) params.set('kw', this.kw);
         if (this.cat) params.set('category', this.cat);
+        params.set('pharmacy_type', this.pharmacyType);
         return AjaxLoader.api('rx/catalog?' + params.toString(), { silent: true }).then(r => {
             this.source = r.source || this.source;
+            this.offline = !!r.offline;
             this.listTotal = r.total != null ? Number(r.total) : (r.data || []).length;
             this.catalog = this.catalog.concat(r.data || []);
             this.renderSource();   // 横幅按真实 source 更新（此前漏调用）
@@ -217,6 +242,10 @@ var RxPanel = {
         return `
         <div class="apply-panel">
             <div class="apply-left">
+                <div class="rx-ph-tabs">
+                    <button type="button" class="btn btn-small rx-ph-type active" data-type="center" onclick="RxPanel.switchPharmacy('center')">中心药房</button>
+                    <button type="button" class="btn btn-small rx-ph-type" data-type="outpatient" onclick="RxPanel.switchPharmacy('outpatient')">门诊药房</button>
+                </div>
                 <input class="form-control" id="rx-kw" placeholder="搜索药品名称 / 规格 / 厂家（F9）" oninput="RxPanel.onKw(this.value)">
                 <div class="apply-source" id="rx-source"></div>
                 <div class="apply-cats" id="rx-cats">
@@ -319,7 +348,10 @@ var RxPanel = {
                 usage_name: i.route || '',
                 freq_code: i.frequency_code || '',
                 category: 'medication',
-                order_period: 'temp'
+                order_period: 'temp',
+                drug_id: i.source === 'center' ? (i.id || null) : null,  // 中心药房关联本地药品；门诊药房不关联
+                pharmacy_type: i.source === 'outpatient' || this.pharmacyType === 'outpatient' ? 'outpatient' : 'center',
+                qty: i.stock != null ? Number(i.stock) : 0,   // 门诊实时库存快照（供 UI 展示，摆药时以实时接口为准）
             };
         });
         // 处方直接提交 (待护士核对), 医嘱备注「处方」以便医嘱列表识别来源
@@ -331,7 +363,8 @@ var RxPanel = {
             items: items,
             submit: 1,
             group: 0,
-            notes: '处方'
+            notes: '处方',
+            pharmacy_type: this.pharmacyType,   // 处方选药房：center/outpatient
         }});
         if (r.status === 'success') {
             Dom.toast('处方已开具（待护士核对）', 'success');
