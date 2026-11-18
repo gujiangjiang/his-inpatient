@@ -66,7 +66,21 @@ function rvRenderStats() {
 
 async function admin_review_loadHandled() {
     const box = document.getElementById('rv-handled-body');
-    box.innerHTML = '<div class="empty-tip">已处理记录将在后续版本接入审计流水后显示（当前保留业务审核）</div>';
+    const r = await AjaxLoader.api('admin/review-history', { silent: true });
+    const list = (r.data && r.data.list) || [];
+    if (!list.length) { box.innerHTML = '<div class="empty-tip">暂无已处理记录</div>'; return; }
+    const rows = list.map(function (h) {
+        const statusBadge = h.status === 'approved'
+            ? '<span class="badge badge-success">已通过</span>'
+            : (h.status === 'rejected' ? '<span class="badge badge-danger">已驳回</span>' : '<span class="badge badge-default">' + Format.escape(h.status) + '</span>');
+        const meta = [h.type, h.audited_by, h.audited_at ? Format.datetime(h.audited_at) : ''].filter(Boolean).join(' · ');
+        return '<div class="rv-row">'
+            + '<div class="rv-name"><b>' + Format.escape(h.name) + '</b>'
+            + (h.note ? '<span class="rv-prev">驳回原因：' + Format.escape(h.note) + '</span>' : '') + '</div>'
+            + statusBadge
+            + '<span class="rv-meta">' + Format.escape(meta) + '</span></div>';
+    }).join('');
+    box.innerHTML = '<div class="rv-holder">' + rows + '</div>';
 }
 
 async function admin_review_all() {
