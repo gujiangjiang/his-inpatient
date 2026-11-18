@@ -26,7 +26,6 @@ if ($action === 'queue') {
     $stmt = DB::getPDO()->prepare($sql);
     $stmt->execute();
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    // 附带自动算量预览
     foreach ($rows as &$r) {
         $med = [
             'spec_pack_qty' => (int)($r['spec_pack_qty'] ?? 1),
@@ -59,11 +58,13 @@ if ($action === 'dispense') {
         '摆药完成 ' . $ok . ' 条，扣费 ¥' . number_format($total, 2) . ($fail ? '；失败：' . implode('；', array_slice($fail, 0, 3)) : ''));
 }
 
-// 发药送达（单条）
+// 发药送达（按发药记录ID定位医嘱）
 if ($action === 'deliver') {
     $id = (int)Validator::get('id', 0);
     if (!$id) Response::error('参数错误');
-    $r = dual_deliver_order($id, Auth::user()['id']);
+    $rec = DB::selectOne("SELECT * FROM dispensing_records WHERE id = ?", [$id]);
+    if (!$rec) Response::error('发药记录不存在');
+    $r = dual_deliver_order((int)$rec['order_id'], Auth::user()['id']);
     if (!$r['ok']) Response::error($r['msg']);
     Response::success([], $r['msg']);
 }
