@@ -43,6 +43,7 @@ function getRoutes() {
         'notify/read' => ['notify/read.php', ['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']],
         'notify/stream' => ['notify/stream.php', ['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']],
         'admin/query' => ['admin/query.php', ['admin']],
+        'admin/drugs' => ['admin/drugs.php', ['admin']],
         'admin/dict-list' => ['admin/dict/dict_list.php', ['admin']],
         'admin/dict-save' => ['admin/dict/dict_save.php', ['admin']],
         'admin/integration-push-catalog' => ['admin/integration/integration_push_catalog.php', ['admin']],
