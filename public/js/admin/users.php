@@ -7,18 +7,61 @@
     <button class="btn btn-primary" onclick="admin_users_new()">添加人员</button>
 </div>
 
+<div class="stat-cards" id="user-stats"></div>
+
+<div class="card list-filter">
+    <div class="filter-item">
+        <label>角色</label>
+        <select class="form-control" id="user-filter-role" onchange="admin_users_load()">
+            <option value="">全部</option>
+            <option value="admin">管理员</option>
+            <option value="doctor">医生</option>
+            <option value="nurse">护士</option>
+            <option value="pharmacist">药师</option>
+            <option value="lab_tech">检验技师</option>
+        </select>
+    </div>
+    <div class="filter-item">
+        <label>状态</label>
+        <select class="form-control" id="user-filter-active" onchange="admin_users_load()">
+            <option value="">全部</option>
+            <option value="1">激活</option>
+            <option value="0">禁用</option>
+        </select>
+    </div>
+    <div class="filter-item" style="flex:1;min-width:200px">
+        <input class="form-control" id="user-filter-kw" placeholder="搜索用户名 / 姓名" style="width:100%" oninput="admin_users_debounced()">
+    </div>
+    <div class="filter-item">
+        <button class="btn btn-small" onclick="admin_users_load()">查询</button>
+        <button class="btn btn-small" onclick="admin_users_reset_filter()">重置</button>
+    </div>
+</div>
+
 <div class="card">
+    <div class="card-header">账号列表 <span class="head-stat" id="user-count"></span></div>
     <table class="table">
-        <thead><tr><th>用户名</th><th>姓名</th><th>角色</th><th>科室</th><th>病区</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>用户名</th><th>姓名</th><th>角色</th><th>科室</th><th>病区</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
         <tbody id="user-table-body"></tbody>
     </table>
+    <div class="flex-between mt-10" style="padding:0 6px">
+        <span class="text-muted fs-12">共 <b id="user-total">0</b> 条</span>
+        <div>
+            <button class="btn btn-small" id="user-prev" onclick="admin_users_page(-1)">上一页</button>
+            <span class="text-muted fs-12" id="user-pageinfo"></span>
+            <button class="btn btn-small" id="user-next" onclick="admin_users_page(1)">下一页</button>
+        </div>
+    </div>
 </div>
 
 <script>
 var _deptOptions = [], _wardOptions = [];
+var _userAll = [];
+var _userPage = 1, _userPer = 15;
 
 async function admin_users_init() {
     document.getElementById('main-app').style.display = 'flex';
+    document.getElementById('login-container').style.display = 'none';
     const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
     const [depts, wards] = await Promise.all([
@@ -27,37 +70,96 @@ async function admin_users_init() {
     ]);
     _deptOptions = depts.data || [];
     _wardOptions = wards.data || [];
-    loadUsers();
+    admin_users_load();
 }
 
-async function loadUsers() {
-    const result = await AjaxLoader.api('admin/user-list', {silent:true});
+function admin_users_debounced() {
+    clearTimeout(_userTimer);
+    _userTimer = setTimeout(function () { _userPage = 1; admin_users_load(); }, 250);
+}
+
+function admin_users_reset_filter() {
+    document.getElementById('user-filter-role').value = '';
+    document.getElementById('user-filter-active').value = '';
+    document.getElementById('user-filter-kw').value = '';
+    _userPage = 1;
+    admin_users_load();
+}
+
+function admin_users_page(d) {
+    const pages = Math.max(1, Math.ceil(_userFiltered().length / _userPer));
+    _userPage = Math.min(pages, Math.max(1, _userPage + d));
+    admin_users_load();
+}
+
+function _userFiltered() {
+    const role = document.getElementById('user-filter-role').value;
+    const active = document.getElementById('user-filter-active').value;
+    const kw = document.getElementById('user-filter-kw').value.trim().toLowerCase();
+    return _userAll.filter(u => {
+        if (role && u.role !== role) return false;
+        if (active !== '' && String(u.is_active) !== active) return false;
+        if (kw && !(u.username||'').toLowerCase().includes(kw) && !(u.name||'').toLowerCase().includes(kw)) return false;
+        return true;
+    });
+}
+
+async function admin_users_load() {
+    const r = await AjaxLoader.api('admin/user-list', {silent:true});
+    _userAll = r.data || [];
+    const filtered = _userFiltered();
+    const pages = Math.max(1, Math.ceil(filtered.length / _userPer));
+    if (_userPage > pages) _userPage = pages;
+    const rows = filtered.slice((_userPage - 1) * _userPer, _userPage * _userPer);
+    document.getElementById('user-total').textContent = filtered.length;
+    document.getElementById('user-count').textContent = filtered.length + ' 条';
+    document.getElementById('user-pageinfo').textContent = (_userPage) + ' / ' + pages;
+    document.getElementById('user-prev').disabled = _userPage <= 1;
+    document.getElementById('user-next').disabled = _userPage >= pages;
+
     const tbody = document.getElementById('user-table-body');
     tbody.innerHTML = '';
-    (result.data || []).forEach(u => {
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8"><div class="empty-tip">暂无匹配人员</div></td></tr>'; }
+    rows.forEach(u => {
         const dept = _deptOptions.find(d=>d.id==u.department_id);
         const ward = _wardOptions.find(w=>w.id==u.ward_id);
+        const roleCls = { admin:'badge-danger', doctor:'badge-info', nurse:'badge-success', pharmacist:'badge-warning', lab_tech:'badge-default' }[u.role] || 'badge-default';
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td>${Format.escape(u.username)}</td>
             <td>${Format.escape(u.name)}</td>
-            <td>${Format.role(u.role)}</td>
+            <td><span class="badge ${roleCls}">${Format.role(u.role)}</span></td>
             <td>${dept ? Format.escape(dept.name) : ''}</td>
             <td>${ward ? Format.escape(ward.name) : ''}</td>
-            <td>${u.is_active ? '激活' : '禁用'}</td>
+            <td>${u.is_active ? '<span class="badge badge-success">激活</span>' : '<span class="badge badge-default">禁用</span>'}</td>
+            <td class="fs-12 text-muted">${u.created_at ? Format.datetime(u.created_at) : ''}</td>
             <td>
                 <button class="btn btn-small" onclick="admin_users_edit(${u.id})">编辑</button>
-                <button class="btn btn-small btn-danger" onclick="admin_users_reset(${u.id})">重置密码</button>
+                <button class="btn btn-small" onclick="admin_users_reset(${u.id})">重置密码</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
+    renderUserStats();
+}
+
+function renderUserStats() {
+    const box = document.getElementById('user-stats');
+    const stats = { admin:0, doctor:0, nurse:0, pharmacist:0, lab_tech:0, active:0, disabled:0 };
+    _userAll.forEach(u => {
+        if (stats[u.role] != null) stats[u.role]++;
+        u.is_active ? stats.active++ : stats.disabled++;
+    });
+    box.innerHTML = [
+        ['管理员', stats.admin], ['医生', stats.doctor], ['护士', stats.nurse],
+        ['药师', stats.pharmacist], ['检验技师', stats.lab_tech],
+        ['激活', stats.active], ['禁用', stats.disabled]
+    ].map(s => `<div class="stat-card"><div class="stat-num">${s[1]}</div><div class="stat-label">${s[0]}</div></div>`).join('');
 }
 
 function admin_users_new() { showUserForm({}); }
 async function admin_users_edit(id) {
-    const result = await AjaxLoader.api('admin/user-list', {silent:true});
-    const user = result.data.find(u => u.id == id);
+    const user = _userAll.find(u => u.id == id);
     if (user) showUserForm(user);
 }
 
@@ -65,7 +167,8 @@ function admin_users_reset(id) {
     Dom.modal('重置密码', '<p>重置密码为 123456，请及时修改</p>', [
         {text:'确认',type:'danger',onclick:async function(){
             await AjaxLoader.api('admin/user-save', {method:'POST',data:{id:id, password:'123456'}});
-            loadUsers();
+            Dom.toast('已重置为 123456', 'success');
+            admin_users_load();
         }},
         {text:'取消',type:'default'}
     ]);
@@ -100,8 +203,9 @@ function showUserForm(user) {
             const form = document.getElementById('user-form');
             const data = {};
             new FormData(form).forEach((v,k)=>data[k]=v);
-            await AjaxLoader.api('admin/user-save', {method:'POST',data});
-            loadUsers();
+            const r = await AjaxLoader.api('admin/user-save', {method:'POST',data});
+            if (r.status === 'success') { Dom.toast(r.message || '已保存', 'success'); admin_users_load(); }
+            else Dom.toast(r.message || '保存失败', 'error');
         }},
         {text:'取消',type:'default'}
     ]);
