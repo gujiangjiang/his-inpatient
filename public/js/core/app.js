@@ -11,6 +11,14 @@ const App = {
 
     init() {
         this.loadCoreStyles();
+        // 移动端响应式初始化：侧边栏默认隐藏/抽屉、点菜单收起
+        if (window.matchMedia && !window.matchMedia('(max-width: 768px)').matches) {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar && localStorage.getItem('his_sidebar_mini') === '1') {
+                sidebar.classList.add('sidebar-mini');
+            }
+        }
+        this.initMobile();
     },
 
     loadCoreStyles() {
@@ -19,6 +27,46 @@ const App = {
 
     navigateTo(module, page) {
         AjaxLoader.loadPage(module, page);
+    },
+
+    // 侧边栏折叠/抽屉（移动端隐藏 + 点菜单收起）
+    toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mask = document.getElementById('sidebar-mask') || this.ensureMask();
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (isMobile) {
+            sidebar.classList.toggle('open');
+            if (mask) mask.classList.toggle('show', sidebar.classList.contains('open'));
+        } else {
+            sidebar.classList.toggle('sidebar-mini');
+            localStorage.setItem('his_sidebar_mini', sidebar.classList.contains('sidebar-mini') ? '1' : '0');
+        }
+    },
+
+    ensureMask() {
+        const mask = document.createElement('div');
+        mask.id = 'sidebar-mask';
+        mask.className = 'sidebar-mask';
+        mask.addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('open');
+            mask.classList.remove('show');
+        });
+        document.body.appendChild(mask);
+        return mask;
+    },
+
+    initMobile() {
+        const sidebar = document.getElementById('sidebar');
+        // 移动端：菜单点击后收起抽屉
+        if (sidebar) {
+            sidebar.addEventListener('click', function (e) {
+                if (window.matchMedia('(max-width: 768px)').matches && e.target.closest('.menu-item')) {
+                    sidebar.classList.remove('open');
+                    const mask = document.getElementById('sidebar-mask');
+                    if (mask) mask.classList.remove('show');
+                }
+            });
+        }
     },
 
     // 侧边栏当前页高亮 (页面加载完成后调用)

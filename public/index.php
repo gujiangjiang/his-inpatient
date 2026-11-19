@@ -176,6 +176,9 @@ header('Cache-Control: no-store');
         <!-- 顶部全局导航栏 -->
         <div class="topbar">
             <div class="topbar-left">
+                <button type="button" class="sidebar-toggle" id="sidebar-toggle" onclick="App.toggleSidebar()" aria-label="切换侧边栏">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+                </button>
                 <div class="hospital-brand">
                     <img id="hospital-logo" class="hospital-logo" src="<?= $esc($brand['logo_url']) ?>" alt="医院 Logo">
                     <span class="brand-name-lockup hospital-title-wrap">
