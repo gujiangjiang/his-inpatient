@@ -45,7 +45,7 @@
     text-justify: inter-character;
 }
 .brand-name-line[hidden] { display: none !important; }
-/* 全局设计变量 (与登录/下拉/卡片墙的青色体系统一, 视觉逻辑参考门诊一体化) */
+/* 全局设计变量 (与登录/下拉/卡片墙的青色体系统一) */
 :root {
     --primary: #149a9a;
     --primary-hover: #118585;
@@ -153,7 +153,7 @@
 .badge-success { background: #2fb344; color: #fff; }
 .badge-warning { background: #e6a23c; color: #fff; }
 .badge-danger { background: #e5484d; color: #fff; }
-/* Modal (视觉参考门诊一体化: 圆角卡片 + 头/体/脚三段 + 动效) */
+/* Modal (圆角卡片 + 头/体/脚三段 + 动效) */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
