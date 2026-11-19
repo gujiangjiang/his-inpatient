@@ -2,6 +2,7 @@
 // api/index.php - 统一路由入口
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/core/db.php';
+require_once __DIR__ . '/core/Cache.php';
 require_once __DIR__ . '/core/auth.php';
 require_once __DIR__ . '/core/response.php';
 require_once __DIR__ . '/core/validator.php';
@@ -29,6 +30,7 @@ require_once __DIR__ . '/core/helpers/integration_helper.php';
 require_once __DIR__ . '/core/helpers/dual_pharmacy_helper.php';
 require_once __DIR__ . '/core/helpers/opd_pharmacy_helper.php';
 require_once __DIR__ . '/core/helpers/audit_helper.php';
+require_once __DIR__ . '/core/helpers/cache_driver_helper.php';
 require_once __DIR__ . '/core/helpers/opd_helper.php';
 require_once __DIR__ . '/core/helpers/opd_order_push.php';
 require_once __DIR__ . '/core/helpers/catalog_sync.php';
