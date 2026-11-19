@@ -102,7 +102,12 @@ function emr_batchPrint(catId) {
             if (!ids.length) { Dom.toast('请勾选要打印的病程记录', 'error'); return; }
             const items = ids.map(id => {
                 const d = _emrDocs.find(x => x.id == id);
-                return { doc: d, stamp: d.updated_at || d.created_at, signHtml: emr_batch_sign(d) };
+                // 解包 doc_json：列表行对象不含 header/page/body 顶层结构，
+                // 需用保存的 doc_json 还原完整文档（含抬头/患者信息栏/版式）
+                let doc = d.doc_json;
+                if (typeof doc === 'string') { try { doc = JSON.parse(doc); } catch (e) { doc = null; } }
+                if (!doc || typeof doc !== 'object') doc = {};
+                return { doc: doc, stamp: d.updated_at || d.created_at, signHtml: emr_batch_sign(d) };
             });
             EmrPrint.printBatch(items, buildPatientInfo());
         } },

@@ -23,7 +23,7 @@
       + '</div>'
       + '<div class="pg-body">' + (bodyHTML || '') + '</div>'
       + '<div class="pg-foot"><span class="emr-fp-left">' + esc(header.hospital || '') + '</span>'
-      + '<span class="emr-fp-page">第 ' + (idx + 1) + ' 页 / 共 ' + total + ' 页</span></div>'
+      + '<span class="emr-fp-page">第 ' + (idx + 1) + ' 张 / 共 ' + total + ' 张</span></div>'
       + '</div>';
   };
 
@@ -64,6 +64,7 @@
       '.pg-body .emr-val { border-bottom: none !important; } /* 打印不显示可编辑下划线 */',
       '.pg-body .emr-ref { border-bottom: none !important; }',
       '.pg-foot { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + (d.h - d.mb - d.footerH) + 'px; height: ' + d.footerH + 'px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',
+      '.pg-foot .emr-fp-page { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; }',
       '.emr-fx { font-weight: bold; }',
       '.emr-flx-center > .emr-fx:not(.emr-vital-unit) { margin-left: 24px; }',
       '.emr-flx-center > .emr-fx:first-child { margin-left: 0; }',
@@ -118,11 +119,11 @@
       const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
       const stamp = (it.stamp || doc.updated_at || doc.created_at || '').toString();
       const title = doc.title || '文书';
-      const subtitle = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16) + ' ' + title;
+      const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
       docPages.forEach((body, pi) => {
-        // 第 1 页正文顶部加小标题；末页正文底部加签名（右下）
+        // 第 1 页正文顶部加小标题：时间靠左 + 文书名居中
         let b = body;
-        if (pi === 0) b = '<div class="emr-batch-title">' + esc(subtitle) + '</div>' + b;
+        if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-name">' + esc(title) + '</span></div>' + b;
         if (pi === docPages.length - 1 && it.signHtml) {
           b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
         }
@@ -151,7 +152,9 @@
       '.pg-body .emr-tbl-plain .emr-fx { font-weight: normal; }',
       '.pg-body .emr-val { border-bottom: none !important; }',
       '.pg-body .emr-ref { border-bottom: none !important; }',
-      '.emr-batch-title { font-weight: bold; font-size: 12pt; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid #000; }',
+      '.emr-batch-title { display: flex; align-items: baseline; gap: 8px; font-size: 12pt; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid #000; }',
+      '.emr-batch-title .emr-bt-time { font-weight: normal; flex-shrink: 0; white-space: nowrap; }',
+      '.emr-batch-title .emr-bt-name { flex: 1; text-align: center; font-weight: bold; }',
       '.emr-batch-sign { text-align: right; margin-top: 20px; font-size: 11pt; }',
       '.pg-foot { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + (d.h - d.mb - d.footerH) + 'px; height: ' + d.footerH + 'px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',
       '.emr-fx { font-weight: bold; }',
@@ -162,7 +165,6 @@
     ].join('\n');
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc('病历批量打印') + '</title>'
       + '<style>' + style + '</style></head><body>'
-      + headerHTML
       + pages.map(p => p).join('')
       + '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>'
       + '</body></html>';

@@ -45,10 +45,13 @@ const PrintHelper = {
     .doc-meta { display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 10.5pt; margin: 10px 0; }
     .doc-foot { margin-top: 32px; display: flex; justify-content: space-between; font-size: 10.5pt; }
     /* ===== 门诊式打印公共样式（A4/A5 纸张 + 右上条形码 + 患者信息栏）===== */
-    .sheet { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 10mm 12mm; box-sizing: border-box; position: relative; }
-    .sheet.a5 { width: 148mm; min-height: 210mm; padding: 8mm 10mm; }
-    .sheet.half-a4 { width: 210mm; min-height: 148mm; padding: 8mm 12mm; }
+    .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 10mm 12mm; box-sizing: border-box; position: relative; display: flex; flex-direction: column; }
+    .sheet.a5 { width: 148mm; height: 210mm; padding: 8mm 10mm; }
+    .sheet.half-a4 { width: 210mm; height: 148mm; padding: 8mm 12mm; }
     .sheet + .sheet { page-break-before: always; }
+    .sheet .sheet-head, .sheet .patient-bar, .sheet .rx-mark, .sheet table.rx-print, .sheet .sheet-table { flex-shrink: 0; }
+    .sheet .sheet-note, .sheet .sheet-tip { flex-shrink: 0; }
+    .sheet-foot, .rx-note.rx-sign-row, .rx-note.rx-disp-row { margin-top: auto; }
     .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
     .sheet-brand { text-align: center; flex: 1; }
     .sheet-brand .print-hospital { font-size: 16pt; }
