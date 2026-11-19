@@ -9,7 +9,6 @@ function getRoutes() {
         'auth/captcha' => ['auth/captcha.php', []],
         'auth/logout' => ['auth/logout.php', ['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']],
         'auth/setup-status' => ['auth/setup_status.php', []],
-        'auth/diag' => ['auth/diag.php', []],
         'auth/setup' => ['auth/setup.php', []],
 
         // 初始化向导（多步：环境检测 → 数据库 → 迁移 → 站点信息 → 管理员 → 完成）
