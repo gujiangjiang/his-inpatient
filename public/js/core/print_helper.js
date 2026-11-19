@@ -18,14 +18,17 @@ const PrintHelper = {
     },
 
     printHtml(title, bodyHtml) {
-        const win = window.open('', '_blank', 'width=860,height=920');
-        if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
         // 纸张尺寸：按单据类型注入 @page（A5 / 半张A4横 / A4），
         // 避免 A5 内容被默认 A4 画布拉伸缩放
         const hasA5 = bodyHtml.indexOf('sheet a5') !== -1;
         const hasHalf = bodyHtml.indexOf('sheet half-a4') !== -1;
         const pageSize = hasA5 ? 'A5 portrait'
             : (hasHalf ? '210mm 148mm' : 'A4 portrait');
+        // 预览窗口按纸张尺寸：A5 竖→窄高、半A4 横→宽矮、A4→标准
+        const winW = hasHalf ? 980 : (hasA5 ? 700 : 900);
+        const winH = hasHalf ? 700 : (hasA5 ? 880 : 1000);
+        const win = window.open('', '_blank', 'width=' + winW + ',height=' + winH);
+        if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
         // 页码注入：给每个 .sheet 底部加「第 x 页 / 共 x 页」（A4/A5/半A4 通用）
         bodyHtml = PrintHelper.withPageNumbers(bodyHtml);
         win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${title}</title>
@@ -47,9 +50,9 @@ const PrintHelper = {
     .doc-meta { display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 10.5pt; margin: 10px 0; }
     .doc-foot { margin-top: 32px; display: flex; justify-content: space-between; font-size: 10.5pt; }
     /* ===== 门诊式打印公共样式（A4/A5 纸张 + 右上条形码 + 患者信息栏）===== */
-    .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 10mm 12mm; box-sizing: border-box; position: relative; display: flex; flex-direction: column; }
-    .sheet.a5 { width: 148mm; height: 210mm; padding: 8mm 10mm; }
-    .sheet.half-a4 { width: 210mm; height: 148mm; padding: 8mm 12mm; }
+    .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 12mm 14mm 16mm; box-sizing: border-box; position: relative; display: flex; flex-direction: column; }
+    .sheet.a5 { width: 148mm; height: 210mm; padding: 10mm 11mm 13mm; }
+    .sheet.half-a4 { width: 210mm; height: 148mm; padding: 10mm 14mm 14mm; }
     .sheet + .sheet { page-break-before: always; }
     .sheet .sheet-head, .sheet .patient-bar, .sheet .rx-mark, .sheet table.rx-print, .sheet .sheet-table { flex-shrink: 0; }
     .sheet .sheet-note, .sheet .sheet-tip { flex-shrink: 0; }
@@ -77,7 +80,7 @@ const PrintHelper = {
     .sheet-table th, .sheet-table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; }
     .sheet-table th { background: #f5f5f5; font-weight: 600; }
     .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; }
-    .sheet-page-no { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 9pt; color: #333; }
+    .sheet-page-no { position: absolute; left: 0; right: 0; bottom: 9px; text-align: center; font-size: 9pt; color: #333; }
     .sheet-note { margin-top: 10px; font-size: 10.5pt; color: #333; }
     .sheet-tip { margin-top: 2px; font-size: 9.5pt; color: #666; }
     /* ===== 门诊标准处方样式（A5 无边框，参照标准医院处方笺） ===== */
@@ -88,6 +91,10 @@ const PrintHelper = {
     table.rx-print td.rx-qty { text-align: right; white-space: nowrap; }
     .rx-end { text-align: center; letter-spacing: 2px; color: #333; margin: 10px 0 4px; font-size: 11pt; }
     .rx-note { margin-top: 8px; font-size: 10.5pt; color: #333; }
+    .rx-note.rx-take { margin-top: 0; }
+    .rx-sign-row .rx-take { flex: 1; text-align: left; font-weight: normal; }
+    .rx-sign-row .rx-sign-right { display: inline-flex; gap: 12px; align-items: baseline; white-space: nowrap; }
+    .rx-sign-row .rx-sign-right .rx-amount { font-weight: 600; }
     .rx-sign-row { display: flex; align-items: center; font-weight: 600; margin-top: 10px; }
     .rx-sign-row .rx-amount { flex: 1; text-align: left; }
     .rx-disp-row { display: flex; font-size: 10.5pt; line-height: 1.8; margin-top: 4px; margin-bottom: 4px; }

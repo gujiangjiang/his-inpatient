@@ -67,7 +67,7 @@ function clinic_rx_load() {
         const map = {};
         (or.data || []).forEach(o => {
             const key = o.rx_no || ('L' + (o.created_at || '') + '|' + (o.start_date || ''));
-            if (!map[key]) map[key] = { rx_no: o.rx_no || '', created_at: o.created_at || o.start_date || '', items: [] };
+            if (!map[key]) map[key] = { rx_no: o.rx_no || '', created_at: o.created_at || o.start_date || '', pharmacy_type: o.pharmacy_type || 'center', pharmacy_name: o.pharmacy_name || '中心药房', items: [] };
             map[key].items.push(o);
         });
         _rxGroups = Object.keys(map).map(k => map[k]);
@@ -149,8 +149,7 @@ function clinic_rx_print(idx) {
             ${rxRows}
         </table>
         <div class="rx-end">—————— 处方完毕 ——————</div>
-        <div class="rx-note">请凭本处方单至药房取药</div>
-        <div class="rx-note rx-sign-row"><span class="rx-amount">金额：¥${total.toFixed(2)}</span><span>医师签名：${Format.escape(doctorName)}</span></div>
+        <div class="rx-note rx-sign-row"><span class="rx-take">请凭本处方单至${Format.escape(g.pharmacy_name || '药房')}取药</span><span class="rx-sign-right"><span class="rx-amount">金额：¥${total.toFixed(2)}</span><span>医师签名：${Format.escape(doctorName)}</span></span></div>
         <div class="rx-line"></div>
         <div class="rx-note rx-disp-row"><span>调配：</span><span>复核、发药：</span></div>
         <div class="rx-note rx-center">（本处方当日内有效）</div>

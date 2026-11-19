@@ -8,11 +8,18 @@ if (!can_access_patient(Auth::user(), $patientId)) Response::error('无权查看
 $rows = DB::select(
     "SELECT o.id, o.rx_no, o.content, o.dosage, o.dosage_unit, o.usage_name, o.usage_rate,
             o.freq_code, o.freq_detail, o.status, o.order_period, o.start_date, o.created_at,
-            o.notes, u.name AS creator_name
+            o.pharmacy_type, o.notes, u.name AS creator_name
      FROM orders o
      LEFT JOIN users u ON u.id = o.created_by
      WHERE o.patient_id = ? AND o.notes = '处方'
      ORDER BY o.id DESC",
     [$patientId]
 );
+// 药房名称：读系统配置（可改：中心药房/门诊药房），缺省回退默认名
+$centerName = (string)(ConfigDB::get('pharmacy_center_name', '') ?: '中心药房');
+$outpatientName = (string)(ConfigDB::get('pharmacy_outpatient_name', '') ?: '门诊药房');
+foreach ($rows as &$r) {
+    $r['pharmacy_name'] = $r['pharmacy_type'] === 'outpatient' ? $outpatientName : $centerName;
+}
+unset($r);
 Response::success($rows);
