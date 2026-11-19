@@ -3,7 +3,7 @@
 // 说明：本迁移为 HIS 药房体系从「单药房雏形」升级为「中心药房+门诊药房」全流程：
 //  - orders 增加药房归属(pharmacy_type/outpatient)与摆药/发药/执行状态机
 //    (dispense_status) + 扣费(charge_amount/charged_at) + 执行预留(plan_time/batch)
-//  - medications 对齐门诊拆零/规格口径（spec_pack_qty/warn_qty/allow_split），
+//  - medications 统一拆零/规格口径（spec_pack_qty/warn_qty/allow_split），
 //    便于自动算量与低库存告警
 //  - dispensing_records 增加 stage（prepared 预摆/ dispensed 已摆已发/ delivered 已送达）
 //  - 新增 charge_records 扣费流水表（摆药时真正扣 prepay_fee 落账）
@@ -31,7 +31,7 @@ return [
             $m->createIndex('orders', 'idx_orders_pharmacy_dispense', ['pharmacy_type', 'dispense_status', 'status']);
         }
 
-        /* ==================== medications 扩展（对齐门诊拆零/规格口径） ==================== */
+        /* ==================== medications 扩展（统一拆零/规格口径） ==================== */
         if ($m->hasTable('medications')) {
             $cols = [
                 'spec_pack_qty' => ['type' => 'INTEGER', 'default' => 1],     // 每包装最小单位数（如 24粒/盒）

@@ -1,5 +1,5 @@
 <?php
-// api/core/helpers/cache_driver_helper.php - 缓存驱动连接测试（参照门诊 ConnectionTester::cache）
+// api/core/helpers/cache_driver_helper.php - 缓存驱动连接测试
 function cache_driver_test($driver, $params) {
     try {
         if ($driver === 'apcu') {

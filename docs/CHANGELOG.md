@@ -164,12 +164,12 @@
 
 
 ### 新增
-- **验证码改后端 GD 绘制 PNG**（参照门诊 LoginSecurity::captchaRender）：
+- **验证码改后端 GD 绘制 PNG**（后端 GD 绘制 PNG）：
   130×42 浅灰白底 + 2 条干扰弧线 + 80 噪点 + 4 字符（内置字体横纵微扰+随机深色）；
   GD 缺失降级纯文本（校验仍走 session）；no-store/no-cache 头防缓存；
   登录页改 blob 拉图（fetch→createObjectURL 显示 PNG，点击刷新）；
   随机字符集去易混淆 0/O/1/I/l，random_int 密码学安全。
-- **缓存扩展多驱动**（参照门诊 Cache.php）：
+- **缓存扩展多驱动**（多驱动缓存）：
   - Cache.php 重写为 file/apcu/redis/memcached 统一接口 get/set(ttl)/del/flush(前缀)/stats，
     扩展缺失/连接失败自动降级 file 并 error_log，绝不抛异常；
   - ConfigDB 新增 cacheDriver/redisParams/memcachedParams/driverOptions；
@@ -186,7 +186,7 @@
 
 
 ### 新增
-- **登录安全基础设施**（参照门诊 LoginSecurity）：
+- **登录安全基础设施**（登录安全）：
   - 迁移 067 users 加锁定字段（login_fail_count/locked_at/locked_until/lock_reason/lock_ip）
   - 验证码后端（auth/captcha?action=gen 返回 SVG，action=check 嗅探 off/auto/force，
     配置键 login.captcha_mode）
@@ -194,9 +194,9 @@
     点击刷新；auth.js login 支持 captcha/need_captcha
   - 登录锁定：阈值 5 次（ConfigDB fail_lock_count 可调）超限锁 15 分钟，
     返回 423+剩余分钟；登录成功清零
-- **通用缓存系统**（参照门诊 Cache.php）：file 驱动 get/set(ttl)/delete/flush/stats，
+- **通用缓存系统**（多驱动缓存）：file 驱动 get/set(ttl)/delete/flush/stats，
   存储 data/cache/{md5}.php
-- **统一审核流**（参照门诊 audits）：
+- **统一审核流**（统一审核流）：
   - 迁移 068 audits 表；audit_helper（submit/apply 原子防并发/list/type_name）
   - admin/audit 后端（list 待审/已处理分页、apply 通过/驳回必填理由、all 一键全部）
   - 审核中心接入统一 audits：待审核页顶部新增「统一审核」区（药品/设置类提交，
@@ -219,7 +219,7 @@
     SQL 注入/转义/会话有效期），登录锁定/验证码标注后续增强。
   - 审核中心「已处理」接入真实数据：`admin/review-history` 聚合 emr_templates /
     emr_contents / emr_maintenance_requests 三表已审记录，前端徽章+驳回原因展示。
-  - **药品规格编辑器**（参考门诊 drugform.js）：规格「单剂量值/单位 × 包装数量/单位」
+  - **药品规格编辑器**（药品规格编辑器）：规格「单剂量值/单位 × 包装数量/单位」
     结构化编辑（如 0.5g×24粒），拆零面板联动（每包装=1 禁拆零、拆零单价=包装价÷包装数、
     包装/拆零单价展示）、警戒库存包装数换算最小单位；迁移 066 增加 spec_dose/
     spec_dose_unit 字段，后端 list/save 全链路落库。
@@ -230,7 +230,7 @@
 ## [0.45.0] - 2026-11-19
 
 ### 新增
-- **管理端整体重构（参照门诊管理端）**，13 项分步落地：
+- **管理端整体重构（管理端重构）**，13 项分步落地：
   - 样式底座：`admin.css` 新增 list-filter/stat-cards/sub-tabs/pane-wrap/log-line/
     empty-tip 等门诊式公共类。
   - 人员管理：统计卡（按角色/激活禁用）+ 角色/状态筛选 + 搜索防抖 + 分页 + 徽标。
@@ -265,7 +265,7 @@
 - **中心/门诊双药房全流程**：
   - 迁移 064：orders 增加药房归属(pharmacy_type/outpatient)/摆药发药状态机
     (dispense_status)/扣费(charge_amount/charged_at)/执行预留(plan_time/execute_batch_no)；
-    medications 对齐门诊拆零/规格口径(spec_pack_qty/warn_qty/allow_split/is_active)；
+    medications 统一拆零/规格口径(spec_pack_qty/warn_qty/allow_split/is_active)；
     dispensing_records 增加 stage(prepared/dispensed/delivered)+amount；
     新增 charge_records 扣费流水表、opd_drug_cache 门诊药房降级缓存表。
   - 中心药房摆药（`pharmacy/dispense2`）：自动算量(剂量/基准×频次×天数)、
@@ -1234,7 +1234,7 @@
 ## [0.23.0] - 2026-10-29
 
 ### 新增
-- **基础设施配置库 `data/config.db`（参考门诊系统）**：数据库连接（sqlite/
+- **基础设施配置库 `data/config.db`（独立底层配置）**：数据库连接（sqlite/
   mysql/postgresql 驱动与参数）、全站时区等「最底层」配置独立于业务库存放；
   `api/config.php` 引导时优先读取——未生成 config.db 时回退原常量默认值，旧部署
   行为完全不变；SQLite Magic Header 严格校验，损坏文件自动备份
@@ -1424,7 +1424,7 @@
 ### 新增
 - **收住院弹窗 (入院登记流程重构)**：入院登记简化为身份 + 初步诊断 (ICD 搜索)；登记后弹出收住院窗——基础信息 (年龄自动计算) → 科室 (全部科室不依赖权限) → 病区 (按归属科室过滤, 迁移 034 wards.department_id) → 床位 (占用床位显示占位符不可选, 空闲点选) → 二次确认「患者xx，诊断xx，收住xx病区xx科xx床」→ 完成登记占床；服务端占床双重校验；组件独立文件，后续完整移植门诊
 - **通用滚动加载组件 ScrollLoad**：医嘱列表分页续载 (首页 50 组触底加载, 数千条医嘱不再一次性加载；刷新保留已加载页数与滚动位置；底部「已全部加载 · 共 N 组」)；诊断搜索窗 (分页 + ↑↓ 键盘导航 + 回车选中)；检验/检查/处方面板目录 (接口 limit/offset/category 分页)
-- 诊断搜索窗样式升级：编码徽章 + 名称双列, 对齐门诊观感
+- 诊断搜索窗样式升级：编码徽章 + 名称双列, 统一观感
 
 ### 变更
 - 处方医嘱改为**临时**（处方是领药凭证, 一个处方领一次药, 无护士执行项；直接医嘱开药走住院药房摆药, 夜间需门诊药房取药时才开处方；如需护士执行另开【不摆药】医嘱）；处方面板直接提交并备注「处方」
@@ -1504,7 +1504,7 @@
 ## [0.16.2] - 2026-10-12
 
 ### 新增
-- 诊断添加改为悬浮输入窗（参考门诊）：行内「＋」/常用诊断模板点击弹出，ICD 自动补全 → 分类/备注/存为常用 → 保存；支持自由文本回车保存，点击外部/Esc 关闭
+- 诊断添加改为悬浮输入窗（优化）：行内「＋」/常用诊断模板点击弹出，ICD 自动补全 → 分类/备注/存为常用 → 保存；支持自由文本回车保存，点击外部/Esc 关闭
 
 ### 修复
 - 病案首页打印与标准版式对齐优化：诊断表空行「—」/病情转归显示编码；医疗付费方式移至标题同排；入院出院时间中文化；病理/转科/过敏药物空值「—」
@@ -1550,14 +1550,14 @@
 - 系统设置保存未提供分组/描述时清空原值
 
 ### 变更
-- **模态框全局美化**: 圆角卡片 + 头/体/脚三段分隔 + 关闭按钮 + 遮罩点击/Esc 关闭 + 过渡动效 (参考门诊)
-- **整体样式对齐门诊**: 主色统一青色 (按钮 / 焦点 / 页签 / 侧栏高亮 / Toast), 卡片 / 表格 / 徽章 / 表单圆角与配色精修
+- **模态框全局美化**: 圆角卡片 + 头/体/脚三段分隔 + 关闭按钮 + 遮罩点击/Esc 关闭 + 过渡动效 (优化)
+- **整体样式统一**: 主色统一青色 (按钮 / 焦点 / 页签 / 侧栏高亮 / Toast), 卡片 / 表格 / 徽章 / 表单圆角与配色精修
 
 ## [0.14.0] - 2026-10-11
 
 ### 新增
 - **管理端接口管理页 (门诊互通一期完善)**: 「对接管理」升级为「接口管理」, 门诊 / PACS 影像 / 对接端点 三个页签 — 连接状态总览、连接配置 (地址/双 Token/阅片模板)、连通性测试结果、HIS 字典推送、标准端点登记 (CRUD)
-- **管理端视觉与分类改造 (参考门诊系统)**: 侧栏分组重构 (患者管理 / 业务管理 / 接口集成 / 系统设置); 各管理页统一页头 (标题 + 描述 + 操作); 新增管理端样式 admin.css (状态列表 / 测试结果 / 双列表单 / 提示小字), 新增 `public/js/admin/integrations.js` 交互脚本
+- **管理端视觉与分类改造 (独立底层配置)**: 侧栏分组重构 (患者管理 / 业务管理 / 接口集成 / 系统设置); 各管理页统一页头 (标题 + 描述 + 操作); 新增管理端样式 admin.css (状态列表 / 测试结果 / 双列表单 / 提示小字), 新增 `public/js/admin/integrations.js` 交互脚本
 
 ### 说明
 - 门诊互通一期 (只读) 至此完成: 0.13.48–0.13.52 提供配置/客户端/字典推送/只读查询/医生端页面, 本版完成管理端闭环, 版本提升次版本号

@@ -164,7 +164,7 @@ class ConfigDB {
         }
     }
 
-    /* ==================== 缓存驱动（参照门诊 ConfigStore::cacheDriver） ==================== */
+    /* ==================== 缓存驱动 ==================== */
 
     /** 当前缓存驱动（config.db cache.driver，缺省 file） */
     public static function cacheDriver() {

@@ -148,7 +148,7 @@ function outpatient_exams_applyPrint(id, isReport) {
     }).catch(() => {});
 }
 
-/* 检查报告单（A4 纵向 210x297mm，参照门诊影像报告） */
+/* 检查报告单（A4 纵向 210x297mm） */
 function outpatient_exams_reportBlock(rep) {
     return `<div class="sheet">
         <div class="sheet-head">

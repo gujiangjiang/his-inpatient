@@ -1,5 +1,5 @@
 <?php
-// api/migrations/php/066_med_spec.php - 药品规格结构（参照门诊规格编辑器）
+// api/migrations/php/066_med_spec.php - 药品规格结构
 // medications 增加 单剂量值/单剂量单位（spec_dose/spec_dose_unit），
 // 供规格编辑器「0.5g×24粒」展示与自动算量；存量 spec 已存在保持。
 return [

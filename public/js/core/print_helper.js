@@ -73,7 +73,7 @@ const PrintHelper = {
         win.document.close();
     },
 
-    /* 前端 Code 128 条形码（SVG，参照门诊 barcode.php；供打印模板右上角用） */
+    /* 前端 Code 128 条形码（SVG，供打印模板右上角用） */
     barcodeSvg(text, height = 36, scale = 1, withText = true) {
         const P = [
             '212222','222122','222221','121223','121322','131222','122213','122312','132212','221213',
