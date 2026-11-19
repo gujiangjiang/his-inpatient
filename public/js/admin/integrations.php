@@ -7,13 +7,13 @@
     <button class="btn btn-primary" onclick="admin_integrations_test()">连通性测试</button>
 </div>
 
-<div class="tabs">
-    <button class="tab active" id="itg-tab-opd" onclick="admin_integrations_switch('opd')">门诊一体化</button>
-    <button class="tab" id="itg-tab-pacs" onclick="admin_integrations_switch('pacs')">PACS 影像</button>
-    <button class="tab" id="itg-tab-catalog" onclick="admin_integrations_switch('catalog')">检查/检验列表</button>
-    <button class="tab" id="itg-tab-endpoints" onclick="admin_integrations_switch('endpoints')">对接端点</button>
-    <button class="tab" id="itg-tab-audit" onclick="admin_integrations_switch('audit')">变更记录</button>
-    <button class="tab" id="itg-tab-help" onclick="admin_integrations_switch('help')">帮助</button>
+<div class="card" style="padding:10px 16px">
+    <div class="sub-tabs">
+        <button class="sub-tab active" id="itg-tab-opd" onclick="admin_integrations_switch('opd')">门诊一体化</button>
+        <button class="sub-tab" id="itg-tab-pacs" onclick="admin_integrations_switch('pacs')">PACS 影像</button>
+        <button class="sub-tab" id="itg-tab-catalog" onclick="admin_integrations_switch('catalog')">检查/检验列表</button>
+        <button class="sub-tab" id="itg-tab-endpoints" onclick="admin_integrations_switch('endpoints')">对接端点</button>
+    </div>
 </div>
 
 <!-- 门诊一体化：左右两栏（状态/配置/端点/审计/帮助子导航） -->
