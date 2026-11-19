@@ -9,7 +9,7 @@ function log_write($channel, $category, $summary, $detail = '', $level = 'info',
     if (!in_array($level, ['normal', 'info', 'warning', 'error'], true)) $level = 'info';
     $user = null;
     if (function_exists('Auth') && class_exists('Auth')) {
-        try { $user = Auth::user(); } catch (Exception $e) { $user = null; }
+        try { $user = Auth::user(); } catch (\Throwable $e) { $user = null; }
     }
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
     // 日志写入失败不得阻断业务（如 system_logs 表结构异常/库锁定时），
@@ -22,7 +22,7 @@ function log_write($channel, $category, $summary, $detail = '', $level = 'info',
              $extra['target'] ?? '', $ip, $_SERVER['HTTP_USER_AGENT'] ?? '', DateHelper::now()]);
         // 保留期清理（轻量：每日首写清一次）
         log_maintain_once();
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         // 吞掉：日志非关键路径
     }
 }
@@ -38,7 +38,7 @@ function log_maintain_once() {
         if ($days > 0) {
             DB::execute("DELETE FROM system_logs WHERE created_at < datetime('now', ?)", ['-' . $days . ' days']);
         }
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         // 清理失败不影响本次写入
     }
 }
@@ -56,7 +56,7 @@ function log_query($channel, $filter = [], $limit = 50) {
         $rows = DB::select($sql, $args);
         $hasMore = count($rows) === (int)$limit;
         return ['list' => $rows, 'has_more' => $hasMore];
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         return ['list' => [], 'has_more' => false, 'error' => '日志查询失败：' . $e->getMessage()];
     }
 }
@@ -64,12 +64,16 @@ function log_query($channel, $filter = [], $limit = 50) {
 /** 增量日志（实时轮询：id > after_id 正序） */
 function log_latest($channel, $afterId, $filter = [], $limit = 50) {
     if (!in_array($channel, ['operation', 'interface'], true)) $channel = 'operation';
-    $sql = "SELECT * FROM system_logs WHERE channel = ? AND id > ?";
-    $args = [$channel, (int)$afterId];
-    $where = log_filter_where($filter);
-    if ($where[0]) { $sql .= $where[0]; $args = array_merge($args, $where[1]); }
-    $sql .= " ORDER BY id ASC LIMIT " . (int)$limit;
-    return DB::select($sql, $args);
+    try {
+        $sql = "SELECT * FROM system_logs WHERE channel = ? AND id > ?";
+        $args = [$channel, (int)$afterId];
+        $where = log_filter_where($filter);
+        if ($where[0]) { $sql .= $where[0]; $args = array_merge($args, $where[1]); }
+        $sql .= " ORDER BY id ASC LIMIT " . (int)$limit;
+        return DB::select($sql, $args);
+    } catch (\Throwable $e) {
+        return [];
+    }
 }
 
 /** 构造日志查询 WHERE 片段（不含 id 游标） */
@@ -98,7 +102,7 @@ function log_counts($channel, $filter = []) {
         $out = [];
         foreach (DB::select($sql, $args) as $r) $out[$r['category']] = (int)$r['cnt'];
         return $out;
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         return [];
     }
 }

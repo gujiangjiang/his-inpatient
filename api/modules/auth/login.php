@@ -38,24 +38,32 @@ if ($userRow) {
 $user = Auth::login($username, $password);
 if (!$user) {
     if ($userRow) {
-        $fails = (int)$userRow['login_fail_count'] + 1;
-        $update = "UPDATE users SET login_fail_count = ? WHERE id = ?";
-        $params = [$fails, $userRow['id']];
-        if ($fails >= $lockCount) {
-            $params = [$fails, $userRow['id'], gmdate('Y-m-d H:i:s'), gmdate('Y-m-d H:i:s', $now + 15 * 60),
-                'password_error_locked', $_SERVER['REMOTE_ADDR'] ?? ''];
-            $update = "UPDATE users SET login_fail_count=?, locked_at=?, locked_until=?, lock_reason=?, lock_ip=? WHERE id=?";
-            // 参数顺序：fails, at, until, reason, ip, id
-            $params = [$fails, gmdate('Y-m-d H:i:s'), gmdate('Y-m-d H:i:s', $now + 15 * 60), 'password_error_locked', $_SERVER['REMOTE_ADDR'] ?? '', $userRow['id']];
+        try {
+            $fails = (int)$userRow['login_fail_count'] + 1;
+            $update = "UPDATE users SET login_fail_count = ? WHERE id = ?";
+            $params = [$fails, $userRow['id']];
+            if ($fails >= $lockCount) {
+                $params = [$fails, $userRow['id'], gmdate('Y-m-d H:i:s'), gmdate('Y-m-d H:i:s', $now + 15 * 60),
+                    'password_error_locked', $_SERVER['REMOTE_ADDR'] ?? ''];
+                $update = "UPDATE users SET login_fail_count=?, locked_at=?, locked_until=?, lock_reason=?, lock_ip=? WHERE id=?";
+                // 参数顺序：fails, at, until, reason, ip, id
+                $params = [$fails, gmdate('Y-m-d H:i:s'), gmdate('Y-m-d H:i:s', $now + 15 * 60), 'password_error_locked', $_SERVER['REMOTE_ADDR'] ?? '', $userRow['id']];
+            }
+            DB::execute($update, $params);
+        } catch (\Throwable $e) {
+            error_log('[login] fail-update skipped: ' . $e->getMessage());
         }
-        DB::execute($update, $params);
         log_write('operation', 'login', '登录失败：' . $username . '（' . $fails . '/' . $lockCount . '）', '', 'warning');
     }
     Response::error('用户名或密码错误');
 }
 
-// 登录成功：清零失败计数与锁定
-DB::execute("UPDATE users SET login_fail_count=0, locked_at='', locked_until='', lock_reason='', lock_ip='' WHERE id=?", [$user['id']]);
+// 登录成功：清零失败计数与锁定（users 缺锁定列时跳过，不阻断登录）
+try {
+    DB::execute("UPDATE users SET login_fail_count=0, locked_at='', locked_until='', lock_reason='', lock_ip='' WHERE id=?", [$user['id']]);
+} catch (\Throwable $e) {
+    error_log('[login] clear-fail skipped: ' . $e->getMessage());
+}
 $sessionId = Auth::getSessionId();
 unset($user['password']);
 log_write('operation', 'login', '登录成功：' . ($user['name'] ?? ''), $username, 'info', ['action' => 'login']);
