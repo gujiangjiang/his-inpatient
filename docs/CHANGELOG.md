@@ -4,7 +4,24 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.51.0] - 2026-11-19
+
+### 修复
+- **接口管理检查/检验列表 400**（未知查询类型）：`admin_itg_catalog_load` 改用
+  URL query 传 kind/kw/limit（原用 GET data，AjaxLoader 对 GET 丢弃 data 导致
+  kind 未传）。
+- **系统设置子 tab 纯文本**：数据库中心/缓存/安全三个 iframe 面板无公共 CSS；
+  三个片段头加 admin.css 链接；缓存/安全面板改左右两栏（pane-wrap+左导航），
+  与医院机构信息一致；main-app/sidebar 容错（iframe 内元素不存在跳过）。
+- **日志中心操作/接口日志 500**：迁移 065 改为「表存在时幂等补列」（早期建表
+  缺列时 SELECT * 报错）；log_query try-catch 透出 error，logs 接口响应带
+  error，前端红色提示具体原因。
+
+### 验证
+- php-lint 全量通过；迁移无待执行；integrations/cachecenter/security/logs JS 通过。
+
 ## [0.50.0] - 2026-11-19
+
 
 ### 新增
 - **数据库中心/缓存与性能/安全与加密 并入系统设置子tab**：原三个独立侧边栏入口
