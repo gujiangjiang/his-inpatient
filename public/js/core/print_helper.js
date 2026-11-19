@@ -35,7 +35,30 @@ const PrintHelper = {
     table.doc-table th { background: #f2f2f2; }
     .doc-meta { display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 10.5pt; margin: 10px 0; }
     .doc-foot { margin-top: 32px; display: flex; justify-content: space-between; font-size: 10.5pt; }
-    @media print { body { margin: 0; } }
+    /* ===== 门诊式打印公共样式（A4/A5 纸张 + 右上条形码 + 患者信息栏）===== */
+    .sheet { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 10mm 12mm; box-sizing: border-box; position: relative; }
+    .sheet.a5 { width: 148mm; min-height: 210mm; padding: 8mm 10mm; }
+    .sheet.half-a4 { width: 210mm; min-height: 148mm; padding: 8mm 12mm; }
+    .sheet + .sheet { page-break-before: always; }
+    .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
+    .sheet-brand { text-align: center; flex: 1; }
+    .sheet-brand .print-hospital { font-size: 16pt; }
+    .sheet-docname { font-size: 15pt; font-weight: 700; letter-spacing: 2px; margin-top: 2px; }
+    .sheet-barcode { flex-shrink: 0; text-align: right; }
+    .sheet-barcode svg { width: 150px; height: auto; }
+    .sheet-barcode .barcode-no { font-size: 8.5pt; letter-spacing: 1px; margin-top: 2px; }
+    .patient-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 10pt; padding: 5px 0; margin-bottom: 8px; }
+    .patient-bar span { white-space: nowrap; }
+    .patient-bar b { font-weight: 600; }
+    .sheet-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    .sheet-table th, .sheet-table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; }
+    .sheet-table th { background: #f5f5f5; font-weight: 600; }
+    .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; margin-top: 14px; }
+    @media print {
+        body { margin: 0; }
+        .sheet { box-shadow: none; }
+        .no-print { display: none; }
+    }
 </style></head><body>${bodyHtml}
 <script>window.onload = function () { window.print(); };<\/script>
 </body></html>`);
