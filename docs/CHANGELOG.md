@@ -4,7 +4,20 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.53.6] - 2026-11-20
+
+### 修复
+- **病程打印第三层报错**：旧病程文档缺 doc.header（undefined），
+  R.headerToHTML 读 header.info_fields 崩溃。L.paginate 入口统一兜底
+  doc/header/body（缺省空对象），headerToHTML/blocksToHTML 入参各自
+  防御。至此病程打印三层根因（缺 runs → 缺 page → 缺 header/body）
+  全部兜底，任意残缺旧文档不再报错。
+
+### 验证（无头浏览器）
+- 空文档 {} / 仅 title / 正常文档三种形态 buildBatch 均正常生成 HTML。
+
 ## [0.53.5] - 2026-11-20
+
 
 ### 修复
 - **病程打印第二层报错**：旧病程文档缺 doc.page（undefined），L.dim 读
