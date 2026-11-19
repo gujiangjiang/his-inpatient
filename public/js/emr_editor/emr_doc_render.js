@@ -178,7 +178,7 @@
   /** 块列表 → HTML (表格递归) */
   R.blocksToHTML = (blocks, design, opts) => {
     const out = [];
-    for (const b of blocks) {
+    for (const b of blocks || []) {
       if (b.t === 'p') out.push(R.paraToHTML(b, design, opts));
       else if (b.t === 'tbl') {
         const grid = b.grid || [];
@@ -214,6 +214,7 @@
   /** 固定抬头 HTML: 医院名/文书名/患者信息栏; patientInfo 键: name/gender/age/admission_no/ward_name/bed_no
    *  design=true (设计模板) 时信息栏以占位符呈现, 不显示真实患者 */
   R.headerToHTML = (header, patientInfo, design) => {
+    header = header || {}; /* 兼容旧文档缺 header */
     const info = patientInfo || {};
     const fields = (header.info_fields || []).map((f) => {
       const [label, key] = f;
