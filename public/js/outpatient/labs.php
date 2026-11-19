@@ -93,7 +93,7 @@ function outpatient_labs_loadApply() {
                 <td><span class="badge ${_LAB_STATUS_CLS[x.status] || 'badge-default'}">${_LAB_STATUS[x.status] || Format.escape(x.status)}</span>${x.is_critical == 1 ? ' <span class="badge badge-critical">危急</span>' : ''}</td>
                 <td>
                     <button class="btn btn-small" onclick="outpatient_labs_detail(${x.id})">查看</button>
-                    <button class="btn btn-small" onclick="outpatient_labs_print(${x.id})">打印</button>
+                    <button class="btn btn-small" onclick="outpatient_labs_print(${x.id}, ${x.status === 'reported' ? 1 : 0})">${x.status === 'reported' ? '报告' : '申请单'}</button>
                     ${x.status === 'pending' ? `<button class="btn btn-small btn-danger" onclick="outpatient_labs_delete(${x.id})">删除</button>` : ''}
                 </td>
             </tr>`).join('');
@@ -142,10 +142,41 @@ function outpatient_labs_printBlock(rep) {
     </div>`;
 }
 
-function outpatient_labs_print(id) {
+function outpatient_labs_print(id, isReport) {
     AjaxLoader.api('lab/detail?id=' + id, { silent: true }).then(r => {
-        PrintHelper.printHtml('检验申请单', outpatient_labs_printBlock(r.data));
+        if (isReport) {
+            PrintHelper.printHtml('检验报告单', outpatient_labs_reportBlock(r.data));
+        } else {
+            PrintHelper.printHtml('检验申请单', outpatient_labs_printBlock(r.data));
+        }
     }).catch(() => {});
+}
+
+/* 检验报告单（半张 A4 210x148mm，与门诊横向 A5 一致） */
+function outpatient_labs_reportBlock(rep) {
+    const rows = (rep.items || []).map((it, i) => `<tr><td style="text-align:center">${i + 1}</td>
+        <td>${Format.escape(it.item_name)}</td>
+        <td><b>${Format.escape(it.result || '')}</b></td>
+        <td>${it.flag ? '<span class="text-danger">' + Format.labFlag(it.flag) + '</span>' : ''}</td>
+        <td>${Format.escape(it.unit || '')}</td>
+        <td>${Format.escape(it.reference_range || '')}</td></tr>`).join('');
+    return `<div class="sheet half-a4">
+        <div class="sheet-head">
+            <div class="sheet-brand">
+                ${PrintHelper.brandHeaderHtml('')}
+                <div class="sheet-docname">检验报告单</div>
+            </div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}<div class="barcode-no">${Format.escape(rep.report_no || '')}</div></div>
+        </div>
+        <div class="patient-bar">
+            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
+            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
+            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
+            <span>标本：<b>${Format.escape(rep.specimen_type || '-')}</b></span>
+        </div>
+        <table class="sheet-table"><thead><tr><th style="width:28px">序号</th><th>项目</th><th>结果</th><th style="width:40px">标记</th><th>单位</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="sheet-foot"><span>检验者：${Format.escape(rep.creator_name || '')}</span><span>报告时间：${Format.escape(rep.updated_at || rep.created_at || '')}</span></div>
+    </div>`;
 }
 
 function outpatient_labs_printAll() {
