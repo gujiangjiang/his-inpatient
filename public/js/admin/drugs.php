@@ -126,8 +126,8 @@ function admin_drugs_form(d) {
         '<div class="form-group"><label class="form-label">分类</label><input class="form-control" id="dform-cat" value="' + Format.escape(d.category || '西药') + '"></div>' +
         '<div class="form-group"><label class="form-label">剂型</label><input class="form-control" id="dform-form" value="' + Format.escape(d.form || '') + '"></div>' +
         '<div class="form-group"><label class="form-label">规格</label>' +
-        '<div class="flex gap-4"><input class="form-control" id="dform-spec" value="' + Format.escape(d.spec || '') + '" placeholder="如 0.5g×24粒">' +
-        '<button type="button" class="btn" onclick="openSpecEditor()">规格编辑</button></div></div>' +
+        '<input class="form-control" id="dform-spec" value="' + Format.escape(d.spec || '') + '" placeholder="如 0.5g×24粒" readonly onclick="openSpecEditor()" title="点击编辑规格">' +
+        '<div class="hint">点击输入框编辑规格（只读）</div></div>' +
         '<div class="form-group"><label class="form-label">包装单位</label><input class="form-control" id="dform-unit" value="' + Format.escape(d.unit || '') + '"></div>' +
         '<div class="form-group"><label class="form-label">每包装数量</label><input class="form-control" id="dform-packqty" type="number" min="1" value="' + (d.spec_pack_qty || 1) + '"></div>' +
         '<div class="form-group"><label class="form-label">最小单位</label><input class="form-control" id="dform-packunit" value="' + Format.escape(d.spec_pack_unit || '') + '"></div>' +

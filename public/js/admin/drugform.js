@@ -8,12 +8,16 @@ function openSpecEditor() {
     var pkt = document.getElementById('dform-packqty').value || '1';
     var punit = document.getElementById('dform-packunit').value || '';
     Dom.modal('规格编辑', '' +
-        '<div class="form-row"><div class="form-group"><label class="form-label">单剂量值 / 单位</label>' +
-        '<div class="flex gap-4"><input class="form-control" type="number" step="any" min="0" id="se_dose" style="width:70px" value="' + Format.escape(dose) + '">' +
-        '<input class="form-control" id="se_dose_unit" style="width:80px" value="' + Format.escape(dunit) + '" placeholder="如 g"></div></div>' +
-        '<div class="form-group"><label class="form-label">包装数量 / 单位</label>' +
-        '<div class="flex gap-4"><input class="form-control" type="number" min="1" id="se_pack_qty" style="width:70px" value="' + Format.escape(pkt) + '">' +
-        '<input class="form-control" id="se_pack_unit" style="width:80px" value="' + Format.escape(punit) + '" placeholder="如 粒"></div></div></div>' +
+        '<div class="form-grid spec-editor-grid">' +
+        '<div class="form-group"><label class="form-label">单剂量值</label>' +
+        '<input class="form-control" type="number" step="any" min="0" id="se_dose" value="' + Format.escape(dose) + '"></div>' +
+        '<div class="form-group"><label class="form-label">单位</label>' +
+        '<input class="form-control" id="se_dose_unit" value="' + Format.escape(dunit) + '" placeholder="如 g"></div>' +
+        '<div class="form-group"><label class="form-label">包装数量</label>' +
+        '<input class="form-control" type="number" min="1" id="se_pack_qty" value="' + Format.escape(pkt) + '"></div>' +
+        '<div class="form-group"><label class="form-label">包装单位</label>' +
+        '<input class="form-control" id="se_pack_unit" value="' + Format.escape(punit) + '" placeholder="如 粒"></div>' +
+        '</div>' +
         '<div class="fs-12 text-muted">示例：0.5g×24粒 → 单剂量 0.5、单位 g、包装数量 24、单位 粒。库存/警戒统一以最小单位（粒）存储。</div>', [
         { text: '保存规格', type: 'primary', onclick: function () { seSaveSpec(); } },
         { text: '取消', type: 'default' }
