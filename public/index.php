@@ -89,6 +89,7 @@ header('Cache-Control: no-store');
                     <span class="wizard-step" data-step="env">环境</span>
                     <span class="wizard-step" data-step="database">数据库</span>
                     <span class="wizard-step" data-step="migrate">初始化</span>
+                    <span class="wizard-step" data-step="cache">缓存</span>
                     <span class="wizard-step" data-step="site">站点</span>
                     <span class="wizard-step" data-step="admin">管理员</span>
                     <span class="wizard-step" data-step="finish">完成</span>
@@ -126,7 +127,22 @@ header('Cache-Control: no-store');
                         <button type="button" class="login-btn" id="wz-migrate-submit">开始初始化</button>
                         <button type="button" class="wizard-sub-link" id="wz-migrate-next" style="display:none">下一步</button>
                     </div>
-                    <!-- ④ 站点信息 -->
+
+                    <!-- ④ 缓存配置 -->
+                    <div class="wizard-pane" data-pane="cache" style="display:none">
+                        <div class="form-group">
+                            <label class="login-label">缓存驱动</label>
+                            <select id="wz-cache-driver" class="wizard-input" onchange="SetupWizard.bindCacheParams()">
+                                <option value="file">File（本地文件，零依赖）</option>
+                                <option value="apcu">APCu（内存）</option>
+                                <option value="redis">Redis</option>
+                                <option value="memcached">Memcached</option>
+                            </select>
+                        </div>
+                        <div id="wz-cache-params"></div>
+                        <button type="button" class="login-btn" id="wz-cache-submit">下一步</button>
+                    </div>
+                    <!-- ⑤ 站点信息 -->
                     <div class="wizard-pane" data-pane="site" style="display:none">
                         <div class="form-group"><input type="text" id="wz-site-name" placeholder="医院名称"></div>
                         <div class="form-group"><input type="text" id="wz-site-name2" placeholder="医院第二名称（选填）"></div>

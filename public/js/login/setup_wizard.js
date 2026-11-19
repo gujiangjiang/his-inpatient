@@ -5,6 +5,12 @@ var SetupWizard = (function () {
     var state = { status: null, adminUser: '', adminPass: '' };
     var COMMON_TZ = ['Asia/Shanghai', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Taipei',
         'Asia/Tokyo', 'Asia/Singapore', 'America/New_York', 'Europe/London', 'UTC'];
+    var CACHE_DRIVERS = {
+        file: { label: 'File（本地文件，零依赖）', params: {} },
+        apcu: { label: 'APCu（内存）', params: {} },
+        redis: { label: 'Redis', params: { host: ['主机', '127.0.0.1'], port: ['端口', '6379'], auth: ['密码（可选）', ''], prefix: ['键前缀', 'his_sess:'], timeout: ['超时（秒）', '2.0'] } },
+        memcached: { label: 'Memcached', params: { servers: ['服务器（host:port）', '127.0.0.1:11211'], prefix: ['键前缀', 'his_sess:'] } }
+    };
 
     function el(id) { return document.getElementById(id); }
 
@@ -71,6 +77,22 @@ var SetupWizard = (function () {
         });
     }
 
+    /** 缓存驱动参数动态渲染（向导 cache 步下拉 onchange） */
+    function bindCacheParams() {
+        var k = el('wz-cache-driver').value;
+        var p = CACHE_DRIVERS[k] || {};
+        var box = el('wz-cache-params');
+        if (!box) return;
+        var keys = Object.keys(p.params);
+        if (!keys.length) { box.innerHTML = '<p class="fs-13 text-muted">该驱动无需额外参数（' + p.label + '）</p>'; return; }
+        box.innerHTML = keys.map(function (pk) {
+            var def = p.params[pk][1];
+            return '<div class="form-group"><label class="login-label">' + p.params[pk][0] + '</label>' +
+                '<input type="text" class="wizard-input" id="wz-cache-' + pk + '" value="' + Format.escape(def) + '"' +
+                (pk === 'auth' ? ' type="password"' : '') + '></div>';
+        }).join('');
+    }
+
     /** 初始化（由 login.js 在未初始化时调用） */
     function init() {
         api('setup/status').then(function (r) {
@@ -83,7 +105,7 @@ var SetupWizard = (function () {
             if (d.site.hospital_name2) el('wz-site-name2').value = d.site.hospital_name2;
             if (d.site.hospital_code) el('wz-site-code').value = d.site.hospital_code;
             // 阶段续填
-            var stageMap = { env: 'env', migrate: 'migrate', site: 'site', admin: 'admin', done: 'finish' };
+            var stageMap = { env: 'env', migrate: 'migrate', cache: 'cache', site: 'site', admin: 'admin', done: 'finish' };
             show(stageMap[d.stage] || 'env');
             if (d.stage === 'migrate') {
                 el('wz-migrate-hint').textContent = '数据库连接已保存，点击开始创建业务数据表。';
@@ -121,7 +143,19 @@ var SetupWizard = (function () {
                 el('wz-migrate-next').style.display = 'block';
             }).catch(function () { /* 已 toast */ });
         });
-        el('wz-migrate-next').addEventListener('click', function () { show('site'); });
+        el('wz-migrate-next').addEventListener('click', function () { show('cache'); });
+
+        el('wz-cache-submit').addEventListener('click', function () {
+            var payload = { driver: el('wz-cache-driver').value };
+            var p = CACHE_DRIVERS[payload.driver] || {};
+            Object.keys(p.params).forEach(function (k) {
+                payload[k] = el('wz-cache-' + k) ? el('wz-cache-' + k).value.trim() : '';
+            });
+            api('setup/cache', payload).then(function () {
+                Dom.toast('缓存配置已保存', 'success');
+                show('site');
+            }).catch(function () { /* 已 toast */ });
+        });
 
         el('wz-site-submit').addEventListener('click', function () {
             api('setup/site', {
@@ -157,6 +191,7 @@ var SetupWizard = (function () {
                 window.location.reload();
             }).catch(function () { /* 已 toast */ });
         });
+        bindCacheParams();
     })();
 
     return { init: init };
