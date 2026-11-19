@@ -4,7 +4,29 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.48.0] - 2026-11-19
+
+### 新增
+- **验证码改后端 GD 绘制 PNG**（参照门诊一体化 LoginSecurity::captchaRender）：
+  130×42 浅灰白底 + 2 条干扰弧线 + 80 噪点 + 4 字符（内置字体横纵微扰+随机深色）；
+  GD 缺失降级纯文本（校验仍走 session）；no-store/no-cache 头防缓存；
+  登录页改 blob 拉图（fetch→createObjectURL 显示 PNG，点击刷新）；
+  随机字符集去易混淆 0/O/1/I/l，random_int 密码学安全。
+- **缓存扩展多驱动**（参照门诊一体化 Cache.php）：
+  - Cache.php 重写为 file/apcu/redis/memcached 统一接口 get/set(ttl)/del/flush(前缀)/stats，
+    扩展缺失/连接失败自动降级 file 并 error_log，绝不抛异常；
+  - ConfigDB 新增 cacheDriver/redisParams/memcachedParams/driverOptions；
+  - 新增 api/config/drivers.php 驱动注册表（file/apcu/redis/memcached 四驱动+参数）；
+  - cache_center 后端：status 返回 Cache::stats+drivers 注册表、flush 按前缀清空、
+    driver-save（扩展校验+保存前连接测试+写 ConfigDB）；
+  - 缓存中心前端三 tab：状态详情（驱动/键数/内存/降级说明）、驱动切换
+    （注册表下拉+参数表单）、缓存刷新（config/dict/call/all 分模块）。
+
+### 验证
+- php-lint 全量通过；Cache 实测 set/get/stats/del（file 驱动）；JS 全过。
+
 ## [0.47.0] - 2026-11-19
+
 
 ### 新增
 - **登录安全基础设施**（参照门诊一体化 LoginSecurity）：
