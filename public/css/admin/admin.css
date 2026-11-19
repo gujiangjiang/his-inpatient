@@ -156,3 +156,31 @@
 
 /* 统计徽标 */
 .mini-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 10px; background: #f2f6f9; color: #606266; }
+
+/* ============================================================
+ * 移动端适配（长期支持，与 doctor.css 移动端联动）
+ * ============================================================ */
+@media (max-width: 768px) {
+    /* 表格：容器横向滚动，避免挤压 */
+    .table { min-width: 640px; }
+    .card { border-radius: 8px; }
+    .card-header { font-size: 14px; }
+    /* 筛选条换行 + 全宽控件 */
+    .list-filter { padding: 12px; }
+    .list-filter .filter-item { flex: 1 1 100%; }
+    .list-filter .filter-item .form-control { width: 100%; min-width: 0; }
+    /* 表单网格降单列 */
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .colspan-2 { grid-column: span 1; }
+    /* 左右两栏（pane-wrap）移动端纵向堆叠 */
+    .pane-wrap { flex-direction: column; }
+    .pane-nav { width: 100%; display: flex; flex-wrap: wrap; gap: 4px; padding: 6px; }
+    .pane-nav .pn-item { margin-bottom: 0; }
+    /* 统计卡网格收敛 */
+    .stat-cards { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    /* 日志行/状态行收紧 */
+    .log-line { flex-wrap: wrap; }
+    .status-row { flex-wrap: wrap; }
+    /* 审核/字典行内操作换行 */
+    .rv-row { flex-wrap: wrap; }
+}
