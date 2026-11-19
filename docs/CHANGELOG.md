@@ -4,7 +4,28 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.53.2] - 2026-11-20
+
+### 修复（无头浏览器实测确认）
+- **登录/退出/日志中心 500 真根因**：api/index.php 的 require 列表
+  **漏加载 log_helper.php**，导致 log_write/log_query/log_counts 全部
+  未定义 → login（成功/失败路径写日志）、logout、日志中心 list 全部
+  `Call to undefined function` → 500。此前 log_helper 内部 try-catch
+  无效的原因正是函数根本没被加载。
+- **登录页 _captchaTimer 未定义**：login.js 输入用户名触发 input 事件
+  时 ReferenceError，登录按钮流程中断。补 `var _captchaTimer = null`。
+- 移除临时诊断工具（debug=1 透出、auth/diag），保留 071/069 防御性
+  补列迁移。
+
+### 验证（本地无头浏览器 + 完整冒烟）
+- 登录 auth/login → 200 success
+- 操作日志 admin/logs?channel=operation → 200 list 正常（含登录记录）
+- 接口日志 admin/logs?channel=interface → 200 正常
+- 退出 auth/logout → 200 success
+- 日志中心 UI：服务器/操作/接口三个 tab 正常渲染，无控制台错误
+
 ## [0.53.1] - 2026-11-19
+
 
 ### 修复（生产登录/退出/日志 500 根治）
 - **login/logout/logs 持续 500**：生产 users 表缺 067 锁定列
