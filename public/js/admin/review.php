@@ -16,9 +16,9 @@
             <button class="sub-tab" data-rvtab="handled" onclick="admin_review_tab('handled')">已处理</button>
         </div>
         <div class="flex gap-8" style="align-items:center">
-            <input type="date" class="form-control" id="rv-date-from" style="width:auto" onchange="rvDateChanged()">
+            <input type="text" class="form-control" id="rv-date-from" style="width:auto" data-dtpicker="date" placeholder="开始日期" onchange="rvDateChanged()">
             <span class="text-muted">至</span>
-            <input type="date" class="form-control" id="rv-date-to" style="width:auto" onchange="rvDateChanged()">
+            <input type="text" class="form-control" id="rv-date-to" style="width:auto" data-dtpicker="date" placeholder="结束日期" onchange="rvDateChanged()">
             <button class="btn btn-small" onclick="rvResetDates()">重置</button>
         </div>
     </div>
@@ -66,6 +66,7 @@ async function admin_review_init() {
     await rvLoadAudit();
     rvRenderStats();
     rvResetDates();   // 默认近 7 天日期范围
+    if (window.DateTimePicker) DateTimePicker.initInputs(document);
 }
 
 /* 统一审核（audits pending：药品/设置等） */
