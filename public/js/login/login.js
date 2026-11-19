@@ -191,13 +191,22 @@ function loadCaptchaMode() {
         else if (localStorage.getItem('his_login_fail_flag') === '1') { showCaptcha(); }
     }).catch(() => {});
 }
+var _captchaBlobUrl = '';
 function loadCaptchaSvg() {
-    const box = document.getElementById('login-captcha-svg');
-    if (!box) return;
-    AjaxLoader.api('auth/captcha?action=gen', { silent: true }).then(r => {
-        if (r.data && r.data.disabled) { box.innerHTML = ''; return; }
-        box.innerHTML = r.data.svg || '';
-    }).catch(() => {});
+    const img = document.getElementById('login-captcha-img');
+    if (!img) return;
+    fetch('/api/auth/captcha?action=gen', {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        cache: 'no-store',
+        credentials: 'same-origin'
+    }).then(function (res) {
+        if (!res.ok) throw new Error('captcha http ' + res.status);
+        return res.blob();
+    }).then(function (blob) {
+        if (_captchaBlobUrl) { try { URL.revokeObjectURL(_captchaBlobUrl); } catch (e) {} }
+        _captchaBlobUrl = URL.createObjectURL(blob);
+        img.src = _captchaBlobUrl;
+    }).catch(function () { /* 拉取失败静默 */ });
 }
 function showCaptcha(force) {
     const g = document.getElementById('captcha-group');
@@ -217,7 +226,7 @@ function probeCaptcha() {
         else hideCaptcha();
     }).catch(() => {});
 }
-document.getElementById('login-captcha-svg').addEventListener('click', loadCaptchaSvg);
+document.getElementById('login-captcha-box').addEventListener('click', loadCaptchaSvg);
 if (document.getElementById('username')) {
     document.getElementById('username').addEventListener('blur', probeCaptcha);
     document.getElementById('username').addEventListener('input', function () {

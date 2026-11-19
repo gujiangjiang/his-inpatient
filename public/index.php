@@ -77,7 +77,7 @@ header('Cache-Control: no-store');
                         <label class="login-label">验证码</label>
                         <div class="login-captcha-box">
                             <input type="text" id="login-captcha" placeholder="请输入右侧字符" maxlength="4" autocomplete="off">
-                            <span id="login-captcha-svg" title="看不清？点击刷新" style="cursor:pointer;flex:0 0 auto;width:110px;height:40px;display:flex;align-items:center;justify-content:center;border-left:1px solid #e8edf3"></span>
+                            <span id="login-captcha-box" title="看不清？点击刷新" style="cursor:pointer;flex:0 0 auto;width:130px;height:42px;display:flex;align-items:center;justify-content:center;border-left:1px solid #e8edf3"><img id="login-captcha-img" alt="验证码" style="width:130px;height:42px;object-fit:cover;display:block"></span>
                         </div>
                     </div>
                     <button type="submit" class="login-btn">登 录</button>

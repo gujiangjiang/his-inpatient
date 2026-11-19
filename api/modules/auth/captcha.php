@@ -1,8 +1,8 @@
 <?php
-// api/modules/auth/captcha.php - 图形验证码（前端渲染 SVG，无 GD 依赖）
-// GET  auth/captcha?action=gen          → 生成 4 位码存 session，返回 SVG
+// api/modules/auth/captcha.php - 图形验证码（后端 GD 绘制 PNG，参照门诊一体化 LoginSecurity）
+// GET  auth/captcha?action=gen          → 生成 4 位码存 session，输出 PNG 图片
 // GET  auth/captcha?action=check&flag=  → 嗅探是否需验证码（off/auto/force）
-// 模式存 ConfigDB login.captcha_mode（off/auto/force）
+// 模式存 ConfigDB login.captcha_mode（off/auto/force）；GD 缺失降级纯文本。
 Auth::init();
 $action = Validator::get('action', 'gen');
 
@@ -24,27 +24,52 @@ if ($action === 'check') {
     Response::success(['require_captcha' => $require]);
 }
 
-// 生成验证码：4 位字母数字（去易混淆），存 session，返回 SVG
+// 生成验证码图片（GD PNG）
 $mode = (string)ConfigDB::get('login.captcha_mode', 'auto');
 if ($mode === 'off') {
-    Response::success(['disabled' => true, 'svg' => '']);
+    http_response_code(204);
+    exit;
 }
+// 4 位字符（去易混淆 0/O/1/I/l），密码学随机
 $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 $code = '';
-for ($i = 0; $i < 4; $i++) $code .= $chars[mt_rand(0, strlen($chars) - 1)];
+for ($i = 0; $i < 4; $i++) $code .= $chars[random_int(0, strlen($chars) - 1)];
 $_SESSION['captcha_code'] = strtolower($code);
+$_SESSION['captcha_created_at'] = time();
 
-$svg = '<svg xmlns="http://www.w3.org/2000/svg" width="110" height="40" viewBox="0 0 110 40" style="border:1px solid #e8edf3;border-radius:6px;background:#f5f7fa">';
-for ($i = 0; $i < 3; $i++) {
-    $x1 = mt_rand(0, 110); $y1 = mt_rand(0, 40); $x2 = mt_rand(0, 110); $y2 = mt_rand(0, 40);
-    $svg .= '<line x1="' . $x1 . '" y1="' . $y1 . '" x2="' . $x2 . '" y2="' . $y2 . '" stroke="rgba(' . mt_rand(120, 200) . ',' . mt_rand(120, 200) . ',' . mt_rand(120, 200) . ',.6)" stroke-width="1"/>';
+if (!function_exists('imagecreatetruecolor')) {
+    // GD 缺失：纯文本兜底（校验仍走 session）
+    header('Content-Type: text/plain; charset=utf-8');
+    echo $code;
+    exit;
 }
+
+$w = 130; $h = 42;
+$img = imagecreatetruecolor($w, $h);
+// 浅灰白底
+$bg = imagecolorallocate($img, 245, 247, 250);
+imagefill($img, 0, 0, $bg);
+// 2 条浅色干扰弧线
+for ($i = 0; $i < 2; $i++) {
+    $c = imagecolorallocate($img, mt_rand(150, 210), mt_rand(150, 210), mt_rand(150, 210));
+    imagearc($img, mt_rand(0, $w), mt_rand(0, $h), mt_rand(60, 120), mt_rand(60, 120),
+        mt_rand(0, 360), mt_rand(0, 360), $c);
+}
+// 80 个浅色噪点
+for ($i = 0; $i < 80; $i++) {
+    $c = imagecolorallocate($img, mt_rand(170, 220), mt_rand(170, 220), mt_rand(170, 220));
+    imagesetpixel($img, mt_rand(0, $w - 1), mt_rand(0, $h - 1), $c);
+}
+// 4 字符（内置字体，横纵微扰 + 随机深色）
 for ($i = 0; $i < 4; $i++) {
-    $color = 'hsl(' . mt_rand(200, 255) . ',70%,' . mt_rand(25, 50) . '%)';
-    $rot = mt_rand(-15, 15);
-    $x = 14 + $i * 24;
-    $y = mt_rand(26, 32);
-    $svg .= '<text x="' . $x . '" y="' . $y . '" font-size="22" font-weight="700" fill="' . $color . '" transform="rotate(' . $rot . ' ' . $x . ' ' . $y . ')" font-family="Arial, sans-serif">' . $code[$i] . '</text>';
+    $c = imagecolorallocate($img, mt_rand(20, 70), mt_rand(60, 110), mt_rand(130, 190));
+    $x = 12 + $i * 28 + mt_rand(-3, 3);
+    $y = mt_rand(16, 28);
+    imagestring($img, mt_rand(4, 6), $x, $y, $code[$i], $c);
 }
-$svg .= '</svg>';
-Response::success(['disabled' => false, 'svg' => $svg]);
+header('Content-Type: image/png');
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
+imagepng($img);
+imagedestroy($img);
+exit;
