@@ -47,7 +47,8 @@ try {
         $meta = json_decode((string)($doc['doc_meta'] ?? ''), true);
         if (!is_array($meta)) $meta = [];
         $meta['revise'] = true;
-        $pdo->prepare("UPDATE emr_documents SET status = 'draft', doc_meta = ?, updated_at = ? WHERE id = ?")
+        /* 维护批准(退回草稿编辑): 打印次数清零 (重新维护过的文书重新计次) */
+        $pdo->prepare("UPDATE emr_documents SET status = 'draft', doc_meta = ?, print_count = 0, updated_at = ? WHERE id = ?")
             ->execute([json_encode($meta, JSON_UNESCAPED_UNICODE), $now, (int)$doc['id']]);
     }
     $pdo->prepare("UPDATE emr_maintenance_requests SET status='approved', reviewed_by=?, reviewed_at=?, reject_reason=NULL WHERE id=?")

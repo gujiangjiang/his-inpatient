@@ -143,6 +143,7 @@ function bindToolbar() {
     bind('btn-versions', emr_showVersions);
     bind('btn-sign', emr_signDoc);
     bind('btn-template-mgr', () => emr_openTemplateManager());
+    bind('btn-print-batch', () => emr_batchPrintDialog());
     bind('btn-content-mgr', () => emr_openContentManager());
     bind('btn-maint-mgr', emr_maintListDialog);
     bind('btn-ref-panel', emr_refToggle);

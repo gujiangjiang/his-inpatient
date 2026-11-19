@@ -127,6 +127,7 @@ function getRoutes() {
         'emr/category-list' => ['emr/station/category_list.php', ['admin', 'doctor']],
         'emr/category-save' => ['emr/station/category_save.php', ['admin']],
         'emr/document-list' => ['emr/document/document_list.php', ['admin', 'doctor']],
+        'emr/document-batch-print' => ['emr/document/document_batch_print.php', ['admin', 'doctor']],
         'emr/document-get' => ['emr/document/document_get.php', ['admin', 'doctor']],
         'emr/document-save' => ['emr/document/document_save.php', ['admin', 'doctor']],
         'emr/document-sign' => ['emr/document/document_sign.php', ['admin', 'doctor']],

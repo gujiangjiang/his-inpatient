@@ -54,6 +54,7 @@
             </div>
         </div>
         <div class="emr-tree-foot" id="emr-tree-foot">
+            <button type="button" class="btn btn-small btn-primary" id="btn-print-batch" title="病历文书批量打印（按分类勾选）">打印</button>
             <button type="button" class="btn btn-small" id="btn-template-mgr">模板</button>
             <button type="button" class="btn btn-small" id="btn-content-mgr">内容</button>
             <button type="button" class="btn btn-small" id="btn-maint-mgr" title="病历维护申请（本人申请与审核状态）">维护</button>

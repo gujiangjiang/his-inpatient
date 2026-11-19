@@ -1,0 +1,48 @@
+<?php
+// api/modules/emr/document_batch_print.php - 病历文书批量打印
+// 返回选中文书的完整数据 (含 doc_json/抬头/患者信息栏) 并累加打印次数 print_count。
+// 打印模式: 后端按文书所属分类名判断 (分类含「病程」→ 重排打印 buildBatch; 其余 → 原样打印 content_html)
+Auth::requireRole(['admin', 'doctor']);
+$ids = Validator::get('ids');
+if (!$ids || !is_array($ids)) Response::error('请选择要打印的文书');
+$ids = array_values(array_unique(array_map('intval', $ids)));
+if (!$ids) Response::error('请选择要打印的文书');
+
+$patientId = (int)Validator::get('patient_id', 0);
+if ($patientId) {
+    foreach ($ids as $id) {
+        $row = DB::selectOne("SELECT patient_id FROM emr_documents WHERE id = ?", [$id]);
+        if (!$row) continue;
+        if (!can_access_patient(Auth::user(), $row['patient_id'])) Response::error('无权访问该文书', 403);
+    }
+}
+
+$ph = implode(',', array_fill(0, count($ids), '?'));
+$rows = DB::select(
+    "SELECT d.id, d.patient_id, d.category_id, d.title, d.doc_meta, d.doc_json,
+            d.content_html, d.status, d.created_at, d.updated_at, d.signed_at, d.print_count,
+            c.name AS category_name, u.name AS signer_name, t.name AS template_name
+     FROM emr_documents d
+     LEFT JOIN emr_categories c ON d.category_id = c.id
+     LEFT JOIN emr_templates t ON d.template_id = t.id
+     LEFT JOIN users u ON d.signer_id = u.id
+     WHERE d.id IN ($ph)
+     ORDER BY d.created_at ASC",
+    $ids
+);
+
+$pdo = DB::getPDO();
+$update = $pdo->prepare("UPDATE emr_documents SET print_count = print_count + 1, updated_at = ? WHERE id = ?");
+$now = DateHelper::now();
+foreach ($rows as &$r) {
+    $r['doc_json'] = !empty($r['doc_json']) ? (json_decode($r['doc_json'], true) ?: null) : null;
+    $r['doc_meta'] = !empty($r['doc_meta']) ? (json_decode($r['doc_meta'], true) ?: []) : [];
+    /* 打印模式: 分类名含「病程」→ 重排打印 (buildBatch); 其余 → 原样打印 (content_html 快照) */
+    $r['print_mode'] = (strpos((string)$r['category_name'], '病程') !== false) ? 'repaginate' : 'raw';
+    $update->execute([$now, (int)$r['id']]);
+    /* 返回自增后的打印次数 (前端列表同步显示) */
+    $after = DB::selectOne("SELECT print_count FROM emr_documents WHERE id = ?", [(int)$r['id']]);
+    $r['print_count'] = $after ? (int)$after['print_count'] : (int)$r['print_count'] + 1;
+}
+unset($r);
+Response::success($rows);

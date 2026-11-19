@@ -10,7 +10,8 @@ if (!$patientId && !$admissionNo) Response::error('请输入患者ID或住院号
 $sql = "SELECT d.*, c.name as category_name, t.name as template_name,
         u.name as created_name, s.name as signer_name,
         (SELECT mr.id FROM emr_maintenance_requests mr
-          WHERE mr.doc_id = d.id AND mr.status = 'pending' ORDER BY mr.id DESC LIMIT 1) AS maint_pending_id
+          WHERE mr.doc_id = d.id AND mr.status = 'pending' ORDER BY mr.id DESC LIMIT 1) AS maint_pending_id,
+        d.print_count
         FROM emr_documents d
         LEFT JOIN emr_categories c ON d.category_id = c.id
         LEFT JOIN emr_templates t ON d.template_id = t.id
