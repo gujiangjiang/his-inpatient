@@ -12,13 +12,19 @@ function log_write($channel, $category, $summary, $detail = '', $level = 'info',
         try { $user = Auth::user(); } catch (Exception $e) { $user = null; }
     }
     $ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';
-    DB::execute("INSERT INTO system_logs (channel, category, direction, action, level, summary, detail, payload, user_id, username, role, target, remote_ip, user_agent, created_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-        [$channel, $category, $extra['direction'] ?? '', $extra['action'] ?? '', $level, $summary, $detail,
-         $extra['payload'] ?? '', $user['id'] ?? 0, $user['name'] ?? '', $user['role'] ?? '',
-         $extra['target'] ?? '', $ip, $_SERVER['HTTP_USER_AGENT'] ?? '', DateHelper::now()]);
-    // 保留期清理（轻量：每日首写清一次）
-    log_maintain_once();
+    // 日志写入失败不得阻断业务（如 system_logs 表结构异常/库锁定时），
+    // 尤其退出登录等关键流程必须放行
+    try {
+        DB::execute("INSERT INTO system_logs (channel, category, direction, action, level, summary, detail, payload, user_id, username, role, target, remote_ip, user_agent, created_at)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            [$channel, $category, $extra['direction'] ?? '', $extra['action'] ?? '', $level, $summary, $detail,
+             $extra['payload'] ?? '', $user['id'] ?? 0, $user['name'] ?? '', $user['role'] ?? '',
+             $extra['target'] ?? '', $ip, $_SERVER['HTTP_USER_AGENT'] ?? '', DateHelper::now()]);
+        // 保留期清理（轻量：每日首写清一次）
+        log_maintain_once();
+    } catch (Exception $e) {
+        // 吞掉：日志非关键路径
+    }
 }
 
 /** 日志保留维护（每日一次：按天数/行数上限清理） */
@@ -27,9 +33,13 @@ function log_maintain_once() {
     $today = date('Y-m-d');
     if (@file_get_contents($cacheFile) === $today) return;
     @file_put_contents($cacheFile, $today);
-    $days = (int)(ConfigDB::get('log.retention_days', 7) ?? 7);
-    if ($days > 0) {
-        DB::execute("DELETE FROM system_logs WHERE created_at < datetime('now', ?)", ['-' . $days . ' days']);
+    try {
+        $days = (int)(ConfigDB::get('log.retention_days', 7) ?? 7);
+        if ($days > 0) {
+            DB::execute("DELETE FROM system_logs WHERE created_at < datetime('now', ?)", ['-' . $days . ' days']);
+        }
+    } catch (Exception $e) {
+        // 清理失败不影响本次写入
     }
 }
 
@@ -81,12 +91,16 @@ function log_filter_where($filter) {
 /** 分类计数（左侧导航徽章） */
 function log_counts($channel, $filter = []) {
     if (!in_array($channel, ['operation', 'interface'], true)) return [];
-    $where = log_filter_where($filter);
-    $sql = "SELECT category, COUNT(*) AS cnt FROM system_logs WHERE channel = ?" . $where[0] . " GROUP BY category";
-    $args = array_merge([$channel], $where[1]);
-    $out = [];
-    foreach (DB::select($sql, $args) as $r) $out[$r['category']] = (int)$r['cnt'];
-    return $out;
+    try {
+        $where = log_filter_where($filter);
+        $sql = "SELECT category, COUNT(*) AS cnt FROM system_logs WHERE channel = ?" . $where[0] . " GROUP BY category";
+        $args = array_merge([$channel], $where[1]);
+        $out = [];
+        foreach (DB::select($sql, $args) as $r) $out[$r['category']] = (int)$r['cnt'];
+        return $out;
+    } catch (Exception $e) {
+        return [];
+    }
 }
 
 /** 清空日志（channel 必填；category 可空=全清） */
