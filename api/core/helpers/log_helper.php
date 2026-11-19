@@ -27,6 +27,29 @@ function log_write($channel, $category, $summary, $detail = '', $level = 'info',
     }
 }
 
+/**
+ * 写接口日志（系统间互调：出向 outbound / 入向 inbound，按外部系统分类）
+ * @param string $category  外部系统分类（opd 门诊 / fhir / pacs / his / app）
+ * @param string $direction inbound 入向 / outbound 出向
+ * @param string $endpoint  端点/业务标识（action 或 URL 路径）
+ * @param bool   $ok        是否成功（决定级别 info/warning）
+ * @param string $summary   摘要
+ * @param string $payload   原始报文（出向请求体或响应，截断 2000 字防爆表）
+ * @param string $detail    详情（错误信息等）
+ * @param string $target    出向目标系统地址（对方 URL；入向可空）
+ */
+function log_interface($category, $direction, $endpoint, $ok, $summary = '', $payload = '', $detail = '', $target = '') {
+    $category = in_array($category, ['opd', 'fhir', 'pacs', 'his', 'app'], true) ? $category : 'app';
+    $direction = $direction === 'inbound' ? 'inbound' : 'outbound';
+    if (strlen((string)$payload) > 2000) $payload = mb_substr((string)$payload, 0, 2000);
+    log_write('interface', $category, $summary, $detail, $ok ? 'info' : 'warning', [
+        'direction' => $direction,
+        'action' => (string)$endpoint,
+        'payload' => (string)$payload,
+        'target' => (string)$target,
+    ]);
+}
+
 /** 日志保留维护（每日一次：按天数/行数上限清理） */
 function log_maintain_once() {
     $cacheFile = DATA_DIR . '/log_maintain_day';
