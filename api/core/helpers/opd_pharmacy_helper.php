@@ -11,10 +11,10 @@ function opd_pharmacy_drugs($force = false) {
         return ['source' => 'none', 'list' => [], 'offline' => false, 'msg' => '门诊接口未启用'];
     }
 
-    // 实时查（含重试一次）
+    // 实时查（含重试一次；短超时快速失败降级缓存，避免 502 网关超时）
     $lastErr = '';
     for ($try = 0; $try < 2; $try++) {
-        $r = opd_his_read('catalog_list', ['type' => 'drugs'], 15);
+        $r = opd_his_read('catalog_list', ['type' => 'drugs'], 6);
         if ($r['ok'] && is_array($r['data']['list'] ?? null)) {
             $list = $r['data']['list'];
             // 同步缓存（幂等 upsert）

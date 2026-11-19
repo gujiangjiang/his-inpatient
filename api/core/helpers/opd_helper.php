@@ -53,8 +53,10 @@ function opd_http($method, $url, $headers = [], $body = null, $timeout = 8) {
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
         ]);
         if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         $resp = curl_exec($ch);
