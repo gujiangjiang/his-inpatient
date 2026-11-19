@@ -128,6 +128,7 @@ async function admin_logs_load() {
     const r = await AjaxLoader.api('admin/logs?action=list&' + new URLSearchParams(_logsFilter()).toString(), { silent: true });
     const d = r.data || {};
     const view = document.getElementById('logs-view');
+    if (d.error) { view.innerHTML = '<div class="empty-tip" style="color:#e5484d">' + Format.escape(d.error) + '</div>'; return; }
     view.innerHTML = (d.list || []).map(_logsRowHtml).join('') || '<div class="empty-tip">暂无日志</div>';
     _logLastId = (d.list && d.list.length) ? d.list[d.list.length - 1].id : _logLastId;
     _logHasMore = !!d.has_more;
