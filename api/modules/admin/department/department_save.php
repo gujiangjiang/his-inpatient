@@ -25,4 +25,5 @@ if ($id) {
     $stmt->execute([$code, $name, $data['description'] ?? '', $riskAssessment, $data['is_active'] ?? 1, DateHelper::now()]);
     $id = $pdo->lastInsertId();
 }
+Cache::del('dept_list');
 Response::success(['id' => $id]);

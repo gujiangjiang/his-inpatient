@@ -1,6 +1,11 @@
 <?php
-// api/modules/admin/ward_list.php
+// api/modules/admin/ward/ward_list.php
 Auth::requireRole(['admin', 'doctor', 'nurse']);
-$pdo = DB::getPDO();
-$stmt = $pdo->query("SELECT * FROM wards ORDER BY id DESC");
-Response::success($stmt->fetchAll(PDO::FETCH_ASSOC));
+$key = 'ward_list';
+$cached = Cache::get($key);
+if (is_array($cached)) {
+    Response::success($cached);
+}
+$rows = DB::select("SELECT * FROM wards ORDER BY id DESC");
+Cache::set($key, $rows, 300);
+Response::success($rows);

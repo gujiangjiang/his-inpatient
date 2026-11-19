@@ -21,4 +21,5 @@ if ($id) {
     $stmt->execute([$code, $name, $data['floor'] ?? '', $data['bed_count'] ?? 0, $departmentId, $data['is_active'] ?? 1, DateHelper::now()]);
     $id = $pdo->lastInsertId();
 }
+Cache::del('ward_list');
 Response::success(['id' => $id]);
