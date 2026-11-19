@@ -66,11 +66,18 @@ function admin_dq_tab(kind) {
 async function admin_dq_search() {
     const kw = document.getElementById('dq-kw').value.trim();
     let url = 'admin/query?kind=' + _dqKind + '&limit=80&kw=' + encodeURIComponent(kw);
-    if (_dqKind === 'occupation') url += '&level=' + document.getElementById('dq-level').value;
-    if (_dqKind === 'dict') url += '&key=' + encodeURIComponent(document.getElementById('dq-dict').value);
+    if (_dqKind === 'occupation') {
+        const lvl = document.getElementById('dq-level');
+        if (lvl) url += '&level=' + lvl.value;
+    }
+    if (_dqKind === 'dict') {
+        const dict = document.getElementById('dq-dict');
+        if (dict) url += '&key=' + encodeURIComponent(dict.value);
+    }
     const r = await AjaxLoader.api(url, { silent: true });
     const d = r.data || {};
-    document.getElementById('dq-source').textContent = d.source ? ('数据来源：' + d.source) : '';
+    const srcEl = document.getElementById('dq-source');
+    if (srcEl) srcEl.textContent = d.source ? ('数据来源：' + d.source) : '';
     const box = document.getElementById('dq-result');
     const rows = d.rows || [];
     if (!rows.length) { box.innerHTML = '<div class="empty-state">未查询到数据</div>'; return; }
