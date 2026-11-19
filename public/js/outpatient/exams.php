@@ -134,6 +134,8 @@ function outpatient_exams_printBlock(rep) {
         </div>
         <table class="sheet-table"><thead><tr><th>检查项目</th><th>检查部位</th><th>所见</th><th>结论</th></tr></thead>
         <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
+        <div class="sheet-note">请凭本申请单至相应科室登记执行。</div>
+        <div class="sheet-tip">温馨提示：X 线、CT 等检查请注意辐射防护；腹部超声等部分检查需空腹进行，请遵医嘱提前准备。</div>
         <div class="sheet-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>
     </div>`;
 }
@@ -167,6 +169,7 @@ function outpatient_exams_reportBlock(rep) {
         </div>
         <table class="sheet-table"><thead><tr><th style="width:140px">检查项目</th><th style="width:120px">检查部位</th><th>影像所见</th><th style="width:180px">影像诊断</th></tr></thead>
         <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
+        <div class="sheet-note">仅供医师诊断参考，不做其他用途</div>
         <div class="sheet-foot"><span>报告医生：${Format.escape(rep.creator_name || '')}</span><span>报告时间：${Format.escape(rep.updated_at || rep.created_at || '')}</span></div>
     </div>`;
 }

@@ -159,6 +159,7 @@
 
   /** 正文块 → 各页正文 HTML 数组 */
   L.paginate = (doc, patientInfo) => {
+    if (!doc.page) doc.page = {}; /* 兼容旧文档缺 page：走默认 A4 */
     const d = L.dim(doc.page);
     const meas = document.createElement('div');
     meas.className = 'emr-measure';

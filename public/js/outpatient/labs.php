@@ -138,6 +138,8 @@ function outpatient_labs_printBlock(rep) {
             <span>开单时间：<b>${Format.escape(rep.created_at || '')}</b></span>
         </div>
         <table class="sheet-table"><thead><tr><th style="width:32px">序号</th><th>检验项目</th><th>标本</th><th>结果</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="sheet-note">请凭本申请单至相应科室登记执行。</div>
+        <div class="sheet-tip">温馨提示：肝功能等抽血检验项目需空腹采血，请按检验科指引提前做好准备。</div>
         <div class="sheet-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>
     </div>`;
 }
@@ -175,6 +177,7 @@ function outpatient_labs_reportBlock(rep) {
             <span>标本：<b>${Format.escape(rep.specimen_type || '-')}</b></span>
         </div>
         <table class="sheet-table"><thead><tr><th style="width:28px">序号</th><th>项目</th><th>结果</th><th style="width:40px">标记</th><th>单位</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="sheet-note">检验结果仅供临床诊疗参考，仅对送检标本负责！</div>
         <div class="sheet-foot"><span>检验者：${Format.escape(rep.creator_name || '')}</span><span>报告时间：${Format.escape(rep.updated_at || rep.created_at || '')}</span></div>
     </div>`;
 }

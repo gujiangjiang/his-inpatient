@@ -194,27 +194,32 @@ function clinic_consult_detail(id) {
 function clinic_consult_print(id) {
     const x = _consultRows.find(r2 => r2.id == id);
     if (!x) return;
-    const html = `
-        ${PrintHelper.brandHeaderHtml()}
-        <h2 class="doc-title">会诊申请单</h2>
-        <div class="doc-sub">会诊ID ${x.id}</div>
-        <div class="doc-meta">
-            <span>患者：${Format.escape(x.patient_name || '')}</span>
-            <span>床号：${Format.escape(x.bed_no || '-')}</span>
-            <span>会诊类型：${Format.escape(x.consult_type || '普通会诊')}</span>
-            <span>计划会诊时间：${Format.escape(x.planned_at || '-')}</span>
+    const html = `<div class="sheet">
+        <div class="sheet-head">
+            <div class="sheet-brand">
+                ${PrintHelper.brandHeaderHtml('')}
+                <div class="sheet-docname">会诊申请单</div>
+            </div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg('CONSULT' + x.id)}</div>
         </div>
-        <table class="doc-table"><tbody>
-            <tr><th style="width:120px">会诊科室</th><td>${Format.escape(x.to_dept_name || '')}（申请：${Format.escape(x.from_dept_name || '-')}）</td></tr>
+        <div class="patient-bar">
+            <span>姓名：<b>${Format.escape(x.patient_name || '')}</b></span>
+            <span>床号：<b>${Format.escape(x.bed_no || '-')}</b></span>
+            <span>会诊类型：<b>${Format.escape(x.consult_type || '普通会诊')}</b></span>
+            <span>计划会诊时间：<b>${Format.escape(x.planned_at || '-')}</b></span>
+        </div>
+        <table class="sheet-table"><tbody>
+            <tr><th style="width:130px">会诊科室</th><td>${Format.escape(x.to_dept_name || '')}（申请：${Format.escape(x.from_dept_name || '-')}）</td></tr>
             <tr><th>初步诊断</th><td>${Format.escape(x.diagnosis || '-')}</td></tr>
             <tr><th>病情摘要</th><td style="white-space:pre-wrap">${Format.escape(x.summary || '-')}</td></tr>
             <tr><th>会诊目的</th><td style="white-space:pre-wrap">${Format.escape(x.purpose || '')}</td></tr>
             <tr><th>会诊意见</th><td style="white-space:pre-wrap">${x.status === 'replied' ? Format.escape(x.reply_text || '') : '（待回复）'}</td></tr>
         </tbody></table>
-        <div class="doc-foot">
+        <div class="sheet-foot">
             <span>申请医生：${Format.escape(x.created_by_name || '')} ${Format.escape(x.created_at || '')}</span>
             <span>会诊医生：${Format.escape(x.replied_by_name || '')} ${Format.escape(x.replied_at || '')}</span>
-        </div>`;
+        </div>
+    </div>`;
     PrintHelper.printHtml('会诊申请单', html);
 }
 

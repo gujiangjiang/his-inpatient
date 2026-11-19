@@ -20,8 +20,17 @@ const PrintHelper = {
     printHtml(title, bodyHtml) {
         const win = window.open('', '_blank', 'width=860,height=920');
         if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
+        // 纸张尺寸：按单据类型注入 @page（A5 / 半张A4横 / A4），
+        // 避免 A5 内容被默认 A4 画布拉伸缩放
+        const hasA5 = bodyHtml.indexOf('sheet a5') !== -1;
+        const hasHalf = bodyHtml.indexOf('sheet half-a4') !== -1;
+        const pageSize = hasA5 ? 'A5 portrait'
+            : (hasHalf ? '210mm 148mm' : 'A4 portrait');
         win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${title}</title>
 <style>
+    @page { size: ${pageSize}; margin: 0; }
+    html, body { margin: 0; padding: 0; }
+    .sheet, .sheet.a5, .sheet.half-a4 { box-shadow: none; }
     body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; margin: 24px; }
     .brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0,1fr); width: max-content; max-width: 100%; min-width: 0; }
     .brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }
@@ -54,6 +63,8 @@ const PrintHelper = {
     .sheet-table th, .sheet-table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; }
     .sheet-table th { background: #f5f5f5; font-weight: 600; }
     .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; margin-top: 14px; }
+    .sheet-note { margin-top: 10px; font-size: 10.5pt; color: #333; }
+    .sheet-tip { margin-top: 2px; font-size: 9.5pt; color: #666; }
     /* ===== 门诊标准处方样式（A5 无边框，参照标准医院处方笺） ===== */
     .rx-mark { font-size: 26pt; font-weight: 700; line-height: 1; margin: 6px 0 8px; color: #111; }
     table.rx-print { width: 100%; border-collapse: collapse; font-size: 11pt; }
