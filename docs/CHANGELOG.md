@@ -4,7 +4,33 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.52.0] - 2026-11-19
+
+### 新增
+- **打印模板复刻门诊一体化**（尺寸按用户指定调整）：
+  - 条形码：复刻门诊纯 PHP Code 128 SVG 生成器（api/core/barcode.php）；
+    前端版 PrintHelper.barcodeSvg（打印模板右上角用）。
+  - 打印公共样式：print_helper.js 加 .sheet（A4 210×297mm）/ .sheet.a5
+    （148×210mm 处方）/ .sheet.half-a4（210×148mm 半张 A4 报告）/
+    .sheet-head（品牌+右上条形码）/ .patient-bar（患者信息栏）/
+    .sheet-table / .sheet-foot。
+  - 处方单（A5，与门诊一致）：clinic_rx_print 重做——右上处方号条形码、
+    患者信息栏（姓名/性别/年龄/床号/住院号/开方时间）、药品表格、签名。
+  - 检验申请单（A4）：printBlock 重做——右上申请单号条形码、患者信息栏、
+    检验项目表；lab_detail 返回 patient_no/admission_no。
+  - 检查申请单（A4）：printBlock 重做同款；exam_detail 补患者字段。
+  - 检验报告单（半张 A4 210×148mm，与门诊横向 A5 一致）：新增 reportBlock
+    ——右上报告号条形码、患者信息栏、结果表（项目/结果/标记/单位/参考范围）、
+    检验者+报告时间页脚。
+  - 检查报告单（A4 纵向）：新增 reportBlock——右上条形码、患者信息栏、
+    检查项目/部位/影像所见/影像诊断、报告医生页脚。
+  - 申请/报告打印按钮状态感知：reported→「报告」/否则→「申请单」。
+
+### 验证
+- php-lint 全量通过；迁移无待执行；print_helper/rx/labs/exams JS 通过。
+
 ## [0.51.0] - 2026-11-19
+
 
 ### 修复
 - **接口管理检查/检验列表 400**（未知查询类型）：`admin_itg_catalog_load` 改用
