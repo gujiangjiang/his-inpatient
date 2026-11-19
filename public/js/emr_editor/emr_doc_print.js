@@ -27,12 +27,21 @@
       + '</div>';
   };
 
-  /** 组装完整打印文档 HTML (同时用作 content_html 快照) */
-  P.buildHTML = (doc, patientInfo) => {
+  /** 组装完整打印文档 HTML (同时用作 content_html 快照)
+   *  opts: { fromPage, toPage, contentMode: 'full'|'body' } 页数/内容选择 */
+  P.buildHTML = (doc, patientInfo, opts) => {
     const info = patientInfo || {};
+    const o = opts || {};
     const res = L.paginate(doc, info);
     const d = res.dim;
-    const pages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
+    let pages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
+    // 页码范围：fromPage 从 1 起（1 基）
+    const fromPage = Math.max(1, parseInt(o.fromPage, 10) || 1);
+    const toPage = Math.min(pages.length, parseInt(o.toPage, 10) || pages.length);
+    pages = pages.slice(fromPage - 1, toPage);
+    const totalPage = pages.length;
+    const bodyOnly = o.contentMode === 'body';   // 仅正文：隐藏页头（病历头）
+    if (bodyOnly) doc = Object.assign({}, doc, { header: null });
     const style = [
       '@page { size: A4; margin: 0; }',
       'html, body { margin: 0; padding: 0; }',
@@ -70,17 +79,101 @@
 
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(doc.title || '病历') + '</title>'
       + '<style>' + style + '</style></head><body>'
-      + pages.map((b, i) => pageHTML(d, doc.header, b, i, pages.length, info)).join('')
+      + pages.map((b, i) => pageHTML(d, doc.header || {}, b, i, pages.length, info)).join('')
       + '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>'
       + '</body></html>';
     return html;
   };
 
-  /** 打开打印窗口并自动打印 */
-  P.print = (doc, patientInfo) => {
+  /** 打开打印窗口并自动打印（opts: 页码范围/内容选择透传 buildHTML） */
+  P.print = (doc, patientInfo, opts) => {
     const win = window.open('', '_blank', 'width=900,height=1000');
     if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
-    win.document.write(P.buildHTML(doc, patientInfo));
+    win.document.write(P.buildHTML(doc, patientInfo, opts));
+    win.document.close();
+    return win;
+  };
+
+  /**
+   * 批量打印组装（病程记录等）：多文书连续排列，自动分页。
+   * 页头以第一文书的 headerHTML 为准（用户约定：批量打印文书头保持一致，以第一个为准）。
+   * 每文书：第一页正文顶部插小标题（YYYY-MM-DD HH:mm 文书名），末页正文底部右下签名。
+   * 全局页码连续；opts.signHtml 为该文书签名串（右下角）。
+   */
+  P.buildBatch = (items, patientInfo) => {
+    const info = patientInfo || {};
+    const all = items.filter(x => x && x.doc);
+    if (!all.length) return '';
+    // 第一文书分页结果决定页面尺寸与页头
+    const first = L.paginate(all[0].doc, info);
+    const d = first.dim;
+    const headerHTML = first.headerHTML;
+    const firstHeader = all[0].doc.header || {};
+    const pages = [];
+    let pageIdx = 0;
+    let docIdx = 0;
+    all.forEach(it => {
+      const doc = it.doc;
+      const res = L.paginate(doc, info);
+      const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
+      const stamp = (it.stamp || doc.updated_at || doc.created_at || '').toString();
+      const title = doc.title || '文书';
+      const subtitle = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16) + ' ' + title;
+      docPages.forEach((body, pi) => {
+        // 第 1 页正文顶部加小标题；末页正文底部加签名（右下）
+        let b = body;
+        if (pi === 0) b = '<div class="emr-batch-title">' + esc(subtitle) + '</div>' + b;
+        if (pi === docPages.length - 1 && it.signHtml) {
+          b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
+        }
+        pages.push(pageHTML(d, firstHeader, b, pageIdx, pageIdx + 1, info));
+        pageIdx++;
+      });
+      docIdx++;
+    });
+    const style = [
+      '@page { size: A4; margin: 0; }',
+      'html, body { margin: 0; padding: 0; }',
+      '* { box-sizing: border-box; }',
+      '.page { position: relative; width: ' + d.w + 'px; height: ' + d.h + 'px; overflow: hidden; page-break-after: always; }',
+      '.page:last-child { page-break-after: auto; }',
+      '.pg-head { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + d.mt + 'px; text-align: center; }',
+      '.emr-hos { font-size: 20pt; font-weight: bold; letter-spacing: 4px; line-height: 1.4; }',
+      '.brand-name-lockup { display:inline-grid; grid-template-columns:minmax(0,1fr); width:max-content; max-width:100%; min-width:0; }',
+      '.brand-name-line { width:100%; min-width:0; text-align:justify; text-align-last:justify; text-justify:inter-character; }',
+      '.emr-brand-lockup { display:grid; margin:0 auto; }',
+      '.emr-hos2 { font-size:12pt; font-weight:normal; line-height:1.35; }',
+      '.emr-docname { font-size: 16pt; font-weight: bold; letter-spacing: 3px; line-height: 1.5; }',
+      '.emr-infobar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 20px; margin-top: 8px; padding: 6px 4px 6px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 11pt; }',
+      '.pg-body { position: absolute; left: ' + d.bodyLeft + 'px; top: ' + d.bodyTop + 'px; width: ' + d.bodyW + 'px; height: ' + d.bodyH + 'px; overflow: hidden; font-family: ' + (all[0].doc.page.font || 'serif') + '; font-size: ' + (all[0].doc.page.sz || 12) + 'pt; line-height: ' + (all[0].doc.page.line || 1.5) + '; white-space: pre-wrap; overflow-wrap: break-word; }',
+      '.pg-body .p { margin: 0; }',
+      '.pg-body .emr-slot, .pg-body .emr-ph { display: none !important; }',
+      '.pg-body .emr-tbl-plain .emr-fx { font-weight: normal; }',
+      '.pg-body .emr-val { border-bottom: none !important; }',
+      '.pg-body .emr-ref { border-bottom: none !important; }',
+      '.emr-batch-title { font-weight: bold; font-size: 12pt; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid #000; }',
+      '.emr-batch-sign { text-align: right; margin-top: 20px; font-size: 11pt; }',
+      '.pg-foot { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + (d.h - d.mb - d.footerH) + 'px; height: ' + d.footerH + 'px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',
+      '.emr-fx { font-weight: bold; }',
+      '.emr-tbl { border-collapse: collapse; margin: 6px 0; table-layout: fixed; }',
+      '.emr-tbl td { border: 0.5pt solid #000; padding: 4px 6px; vertical-align: top; }',
+      '.emr-tbl-plain { margin: 2px 0 6px; table-layout: fixed; }',
+      '.emr-tbl-plain td { border: none !important; padding: 1px 6px 1px 0; vertical-align: top; white-space: nowrap; }',
+    ].join('\n');
+    const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc('病历批量打印') + '</title>'
+      + '<style>' + style + '</style></head><body>'
+      + headerHTML
+      + pages.map(p => p).join('')
+      + '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>'
+      + '</body></html>';
+    return html;
+  };
+
+  /** 批量打印开窗 */
+  P.printBatch = (items, patientInfo) => {
+    const win = window.open('', '_blank', 'width=900,height=1000');
+    if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
+    win.document.write(P.buildBatch(items, patientInfo));
     win.document.close();
     return win;
   };

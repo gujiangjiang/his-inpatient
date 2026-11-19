@@ -41,11 +41,31 @@ function emr_signDoc() {
 
 function emr_printDoc() {
     if (!_emrCurrentDoc) return;
-    if (_emrCurrentDoc.status === 'signed' && _emrCurrentDoc.content_html) {
-        PrintHelper.printDocument(_emrCurrentDoc.content_html); // 签名固化快照
-        return;
-    }
-    if (_emrEditor) _emrEditor.print();
+    // 打印选项：页码范围 + 内容（完整病历头/仅正文）
+    const doc = _emrCurrentDoc;
+    const optsHtml = '<div class="form-group"><label class="form-label">打印内容</label>' +
+        '<select id="emr-print-mode" class="form-control"><option value="full">完整（病历头 + 正文 + 页码）</option>' +
+        '<option value="body">仅正文（无病历头）</option></select></div>' +
+        '<div class="form-grid"><div class="form-group"><label class="form-label">起始页</label>' +
+        '<input type="number" id="emr-print-from" class="form-control" min="1" value="1"></div>' +
+        '<div class="form-group"><label class="form-label">结束页（留空=全部）</label>' +
+        '<input type="number" id="emr-print-to" class="form-control" min="1" placeholder="全部"></div></div>';
+    Dom.modal('打印选项', optsHtml, [
+        { text: '打印', type: 'primary', onclick: function () {
+            const mode = document.getElementById('emr-print-mode').value;
+            const fromPage = parseInt(document.getElementById('emr-print-from').value, 10) || 1;
+            const toVal = document.getElementById('emr-print-to').value.trim();
+            const toPage = toVal ? (parseInt(toVal, 10) || 0) : 0;
+            const opts = { contentMode: mode, fromPage: fromPage, toPage: toPage };
+            if (doc.status === 'signed' && doc.content_html) {
+                // 签名固化快照：重新分页提取范围（快照 HTML 已含页头，直接按页切片）
+                PrintHelper.printDocument(doc.content_html);
+                return;
+            }
+            if (_emrEditor) _emrEditor.print(opts);
+        } },
+        { text: '取消', type: 'default' }
+    ]);
 }
 
 function emr_showVersions() {

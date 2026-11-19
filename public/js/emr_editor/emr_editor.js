@@ -943,7 +943,7 @@
     };
     inst.getDoc = () => inst.doc;
     inst.buildPrintHTML = () => P.buildHTML(inst.doc, inst.patientInfo);
-    inst.print = () => P.print(inst.doc, inst.patientInfo);
+    inst.print = (opts) => { const o = opts || {}; P.print(inst.doc, inst.patientInfo, o); };
     inst.setReadonly = (ro) => {
       inst.readonly = !!ro;
       inst.bodyEl.contentEditable = ro ? 'false' : 'true';

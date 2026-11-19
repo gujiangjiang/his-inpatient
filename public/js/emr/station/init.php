@@ -61,6 +61,7 @@ function renderCategoryTree() {
         header.innerHTML = '<span class="emr-cat-name">' + Format.escape(cat.name) + '</span>' +
             (qcN ? '<span class="emr-cat-qc" title="质控提醒（点击查看）">' + qcN + '</span>' : '') +
             '<span class="emr-cat-count">' + docs.length + '</span>' +
+            (String(cat.name).indexOf('病程') !== -1 ? '<span class="emr-cat-batch" title="批量打印病程记录" onclick="event.stopPropagation();emr_batchPrint(' + cat.id + ')">批量打印</span>' : '') +
             '<span class="emr-cat-add" title="从模板新建" onclick="emr_openTemplatePicker(' + cat.id + ')">＋</span>';
         const qcEl = header.querySelector('.emr-cat-qc');
         if (qcEl) qcEl.onclick = (ev) => { ev.stopPropagation(); emr_showQc(cat.id); };
@@ -84,7 +85,38 @@ function renderCategoryTree() {
     });
 }
 
-/* ================= 模板 → 新建 ================= */
+/* ================= 病程记录批量打印 ================= */
+function emr_batchPrint(catId) {
+    const docs = _emrDocs.filter(d => d.category_id == catId).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    if (!docs.length) { Dom.toast('该分类暂无文书', 'error'); return; }
+    const rows = docs.map((d, i) =>
+        '<label class="emr-batch-row" style="display:flex;align-items:center;gap:8px;padding:6px 4px;cursor:pointer">' +
+        '<input type="checkbox" class="emr-batch-chk" value="' + d.id + '"' + (i === 0 ? ' checked' : '') + '>' +
+        '<span>' + Format.escape(d.title || d.template_name || '未命名') + '</span>' +
+        '<span class="text-muted" style="margin-left:auto;font-size:12px">' + Format.escape(emrStamp(d.updated_at || d.created_at || '')) + '</span></label>'
+    ).join('');
+    Dom.modal('批量打印病程记录（勾选文书，页头以第一份为准）', '<div style="max-height:50vh;overflow-y:auto">' + rows + '</div>' +
+        '<p class="fs-12 text-muted mt-10">将按时间先后连续排列，每份独立小标题 + 右下角签名，自动分页。</p>', [
+        { text: '打印', type: 'primary', onclick: function () {
+            const ids = Array.from(document.querySelectorAll('.emr-batch-chk:checked')).map(c => Number(c.value));
+            if (!ids.length) { Dom.toast('请勾选要打印的病程记录', 'error'); return; }
+            const items = ids.map(id => {
+                const d = _emrDocs.find(x => x.id == id);
+                return { doc: d, stamp: d.updated_at || d.created_at, signHtml: emr_batch_sign(d) };
+            });
+            EmrPrint.printBatch(items, buildPatientInfo());
+        } },
+        { text: '取消', type: 'default' }
+    ]);
+}
+
+/** 文书签名串（右下角）：签名医生 + 时间 */
+function emr_batch_sign(d) {
+    const signer = d.signer_name || '';
+    const at = d.signed_at || '';
+    if (!signer && !at) return '';
+    return Format.escape((signer || '') + (at ? '　' + at : ''));
+}
 /** 模板选择器: 本科室 / 全院 两个大 Tab; 全院按科室分组; 列表限高滚动
  *  选项: 日期时间(统一可选, 联动记录日期) / 上级医师 / 职称 (仅"上级医师查房记录"启用且必选,
  *  文书名称 = 上级医师 + 职称 + 查房记录) */
