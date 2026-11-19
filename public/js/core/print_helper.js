@@ -26,7 +26,7 @@ const PrintHelper = {
         const hasHalf = bodyHtml.indexOf('sheet half-a4') !== -1;
         const pageSize = hasA5 ? 'A5 portrait'
             : (hasHalf ? '210mm 148mm' : 'A4 portrait');
-        // 页码注入：给每个 .sheet 底部加「第 x 张 / 共 x 张」（A4/A5/半A4 通用）
+        // 页码注入：给每个 .sheet 底部加「第 x 页 / 共 x 页」（A4/A5/半A4 通用）
         bodyHtml = PrintHelper.withPageNumbers(bodyHtml);
         win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${title}</title>
 <style>
@@ -113,7 +113,7 @@ const PrintHelper = {
         win.document.close();
     },
 
-    /* 给打印 bodyHtml 的每个 .sheet 注入页码「第 x 张 / 共 x 张」（底部居中） */
+    /* 给打印 bodyHtml 的每个 .sheet 注入页码「第 x 页 / 共 x 页」（底部居中） */
     withPageNumbers(bodyHtml) {
         const tmp = document.createElement('div');
         tmp.innerHTML = bodyHtml;
@@ -123,7 +123,7 @@ const PrintHelper = {
             if (s.querySelector('.sheet-page-no')) return;
             const pg = document.createElement('div');
             pg.className = 'sheet-page-no';
-            pg.textContent = '第 ' + (i + 1) + ' 张 / 共 ' + total + ' 张';
+            pg.textContent = '第 ' + (i + 1) + ' 页 / 共 ' + total + ' 页';
             s.appendChild(pg);
         });
         return tmp.innerHTML;

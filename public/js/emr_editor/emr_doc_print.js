@@ -23,7 +23,7 @@
       + '</div>'
       + '<div class="pg-body">' + (bodyHTML || '') + '</div>'
       + '<div class="pg-foot"><span class="emr-fp-left">' + esc(header.hospital || '') + '</span>'
-      + '<span class="emr-fp-page">第 ' + (idx + 1) + ' 张 / 共 ' + total + ' 张</span></div>'
+      + '<span class="emr-fp-page">第 ' + (idx + 1) + ' 页 / 共 ' + total + ' 页</span></div>'
       + '</div>';
   };
 
