@@ -107,22 +107,34 @@ function clinic_rx_print(idx) {
     const p = PatientContext.current();
     if (!g || !p) return;
     let total = 0;
-    const rows = g.items.map((it, i) => {
-        const price = Number(_rxPriceMap[it.content] || 0); total += price;
-        const dose = [it.dosage || '', it.dosage_unit || ''].join('');
-        const usage = [it.usage_name || '', it.usage_rate || ''].filter(Boolean).join(' ');
-        const freq = [it.freq_code || '', it.freq_detail || ''].filter(Boolean).join(' ');
-        return `<tr><td style="text-align:center">${i + 1}</td><td>${Format.escape(it.content || '')}</td><td>${Format.escape(dose)}</td>
-            <td>${Format.escape(usage)}</td><td>${Format.escape(freq)}</td><td style="text-align:right">¥${price.toFixed(2)}</td></tr>`;
-    }).join('');
+    g.items.forEach((it) => { total += Number(_rxPriceMap[it.content] || 0); });
     const rxNo = g.rx_no || '处方草稿';
+    // 门诊标准处方样式：℞ 标记 + 无边框药品表（名称/剂量/途径/频次/数量）
+    const nameTxt = (it) => {
+        let s = Format.escape(it.content || '');
+        if (it.spec) s += ' ' + Format.escape(it.spec);
+        if (it.vendor_short) s += ' ' + Format.escape(it.vendor_short);
+        return s;
+    };
+    const unitOf = (it) => it.unit || '盒';
+    const rxRows = g.items.map((it) => {
+        const dose = [it.dosage || '', it.dosage_unit || ''].join('');
+        return `<tr>
+            <td class="rx-name">${nameTxt(it)}</td>
+            <td class="rx-dose">${Format.escape(dose)}</td>
+            <td class="rx-route">${Format.escape(it.usage_name || '')}</td>
+            <td class="rx-freq">${Format.escape(it.freq_code || '')}</td>
+            <td class="rx-qty">×${it.quantity || 1} ${Format.escape(unitOf(it))}</td>
+        </tr>`;
+    }).join('');
+    const doctorName = (g.items[0] || {}).creator_name || '';
     const html = `<div class="sheet a5">
         <div class="sheet-head">
             <div class="sheet-brand">
                 ${PrintHelper.brandHeaderHtml('')}
-                <div class="sheet-docname">处方笺</div>
+                <div class="sheet-docname">住院处方笺</div>
             </div>
-            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rxNo)}<div class="barcode-no">${Format.escape(rxNo)}</div></div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rxNo)}</div>
         </div>
         <div class="patient-bar">
             <span>姓名：<b>${Format.escape(p.name || '')}</b></span>
@@ -132,11 +144,18 @@ function clinic_rx_print(idx) {
             <span>住院号：<b>${Format.escape(p.admission_no || '')}</b></span>
             <span>开方时间：<b>${Format.escape(g.created_at || '')}</b></span>
         </div>
-        <table class="sheet-table"><thead><tr><th style="width:28px">#</th><th>药品</th><th>剂量</th><th>途径</th><th>频次</th><th style="width:64px">金额</th></tr></thead>
-            <tbody>${rows}</tbody></table>
-        <div class="sheet-foot"><span>处方医师：${Format.escape((g.items[0] || {}).creator_name || '')}</span><span>合计：¥${total.toFixed(2)}</span></div>
+        <div class="rx-mark">℞</div>
+        <table class="rx-print">
+            ${rxRows}
+        </table>
+        <div class="rx-end">—————— 处方完毕 ——————</div>
+        <div class="rx-note">请凭本处方单至药房取药</div>
+        <div class="rx-note rx-sign-row"><span class="rx-amount">金额：¥${total.toFixed(2)}</span><span>医师签名：${Format.escape(doctorName)}</span></div>
+        <div class="rx-line"></div>
+        <div class="rx-note rx-disp-row"><span>调配：</span><span>复核、发药：</span></div>
+        <div class="rx-note rx-center">（本处方当日内有效）</div>
     </div>`;
-    PrintHelper.printHtml('处方笺', html);
+    PrintHelper.printHtml('住院处方笺', html);
 }
 
 /* 毁方: 整方作废 (护士未核对也可毁方), 作废后同步护士站 */

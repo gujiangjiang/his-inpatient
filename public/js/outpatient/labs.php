@@ -128,7 +128,7 @@ function outpatient_labs_printBlock(rep) {
                 ${PrintHelper.brandHeaderHtml('')}
                 <div class="sheet-docname">检验申请单</div>
             </div>
-            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}<div class="barcode-no">${Format.escape(rep.report_no || '')}</div></div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
         </div>
         <div class="patient-bar">
             <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
@@ -166,7 +166,7 @@ function outpatient_labs_reportBlock(rep) {
                 ${PrintHelper.brandHeaderHtml('')}
                 <div class="sheet-docname">检验报告单</div>
             </div>
-            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}<div class="barcode-no">${Format.escape(rep.report_no || '')}</div></div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
         </div>
         <div class="patient-bar">
             <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>

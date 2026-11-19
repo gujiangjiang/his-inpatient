@@ -40,11 +40,11 @@ const PrintHelper = {
     .sheet.a5 { width: 148mm; min-height: 210mm; padding: 8mm 10mm; }
     .sheet.half-a4 { width: 210mm; min-height: 148mm; padding: 8mm 12mm; }
     .sheet + .sheet { page-break-before: always; }
-    .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
+    .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
     .sheet-brand { text-align: center; flex: 1; }
     .sheet-brand .print-hospital { font-size: 16pt; }
     .sheet-docname { font-size: 15pt; font-weight: 700; letter-spacing: 2px; margin-top: 2px; }
-    .sheet-barcode { flex-shrink: 0; text-align: right; }
+    .sheet-barcode { position: absolute; top: 0; right: 0; text-align: right; }
     .sheet-barcode svg { width: 150px; height: auto; }
     .sheet-barcode .barcode-no { font-size: 8.5pt; letter-spacing: 1px; margin-top: 2px; }
     .patient-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 10pt; padding: 5px 0; margin-bottom: 8px; }
@@ -54,6 +54,20 @@ const PrintHelper = {
     .sheet-table th, .sheet-table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; }
     .sheet-table th { background: #f5f5f5; font-weight: 600; }
     .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; margin-top: 14px; }
+    /* ===== 门诊标准处方样式（A5 无边框，参照标准医院处方笺） ===== */
+    .rx-mark { font-size: 26pt; font-weight: 700; line-height: 1; margin: 6px 0 8px; color: #111; }
+    table.rx-print { width: 100%; border-collapse: collapse; font-size: 11pt; }
+    table.rx-print td { border: none; padding: 4px 6px; vertical-align: middle; text-align: left; }
+    table.rx-print td.rx-name { font-weight: 600; }
+    table.rx-print td.rx-qty { text-align: right; white-space: nowrap; }
+    .rx-end { text-align: center; letter-spacing: 2px; color: #333; margin: 10px 0 4px; font-size: 11pt; }
+    .rx-note { margin-top: 8px; font-size: 10.5pt; color: #333; }
+    .rx-sign-row { display: flex; align-items: center; font-weight: 600; margin-top: 10px; }
+    .rx-sign-row .rx-amount { flex: 1; text-align: left; }
+    .rx-disp-row { display: flex; font-size: 10.5pt; line-height: 1.8; margin-top: 4px; margin-bottom: 4px; }
+    .rx-disp-row span { flex: 1; text-align: left; }
+    .rx-center { text-align: center; }
+    .rx-line { border-bottom: 1px solid #111; padding-bottom: 6px; margin-bottom: 6px; }
     @media print {
         body { margin: 0; }
         .sheet { box-shadow: none; }
