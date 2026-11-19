@@ -79,15 +79,15 @@
     </div>
 </div>
 
-<!-- 数据库中心 / 缓存 / 安全占位（后续逐步补全） -->
+<!-- 数据库中心 / 缓存 / 安全（内嵌对应面板） -->
 <div class="stab-pane" data-stab="db" style="display:none">
-    <div class="card"><div class="card-header">数据库中心</div><p class="fs-13 text-muted">数据库驱动与连接配置（规划中，后续版本开放）</p></div>
+    <iframe src="/js/admin/dbcenter.php" style="width:100%;min-height:520px;border:none;border-radius:10px" loading="lazy"></iframe>
 </div>
 <div class="stab-pane" data-stab="cache" style="display:none">
-    <div class="card"><div class="card-header">缓存与性能</div><p class="fs-13 text-muted">缓存驱动与清空（规划中，后续版本开放）</p></div>
+    <iframe src="/js/admin/cachecenter.php" style="width:100%;min-height:480px;border:none;border-radius:10px" loading="lazy"></iframe>
 </div>
 <div class="stab-pane" data-stab="security" style="display:none">
-    <div class="card"><div class="card-header">安全与加密</div><p class="fs-13 text-muted">登录安全与加密配置（规划中，后续版本开放）</p></div>
+    <iframe src="/js/admin/security.php" style="width:100%;min-height:360px;border:none;border-radius:10px" loading="lazy"></iframe>
 </div>
 
 <script>

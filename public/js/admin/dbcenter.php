@@ -53,8 +53,11 @@ var _dbcenterParams = {
 
 async function admin_dbcenter_init() {
     document.getElementById('main-app').style.display = 'flex';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    const sidebarEl = document.getElementById('sidebar');
+    if (sidebarEl) {
+        const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
+        sidebarEl.innerHTML = sidebar;
+    }
     admin_dbcenter_load();
     admin_dbcenter_render_params();
 }

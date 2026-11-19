@@ -50,9 +50,11 @@ var _cacheDrivers = {};
 
 async function admin_cachecenter_init() {
     document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    const sidebarEl = document.getElementById('sidebar');
+    if (sidebarEl) {
+        const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
+        sidebarEl.innerHTML = sidebar;
+    }
     admin_cachecenter_tab('status');
 }
 
