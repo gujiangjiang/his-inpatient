@@ -27,8 +27,6 @@ function getRoutes() {
         'admin/ward-save' => ['admin/ward/ward_save.php', ['admin']],
         'admin/user-list' => ['admin/user/user_list.php', ['admin']],
         'admin/user-save' => ['admin/user/user_save.php', ['admin']],
-        'admin/api-config-list' => ['admin/config/api_config_list.php', ['admin']],
-        'admin/api-config-save' => ['admin/config/api_config_save.php', ['admin']],
         'admin/sys-config-list' => ['admin/config/sys_config_list.php', ['admin']],
         'admin/sys-config-save' => ['admin/config/sys_config_save.php', ['admin']],
         'admin/branding-save' => ['admin/config/branding_save.php', ['admin']],
