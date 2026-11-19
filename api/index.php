@@ -31,6 +31,7 @@ require_once __DIR__ . '/core/helpers/dual_pharmacy_helper.php';
 require_once __DIR__ . '/core/helpers/opd_pharmacy_helper.php';
 require_once __DIR__ . '/core/helpers/audit_helper.php';
 require_once __DIR__ . '/core/helpers/cache_driver_helper.php';
+require_once __DIR__ . '/core/helpers/log_helper.php';
 require_once __DIR__ . '/core/helpers/opd_helper.php';
 require_once __DIR__ . '/core/helpers/opd_order_push.php';
 require_once __DIR__ . '/core/helpers/catalog_sync.php';
