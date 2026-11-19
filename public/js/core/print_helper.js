@@ -26,6 +26,8 @@ const PrintHelper = {
         const hasHalf = bodyHtml.indexOf('sheet half-a4') !== -1;
         const pageSize = hasA5 ? 'A5 portrait'
             : (hasHalf ? '210mm 148mm' : 'A4 portrait');
+        // 页码注入：给每个 .sheet 底部加「第 x 张 / 共 x 张」（A4/A5/半A4 通用）
+        bodyHtml = PrintHelper.withPageNumbers(bodyHtml);
         win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${title}</title>
 <style>
     @page { size: ${pageSize}; margin: 0; }
@@ -51,7 +53,10 @@ const PrintHelper = {
     .sheet + .sheet { page-break-before: always; }
     .sheet .sheet-head, .sheet .patient-bar, .sheet .rx-mark, .sheet table.rx-print, .sheet .sheet-table { flex-shrink: 0; }
     .sheet .sheet-note, .sheet .sheet-tip { flex-shrink: 0; }
-    .sheet-foot, .rx-note.rx-sign-row, .rx-note.rx-disp-row { margin-top: auto; }
+    .sheet-foot, .rx-note.rx-sign-row { margin-top: auto; }
+    .rx-note.rx-sign-row { margin-top: auto !important; }
+    .rx-line { margin-top: 0; }
+    .rx-note.rx-disp-row { margin-top: 0; }
     .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
     .sheet-brand { text-align: center; flex: 1; }
     .sheet-brand .print-hospital { font-size: 16pt; }
@@ -60,12 +65,19 @@ const PrintHelper = {
     .sheet-barcode svg { width: 150px; height: auto; }
     .sheet-barcode .barcode-no { font-size: 8.5pt; letter-spacing: 1px; margin-top: 2px; }
     .patient-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 10pt; padding: 5px 0; margin-bottom: 8px; }
+    /* 门诊式患者信息栏：隐形 grid（报告单用，姓名/性别/年龄/出生日期 + ID/住院号/科室/诊断） */
+    .sheet-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 2px 14px; font-size: 10.5pt; padding: 6px 0; margin-bottom: 6px; }
+    .sheet-info-grid .sic { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sheet-info-grid .sic b { font-weight: 600; }
+    .sheet-info-grid .sic-diag { grid-column: span 4; white-space: normal; }
+    @media (max-width: 720px) { .sheet-info-grid { grid-template-columns: 1fr 1fr; } }
     .patient-bar span { white-space: nowrap; }
     .patient-bar b { font-weight: 600; }
     .sheet-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
     .sheet-table th, .sheet-table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; }
     .sheet-table th { background: #f5f5f5; font-weight: 600; }
-    .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; margin-top: 14px; }
+    .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; }
+    .sheet-page-no { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 9pt; color: #333; }
     .sheet-note { margin-top: 10px; font-size: 10.5pt; color: #333; }
     .sheet-tip { margin-top: 2px; font-size: 9.5pt; color: #666; }
     /* ===== 门诊标准处方样式（A5 无边框，参照标准医院处方笺） ===== */
@@ -99,6 +111,22 @@ const PrintHelper = {
         if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
         win.document.write(docHtml);
         win.document.close();
+    },
+
+    /* 给打印 bodyHtml 的每个 .sheet 注入页码「第 x 张 / 共 x 张」（底部居中） */
+    withPageNumbers(bodyHtml) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = bodyHtml;
+        const sheets = tmp.querySelectorAll('.sheet');
+        const total = sheets.length;
+        sheets.forEach((s, i) => {
+            if (s.querySelector('.sheet-page-no')) return;
+            const pg = document.createElement('div');
+            pg.className = 'sheet-page-no';
+            pg.textContent = '第 ' + (i + 1) + ' 张 / 共 ' + total + ' 张';
+            s.appendChild(pg);
+        });
+        return tmp.innerHTML;
     },
 
     /* 前端 Code 128 条形码（SVG，供打印模板右上角用） */

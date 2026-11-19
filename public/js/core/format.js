@@ -15,6 +15,22 @@ const Format = {
         return map[g] || g || '未知';
     },
 
+    /* 按出生日期计算年龄（YYYY-MM-DD → X岁 / X月 / X天） */
+    age(birth, at) {
+        if (!birth) return '';
+        const b = new Date(birth);
+        if (isNaN(b.getTime())) return '';
+        const n = at ? new Date(at) : new Date();
+        let y = n.getFullYear() - b.getFullYear();
+        let m = n.getMonth() - b.getMonth();
+        let d = n.getDate() - b.getDate();
+        if (d < 0) { m--; d = new Date(n.getFullYear(), n.getMonth(), 0).getDate() + d; }
+        if (m < 0) { y--; m += 12; }
+        if (y >= 1) return y + '岁' + (m > 0 ? m + '月' : '');
+        if (m >= 1) return m + '月' + d + '天';
+        return Math.max(0, d) + '天';
+    },
+
     role(role) {
         const map = {
             admin: '管理员',

@@ -126,11 +126,15 @@ function outpatient_exams_printBlock(rep) {
             </div>
             <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
         </div>
-        <div class="patient-bar">
-            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
-            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
-            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
-            <span>开单时间：<b>${Format.escape(rep.created_at || '')}</b></span>
+        <div class="sheet-info-grid">
+            <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
+            <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
+            <span class="sic"><b>年龄：</b>${Format.age(rep.birth_date)}</span>
+            <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
+            <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
+            <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>
+            <span class="sic"><b>床号：</b>${Format.escape(rep.bed_no || '-')}</span>
+            <span class="sic"><b>开单时间：</b>${Format.escape(rep.created_at || '')}</span>
         </div>
         <table class="sheet-table"><thead><tr><th>检查项目</th><th>检查部位</th><th>所见</th><th>结论</th></tr></thead>
         <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
@@ -160,12 +164,15 @@ function outpatient_exams_reportBlock(rep) {
             </div>
             <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
         </div>
-        <div class="patient-bar">
-            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
-            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
-            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
-            <span>检查项目：<b>${Format.escape(rep.exam_type || '')}</b></span>
-            <span>检查时间：<b>${Format.escape(rep.created_at || '')}</b></span>
+        <div class="sheet-info-grid">
+            <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
+            <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
+            <span class="sic"><b>年龄：</b>${Format.age(rep.birth_date)}</span>
+            <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
+            <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
+            <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>
+            <span class="sic"><b>床号：</b>${Format.escape(rep.bed_no || '-')}</span>
+            <span class="sic"><b>检查项目：</b>${Format.escape(rep.exam_type || '-')}</span>
         </div>
         <table class="sheet-table"><thead><tr><th style="width:140px">检查项目</th><th style="width:120px">检查部位</th><th>影像所见</th><th style="width:180px">影像诊断</th></tr></thead>
         <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>

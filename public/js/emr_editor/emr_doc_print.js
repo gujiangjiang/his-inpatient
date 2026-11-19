@@ -123,7 +123,7 @@
       docPages.forEach((body, pi) => {
         // 第 1 页正文顶部加小标题：时间靠左 + 文书名居中
         let b = body;
-        if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-name">' + esc(title) + '</span></div>' + b;
+        if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
         if (pi === docPages.length - 1 && it.signHtml) {
           b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
         }
@@ -152,9 +152,10 @@
       '.pg-body .emr-tbl-plain .emr-fx { font-weight: normal; }',
       '.pg-body .emr-val { border-bottom: none !important; }',
       '.pg-body .emr-ref { border-bottom: none !important; }',
-      '.emr-batch-title { display: flex; align-items: baseline; gap: 8px; font-size: 12pt; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid #000; }',
-      '.emr-batch-title .emr-bt-time { font-weight: normal; flex-shrink: 0; white-space: nowrap; }',
-      '.emr-batch-title .emr-bt-name { flex: 1; text-align: center; font-weight: bold; }',
+      '.emr-batch-title { display: flex; font-size: 12pt; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid #000; }',
+      '.emr-batch-title .emr-bt-cell { flex: 1 1 0; }',
+      '.emr-batch-title .emr-bt-time { font-weight: normal; white-space: nowrap; text-align: left; }',
+      '.emr-batch-title .emr-bt-name { text-align: center; font-weight: bold; }',
       '.emr-batch-sign { text-align: right; margin-top: 20px; font-size: 11pt; }',
       '.pg-foot { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + (d.h - d.mb - d.footerH) + 'px; height: ' + d.footerH + 'px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',
       '.emr-fx { font-weight: bold; }',

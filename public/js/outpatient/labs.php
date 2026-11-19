@@ -130,12 +130,15 @@ function outpatient_labs_printBlock(rep) {
             </div>
             <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
         </div>
-        <div class="patient-bar">
-            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
-            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
-            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
-            <span>标本：<b>${Format.escape(rep.specimen_type || '-')}</b></span>
-            <span>开单时间：<b>${Format.escape(rep.created_at || '')}</b></span>
+        <div class="sheet-info-grid">
+            <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
+            <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
+            <span class="sic"><b>年龄：</b>${Format.age(rep.birth_date)}</span>
+            <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
+            <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
+            <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>
+            <span class="sic"><b>床号：</b>${Format.escape(rep.bed_no || '-')}</span>
+            <span class="sic"><b>标本：</b>${Format.escape(rep.specimen_type || '-')}</span>
         </div>
         <table class="sheet-table"><thead><tr><th style="width:32px">序号</th><th>检验项目</th><th>标本</th><th>结果</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
         <div class="sheet-note">请凭本申请单至相应科室登记执行。</div>
@@ -170,11 +173,15 @@ function outpatient_labs_reportBlock(rep) {
             </div>
             <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
         </div>
-        <div class="patient-bar">
-            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
-            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
-            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
-            <span>标本：<b>${Format.escape(rep.specimen_type || '-')}</b></span>
+        <div class="sheet-info-grid">
+            <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
+            <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
+            <span class="sic"><b>年龄：</b>${Format.age(rep.birth_date)}</span>
+            <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
+            <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
+            <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>
+            <span class="sic"><b>床号：</b>${Format.escape(rep.bed_no || '-')}</span>
+            <span class="sic"><b>标本：</b>${Format.escape(rep.specimen_type || '-')}</span>
         </div>
         <table class="sheet-table"><thead><tr><th style="width:28px">序号</th><th>项目</th><th>结果</th><th style="width:40px">标记</th><th>单位</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
         <div class="sheet-note">检验结果仅供临床诊疗参考，仅对送检标本负责！</div>
