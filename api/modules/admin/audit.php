@@ -8,7 +8,9 @@ if ($action === 'list') {
     $status = Validator::get('status', 'pending');
     $page = max(1, (int)Validator::get('page', 1) ?: 1);
     $per = max(1, min(100, (int)Validator::get('per', 20) ?: 20));
-    $r = audit_list($status, $page, $per);
+    $from = trim((string)Validator::get('from', ''));
+    $to = trim((string)Validator::get('to', ''));
+    $r = audit_list($status, $page, $per, $from, $to);
     // 行渲染（前端纯数据，由 JS 拼 HTML）
     Response::success($r);
 }

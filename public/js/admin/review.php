@@ -2,7 +2,7 @@
 <div class="page-head flex-between">
     <div>
         <h3 class="page-title">审核中心</h3>
-        <p class="page-desc">病历模板 · 内容库 · 病历维护申请 待审核与处理记录</p>
+        <p class="page-desc">待审核与已处理记录 · 支持日期范围筛选（默认近 7 天，跨度 ≤ 1 个月）</p>
     </div>
     <button class="btn btn-success" id="rv-all-btn" style="display:none" onclick="admin_review_all()">一键全部通过</button>
 </div>
@@ -10,26 +10,43 @@
 <div class="stat-cards" id="rv-stats"></div>
 
 <div class="card" style="padding:10px 16px">
-    <div class="sub-tabs">
-        <button class="sub-tab active" data-rvtab="pending" onclick="admin_review_tab('pending')">待审核</button>
-        <button class="sub-tab" data-rvtab="handled" onclick="admin_review_tab('handled')">已处理</button>
+    <div class="flex-between" style="flex-wrap:wrap;gap:10px">
+        <div class="sub-tabs">
+            <button class="sub-tab active" data-rvtab="pending" onclick="admin_review_tab('pending')">待审核</button>
+            <button class="sub-tab" data-rvtab="handled" onclick="admin_review_tab('handled')">已处理</button>
+        </div>
+        <div class="flex gap-8" style="align-items:center">
+            <input type="date" class="form-control" id="rv-date-from" style="width:auto" onchange="rvDateChanged()">
+            <span class="text-muted">至</span>
+            <input type="date" class="form-control" id="rv-date-to" style="width:auto" onchange="rvDateChanged()">
+            <button class="btn btn-small" onclick="rvResetDates()">重置</button>
+        </div>
     </div>
 </div>
 
-<div class="rv-page" id="rv-pending">
-    <div class="rv-sec">
+<div class="card" style="padding:10px 16px">
+    <div class="sub-tabs" id="rv-type-tabs">
+        <button class="sub-tab active" data-rvtype="audit" onclick="admin_review_type('audit')">统一审核</button>
+        <button class="sub-tab" data-rvtype="tpls" onclick="admin_review_type('tpls')">病历模板</button>
+        <button class="sub-tab" data-rvtype="cons" onclick="admin_review_type('cons')">内容库</button>
+        <button class="sub-tab" data-rvtype="maint" onclick="admin_review_type('maint')">维护申请</button>
+    </div>
+</div>
+
+<div class="rv-page">
+    <div class="rv-sec" data-rvsec="audit">
         <div class="rv-sec-head">统一审核（药品/设置等提交）<span class="rv-count" id="rv-audit-count"></span></div>
         <div id="rv-audit"></div>
     </div>
-    <div class="rv-sec">
+    <div class="rv-sec" data-rvsec="tpls" style="display:none">
         <div class="rv-sec-head">病历模板待审核<span class="rv-count" id="rv-tpls-count"></span></div>
         <div id="rv-tpls"></div>
     </div>
-    <div class="rv-sec">
+    <div class="rv-sec" data-rvsec="cons" style="display:none">
         <div class="rv-sec-head">内容库待审核<span class="rv-count" id="rv-cons-count"></span></div>
         <div id="rv-cons"></div>
     </div>
-    <div class="rv-sec">
+    <div class="rv-sec" data-rvsec="maint" style="display:none">
         <div class="rv-sec-head">病历维护申请<span class="rv-count" id="rv-maint-count"></span></div>
         <div id="rv-maint"></div>
     </div>
@@ -48,11 +65,14 @@ async function admin_review_init() {
     await rvLoadMaint();
     await rvLoadAudit();
     rvRenderStats();
+    rvResetDates();   // 默认近 7 天日期范围
 }
 
 /* 统一审核（audits pending：药品/设置等） */
 async function rvLoadAudit() {
-    const r = await AjaxLoader.api('admin/audit?action=list&status=pending&per=50', { silent: true });
+    const dates = rvDates();
+    const q = 'status=pending&per=50' + (dates.from ? '&from=' + dates.from : '') + (dates.to ? '&to=' + dates.to : '');
+    const r = await AjaxLoader.api('admin/audit?action=list&' + q, { silent: true });
     const rows = (r.data && r.data.rows) || [];
     const countEl = document.getElementById('rv-audit-count');
     const el = document.getElementById('rv-audit');
@@ -104,9 +124,51 @@ function admin_review_tab(t) {
     document.querySelectorAll('.sub-tab[data-rvtab]').forEach(function (b) {
         b.classList.toggle('active', b.dataset.rvtab === t);
     });
-    document.getElementById('rv-pending').classList.toggle('hidden', t !== 'pending');
-    document.getElementById('rv-handled').classList.toggle('hidden', t !== 'handled');
+    document.querySelector('.rv-page').style.display = t === 'pending' ? '' : 'none';
+    document.getElementById('rv-handled').style.display = t === 'handled' ? '' : 'none';
     if (t === 'handled') admin_review_loadHandled();
+}
+
+/* 待审类型子 tab（统一审核/模板/内容/维护申请） */
+function admin_review_type(t) {
+    document.querySelectorAll('#rv-type-tabs .sub-tab').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.rvtype === t);
+    });
+    document.querySelectorAll('.rv-page .rv-sec').forEach(function (el) {
+        el.style.display = el.dataset.rvsec === t ? '' : 'none';
+    });
+}
+
+/* 日期范围筛选（默认近 7 天；跨度 ≤ 1 个月） */
+function rvDates() {
+    const d = document.getElementById('rv-date-from').value, t = document.getElementById('rv-date-to').value;
+    return { from: d, to: t };
+}
+
+function rvDateChanged() {
+    const d = rvDates();
+    if (d.from && d.to) {
+        const span = Math.round((new Date(d.to) - new Date(d.from)) / 86400000);
+        if (span > 31) { Dom.toast('日期跨度不能超过 1 个月', 'error'); document.getElementById('rv-date-to').value = ''; return; }
+    }
+    rvReload();
+}
+
+function rvResetDates() {
+    const to = new Date();
+    const from = new Date(to.getTime() - 6 * 86400000);
+    document.getElementById('rv-date-from').value = from.toISOString().slice(0, 10);
+    document.getElementById('rv-date-to').value = to.toISOString().slice(0, 10);
+    rvReload();
+}
+
+function rvReload() {
+    if (_rvKind) {
+        rvLoad('tpls', 'rv-tpls', 'emr/template-list?review=1', '模板');
+        rvLoad('cons', 'rv-cons', 'emr/content-list?review=1', '内容');
+        rvLoadMaint();
+        rvLoadAudit();
+    }
 }
 
 function rvRenderStats() {
@@ -121,7 +183,9 @@ function rvRenderStats() {
 
 async function admin_review_loadHandled() {
     const box = document.getElementById('rv-handled-body');
-    const r = await AjaxLoader.api('admin/audit?action=list&status=handled&per=50', { silent: true });
+    const dates = rvDates();
+    const q = 'status=handled&per=50' + (dates.from ? '&from=' + dates.from : '') + (dates.to ? '&to=' + dates.to : '');
+    const r = await AjaxLoader.api('admin/audit?action=list&' + q, { silent: true });
     const list = (r.data && r.data.rows) || [];
     if (!list.length) { box.innerHTML = '<div class="empty-tip">暂无已处理审核记录</div>'; return; }
     const typeMap = { item_drug: '药品', item_lab: '检验', item_exam: '检查', drugsetting: '药品设置', template: '模板', content: '内容库', user_unlock: '账号解锁', pwd_reset: '密码重置' };

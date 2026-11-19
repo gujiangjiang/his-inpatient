@@ -34,8 +34,8 @@ function audit_apply($id, $approve, $note = '') {
     return [true, $approve ? '已通过' : '已驳回'];
 }
 
-/** 审核列表：status=pending|handled；分页 */
-function audit_list($status, $page = 1, $per = 20) {
+/** 审核列表：status=pending|handled；分页 + 日期范围（from/to, Y-m-d） */
+function audit_list($status, $page = 1, $per = 20, $from = '', $to = '') {
     if (!in_array($status, ['pending', 'handled'], true)) $status = 'pending';
     $where = "status = ?";
     $args = [$status];
@@ -43,6 +43,8 @@ function audit_list($status, $page = 1, $per = 20) {
         $where = "status IN ('approved','rejected','used')";
         $args = [];
     }
+    if ($from !== '') { $where .= " AND created_at >= ?"; $args[] = $from . ' 00:00:00'; }
+    if ($to !== '') { $where .= " AND created_at <= ?"; $args[] = $to . ' 23:59:59'; }
     $total = (int)DB::selectOne("SELECT COUNT(*) AS c FROM audits WHERE $where", $args)['c'];
     $pendingCount = (int)DB::selectOne("SELECT COUNT(*) AS c FROM audits WHERE status='pending'")['c'];
     $rows = DB::select("SELECT * FROM audits WHERE $where ORDER BY id DESC LIMIT " . (int)$per . " OFFSET " . (($page - 1) * (int)$per), $args);
