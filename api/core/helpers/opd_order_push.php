@@ -1,6 +1,6 @@
 <?php
 // api/core/helpers/opd_order_push.php - 住院检验/检查单推送门诊（待发队列 + 重试）
-// 说明: 住院开单即计费（HIS 收费口径），检验/检查申请提交后自动推送门诊一体化
+// 说明: 住院开单即计费（HIS 收费口径），检验/检查申请提交后自动推送门诊
 // 系统登记出报告；载荷落 integration_order_pushes 队列（biz_type+biz_id 幂等），
 // 推送失败自动累计重试次数，由 CLI（api/scripts/push_opd_orders.php）或接口管理页
 // 「重推失败单据」补偿。推送失败不阻塞开单主流程。

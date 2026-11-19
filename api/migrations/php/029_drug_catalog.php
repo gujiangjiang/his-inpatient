@@ -1,8 +1,8 @@
 <?php
-// api/migrations/php/029_drug_catalog.php - 药品项目库 (门诊一体化同步缓存)
+// api/migrations/php/029_drug_catalog.php - 药品项目库 (门诊同步缓存)
 return [
     'version' => '029',
-    'description' => '创建药品项目库 drug_catalog (门诊一体化同步缓存)',
+    'description' => '创建药品项目库 drug_catalog (门诊同步缓存)',
     'up' => function($m) {
         if ($m->hasTable('drug_catalog')) return;
         $m->createTable('drug_catalog', [

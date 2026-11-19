@@ -91,7 +91,7 @@ function getRoutes() {
         // 双药房：中心药房摆药/发药（queue/dispense/deliver）
         'pharmacy/dispense2' => ['pharmacy/dispensing/dispense2.php', ['admin', 'pharmacist']],
 
-        // 处方 (药品项目库来自门诊一体化)
+        // 处方 (药品项目库来自门诊)
         'rx/catalog' => ['rx/rx_catalog.php', ['admin', 'doctor', 'pharmacist']],
 
         // 护士

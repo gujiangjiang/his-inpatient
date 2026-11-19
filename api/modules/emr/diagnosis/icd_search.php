@@ -1,5 +1,5 @@
 <?php
-// api/modules/emr/icd_search.php - ICD-10 检索 (优先门诊一体化标准编码库, 不可用时回退本地字典)
+// api/modules/emr/icd_search.php - ICD-10 检索 (优先门诊标准编码库, 不可用时回退本地字典)
 Auth::requireRole(['admin', 'doctor', 'nurse', 'pharmacist', 'lab_tech']);
 $keyword = trim((string)Validator::get('keyword', ''));
 $limit = max(1, min(50, (int)Validator::get('limit', 20) ?: 20));
@@ -9,7 +9,7 @@ if ($keyword === '') {
     Response::success([]);
 }
 
-// 门诊一体化标准 ICD-10 编码库 (动态, 支持分页)
+// 门诊标准 ICD-10 编码库 (动态, 支持分页)
 if (opd_settings()['opd_enabled'] === '1') {
     $r = opd_his_read('icd_search', ['kw' => $keyword, 'limit' => $limit, 'offset' => $offset]);
     if ($r['ok'] && isset($r['data']['list']) && is_array($r['data']['list']) && count($r['data']['list'])) {

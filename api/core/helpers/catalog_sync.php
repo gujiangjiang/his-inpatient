@@ -1,5 +1,5 @@
 <?php
-// api/core/helpers/catalog_sync.php - 项目库从门诊一体化同步 (本地缓存, opd_id 幂等)
+// api/core/helpers/catalog_sync.php - 项目库从门诊同步 (本地缓存, opd_id 幂等)
 // 门诊接口不可用时自动回退本地虚拟库; 同步节流 5 分钟
 
 /** 同步是否到期 (节流) */

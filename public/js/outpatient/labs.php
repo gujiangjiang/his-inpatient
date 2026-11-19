@@ -199,7 +199,7 @@ function outpatient_labs_delete(id) {
     ]);
 }
 
-/* ===== 门诊检验结果 (门诊一体化) ===== */
+/* ===== 门诊检验结果 (门诊) ===== */
 function outpatient_labs_load() {
     const p = PatientContext.current();
     if (!p) return;

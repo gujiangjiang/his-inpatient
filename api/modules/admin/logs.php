@@ -7,7 +7,7 @@ $action = Validator::get('action', 'list');
 if ($action === 'meta') {
     Response::success([
         'operation_cats' => ['login' => '登录登出', 'account' => '账号管理', 'order' => '医嘱', 'pharmacy' => '药房', 'config' => '配置'],
-        'interface_cats' => ['opd' => '门诊一体化', 'pacs' => 'PACS', 'fhir' => 'FHIR', 'his' => 'HIS', 'app' => '应用'],
+        'interface_cats' => ['opd' => '门诊', 'pacs' => 'PACS', 'fhir' => 'FHIR', 'his' => 'HIS', 'app' => '应用'],
         'levels' => ['normal' => '普通', 'info' => '信息', 'warning' => '警告', 'error' => '错误'],
     ]);
 }
@@ -28,7 +28,7 @@ if ($action === 'list') {
         'list' => $r['list'], 'has_more' => $r['has_more'],
         'counts' => log_counts($channel, $filter),
         'meta' => ['operation' => ['login' => '登录登出', 'account' => '账号管理', 'order' => '医嘱', 'pharmacy' => '药房', 'config' => '配置'],
-                   'interface' => ['opd' => '门诊一体化', 'pacs' => 'PACS', 'fhir' => 'FHIR', 'his' => 'HIS', 'app' => '应用']],
+                   'interface' => ['opd' => '门诊', 'pacs' => 'PACS', 'fhir' => 'FHIR', 'his' => 'HIS', 'app' => '应用']],
     ];
     if (!empty($r['error'])) $resp['error'] = $r['error'];
     Response::success($resp);

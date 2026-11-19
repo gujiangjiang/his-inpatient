@@ -2,7 +2,7 @@
 <div class="page-head flex-between">
     <div>
         <h3 class="page-title">处方</h3>
-        <p class="page-desc">开具处方（药品项目库来自门诊一体化）与已开处方管理</p>
+        <p class="page-desc">开具处方（药品项目库来自门诊）与已开处方管理</p>
     </div>
     <div>
         <button class="btn btn-primary" onclick="RxPanel.open()">新方（F9）</button>

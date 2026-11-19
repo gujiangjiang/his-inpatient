@@ -1,5 +1,5 @@
 <?php
-// api/modules/outpatient/outpatient_exams.php - 门诊检查报告 + PACS 影像直链 (门诊一体化 FHIR)
+// api/modules/outpatient/outpatient_exams.php - 门诊检查报告 + PACS 影像直链 (门诊 FHIR)
 Auth::requireRole(['admin', 'doctor', 'nurse']);
 $patientId = (int)Validator::get('patient_id', 0);
 if (!$patientId) Response::error('缺少 patient_id');

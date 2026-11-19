@@ -1,5 +1,5 @@
 <?php
-// api/modules/outpatient/outpatient_search.php - 门诊患者/就诊检索 (门诊一体化 FHIR)
+// api/modules/outpatient/outpatient_search.php - 门诊患者/就诊检索 (门诊 FHIR)
 Auth::requireRole(['admin', 'doctor']);
 $keyword = trim((string)Validator::get('keyword', ''));
 $settings = opd_settings();

@@ -49,7 +49,7 @@ function opd_pharmacy_drugs($force = false) {
                 $ph = implode(',', array_fill(0, count($ids), '?'));
                 DB::execute("UPDATE opd_drug_cache SET is_active = 0 WHERE opd_id NOT IN ($ph)", $ids);
             }
-            return ['source' => 'opd', 'list' => $list, 'offline' => false, 'msg' => '实时（门诊一体化）'];
+            return ['source' => 'opd', 'list' => $list, 'offline' => false, 'msg' => '实时（门诊）'];
         }
         $lastErr = $r['msg'];
     }

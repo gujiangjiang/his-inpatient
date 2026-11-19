@@ -1,5 +1,5 @@
 <?php
-// api/modules/exam/exam_catalog.php - 检查项目库 (优先门诊一体化同步, 不可用时回退本地)
+// api/modules/exam/exam_catalog.php - 检查项目库 (优先门诊同步, 不可用时回退本地)
 Auth::requireRole(['admin', 'doctor', 'nurse', 'lab_tech']);
 $kw = trim((string)Validator::get('kw', ''));
 $categoryFilter = trim((string)Validator::get('category', ''));
@@ -8,7 +8,7 @@ $offset = max(0, (int)Validator::get('offset', 0));
 $category = trim((string)Validator::get('category', ''));
 
 $source = 'local';
-$sourceDetail = '门诊接口未启用：接口管理 → 门诊一体化 → 勾选「启用」并保存';
+$sourceDetail = '门诊接口未启用：接口管理 → 门诊 → 勾选「启用」并保存';
 if (opd_settings()['opd_enabled'] === '1') {
     $sync = catalog_sync_from_opd('exam_items');
     if ($sync['ok']) {

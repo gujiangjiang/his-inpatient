@@ -1,5 +1,5 @@
 <?php
-// api/modules/admin/integration_test.php - 门诊一体化 / PACS 连通性测试
+// api/modules/admin/integration_test.php - 门诊 / PACS 连通性测试
 Auth::requireRole(['admin']);
 $s = opd_settings();
 $items = [];

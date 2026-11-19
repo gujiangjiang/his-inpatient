@@ -1,5 +1,5 @@
 <?php
-// api/core/helpers/integration_helper.php - 外部系统对接 (门诊一体化预留)
+// api/core/helpers/integration_helper.php - 外部系统对接 (门诊预留)
 // 说明: 当前为预留接口, 后续在此实现 FHIR / HL7 / HIS / DICOM 适配器
 
 /** 按业务类型获取启用的对接端点 */

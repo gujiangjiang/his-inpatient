@@ -1,6 +1,6 @@
 <?php
-// api/core/helpers/opd_helper.php - 门诊一体化 / PACS 互通客户端 (一期: 只读查询 + 字典推送)
-// 门诊一体化开放接口: FHIR R4 (/api/fhir/r4) + 业务只读 (/api/external/his/read) + 字典同步 (/api/external/his/sync-catalog)
+// api/core/helpers/opd_helper.php - 门诊 / PACS 互通客户端 (一期: 只读查询 + 字典推送)
+// 门诊开放接口: FHIR R4 (/api/fhir/r4) + 业务只读 (/api/external/his/read) + 字典同步 (/api/external/his/sync-catalog)
 
 /** 集成配置默认值 */
 function opd_defaults() {
@@ -38,7 +38,7 @@ function opd_settings_save($kv) {
     }
 }
 
-/** 门诊一体化服务根地址 (不带末尾斜杠) */
+/** 门诊服务根地址 (不带末尾斜杠) */
 function opd_base_url() {
     $s = opd_settings();
     return rtrim($s['opd_base_url'], '/');
@@ -118,7 +118,7 @@ function opd_fhir_error_hint($http, $msg) {
     if ($http === 0) return $msg !== '' ? '无法连接门诊服务（' . $msg . '）' : '无法连接门诊服务（检查服务地址与网络）';
     if ($http === 401) return '鉴权失败：Token 无效或缺失（检查接口管理中 FHIR Token）';
     if ($http === 403) return '权限不足：门诊系统未授权该资源（检查该 Token 的 Scope / IP 白名单配置）';
-    if ($http === 404) return '门诊系统不支持该资源（版本过旧？请升级门诊一体化系统）';
+    if ($http === 404) return '门诊系统不支持该资源（版本过旧？请升级门诊系统）';
     if ($http >= 500) return '门诊系统内部错误（请查看门诊系统日志）';
     return $msg !== '' ? $msg : ('HTTP ' . $http);
 }

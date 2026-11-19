@@ -1,5 +1,5 @@
 <?php
-// api/modules/outpatient/outpatient_records.php - 患者住院信息 + 门诊记录汇总 (门诊数据来自门诊一体化)
+// api/modules/outpatient/outpatient_records.php - 患者住院信息 + 门诊记录汇总 (门诊数据来自门诊)
 Auth::requireRole(['admin', 'doctor', 'nurse']);
 $patientId = (int)Validator::get('patient_id', 0);
 if (!$patientId) Response::error('缺少 patient_id');

@@ -1,5 +1,5 @@
 <?php
-// api/modules/admin/integration_config.php - 集成连接配置读取 (门诊一体化 / PACS)
+// api/modules/admin/integration_config.php - 集成连接配置读取 (门诊 / PACS)
 Auth::requireRole(['admin']);
 $s = opd_settings();
 Response::success([

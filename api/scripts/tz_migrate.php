@@ -1,7 +1,7 @@
 <?php
 // api/scripts/tz_migrate.php - 存量库时间数据迁移（站点墙钟 → UTC）
 /**
- * 三系统统一时间契约的存量库升级工具（与门诊一体化 tz_migrate 同设计）：
+ * 三系统统一时间契约的存量库升级工具（与门诊 tz_migrate 同设计）：
  *  - plan     只读预演：列出全部待转换 表.列 与行数、抽样转换前后对照
  *  - convert  执行「站点时区墙钟 → UTC」：SQLite 自动整库备份 → 逐列转换 →
  *             写入 JSON 清单（data/backups/）→ config.db time.storage 置 utc

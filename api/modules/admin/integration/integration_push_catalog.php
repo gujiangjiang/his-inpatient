@@ -1,6 +1,6 @@
 <?php
-// api/modules/admin/integration_push_catalog.php - 推送 HIS 字典到门诊一体化 (sync-catalog)
-// 说明：HIS 药品目录属中心药房，与门诊药房（门诊一体化药品库）不是一个药房，
+// api/modules/admin/integration_push_catalog.php - 推送 HIS 字典到门诊 (sync-catalog)
+// 说明：HIS 药品目录属中心药房，与门诊药房（门诊药品库）不是一个药房，
 //       不推送、不在门诊侧建档与审核；仅推送处置项目（非药品医嘱目录）与
 //       检验/检查项目名，实现字典互通（门诊侧新增项入审核中心待管理员审核）。
 Auth::requireRole(['admin']);
@@ -41,4 +41,4 @@ Response::success([
         'disposal_items' => count($disposals),
     ],
     'result' => $res['data'],
-], '字典已推送至门诊一体化系统（药品目录属中心药房，不同步）');
+], '字典已推送至门诊系统（药品目录属中心药房，不同步）');

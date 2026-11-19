@@ -191,7 +191,7 @@ function outpatient_exams_applyDelete(id) {
     ]);
 }
 
-/* ===== 门诊检查报告 (门诊一体化) ===== */
+/* ===== 门诊检查报告 (门诊) ===== */
 function outpatient_exams_load() {
     const p = PatientContext.current();
     if (!p) return;

@@ -1,5 +1,5 @@
 <?php
-// api/migrations/php/020_integration_settings.php - 集成连接配置 (门诊一体化 / PACS)
+// api/migrations/php/020_integration_settings.php - 集成连接配置 (门诊 / PACS)
 return [
     'version' => '020',
     'description' => '创建集成连接配置表 integration_settings',

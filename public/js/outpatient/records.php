@@ -1,6 +1,6 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="flex-between mb-20">
-    <h2>就诊记录 <span class="page-sub">住院信息 + 门诊一体化记录</span></h2>
+    <h2>就诊记录 <span class="page-sub">住院信息 + 门诊记录</span></h2>
     <button class="btn" onclick="outpatient_records_reload()">刷新</button>
 </div>
 

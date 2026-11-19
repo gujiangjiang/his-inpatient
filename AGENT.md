@@ -48,7 +48,7 @@
   `php tools/lint/php-lint.php`；否则 `~/.local/bin/frankenphp php-cli tools/lint/php-lint.php`
   （即 `npm run lint`）
 
-## 时间与时区铁律（三系统统一契约：HIS / 门诊一体化 / PACS）
+## 时间与时区铁律（三系统统一契约：HIS / 门诊 / PACS）
 
 - **存储一律标准 UTC**：写入唯一来源 `TimeHelper::now()` / `DateHelper::now()`
   （模式感知；`config.db` `time.storage`，local 仅存量兼容过渡）；全套助手在

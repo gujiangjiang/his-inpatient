@@ -1,5 +1,5 @@
 <?php
-// api/migrations/php/016_integration.php - 外部系统对接端点 (门诊一体化预留)
+// api/migrations/php/016_integration.php - 外部系统对接端点 (门诊预留)
 return [
     'version' => '016',
     'description' => '创建外部系统对接端点表 integration_endpoints',

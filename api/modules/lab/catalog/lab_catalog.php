@@ -1,5 +1,5 @@
 <?php
-// api/modules/lab/lab_catalog.php - 检验项目库 (优先门诊一体化同步, 不可用时回退本地)
+// api/modules/lab/lab_catalog.php - 检验项目库 (优先门诊同步, 不可用时回退本地)
 Auth::requireRole(['admin', 'doctor', 'nurse', 'lab_tech']);
 $kw = trim((string)Validator::get('kw', ''));
 $categoryFilter = trim((string)Validator::get('category', ''));
@@ -7,7 +7,7 @@ $limit = max(1, min(200, (int)Validator::get('limit', 30) ?: 30));
 $offset = max(0, (int)Validator::get('offset', 0));
 
 $source = 'local';
-$sourceDetail = '门诊接口未启用：接口管理 → 门诊一体化 → 勾选「启用」并保存';
+$sourceDetail = '门诊接口未启用：接口管理 → 门诊 → 勾选「启用」并保存';
 if (opd_settings()['opd_enabled'] === '1') {
     $sync = catalog_sync_from_opd('lab_items');
     if ($sync['ok']) {

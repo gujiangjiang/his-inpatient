@@ -1,5 +1,5 @@
 <?php
-// api/modules/outpatient/outpatient_labs.php - 门诊检验结果查询 (门诊一体化 FHIR Observation)
+// api/modules/outpatient/outpatient_labs.php - 门诊检验结果查询 (门诊 FHIR Observation)
 Auth::requireRole(['admin', 'doctor', 'nurse']);
 $patientId = (int)Validator::get('patient_id', 0);
 if (!$patientId) Response::error('缺少 patient_id');

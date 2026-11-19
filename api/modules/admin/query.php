@@ -1,6 +1,6 @@
 <?php
 // api/modules/admin/query.php - 管理员数据查询 (诊断/检验/检查/药品/省市县/职业大典/字典)
-// 诊断与目录数据: 优先外部门诊一体化接口, 失败/为空自动回退本地内置数据
+// 诊断与目录数据: 优先外部门诊接口, 失败/为空自动回退本地内置数据
 Auth::requireRole(['admin']);
 $kind = (string)Validator::get('kind', '');
 $kw = trim((string)Validator::get('kw', ''));
@@ -55,7 +55,7 @@ function admin_query_catalog_local($type, $kw, $limit)
 
 switch ($kind) {
     case 'diagnosis':
-        /* 外部优先 (门诊一体化 icd_search), 失败/为空回退本地 ICD */
+        /* 外部优先 (门诊 icd_search), 失败/为空回退本地 ICD */
         $rows = [];
         $src = '本地 ICD-10（内置）';
         if (opd_settings()['opd_enabled'] === '1') {
@@ -65,7 +65,7 @@ switch ($kind) {
                 foreach ($list as $x) {
                     $rows[] = ['code' => (string)($x['code'] ?? ''), 'name' => (string)($x['name'] ?? '')];
                 }
-                $src = '门诊一体化（外部接口）';
+                $src = '门诊（外部接口）';
             }
         }
         if (!$rows) $rows = admin_query_icd_local($kw, $limit);
@@ -84,7 +84,7 @@ switch ($kind) {
                     $rows[] = ['name' => $name, 'spec' => (string)($x['spec'] ?? ''), 'price' => $x['price'] ?? ''];
                     if (count($rows) >= $limit) break;
                 }
-                if ($rows) $src = '门诊一体化（外部接口）';
+                if ($rows) $src = '门诊（外部接口）';
             }
         }
         if (!$rows) $rows = admin_query_catalog_local($kind, $kw, $limit);

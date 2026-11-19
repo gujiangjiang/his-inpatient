@@ -1,5 +1,5 @@
 // public/js/patients/admit_panel.js - 收住院弹窗 (基础信息 → 科室 → 病区 → 床位 → 确认收住)
-// 说明: 后续完整移植至门诊一体化系统 (门诊转归"住院"后调用); 当前在 HIS 内测试
+// 说明: 后续完整移植至门诊系统 (门诊转归"住院"后调用); 当前在 HIS 内测试
 const AdmitPanel = {
     info: null,      // { name, gender, birth_date, id_card, admission_diagnosis, admission_icd_code }
     depts: [],

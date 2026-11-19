@@ -39,7 +39,7 @@ const ExamPanel = {
         const el = document.getElementById('exam-source');
         if (!el) return;
         el.innerHTML = (this.source === 'opd'
-            ? '项目库来源：门诊一体化系统（审核通过项，实时同步）'
+            ? '项目库来源：门诊系统（审核通过项，实时同步）'
             : '项目库来源：本地虚拟数据（' + Format.escape(this.sourceDetail || (this.source === '' ? '加载中…' : '门诊接口未启用')) + '）')
             + ' <span class="apply-warn">注：请一次性开好所有的项目！</span>';
     },

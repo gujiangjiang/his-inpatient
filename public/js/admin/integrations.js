@@ -1,4 +1,4 @@
-// public/js/admin/integrations.js - 接口管理页交互 (门诊一体化 / PACS / 对接端点)
+// public/js/admin/integrations.js - 接口管理页交互 (门诊 / PACS / 对接端点)
 var _integrationList = [];
 var _BIZ_LABELS = { lab: '检验', exam: '检查', prescription: '处方', treatment: '处置', patient: '患者' };
 var _AUTH_LABELS = { none: '无', basic: 'Basic', token: 'Token', oauth2: 'OAuth2' };
@@ -23,7 +23,7 @@ function admin_integrations_switch(name) {
     if (name === 'catalog') admin_itg_catalog_load();
 }
 
-/* 门诊一体化子导航切换（状态/配置/审计/帮助） */
+/* 门诊子导航切换（状态/配置/审计/帮助） */
 function admin_itg_sub(pane) {
     document.querySelectorAll('#itg-pane-opd .pn-item').forEach(function (el) {
         el.classList.toggle('active', el.dataset.pane === pane);
@@ -171,7 +171,7 @@ function admin_integrations_auditClear() {
 }
 
 function admin_integrations_push() {
-    Dom.modal('推送字典确认', '<p>将把 HIS 处置项目、检验/检查项目名推送到门诊一体化系统（门诊侧新增项需管理员审核后启用）。HIS 药品目录属中心药房，与门诊药房不是一个药房，不同步。</p>', [
+    Dom.modal('推送字典确认', '<p>将把 HIS 处置项目、检验/检查项目名推送到门诊系统（门诊侧新增项需管理员审核后启用）。HIS 药品目录属中心药房，与门诊药房不是一个药房，不同步。</p>', [
         { text: '推送', type: 'primary', onclick: async function() {
             const r = await AjaxLoader.api('admin/integration-push-catalog', { method: 'POST' });
             if (r.status === 'success') {
