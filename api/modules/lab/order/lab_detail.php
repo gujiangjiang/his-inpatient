@@ -5,7 +5,7 @@ $id = Validator::get('id');
 
 if (!$id) Response::error('请输入检验单ID');
 
-$report = DB::selectOne("SELECT lr.*, p.name as patient_name, p.bed_no, u.name as creator_name
+$report = DB::selectOne("SELECT lr.*, p.name as patient_name, p.bed_no, p.patient_no, p.admission_no, u.name as creator_name
     FROM lab_reports lr
     LEFT JOIN patients p ON lr.patient_id = p.id
     LEFT JOIN users u ON lr.created_by = u.id

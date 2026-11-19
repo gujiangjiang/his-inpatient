@@ -120,15 +120,26 @@ function outpatient_labs_detail(id) {
 }
 
 function outpatient_labs_printBlock(rep) {
-    const rows = (rep.items || []).map((it, i) => `<tr><td>${i + 1}</td><td>${Format.escape(it.item_name)}</td>
+    const rows = (rep.items || []).map((it, i) => `<tr><td style="text-align:center">${i + 1}</td><td>${Format.escape(it.item_name)}</td>
         <td>${Format.escape(rep.specimen_type || '')}</td><td>${Format.escape(it.result || '')}</td><td>${Format.escape(it.reference_range || '')}</td></tr>`).join('');
-    return `
-        ${PrintHelper.brandHeaderHtml()}
-        <h2 class="doc-title">检验申请单</h2>
-        <div class="doc-sub">${Format.escape(rep.report_no)}</div>
-        <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>
-        <table class="doc-table"><thead><tr><th>序号</th><th>检验项目</th><th>标本</th><th>结果</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="doc-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>`;
+    return `<div class="sheet">
+        <div class="sheet-head">
+            <div class="sheet-brand">
+                ${PrintHelper.brandHeaderHtml('')}
+                <div class="sheet-docname">检验申请单</div>
+            </div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}<div class="barcode-no">${Format.escape(rep.report_no || '')}</div></div>
+        </div>
+        <div class="patient-bar">
+            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
+            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
+            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
+            <span>标本：<b>${Format.escape(rep.specimen_type || '-')}</b></span>
+            <span>开单时间：<b>${Format.escape(rep.created_at || '')}</b></span>
+        </div>
+        <table class="sheet-table"><thead><tr><th style="width:32px">序号</th><th>检验项目</th><th>标本</th><th>结果</th><th>参考范围</th></tr></thead><tbody>${rows}</tbody></table>
+        <div class="sheet-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>
+    </div>`;
 }
 
 function outpatient_labs_print(id) {
