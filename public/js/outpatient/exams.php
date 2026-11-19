@@ -94,7 +94,7 @@ function outpatient_exams_loadApply() {
                 <td><span class="badge ${_EXAM_STATUS_CLS[x.status] || 'badge-default'}">${_EXAM_STATUS[x.status] || Format.escape(x.status)}</span></td>
                 <td>
                     <button class="btn btn-small" onclick="outpatient_exams_applyDetail(${x.id})">查看</button>
-                    <button class="btn btn-small" onclick="outpatient_exams_applyPrint(${x.id})">打印</button>
+                    <button class="btn btn-small" onclick="outpatient_exams_applyPrint(${x.id}, ${x.status === 'reported' ? 1 : 0})">${x.status === 'reported' ? '报告' : '申请单'}</button>
                     ${x.status === 'pending' ? `<button class="btn btn-small btn-danger" onclick="outpatient_exams_applyDelete(${x.id})">删除</button>` : ''}
                 </td>
             </tr>`).join('');
@@ -138,10 +138,37 @@ function outpatient_exams_printBlock(rep) {
     </div>`;
 }
 
-function outpatient_exams_applyPrint(id) {
+function outpatient_exams_applyPrint(id, isReport) {
     AjaxLoader.api('exam/detail?id=' + id, { silent: true }).then(r => {
-        PrintHelper.printHtml('检查申请单', outpatient_exams_printBlock(r.data));
+        if (isReport) {
+            PrintHelper.printHtml('检查报告单', outpatient_exams_reportBlock(r.data));
+        } else {
+            PrintHelper.printHtml('检查申请单', outpatient_exams_printBlock(r.data));
+        }
     }).catch(() => {});
+}
+
+/* 检查报告单（A4 纵向 210x297mm，参照门诊影像报告） */
+function outpatient_exams_reportBlock(rep) {
+    return `<div class="sheet">
+        <div class="sheet-head">
+            <div class="sheet-brand">
+                ${PrintHelper.brandHeaderHtml('')}
+                <div class="sheet-docname">检查报告单</div>
+            </div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}<div class="barcode-no">${Format.escape(rep.report_no || '')}</div></div>
+        </div>
+        <div class="patient-bar">
+            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
+            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
+            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
+            <span>检查项目：<b>${Format.escape(rep.exam_type || '')}</b></span>
+            <span>检查时间：<b>${Format.escape(rep.created_at || '')}</b></span>
+        </div>
+        <table class="sheet-table"><thead><tr><th style="width:140px">检查项目</th><th style="width:120px">检查部位</th><th>影像所见</th><th style="width:180px">影像诊断</th></tr></thead>
+        <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
+        <div class="sheet-foot"><span>报告医生：${Format.escape(rep.creator_name || '')}</span><span>报告时间：${Format.escape(rep.updated_at || rep.created_at || '')}</span></div>
+    </div>`;
 }
 
 function outpatient_exams_printAll() {
