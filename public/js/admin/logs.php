@@ -33,7 +33,7 @@
             </div>
             <div class="filter-item">
                 <label>日期</label>
-                <input type="date" class="form-control" id="logs-date" onchange="admin_logs_refresh()">
+                <input type="text" class="form-control" id="logs-date" data-dtpicker="date" placeholder="选择日期" onchange="admin_logs_refresh()">
             </div>
             <div class="filter-item" style="flex:1;min-width:180px">
                 <input class="form-control" id="logs-kw" placeholder="搜索摘要/明细/操作人/目标" style="width:100%" oninput="admin_logs_debounced()">
@@ -62,6 +62,7 @@ async function admin_logs_init() {
     document.getElementById('login-container').style.display = 'none';
     const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
     document.getElementById('sidebar').innerHTML = sidebar;
+    if (window.DateTimePicker) DateTimePicker.initInputs(document);
     admin_logs_tab('server');
 }
 
