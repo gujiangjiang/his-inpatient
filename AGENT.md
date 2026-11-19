@@ -88,3 +88,11 @@
 - 侧边栏: `public/js/shared/sidebar_{role}.php`
 - 无独立 HTML 文件, 全部统一为 PHP
 - **路由导航统一使用全局 `navigateTo` (app.js)**: 页面片段内禁止再定义 `navigateTo`, 避免覆盖 hash 路由导致布局/URL 不同步
+
+## 移动端铁律（长期支持，新增/修改页面必须遵守）
+
+- **布局断点**：`≤768px` 为移动端（抽屉侧边栏 + 纵向布局），`>768px` 为桌面（侧边栏可折叠窄栏）。
+- **侧边栏**：切换按钮 `#sidebar-toggle`（topbar 左侧）调 `App.toggleSidebar()`；桌面折叠为 `sidebar-mini`（64px 仅图标，状态存 `localStorage his_sidebar_mini`）；移动端默认隐藏（`translateX(-100%)`），点按钮加 `open` 滑出 + `#sidebar-mask` 遮罩，点菜单项自动收起（`App.initMobile()`）。
+- **页面布局**：表格容器要能横向滚动（`.table { min-width: 640px }` 于移动媒体查询）；筛选条控件全宽换行；`.form-grid` 降单列；`.pane-wrap` 左右两栏移动端纵向堆叠；统计卡 ≤2 列；日志/状态/审核行允许换行。
+- **移动端样式只写在 `doctor.css`（框架）与 `admin.css`（管理端）的 `@media (max-width: 768px)` 块内**，禁止页面内散写移动样式。
+- **新增页面默认移动可用**：走公共布局类（`.page-head/.card/.table/.form-grid/.pane-wrap`）即可获得移动适配；禁止用固定 px 宽度撑破小屏。
