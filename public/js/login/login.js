@@ -218,6 +218,7 @@ function hideCaptcha() {
     const g = document.getElementById('captcha-group');
     if (g) g.style.display = 'none';
 }
+var _captchaTimer = null;
 function probeCaptcha() {
     const username = document.getElementById('username') ? document.getElementById('username').value.trim() : '';
     const flag = localStorage.getItem('his_login_fail_flag') === '1' ? 1 : 0;
