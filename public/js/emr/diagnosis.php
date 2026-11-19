@@ -209,7 +209,7 @@ function emr_diagnosis_deleteTemplate(id) {
     ]);
 }
 
-/* ===== 添加诊断悬浮窗 (参考门诊一体化) ===== */
+/* ===== 添加诊断悬浮窗 ===== */
 function emr_diag_pop_open(cat, ev, presetName, presetCode) {
     _diagPopSel = presetName ? { name: presetName, code: presetCode || '' } : null;
     _diagPopState = { kw: '', offset: 0, hasMore: true, loading: false, cursor: -1 };

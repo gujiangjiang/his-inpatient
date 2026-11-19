@@ -1,5 +1,5 @@
 <?php
-// api/migrations/php/065_system_logs.php - 系统日志中心（参照门诊一体化日志中心）
+// api/migrations/php/065_system_logs.php - 系统日志中心
 // 统一日志表 system_logs：操作日志 + 接口日志 + 服务器日志（服务器日志直读文件不入表）
 // 通道：operation（操作）/ interface（接口）；级别：normal/info/warning/error
 return [

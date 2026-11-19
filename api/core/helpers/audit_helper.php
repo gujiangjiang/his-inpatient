@@ -1,5 +1,5 @@
 <?php
-// api/core/helpers/audit_helper.php - 统一审核流（参照门诊一体化 submit_audit）
+// api/core/helpers/audit_helper.php - 统一审核流
 // 用法：audit_submit($type,$refId,$title,$content,$extra)
 //       audit_apply($id,$approve,$note)  → [ok, msg]
 //       audit_list($status,$page,$per)    → [rows,total,has_more,pending_count]

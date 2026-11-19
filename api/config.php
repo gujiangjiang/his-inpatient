@@ -6,7 +6,7 @@ define('BASE_DIR', dirname(__DIR__));
 define('DATA_DIR', BASE_DIR . '/data');
 
 // ---------- 基础设施配置库（config.db） ----------
-// 数据库连接、全站时区等「最底层」配置独立于业务库存放（参考门诊一体化系统）；
+// 数据库连接、全站时区等「最底层」配置独立于业务库存放；
 // 未生成 config.db 时全部回退下方默认值，旧部署行为完全不变。
 require_once __DIR__ . '/core/config_db.php';
 

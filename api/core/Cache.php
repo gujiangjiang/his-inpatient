@@ -1,5 +1,5 @@
 <?php
-// api/core/Cache.php - 多驱动缓存（file/apcu/redis/memcached，参照门诊一体化）
+// api/core/Cache.php - 多驱动缓存（file/apcu/redis/memcached）
 // 统一读写接口：get/set(delttl秒)/del/flush(前缀)/stats
 // 优雅降级：驱动扩展缺失/连接失败自动降级 file，绝不抛异常。
 class Cache {

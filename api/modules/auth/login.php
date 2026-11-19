@@ -1,5 +1,5 @@
 <?php
-// api/modules/auth/login.php - 登录（验证码校验 + 失败锁定，参照门诊一体化）
+// api/modules/auth/login.php - 登录（验证码校验 + 失败锁定）
 Auth::init();
 
 $data = Validator::all();

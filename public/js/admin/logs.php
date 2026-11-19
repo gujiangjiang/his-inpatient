@@ -1,7 +1,7 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="page-head">
     <h3 class="page-title">日志中心</h3>
-    <p class="page-desc">服务器日志 · 操作日志 · 接口日志（参照门诊一体化日志中心）</p>
+    <p class="page-desc">服务器日志 · 操作日志 · 接口日志</p>
 </div>
 
 <div class="card" style="padding:10px 16px">

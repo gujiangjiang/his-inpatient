@@ -1,5 +1,5 @@
 <?php
-// api/modules/admin/db_center.php - 数据库中心（参照门诊一体化 sysinfo）
+// api/modules/admin/db_center.php - 数据库中心
 // action=status|test|switch|tables|table-data
 Auth::requireRole(['admin']);
 $action = Validator::get('action', 'status');

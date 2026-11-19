@@ -1,5 +1,5 @@
 <?php
-// api/migrations/php/067_auth_security.php - 登录安全基础设施（参照门诊一体化）
+// api/migrations/php/067_auth_security.php - 登录安全基础设施
 // users 增加锁定字段：login_fail_count/locked_at/locked_until/lock_reason/lock_ip
 // 验证码模式与失败锁定阈值存 ConfigDB（config.db）：login.captcha_mode / login.fail_lock_count
 return [

@@ -182,7 +182,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
     });
 });
 
-/* ===== 验证码（参照门诊一体化）===== */
+/* ===== 验证码 ===== */
 var _captchaMode = '';
 function loadCaptchaMode() {
     // 从后端嗅探模式：直接请求 check-captcha?flag 探测

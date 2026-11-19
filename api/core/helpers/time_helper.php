@@ -1,7 +1,7 @@
 <?php
 // api/core/helpers/time_helper.php - 时间与时区统一助手
 /**
- * 三系统统一时间契约（HIS / 门诊一体化 / PACS）：
+ * 三系统统一时间契约（HIS / 门诊 / PACS）：
  *  - 存储：所有 DATETIME 列存 UTC（'Y-m-d H:i:s'），写入唯一来源 now()；
  *  - 显示：全站页面与内部 API 载荷经 local() / localize() 换算为站点时区
  *    （config.db timezone，初始化向导设置）；
@@ -9,7 +9,7 @@
  *    入站外部时间经 fromUtc() 按 UTC 解释落库；
  *  - 业务日期（*_date 等）：站点时区日期（分日归属按站点时区），today() 即本地日。
  *
- * 双模式过渡（存量库平滑迁移，与门诊一体化一致）：
+ * 双模式过渡（存量库平滑迁移）：
  *   config.db `time.storage` = 'utc'（新装向导写入）/ 'local'（存量库默认，
  *   由迁移脚本 convert 后置 'utc'）；local 模式下本文件全部行为与旧版一致。
  */

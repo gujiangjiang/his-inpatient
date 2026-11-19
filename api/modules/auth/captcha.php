@@ -1,5 +1,5 @@
 <?php
-// api/modules/auth/captcha.php - 图形验证码（后端 GD 绘制 PNG，参照门诊一体化 LoginSecurity）
+// api/modules/auth/captcha.php - 图形验证码（后端 GD 绘制 PNG）
 // GET  auth/captcha?action=gen          → 生成 4 位码存 session，输出 PNG 图片
 // GET  auth/captcha?action=check&flag=  → 嗅探是否需验证码（off/auto/force）
 // 模式存 ConfigDB login.captcha_mode（off/auto/force）；GD 缺失降级纯文本。

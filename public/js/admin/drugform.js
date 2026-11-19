@@ -1,4 +1,4 @@
-// public/js/admin/drugform.js - 药品表单规格编辑器（参照门诊一体化 drugform.js）
+// public/js/admin/drugform.js - 药品表单规格编辑器
 // 依赖：Dom.modal / Format.escape；页面片段 admin_drugs_form 绑定 openSpecEditor()
 
 /** 打开规格结构化编辑器（二级模态框） */

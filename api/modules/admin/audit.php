@@ -1,5 +1,5 @@
 <?php
-// api/modules/admin/audit.php - 审核中心（参照门诊一体化 audit.php）
+// api/modules/admin/audit.php - 审核中心
 // action=list|apply|all
 Auth::requireRole(['admin']);
 $action = Validator::get('action', 'list');

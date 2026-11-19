@@ -1,5 +1,5 @@
 <?php
-// api/config/drivers.php - 驱动注册表（缓存驱动唯一数据源，参照门诊一体化）
+// api/config/drivers.php - 驱动注册表（缓存驱动唯一数据源）
 // 缓存中心前端下拉与后端校验共用；新增驱动只维护本文件。
 return array(
     'cache' => array(

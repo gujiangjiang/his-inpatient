@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="/css/admin/admin.css">
 <div class="page-head">
     <h3 class="page-title">缓存与性能</h3>
-    <p class="page-desc">缓存驱动状态与切换 · 模块化缓存刷新（参照门诊一体化）</p>
+    <p class="page-desc">缓存驱动状态与切换 · 模块化缓存刷新</p>
 </div>
 
 <div class="pane-wrap">

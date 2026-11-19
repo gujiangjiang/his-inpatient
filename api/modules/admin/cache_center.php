@@ -1,5 +1,5 @@
 <?php
-// api/modules/admin/cache_center.php - 缓存与性能（参照门诊一体化 sysinfo cache）
+// api/modules/admin/cache_center.php - 缓存与性能
 // action=status|flush|driver-save
 Auth::requireRole(['admin']);
 $action = Validator::get('action', 'status');

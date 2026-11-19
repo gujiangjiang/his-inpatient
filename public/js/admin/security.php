@@ -26,7 +26,7 @@
             <p>· 会话 Cookie 使用 <code>HttpOnly</code> + <code>SameSite</code>，避免 XSS 窃取。</p>
             <p>· 所有 AJAX 接口统一经 <code>Auth</code> 鉴权 + <code>Validator</code> 参数校验，SQL 全部预处理防注入。</p>
             <p>· 管理端配置变更、日志写入均记录操作人，可在「日志中心」追溯。</p>
-            <p>· 登录失败锁定 / 图形验证码：当前为演示基线未启用，后续版本可按门诊一体化接入。</p>
+            <p>· 登录失败锁定 / 图形验证码：当前为演示基线未启用，后续版本可增强。</p>
         </div>
     </div>
 </div>

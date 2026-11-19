@@ -1,5 +1,5 @@
 <?php
-// api/core/helpers/log_helper.php - 日志中心核心（参照门诊一体化 LogService）
+// api/core/helpers/log_helper.php - 日志中心核心
 // 通道：operation（操作）/ interface（接口）；级别：normal/info/warning/error
 // 服务器日志直读 PHP 日志文件，不入本表（log_server 系列单独处理）。
 

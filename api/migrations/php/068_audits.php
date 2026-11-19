@@ -1,5 +1,5 @@
 <?php
-// api/migrations/php/068_audits.php - 统一审核中心（参照门诊一体化）
+// api/migrations/php/068_audits.php - 统一审核中心
 // audits 表：待审核/已处理流（pending->approved/rejected/used；handled=关闭旧单）
 return array(
     'version' => '068',

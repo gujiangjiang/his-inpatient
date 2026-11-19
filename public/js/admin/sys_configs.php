@@ -1,7 +1,7 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
 <div class="page-head">
     <h3 class="page-title">系统设置</h3>
-    <p class="page-desc">医院机构信息 · 数据库中心 · 缓存与性能 · 安全与加密（参照门诊一体化系统设置）</p>
+    <p class="page-desc">医院机构信息 · 数据库中心 · 缓存与性能 · 安全与加密</p>
 </div>
 
 <div class="card" style="padding:10px 16px">

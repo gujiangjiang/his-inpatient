@@ -1,5 +1,5 @@
 <?php
-// api/modules/admin/logs.php - 日志中心（参照门诊一体化日志中心）
+// api/modules/admin/logs.php - 日志中心
 // action=list|latest|clear|meta|server|server-clear
 Auth::requireRole(['admin']);
 $action = Validator::get('action', 'list');
