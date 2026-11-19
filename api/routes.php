@@ -15,6 +15,7 @@ function getRoutes() {
         'setup/status' => ['setup/status.php', []],
         'setup/database' => ['setup/database.php', []],
         'setup/migrate' => ['setup/migrate.php', []],
+        'setup/cache' => ['setup/cache.php', []],
         'setup/site' => ['setup/site.php', []],
         'setup/admin' => ['setup/admin.php', []],
         'setup/finish' => ['setup/finish.php', []],
