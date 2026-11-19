@@ -1,34 +1,56 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
+<link rel="stylesheet" href="/css/admin/admin.css">
 <div class="page-head">
     <h3 class="page-title">安全与加密</h3>
     <p class="page-desc">登录会话与安全基线（当前实现为只读展示；登录锁定/验证码为后续增强项）</p>
 </div>
 
-<div class="card">
-    <div class="card-header">登录与会话</div>
-    <div class="status-list" id="security-status"></div>
+<div class="pane-wrap">
+    <div class="pane-nav" id="security-nav">
+        <div class="pn-item active" data-sectab="session" onclick="admin_security_tab('session')">会话基线</div>
+        <div class="pn-item" data-sectab="notes" onclick="admin_security_tab('notes')">安全说明</div>
+    </div>
+    <div class="pane-main">
+<div class="db-pane" data-sectab="session">
+    <div class="card">
+        <div class="card-header">登录与会话</div>
+        <div class="status-list" id="security-status"></div>
+    </div>
 </div>
 
-<div class="card">
-    <div class="card-header">安全说明</div>
-    <div class="fs-13 text-muted" style="line-height:1.8">
-        <p>· 密码使用 <code>password_hash</code>（bcrypt）存储，不存明文。</p>
-        <p>· 会话 Cookie 使用 <code>HttpOnly</code> + <code>SameSite</code>，避免 XSS 窃取。</p>
-        <p>· 所有 AJAX 接口统一经 <code>Auth</code> 鉴权 + <code>Validator</code> 参数校验，SQL 全部预处理防注入。</p>
-        <p>· 管理端配置变更、日志写入均记录操作人，可在「日志中心」追溯。</p>
-        <p>· 登录失败锁定 / 图形验证码：当前为演示基线未启用，后续版本可按门诊一体化接入。</p>
+<div class="db-pane" data-sectab="notes" style="display:none">
+    <div class="card">
+        <div class="card-header">安全说明</div>
+        <div class="fs-13 text-muted" style="line-height:1.8">
+            <p>· 密码使用 <code>password_hash</code>（bcrypt）存储，不存明文。</p>
+            <p>· 会话 Cookie 使用 <code>HttpOnly</code> + <code>SameSite</code>，避免 XSS 窃取。</p>
+            <p>· 所有 AJAX 接口统一经 <code>Auth</code> 鉴权 + <code>Validator</code> 参数校验，SQL 全部预处理防注入。</p>
+            <p>· 管理端配置变更、日志写入均记录操作人，可在「日志中心」追溯。</p>
+            <p>· 登录失败锁定 / 图形验证码：当前为演示基线未启用，后续版本可按门诊一体化接入。</p>
+        </div>
+    </div>
+</div>
     </div>
 </div>
 
 <script>
 async function admin_security_init() {
-    document.getElementById('main-app').style.display = 'flex';
+    var appEl = document.getElementById('main-app'); if (appEl) appEl.style.display = 'flex';
     const sidebarEl = document.getElementById('sidebar');
     if (sidebarEl) {
         const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
         sidebarEl.innerHTML = sidebar;
     }
     admin_security_load();
+}
+
+function admin_security_tab(t) {
+    document.querySelectorAll('#security-nav .pn-item').forEach(function (el) {
+        el.classList.toggle('active', el.dataset.sectab === t);
+    });
+    document.querySelectorAll('#security-nav ~ .pane-main .db-pane').forEach(function (el) {
+        el.style.display = el.dataset.sectab === t ? '' : 'none';
+    });
 }
 
 async function admin_security_load() {

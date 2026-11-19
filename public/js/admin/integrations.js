@@ -114,7 +114,8 @@ async function admin_integrations_test() {
 var _itgCatalogType = 'lab';
 async function admin_itg_catalog_load() {
     const kw = (document.getElementById('itg-catalog-kw').value || '').trim();
-    const r = await AjaxLoader.api('admin/query', { silent: true, data: { kind: _itgCatalogType, kw: kw, limit: 100 } });
+    const q = 'kind=' + _itgCatalogType + (kw ? '&kw=' + encodeURIComponent(kw) : '') + '&limit=100';
+    const r = await AjaxLoader.api('admin/query?' + q, { silent: true });
     const rows = (r.data && r.data.rows) || [];
     const src = (r.data && r.data.source) || '';
     document.getElementById('itg-catalog-source').textContent = src ? '来源：' + src : '';

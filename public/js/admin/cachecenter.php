@@ -1,17 +1,17 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
+<link rel="stylesheet" href="/css/admin/admin.css">
 <div class="page-head">
     <h3 class="page-title">缓存与性能</h3>
     <p class="page-desc">缓存驱动状态与切换 · 模块化缓存刷新（参照门诊一体化）</p>
 </div>
 
-<div class="card" style="padding:10px 16px">
-    <div class="sub-tabs">
-        <button class="sub-tab active" data-cachetab="status" onclick="admin_cachecenter_tab('status')">状态详情</button>
-        <button class="sub-tab" data-cachetab="driver" onclick="admin_cachecenter_tab('driver')">驱动切换</button>
-        <button class="sub-tab" data-cachetab="flush" onclick="admin_cachecenter_tab('flush')">缓存刷新</button>
+<div class="pane-wrap">
+    <div class="pane-nav" id="cachecenter-nav">
+        <div class="pn-item active" data-cachetab="status" onclick="admin_cachecenter_tab('status')">状态详情</div>
+        <div class="pn-item" data-cachetab="driver" onclick="admin_cachecenter_tab('driver')">驱动切换</div>
+        <div class="pn-item" data-cachetab="flush" onclick="admin_cachecenter_tab('flush')">缓存刷新</div>
     </div>
-</div>
-
+    <div class="pane-main">
 <div class="db-pane" data-cachetab="status">
     <div class="card">
         <div class="card-header">缓存状态</div>
@@ -44,12 +44,14 @@
         <p class="hint" id="cachecenter-flush-msg"></p>
     </div>
 </div>
+    </div>
+</div>
 
 <script>
 var _cacheDrivers = {};
 
 async function admin_cachecenter_init() {
-    document.getElementById('main-app').style.display = 'flex';
+    var appEl = document.getElementById('main-app'); if (appEl) appEl.style.display = 'flex';
     const sidebarEl = document.getElementById('sidebar');
     if (sidebarEl) {
         const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
@@ -59,7 +61,7 @@ async function admin_cachecenter_init() {
 }
 
 function admin_cachecenter_tab(t) {
-    document.querySelectorAll('.sub-tab[data-cachetab]').forEach(function (b) {
+    document.querySelectorAll('.pn-item[data-cachetab]').forEach(function (b) {
         b.classList.toggle('active', b.dataset.cachetab === t);
     });
     document.querySelectorAll('.db-pane[data-cachetab]').forEach(function (el) {

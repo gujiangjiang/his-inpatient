@@ -1,4 +1,5 @@
 <?php header("Content-Type: text/html; charset=utf-8"); ?>
+<link rel="stylesheet" href="/css/admin/admin.css">
 <div class="pane-wrap">
     <div class="pane-nav" id="dbcenter-nav">
         <div class="pn-item active" data-dbtab="status" onclick="admin_dbcenter_tab('status')">状态详情</div>
@@ -52,7 +53,7 @@ var _dbcenterParams = {
 };
 
 async function admin_dbcenter_init() {
-    document.getElementById('main-app').style.display = 'flex';
+    var appEl = document.getElementById('main-app'); if (appEl) appEl.style.display = 'flex';
     const sidebarEl = document.getElementById('sidebar');
     if (sidebarEl) {
         const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());

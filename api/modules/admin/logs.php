@@ -24,12 +24,14 @@ if ($action === 'list') {
     ];
     $limit = max(1, min(100, (int)Validator::get('limit', 50) ?: 50));
     $r = log_query($channel, $filter, $limit);
-    Response::success([
+    $resp = [
         'list' => $r['list'], 'has_more' => $r['has_more'],
         'counts' => log_counts($channel, $filter),
         'meta' => ['operation' => ['login' => '登录登出', 'account' => '账号管理', 'order' => '医嘱', 'pharmacy' => '药房', 'config' => '配置'],
                    'interface' => ['opd' => '门诊一体化', 'pacs' => 'PACS', 'fhir' => 'FHIR', 'his' => 'HIS', 'app' => '应用']],
-    ]);
+    ];
+    if (!empty($r['error'])) $resp['error'] = $r['error'];
+    Response::success($resp);
 }
 
 if ($action === 'latest') {

@@ -36,15 +36,19 @@ function log_maintain_once() {
 /** 查询日志：channel 必填，filter {category,direction,level,date,kw,before_id,after_id} */
 function log_query($channel, $filter = [], $limit = 50) {
     if (!in_array($channel, ['operation', 'interface'], true)) $channel = 'operation';
-    $sql = "SELECT * FROM system_logs WHERE channel = ?";
-    $args = [$channel];
-    $where = log_filter_where($filter);
-    if ($where[0]) { $sql .= $where[0]; $args = array_merge($args, $where[1]); }
-    if (!empty($filter['before_id'])) { $sql .= " AND id < ?"; $args[] = (int)$filter['before_id']; }
-    $sql .= " ORDER BY id DESC LIMIT " . (int)$limit;
-    $rows = DB::select($sql, $args);
-    $hasMore = count($rows) === (int)$limit;
-    return ['list' => $rows, 'has_more' => $hasMore];
+    try {
+        $sql = "SELECT * FROM system_logs WHERE channel = ?";
+        $args = [$channel];
+        $where = log_filter_where($filter);
+        if ($where[0]) { $sql .= $where[0]; $args = array_merge($args, $where[1]); }
+        if (!empty($filter['before_id'])) { $sql .= " AND id < ?"; $args[] = (int)$filter['before_id']; }
+        $sql .= " ORDER BY id DESC LIMIT " . (int)$limit;
+        $rows = DB::select($sql, $args);
+        $hasMore = count($rows) === (int)$limit;
+        return ['list' => $rows, 'has_more' => $hasMore];
+    } catch (Exception $e) {
+        return ['list' => [], 'has_more' => false, 'error' => '日志查询失败：' . $e->getMessage()];
+    }
 }
 
 /** 增量日志（实时轮询：id > after_id 正序） */
