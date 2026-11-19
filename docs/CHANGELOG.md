@@ -4,7 +4,31 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.53.1] - 2026-11-19
+
+### 修复（生产登录/退出/日志 500 根治）
+- **login/logout/logs 持续 500**：生产 users 表缺 067 锁定列
+  （login_fail_count/locked_at/locked_until/lock_reason/lock_ip）导致
+  登录成功/失败路径的 UPDATE users 直接 PDOException → 500。
+- 新增迁移 071（版本>070 必触发）：users/system_logs/audits 全部已知
+  列幂等补齐，SchemaGuard 部署后首个请求自动执行。
+- **login.php**：两处 UPDATE users 锁定列包 Throwable try-catch，
+  缺列时跳过更新不阻断登录。
+- **logout.php**：整体 Throwable 兜底，任何异常都尽力销毁会话后返回成功。
+- **log_helper**：全部 catch 升级 \Throwable（覆盖 PHP8 Error），
+  log_latest 轮询路径同加容错。
+- **异常 handler 支持 debug=1**：请求带 debug=1（GET query 或 POST
+  JSON 体）时 500 响应透出真实错误+文件+行号，供生产定位。
+- **临时诊断接口 auth/diag**：输出迁移版本 + users/system_logs/audits
+  表结构（定位后移除）。
+
+### 部署注意
+- 服务器 git pull 后：首个请求 SchemaGuard 自动跑 071 补列，无需手动
+  迁移；若仍 500，请 **重启 PHP-FPM 清 opcache**（旧文件被缓存会不生效），
+  并可用 ?debug=1 复现拿真实错误。
+
 ## [0.53.0] - 2026-11-19
+
 
 ### 修复
 - **退出登录 500**：log_write/log_maintain_once/log_counts 全程 try-catch，
