@@ -118,14 +118,24 @@ function outpatient_exams_applyDetail(id) {
 }
 
 function outpatient_exams_printBlock(rep) {
-    return `
-        ${PrintHelper.brandHeaderHtml()}
-        <h2 class="doc-title">检查申请单</h2>
-        <div class="doc-sub">${Format.escape(rep.report_no)}</div>
-        <div class="doc-meta"><span>患者：${Format.escape(rep.patient_name || '')}</span><span>床号：${Format.escape(rep.bed_no || '-')}</span><span>开单时间：${Format.escape(rep.created_at || '')}</span></div>
-        <table class="doc-table"><thead><tr><th>检查项目</th><th>检查部位</th><th>所见</th><th>结论</th></tr></thead>
-        <tbody><tr><td>${Format.escape(rep.exam_type)}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
-        <div class="doc-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>`;
+    return `<div class="sheet">
+        <div class="sheet-head">
+            <div class="sheet-brand">
+                ${PrintHelper.brandHeaderHtml('')}
+                <div class="sheet-docname">检查申请单</div>
+            </div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}<div class="barcode-no">${Format.escape(rep.report_no || '')}</div></div>
+        </div>
+        <div class="patient-bar">
+            <span>姓名：<b>${Format.escape(rep.patient_name || '')}</b></span>
+            <span>床号：<b>${Format.escape(rep.bed_no || '-')}</b></span>
+            <span>住院号：<b>${Format.escape(rep.admission_no || '-')}</b></span>
+            <span>开单时间：<b>${Format.escape(rep.created_at || '')}</b></span>
+        </div>
+        <table class="sheet-table"><thead><tr><th>检查项目</th><th>检查部位</th><th>所见</th><th>结论</th></tr></thead>
+        <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
+        <div class="sheet-foot"><span>开单医生：${Format.escape(rep.creator_name || '')}</span><span>打印时间：${Format.date(new Date().toISOString())}</span></div>
+    </div>`;
 }
 
 function outpatient_exams_applyPrint(id) {
