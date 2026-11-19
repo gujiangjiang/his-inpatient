@@ -44,7 +44,15 @@ set_exception_handler(function ($e) {
     error_log('[API] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
     if (!headers_sent()) http_response_code(500);
     header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['status' => 'error', 'message' => '服务器内部错误', 'data' => null], JSON_UNESCAPED_UNICODE);
+    $msg = '服务器内部错误';
+    // 诊断模式：请求带 debug=1（GET query 或 POST 体）时透出真实错误，仅排查用
+    $isDebug = isset($_GET['debug']) && $_GET['debug'] === '1';
+    if (!$isDebug && isset($_SERVER['CONTENT_TYPE']) && strpos($_SERVER['CONTENT_TYPE'], 'application/json') !== false) {
+        $raw = file_get_contents('php://input');
+        if (strpos((string)$raw, '"debug":"1"') !== false || strpos((string)$raw, '"debug":1') !== false) $isDebug = true;
+    }
+    if ($isDebug) $msg = $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine();
+    echo json_encode(['status' => 'error', 'message' => $msg, 'data' => null], JSON_UNESCAPED_UNICODE);
     exit;
 });
 
