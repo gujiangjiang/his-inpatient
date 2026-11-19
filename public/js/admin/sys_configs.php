@@ -80,15 +80,10 @@
 </div>
 
 <!-- 数据库中心 / 缓存 / 安全（内嵌对应面板） -->
-<div class="stab-pane" data-stab="db" style="display:none">
-    <iframe src="/js/admin/dbcenter.php" style="width:100%;min-height:520px;border:none;border-radius:10px" loading="lazy"></iframe>
-</div>
-<div class="stab-pane" data-stab="cache" style="display:none">
-    <iframe src="/js/admin/cachecenter.php" style="width:100%;min-height:480px;border:none;border-radius:10px" loading="lazy"></iframe>
-</div>
-<div class="stab-pane" data-stab="security" style="display:none">
-    <iframe src="/js/admin/security.php" style="width:100%;min-height:360px;border:none;border-radius:10px" loading="lazy"></iframe>
-</div>
+<!-- 数据库中心 / 缓存与性能 / 安全与加密（内嵌懒加载，复用父文档核心样式与 JS） -->
+<div class="stab-pane" data-stab="db" style="display:none" id="stab-pane-db"></div>
+<div class="stab-pane" data-stab="cache" style="display:none" id="stab-pane-cache"></div>
+<div class="stab-pane" data-stab="security" style="display:none" id="stab-pane-security"></div>
 
 <script>
 var _syscfgList = [];
@@ -115,6 +110,33 @@ function admin_syscfg_stab(name) {
     document.querySelectorAll('.stab-pane').forEach(function (el) {
         el.style.display = el.dataset.stab === name ? '' : 'none';
     });
+    if (name === 'db' || name === 'cache' || name === 'security') admin_syscfg_loadPane(name);
+}
+
+/* 懒加载内嵌管理面板（dbcenter/cachecenter/security）：复用父文档核心 JS/CSS，
+   避免 iframe 独立文档缺失 AjaxLoader/Format/Dom 与基础样式（样式缺失根因） */
+var _syscfgPaneLoaded = {};
+async function admin_syscfg_loadPane(name) {
+    const pane = document.getElementById('stab-pane-' + name);
+    if (!pane || _syscfgPaneLoaded[name]) return;
+    _syscfgPaneLoaded[name] = true;
+    const fileMap = { db: 'dbcenter', cache: 'cachecenter', security: 'security' };
+    const initMap = { db: 'admin_dbcenter_init', cache: 'admin_cachecenter_init', security: 'admin_security_init' };
+    const v = (typeof App !== 'undefined' && App.version) ? App.version : '';
+    try {
+        const html = await fetch('/js/admin/' + fileMap[name] + '.php' + (v ? '?v=' + v : ''), { cache: 'no-store' }).then(r => r.text());
+        pane.innerHTML = html;
+        // innerHTML 不会自动执行 <script>，手动提取并按序执行（同 loadPage）
+        pane.querySelectorAll('script').forEach(s => {
+            const ns = document.createElement('script');
+            ns.textContent = s.textContent;
+            s.parentNode.replaceChild(ns, s);
+        });
+        const initFn = window[initMap[name]];
+        if (typeof initFn === 'function') Promise.resolve(initFn()).catch(function () {});
+    } catch (e) {
+        pane.innerHTML = '<div class="card"><div class="empty-state">面板加载失败：' + Format.escape(e.message || e) + '</div></div>';
+    }
 }
 
 /* 医院机构信息左栏子导航（医院信息/标志/参数/时区） */
