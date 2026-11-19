@@ -112,17 +112,30 @@ function clinic_rx_print(idx) {
         const dose = [it.dosage || '', it.dosage_unit || ''].join('');
         const usage = [it.usage_name || '', it.usage_rate || ''].filter(Boolean).join(' ');
         const freq = [it.freq_code || '', it.freq_detail || ''].filter(Boolean).join(' ');
-        return `<tr><td>${i + 1}</td><td>${Format.escape(it.content || '')}</td><td>${Format.escape(dose)}</td>
-            <td>${Format.escape(usage)}</td><td>${Format.escape(freq)}</td><td>¥${price.toFixed(2)}</td></tr>`;
+        return `<tr><td style="text-align:center">${i + 1}</td><td>${Format.escape(it.content || '')}</td><td>${Format.escape(dose)}</td>
+            <td>${Format.escape(usage)}</td><td>${Format.escape(freq)}</td><td style="text-align:right">¥${price.toFixed(2)}</td></tr>`;
     }).join('');
-    const html = `${PrintHelper.brandHeaderHtml()}
-        <h2 class="doc-title">处方笺</h2>
-        <div class="doc-sub">${Format.escape(g.rx_no || '处方草稿')}</div>
-        <div class="doc-meta"><span>患者：${Format.escape(p.name || '')}</span><span>床号：${Format.escape(p.bed_no || '-')}</span>
-            <span>住院号：${Format.escape(p.admission_no || '')}</span><span>开方时间：${Format.escape(g.created_at || '')}</span></div>
-        <table class="doc-table"><thead><tr><th>#</th><th>药品</th><th>剂量</th><th>途径</th><th>频次</th><th>参考金额</th></tr></thead>
+    const rxNo = g.rx_no || '处方草稿';
+    const html = `<div class="sheet a5">
+        <div class="sheet-head">
+            <div class="sheet-brand">
+                ${PrintHelper.brandHeaderHtml('')}
+                <div class="sheet-docname">处方笺</div>
+            </div>
+            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rxNo)}<div class="barcode-no">${Format.escape(rxNo)}</div></div>
+        </div>
+        <div class="patient-bar">
+            <span>姓名：<b>${Format.escape(p.name || '')}</b></span>
+            <span>性别：<b>${Format.gender(p.gender)}</b></span>
+            <span>年龄：<b>${Format.escape(p.age || '')}</b></span>
+            <span>床号：<b>${Format.escape(p.bed_no || '-')}</b></span>
+            <span>住院号：<b>${Format.escape(p.admission_no || '')}</b></span>
+            <span>开方时间：<b>${Format.escape(g.created_at || '')}</b></span>
+        </div>
+        <table class="sheet-table"><thead><tr><th style="width:28px">#</th><th>药品</th><th>剂量</th><th>途径</th><th>频次</th><th style="width:64px">金额</th></tr></thead>
             <tbody>${rows}</tbody></table>
-        <div class="doc-foot"><span>处方医师：${Format.escape((g.items[0] || {}).creator_name || '')}</span><span>合计：¥${total.toFixed(2)}</span></div>`;
+        <div class="sheet-foot"><span>处方医师：${Format.escape((g.items[0] || {}).creator_name || '')}</span><span>合计：¥${total.toFixed(2)}</span></div>
+    </div>`;
     PrintHelper.printHtml('处方笺', html);
 }
 
