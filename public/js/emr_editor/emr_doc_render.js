@@ -73,7 +73,7 @@
   /** 已填写下拉/日期槽: 值文本序列最后一 run 的下标 (箭头跟在值后面, 与未选时「占位+箭头」一致) */
   const valArrowIndex = (p) => {
     let last = -1;
-    const runs = p.runs;
+    const runs = p.runs || [];
     for (let i = 0; i < runs.length; i++) {
       const it = runs[i];
       if (it.t !== 'slot' || !isSelect(it)) continue;
@@ -89,9 +89,10 @@
     const out = [];
     const hideDel = !!(opts && opts.hideDel); /* 打印/快照: 隐藏修改留痕 */
     const arrowAt = valArrowIndex(p);
+    const pRuns = p.runs || []; /* 兼容旧数据段落缺 runs */
     let pos = 0;
-    for (let ri = 0; ri < p.runs.length; ri++) {
-      const it = p.runs[ri];
+    for (let ri = 0; ri < pRuns.length; ri++) {
+      const it = pRuns[ri];
       const n = M.itemLen(it);
       const o = pos; pos += n;
       if (it.t === 'text') {
