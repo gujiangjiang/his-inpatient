@@ -48,7 +48,7 @@ try {
                 Response::error('药品 "' . $med['name'] . '" 库存不足，无法复制');
             }
         }
-        $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+        $orderNo = doc_no('O');
         $stmt->execute([
             $order['patient_id'], $order['admission_no'],
             $i === 0 ? null : $mainId,

@@ -83,7 +83,7 @@ try {
     $ids = [];
     $groupMain = []; /* group_seq>0 → 该组主医嘱 id (首个) */
     foreach ($items as $i => $item) {
-        $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+        $orderNo = doc_no('O');
         $itemPeriod = $item['order_period'] ?: 'long';
         $freqCode = $item['freq_code'];
         $freqDetail = $item['freq_detail'];

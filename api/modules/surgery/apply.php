@@ -50,7 +50,7 @@ try {
     $surgeryId = (int)$pdo->lastInsertId();
 
     /* 2) 临时医嘱 (待护士核对; 自动生成标记 → 行内不可编辑, 作废需从手术申请取消) */
-    $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+    $orderNo = doc_no('O');
     $pdo->prepare("INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period, order_no,
             content, category, status, is_auto_generated, start_date, created_by, created_at, updated_at)
         VALUES (?,?,NULL,0,'general','temp',?,?, 'surgery', 'pending', 1, ?,?,?,?)")

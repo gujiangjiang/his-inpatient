@@ -51,7 +51,7 @@ $notes = Validator::get('notes', '');
 // 处方号: 同一次开方归入同一处方 (毁方/列表按方归集), 前端可传, 缺省自动生成
 $rxNo = (string)Validator::get('rx_no', '');
 if ($rxNo === '' && $notes === '处方') {
-    $rxNo = 'RX' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+    $rxNo = doc_no('RX');
 }
 $status = $submit ? 'pending' : 'draft';
 $userId = Auth::user()['id'];
@@ -80,7 +80,7 @@ try {
             $pdo->rollback();
             Response::error('开嘱时间不能早于患者入科时间');
         }
-        $orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+        $orderNo = doc_no('O');
         $itemPeriod = $item['order_period'] ?? $orderPeriod;
         $freqCode = $item['freq_code'] ?? $item['frequency'] ?? '';
         $freqDetail = $item['freq_detail'] ?? '';

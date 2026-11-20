@@ -34,7 +34,7 @@ if ($existing) Response::error('已存在未完成的出院医嘱，请勿重复
 $content = $mode === 'today' ? '今日出院' : '明日出院';
 $userId = (int)$user['id'];
 $now = DateHelper::now();
-$orderNo = 'O' . date('YmdHis') . str_pad((string)mt_rand(0, 999), 3, '0', STR_PAD_LEFT);
+$orderNo = doc_no('O');
 
 $pdo = DB::getPDO();
 $pdo->beginTransaction();

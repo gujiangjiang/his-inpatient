@@ -38,7 +38,7 @@ $content = '请' . $toDept['name'] . '会诊';
 $pdo = DB::getPDO();
 $pdo->beginTransaction();
 try {
-    $orderNo = 'O' . date('YmdHis') . str_pad((string)random_int(0, 999), 3, '0', STR_PAD_LEFT);
+    $orderNo = doc_no('O');
     $orderId = (int)DB::insert('orders', [
         'patient_id' => $patientId,
         'admission_no' => $patient['admission_no'],
