@@ -89,18 +89,35 @@ function is_patient_admitted($patientId) {
 /**
  * 以最新开具的有效护理医嘱覆盖卡片护理等级
  * (未停止/未作废, 按开单顺序取最新: 如忘停一级护理又开了二级, 显示二级)
+ * 批量实现: 单次 IN 查询替代逐患者查询 (N+1 → 1); 按 id 升序遍历后写覆盖,
+ * 与原「每患者取 id 最大一条」语义一致
  */
 function apply_latest_nursing_level(array &$patients) {
+    if (!$patients) return $patients;
+    $ids = [];
+    foreach ($patients as $p) {
+        $pid = (int)($p['id'] ?? 0);
+        if ($pid > 0) $ids[$pid] = true;
+    }
+    if (!$ids) return $patients;
+    $idList = array_keys($ids);
+    $ph = implode(',', array_fill(0, count($idList), '?'));
+    $rows = DB::select(
+        "SELECT patient_id, content FROM orders
+         WHERE patient_id IN ($ph) AND category != 'medication'
+         AND status NOT IN ('stopped', 'invalid')
+         AND content IN ('特级护理', '一级护理', '二级护理', '三级护理')
+         ORDER BY id ASC",
+        $idList
+    );
+    $latest = [];
+    foreach ($rows as $r) {          /* id 升序: 同患者后写覆盖 → 保留最大 id */
+        $latest[(int)$r['patient_id']] = $r['content'];
+    }
     foreach ($patients as &$p) {
-        $latest = DB::selectOne(
-            "SELECT content FROM orders WHERE patient_id = ? AND category != 'medication'
-             AND status NOT IN ('stopped', 'invalid')
-             AND content IN ('特级护理', '一级护理', '二级护理', '三级护理')
-             ORDER BY id DESC LIMIT 1",
-            [$p['id']]
-        );
-        if ($latest && isset(NURSING_LEVEL_MAP[$latest['content']])) {
-            $p['nursing_level'] = NURSING_LEVEL_MAP[$latest['content']];
+        $pid = (int)($p['id'] ?? 0);
+        if (isset($latest[$pid]) && isset(NURSING_LEVEL_MAP[$latest[$pid]])) {
+            $p['nursing_level'] = NURSING_LEVEL_MAP[$latest[$pid]];
         }
     }
     unset($p);

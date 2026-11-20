@@ -29,17 +29,26 @@ $rows = DB::select(
 require_access_patients(Auth::user(), array_column($rows, 'patient_id'));
 
 $pdo = DB::getPDO();
-$update = $pdo->prepare("UPDATE emr_documents SET print_count = print_count + 1, updated_at = ? WHERE id = ?");
 $now = DateHelper::now();
+/* 打印计数批量累加 (原逐条 UPDATE + 逐条回读, N+1 → 2), 再一次回读自增后计数 */
+$rowIds = array_map(function ($r) { return (int)$r['id']; }, $rows);
+if ($rowIds) {
+    $ph2 = implode(',', array_fill(0, count($rowIds), '?'));
+    DB::execute("UPDATE emr_documents SET print_count = print_count + 1, updated_at = ? WHERE id IN ($ph2)",
+        array_merge([$now], $rowIds));
+    $counts = [];
+    foreach (DB::select("SELECT id, print_count FROM emr_documents WHERE id IN ($ph2)", $rowIds) as $c) {
+        $counts[(int)$c['id']] = (int)$c['print_count'];
+    }
+}
 foreach ($rows as &$r) {
     $r['doc_json'] = !empty($r['doc_json']) ? (json_decode($r['doc_json'], true) ?: null) : null;
     $r['doc_meta'] = !empty($r['doc_meta']) ? (json_decode($r['doc_meta'], true) ?: []) : [];
     /* 打印模式: 分类名含「病程」→ 重排打印 (buildBatch); 其余 → 原样打印 (content_html 快照) */
     $r['print_mode'] = (strpos((string)$r['category_name'], '病程') !== false) ? 'repaginate' : 'raw';
-    $update->execute([$now, (int)$r['id']]);
     /* 返回自增后的打印次数 (前端列表同步显示) */
-    $after = DB::selectOne("SELECT print_count FROM emr_documents WHERE id = ?", [(int)$r['id']]);
-    $r['print_count'] = $after ? (int)$after['print_count'] : (int)$r['print_count'] + 1;
+    $rid = (int)$r['id'];
+    $r['print_count'] = isset($counts[$rid]) ? $counts[$rid] : (int)$r['print_count'] + 1;
 }
 unset($r);
 Response::success($rows);
