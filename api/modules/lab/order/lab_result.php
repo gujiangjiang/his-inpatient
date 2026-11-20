@@ -22,12 +22,12 @@ try {
     DB::execute("UPDATE lab_reports SET status = ?, is_critical = ?, reported_by = ?, reported_at = ?, updated_at = ? WHERE id = ?",
         [$status, $data['is_critical'] ?? 0, Auth::user()['id'], DateHelper::now(), DateHelper::now(), $reportId]);
 
-    // 更新明细
+    // 更新明细 (WHERE 绑定 report_id: 防按 item.id 越权改写其他检验单的结果)
     $items = $data['items'] ?? [];
     foreach ($items as $item) {
         if (isset($item['id']) && $item['id']) {
-            DB::execute("UPDATE lab_report_items SET result = ?, unit = ?, reference_range = ?, flag = ? WHERE id = ?",
-                [$item['result'] ?? null, $item['unit'] ?? '', $item['reference_range'] ?? '', $item['flag'] ?? null, $item['id']]);
+            DB::execute("UPDATE lab_report_items SET result = ?, unit = ?, reference_range = ?, flag = ? WHERE id = ? AND report_id = ?",
+                [$item['result'] ?? null, $item['unit'] ?? '', $item['reference_range'] ?? '', $item['flag'] ?? null, $item['id'], $reportId]);
         } else {
             $stmt = $pdo->prepare("INSERT INTO lab_report_items (report_id, item_name, result, unit, reference_range, flag) VALUES (?,?,?,?,?,?)");
             $stmt->execute([$reportId, $item['item_name'], $item['result'] ?? null, $item['unit'] ?? '', $item['reference_range'] ?? '', $item['flag'] ?? null]);
