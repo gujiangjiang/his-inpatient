@@ -64,6 +64,8 @@ try {
 } catch (\Throwable $e) {
     error_log('[login] clear-fail skipped: ' . $e->getMessage());
 }
+/* 会话固定防御: 登录成功即更换会话 ID (旧 ID 含匿名期状态, 不得沿用) */
+session_regenerate_id(true);
 $sessionId = Auth::getSessionId();
 unset($user['password']);
 log_write('operation', 'login', '登录成功：' . ($user['name'] ?? ''), $username, 'info', ['action' => 'login']);

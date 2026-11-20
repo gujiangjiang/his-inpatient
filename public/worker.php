@@ -37,6 +37,13 @@ if (strpos($uri, '/api/') === 0) {
         exit;
     });
 
+    /* CSRF 防线 (与 api/index.php 一致): 写方法必须携带 X-Requested-With 头 */
+    $reqMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+    if (in_array($reqMethod, ['POST', 'PUT', 'DELETE', 'PATCH'], true)
+        && ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'XMLHttpRequest') {
+        Response::error('非法请求来源', 403);
+    }
+
     Auth::init();
     SetupGuard::guard();
     SchemaGuard::ensure();

@@ -12,6 +12,15 @@ set_exception_handler(function ($e) {
     exit;
 });
 
+/* CSRF 防线: 写方法必须携带前端 AjaxLoader 统一附加的 X-Requested-With 头。
+ * 浏览器原生跨站请求 (表单提交/自动提交的 img 等) 无法携带自定义头, 以此区分站内站外;
+ * GET 读操作与 SSE (EventSource 无法带自定义头) 不受限。 */
+$reqMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+if (in_array($reqMethod, ['POST', 'PUT', 'DELETE', 'PATCH'], true)
+    && ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') !== 'XMLHttpRequest') {
+    Response::error('非法请求来源', 403);
+}
+
 Auth::init();
 
 // 初始化守卫
