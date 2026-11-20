@@ -180,4 +180,136 @@
     win.document.close();
     return win;
   };
+
+  /**
+   * 批量打印合并组装：病程类(重排小标题)与非病程类(原样快照)合并到同一打印文档。
+   * 只弹一个预览窗口，所有内容按顺序连续分页，页码全局连续。
+   * items: [{ doc, stamp, signHtml, repaginate, rawHtml }]
+   *   - repaginate=true: 用 L.paginate 重排 + 小标题/签名（与 buildBatch 一致）
+   *   - repaginate=false: rawHtml 为其完整快照文档（含抬头），提取其中 .page 原样插入
+   */
+  P.buildCombined = (items, patientInfo) => {
+    const info = patientInfo || {};
+    const all = items.filter(x => x && x.doc);
+    if (!all.length) return '';
+    // 页面尺寸与统一页头取第一文书
+    const first = L.paginate(all[0].doc, info);
+    const d = first.dim;
+    const firstHeader = all[0].doc.header || {};
+    const pageEls = [];      // 存 .page DOM 元素，遍历完统一回填页码
+    const tmp = document.createElement('div');   // 解析 raw 快照用
+
+    const elOf = (html) => {
+      const t = document.createElement('div');
+      t.innerHTML = html;
+      return t.firstElementChild;
+    };
+
+    all.forEach(it => {
+      if (it.repaginate) {
+        // 病程：重排 + 小标题 + 签名
+        const doc = it.doc;
+        const res = L.paginate(doc, info);
+        const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
+        const stamp = (it.stamp || doc.updated_at || doc.created_at || '').toString();
+        const title = doc.title || '文书';
+        const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
+        docPages.forEach((body, pi) => {
+          let b = body;
+          if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
+          if (pi === docPages.length - 1 && it.signHtml) b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
+          pageEls.push(elOf(pageHTML(d, firstHeader, b, 0, 1, info)));
+        });
+      } else {
+        // 非病程：提取快照文档的 .page 原样插入（保留其自身抬头）
+        let html = it.rawHtml || '';
+        if (!html) {
+          try { html = P.buildHTML(it.doc, info); } catch (e) { html = ''; }
+        }
+        tmp.innerHTML = html;
+        const rawPages = Array.from(tmp.querySelectorAll('.page'));
+        if (rawPages.length) {
+          rawPages.forEach(pg => pageEls.push(pg));
+        } else {
+          // 兜底：无 .page 时按病程重排
+          const res = L.paginate(it.doc, info);
+          const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
+          docPages.forEach((body, pi) => {
+            const stamp = (it.stamp || it.doc.updated_at || it.doc.created_at || '').toString();
+            const title = it.doc.title || '文书';
+            const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
+            let b = body;
+            if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
+            if (pi === docPages.length - 1 && it.signHtml) b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
+            pageEls.push(elOf(pageHTML(d, firstHeader, b, 0, 1, info)));
+          });
+        }
+        tmp.innerHTML = '';
+      }
+    });
+
+    // 统一回填全局连续页码
+    const total = pageEls.length;
+    pageEls.forEach((pg, i) => {
+      const pn = pg.querySelector('.pg-foot .emr-fp-page');
+      if (pn) pn.textContent = '第 ' + (i + 1) + ' 页 / 共 ' + total + ' 页';
+    });
+
+    const style = [
+      '@page { size: A4; margin: 0; }',
+      'html, body { margin: 0; padding: 0; }',
+      '* { box-sizing: border-box; }',
+      '.page { position: relative; width: ' + d.w + 'px; height: ' + d.h + 'px; overflow: hidden; page-break-after: always; }',
+      '.page:last-child { page-break-after: auto; }',
+      '.pg-head { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + d.mt + 'px; text-align: center; }',
+      '.emr-hos { font-size: 20pt; font-weight: bold; letter-spacing: 4px; line-height: 1.4; }',
+      '.brand-name-lockup { display:inline-grid; grid-template-columns:minmax(0,1fr); width:max-content; max-width:100%; min-width:0; }',
+      '.brand-name-line { width:100%; min-width:0; text-align:justify; text-align-last:justify; text-justify:inter-character; }',
+      '.emr-brand-lockup { display:grid; margin:0 auto; }',
+      '.emr-hos2 { font-size:12pt; font-weight:normal; line-height:1.35; }',
+      '.emr-docname { font-size: 16pt; font-weight: bold; letter-spacing: 3px; line-height: 1.5; }',
+      '.emr-infobar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 20px; margin-top: 8px; padding: 6px 4px 6px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 11pt; }',
+      '.pg-body { position: absolute; left: ' + d.bodyLeft + 'px; top: ' + d.bodyTop + 'px; width: ' + d.bodyW + 'px; height: ' + d.bodyH + 'px; overflow: hidden; font-family: ' + (all[0].doc.page.font || 'serif') + '; font-size: ' + (all[0].doc.page.sz || 12) + 'pt; line-height: ' + (all[0].doc.page.line || 1.5) + '; white-space: pre-wrap; overflow-wrap: break-word; }',
+      '.pg-body .p { margin: 0; }',
+      '.pg-body .emr-slot, .pg-body .emr-ph { display: none !important; }',
+      '.pg-body .emr-tbl-plain .emr-fx { font-weight: normal; }',
+      '.pg-body .emr-vital-slot.emr-slot-empty { display: inline-block !important; width: 3em; border-bottom: 1px solid #777; }',
+      '.pg-body .emr-val { border-bottom: none !important; }',
+      '.pg-body .emr-ref { border-bottom: none !important; }',
+      '.emr-batch-title { display: flex; font-size: 12pt; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid #000; }',
+      '.emr-batch-title .emr-bt-cell { flex: 1 1 0; }',
+      '.emr-batch-title .emr-bt-time { font-weight: normal; white-space: nowrap; text-align: left; }',
+      '.emr-batch-title .emr-bt-name { text-align: center; font-weight: bold; }',
+      '.emr-batch-sign { text-align: right; margin-top: 20px; font-size: 11pt; }',
+      '.pg-foot { position: absolute; left: ' + d.ml + 'px; right: ' + d.mr + 'px; top: ' + (d.h - d.mb - d.footerH) + 'px; height: ' + d.footerH + 'px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',
+      '.pg-foot .emr-fp-page { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; }',
+      '.emr-fx { font-weight: bold; }',
+      '.emr-flx-center > .emr-fx:not(.emr-vital-unit) { margin-left: 24px; }',
+      '.emr-flx-center > .emr-fx:first-child { margin-left: 0; }',
+      '.emr-vital-unit { font-weight: normal; margin-left: 4px; }',
+      '.emr-tbl { border-collapse: collapse; margin: 6px 0; table-layout: fixed; }',
+      '.emr-tbl td { border: 0.5pt solid #000; padding: 4px 6px; vertical-align: top; }',
+      '.emr-tbl-bold td { border-width: 1.5pt; }',
+      '.emr-tbl-none td { border: none !important; }',
+      '.emr-tbl-plain { margin: 2px 0 6px; table-layout: fixed; }',
+      '.emr-tbl-plain td { border: none !important; padding: 1px 6px 1px 0; vertical-align: top; white-space: nowrap; }',
+      '.emr-tbl-plain .emr-ph { display: none !important; }',
+    ].join('\n');
+
+    const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc('病历批量打印') + '</title>'
+      + '<style>' + style + '</style></head><body>'
+      + pageEls.map(pg => pg.outerHTML).join('')
+      + '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>'
+      + '</body></html>';
+    return html;
+  };
+
+  /** 合并批量打印开窗（一个窗口一个打印文档） */
+  P.printCombined = (items, patientInfo) => {
+    const win = window.open('', '_blank', 'width=994,height=1323'); // A4 210×297mm ≈ 794×1123px + 窗口装饰/边距
+    if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
+    win.document.write(P.buildCombined(items, patientInfo));
+    win.document.close();
+    return win;
+  };
 })();

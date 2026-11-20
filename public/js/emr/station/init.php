@@ -202,18 +202,21 @@ async function emr_batchPrintDialog() {
             const items = r.data || [];
             if (!items.length) { Dom.toast('未取到可打印文书', 'error'); return; }
             const info = buildPatientInfo();
-            const courses = items.filter(x => x.print_mode === 'repaginate').map(x => ({
-                doc: x.doc_json || {}, stamp: x.updated_at || x.created_at || '', signHtml: emr_batch_sign(x)
-            }));
-            /* 其余文书: 优先原样打印签名快照 content_html (含抬头, 不改内容);
-               草稿/无快照时回退 buildHTML 重新生成 (内容一致, 不重排) */
-            const raw = items.filter(x => x.print_mode !== 'repaginate').map(x => {
-                if (x.content_html && x.content_html.indexOf('<!DOCTYPE') !== -1) return x.content_html;
-                if (x.doc_json) { try { return EmrPrint.buildHTML(x.doc_json, info); } catch (e) { /* 回退 */ } }
-                return '';
-            }).filter(Boolean);
-            if (courses.length) EmrPrint.printBatch(courses, info);     /* 病程: 重排打印 */
-            if (raw.length) PrintHelper.printDocument(raw.join(''));    /* 其余: 原样打印(快照含抬头) */
+            /* 合并组装：病程类重排 + 非病程类原样快照，统一进一个打印文档（一次弹窗） */
+            const batch = items.map(x => {
+                if (x.print_mode === 'repaginate') {
+                    return { doc: x.doc_json || {}, stamp: x.updated_at || x.created_at || '', signHtml: emr_batch_sign(x), repaginate: true };
+                }
+                /* 其余文书: 优先原样打印签名快照 content_html (含抬头, 不改内容);
+                   草稿/无快照时回退 buildHTML 重新生成 (内容一致, 不重排) */
+                let raw = (x.content_html && x.content_html.indexOf('<!DOCTYPE') !== -1) ? x.content_html : '';
+                if (!raw && x.doc_json) {
+                    try { raw = EmrPrint.buildHTML(x.doc_json, info); } catch (e) { /* 回退 */ }
+                }
+                return { doc: x.doc_json || {}, stamp: x.updated_at || x.created_at || '', signHtml: emr_batch_sign(x), repaginate: false, rawHtml: raw };
+            }).filter(x => x.doc && (x.repaginate || x.rawHtml));
+            if (!batch.length) { Dom.toast('未取到可打印文书', 'error'); return; }
+            EmrPrint.printCombined(batch, info);   /* 一次弹窗，一个打印文档，内容分页排列 */
             /* 打印次数已由后端累加: 刷新列表保持显示 */
             await refreshDocs();
         } catch (e) {
