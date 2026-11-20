@@ -82,6 +82,45 @@ const App = {
                 item.classList.toggle('active', item.getAttribute('data-placeholder') === window.__placeholderTitle);
             });
         }
+    },
+
+    /* ==================== 页面 init 公共样板 (原 38 处复制收敛) ==================== */
+
+    /** 侧边栏内容缓存 (按角色; 登录会话内有效, 内容为静态 PHP 片段) */
+    _sidebarCache: {},
+
+    /**
+     * 加载角色侧边栏并注入 #sidebar (带 r.ok 检查与失败占位, 替代散落的裸 fetch)
+     * @returns {Promise<boolean>} 是否成功
+     */
+    async loadSidebar(role) {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar || !role) return false;
+        const html = this._sidebarCache[role] !== undefined
+            ? this._sidebarCache[role]
+            : await fetch('/js/shared/sidebar_' + role + '.php').then(r => {
+                if (!r.ok) throw new Error('sidebar http ' + r.status);
+                return r.text();
+            }).catch(() => null);
+        if (html === null) {
+            sidebar.innerHTML = '<div class="menu-item">侧边栏加载失败，请刷新重试</div>';
+            return false;
+        }
+        this._sidebarCache[role] = html;
+        sidebar.innerHTML = html;
+        return true;
+    },
+
+    /**
+     * 挂载工作台外壳 (页面 *_init 的公共第一步):
+     * 显示主界面、隐藏登录层、按需加载侧边栏
+     */
+    async mountShell(role) {
+        const mainApp = document.getElementById('main-app');
+        const loginBox = document.getElementById('login-container');
+        if (mainApp) mainApp.style.display = 'flex';
+        if (loginBox) loginBox.style.display = 'none';
+        if (role) await this.loadSidebar(role);
     }
 };
 
