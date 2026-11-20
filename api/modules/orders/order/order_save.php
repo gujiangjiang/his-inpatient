@@ -100,7 +100,7 @@ try {
             $item['billing_flags'] ?? '', $i, 0,
             $item['start_date'] ?? $startDate, $endDate, $notes, $rxNo,
             $item['pharmacy_type'] ?? Validator::get('pharmacy_type', 'center'), // 处方选药房：center/outpatient
-            $item['pharmacy_type'] ?? Validator::get('pharmacy_type', 'center') === 'outpatient' ? 1 : 0,
+            (($item['pharmacy_type'] ?? Validator::get('pharmacy_type', 'center')) === 'outpatient') ? 1 : 0,
             $userId, $now, $now
         ]);
         $id = $pdo->lastInsertId();
