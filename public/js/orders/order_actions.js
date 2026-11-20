@@ -84,14 +84,11 @@ const OrderActions = {
     },
 
     removeDraft(root) {
-        Dom.modal('确认删除', '<p>删除草稿医嘱「' + Format.escape(root.content) + '」' + (root.sub_orders && root.sub_orders.length ? '（含 ' + root.sub_orders.length + ' 条子医嘱）' : '') + '？</p>', [
-            { text: '删除', type: 'danger', onclick: async () => {
-                await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: [root.id] } });
-                Dom.toast('已删除', 'success');
-                OrderStation.refresh();
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('确认删除', '删除草稿医嘱「' + Format.escape(root.content) + '」' + (root.sub_orders && root.sub_orders.length ? '（含 ' + root.sub_orders.length + ' 条子医嘱）' : '') + '？', async () => {
+            await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: [root.id] } });
+            Dom.toast('已删除', 'success');
+            OrderStation.refresh();
+        }, { danger: true, okText: '删除' });
     },
 
     batchDelete() {
@@ -99,14 +96,11 @@ const OrderActions = {
         const drafts = roots.filter(r => r.status === 'draft');
         if (!roots.length) { Dom.toast('请先勾选医嘱', 'error'); return; }
         if (!drafts.length) { Dom.toast('只能删除草稿医嘱', 'error'); return; }
-        Dom.modal('批量删除', `<p>已选 ${roots.length} 组，其中草稿 ${drafts.length} 组将被删除（非草稿自动跳过）。</p>`, [
-            { text: '删除', type: 'danger', onclick: async () => {
-                await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: drafts.map(d => d.id) } });
-                Dom.toast('已删除 ' + drafts.length + ' 组草稿', 'success');
-                OrderStation.refresh();
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('批量删除', `已选 ${roots.length} 组，其中草稿 ${drafts.length} 组将被删除（非草稿自动跳过）。`, async () => {
+            await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: drafts.map(d => d.id) } });
+            Dom.toast('已删除 ' + drafts.length + ' 组草稿', 'success');
+            OrderStation.refresh();
+        }, { danger: true, okText: '删除' });
     },
 
     /**
@@ -125,20 +119,17 @@ const OrderActions = {
         if (!roots.length) { Dom.toast('请先勾选医嘱', 'error'); return; }
         const stoppable = roots.filter(r => r.order_period === 'long' && ['pending', 'verified', 'executing'].includes(r.status));
         if (!stoppable.length) { Dom.toast('所选医嘱中没有可停止的长期医嘱', 'error'); return; }
-        Dom.modal('批量停止', `<p>确认对 ${stoppable.length} 组长期医嘱提交停止申请？（护士确认后生效）</p>`, [
-            { text: '确认停止', type: 'danger', onclick: async () => {
-                let ok = 0;
-                for (const r of stoppable) {
-                    try {
-                        await AjaxLoader.api('orders/stop', { method: 'POST', data: { id: r.id } });
-                        ok++;
-                    } catch (e) { /* 继续 */ }
-                }
-                Dom.toast('已提交 ' + ok + ' 组停止申请，待护士确认', 'success');
-                OrderStation.refresh();
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('批量停止', `确认对 ${stoppable.length} 组长期医嘱提交停止申请？（护士确认后生效）`, async () => {
+            let ok = 0;
+            for (const r of stoppable) {
+                try {
+                    await AjaxLoader.api('orders/stop', { method: 'POST', data: { id: r.id } });
+                    ok++;
+                } catch (e) { /* 继续 */ }
+            }
+            Dom.toast('已提交 ' + ok + ' 组停止申请，待护士确认', 'success');
+            OrderStation.refresh();
+        }, { danger: true, okText: '确认停止' });
     },
 
     async batchCopy() {
@@ -158,36 +149,27 @@ const OrderActions = {
     },
 
     stop(root) {
-        Dom.modal('停止医嘱', '<p>停止「' + Format.escape(root.content) + '」？停止申请将提交护士确认，确认后医嘱停止。</p>', [
-            { text: '申请停止', type: 'danger', onclick: async () => {
-                await AjaxLoader.api('orders/stop', { method: 'POST', data: { id: root.id } });
-                Dom.toast('已提交停止申请，待护士确认', 'success');
-                OrderStation.refresh();
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('停止医嘱', '停止「' + Format.escape(root.content) + '」？停止申请将提交护士确认，确认后医嘱停止。', async () => {
+            await AjaxLoader.api('orders/stop', { method: 'POST', data: { id: root.id } });
+            Dom.toast('已提交停止申请，待护士确认', 'success');
+            OrderStation.refresh();
+        }, { danger: true, okText: '申请停止' });
     },
 
     stopAllLong() {
-        Dom.modal('长期全停', '<p>将对全部<b>长期</b>医嘱（待核对/已核对/执行中）提交停止申请，待护士确认后生效，确定继续？</p>', [
-            { text: '确认全停', type: 'danger', onclick: async () => {
-                const r = await AjaxLoader.api('orders/stop', { method: 'POST', data: { patient_id: OrderStation.patientId } });
-                Dom.toast('已提交 ' + (r.data.stopping || 0) + ' 条长期医嘱停止申请', 'success');
-                OrderStation.refresh();
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('长期全停', '将对全部<b>长期</b>医嘱（待核对/已核对/执行中）提交停止申请，待护士确认后生效，确定继续？', async () => {
+            const r = await AjaxLoader.api('orders/stop', { method: 'POST', data: { patient_id: OrderStation.patientId } });
+            Dom.toast('已提交 ' + ((r.data && r.data.stopping) || 0) + ' 条长期医嘱停止申请', 'success');
+            OrderStation.refresh();
+        }, { danger: true, okText: '确认全停' });
     },
 
     invalidate(root) {
-        Dom.modal('作废医嘱', '<p>作废「' + Format.escape(root.content) + '」？作废申请将提交护士确认，确认后医嘱作废。</p>', [
-            { text: '申请作废', type: 'danger', onclick: async () => {
-                await AjaxLoader.api('orders/invalidate', { method: 'POST', data: { id: root.id } });
-                Dom.toast('已提交作废申请，待护士确认', 'success');
-                OrderStation.refresh();
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('作废医嘱', '作废「' + Format.escape(root.content) + '」？作废申请将提交护士确认，确认后医嘱作废。', async () => {
+            await AjaxLoader.api('orders/invalidate', { method: 'POST', data: { id: root.id } });
+            Dom.toast('已提交作废申请，待护士确认', 'success');
+            OrderStation.refresh();
+        }, { danger: true, okText: '申请作废' });
     },
 
     async copy(root) {
