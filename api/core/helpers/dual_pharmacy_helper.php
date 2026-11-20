@@ -155,21 +155,3 @@ function dual_deliver_order($orderId, $userId) {
     DB::execute("UPDATE dispensing_records SET stage = 'delivered' WHERE order_id = ? AND status = 'dispensed'", [$order['id']]);
     return ['ok' => true, 'msg' => '已送达'];
 }
-
-/** 护士执行（现 nursing_action 兼容入口；写 nursing_records + 医嘱 completed） */
-function dual_execute_order($orderId, $userId) {
-    $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$orderId]);
-    if (!$order) return ['ok' => false, 'msg' => '医嘱不存在'];
-    if ($order['status'] !== 'verified' && $order['status'] !== 'executing') {
-        return ['ok' => false, 'msg' => '医嘱状态不允许执行'];
-    }
-    if ($order['category'] === 'medication' && $order['dispense_status'] !== 'dispensed' && $order['dispense_status'] !== 'delivered') {
-        return ['ok' => false, 'msg' => '药品未发药，无法执行'];
-    }
-    DB::execute("INSERT INTO nursing_records (order_id, patient_id, action, executed_by, executed_at, notes, created_at)
-                 VALUES (?,?,?,?,?,?,?)",
-        [$order['id'], $order['patient_id'], 'execute', $userId, DateHelper::now(), '', DateHelper::now()]);
-    DB::execute("UPDATE orders SET status = 'executing', verified_by = ?, verified_at = ?, updated_at = ? WHERE id = ? AND status = 'verified'",
-        [$userId, DateHelper::now(), DateHelper::now(), $order['id']]);
-    return ['ok' => true, 'msg' => '已执行'];
-}

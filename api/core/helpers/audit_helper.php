@@ -51,13 +51,3 @@ function audit_list($status, $page = 1, $per = 20, $from = '', $to = '') {
     $hasMore = $page * $per < $total;
     return ['rows' => $rows, 'total' => $total, 'has_more' => $hasMore, 'pending_count' => $pendingCount];
 }
-
-/** 类型中文名 */
-function audit_type_name($type) {
-    $map = [
-        'item_drug' => '药品添加', 'item_lab' => '检验项目添加', 'item_exam' => '检查项目添加',
-        'drugsetting' => '药品设置', 'template' => '病历模板', 'content' => '内容库',
-        'report_withdraw' => '报告撤回', 'pwd_reset' => '密码重置申请', 'user_unlock' => '账号解锁',
-    ];
-    return isset($map[$type]) ? $map[$type] : $type;
-}

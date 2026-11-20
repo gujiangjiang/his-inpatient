@@ -20,11 +20,6 @@ class TimeHelper {
         return (string)ConfigDB::get('time.storage', 'local') === 'utc';
     }
 
-    /** 当前模式名（'utc' | 'local'，日志与自检用） */
-    public static function modeName() {
-        return self::storageUtc() ? 'utc' : 'local';
-    }
-
     /* ==================== 写入（存储值唯一来源） ==================== */
 
     /** 当前存储时刻（utc 模式 = UTC 串；local 模式 = 站点墙钟串，行为同旧版） */
@@ -84,18 +79,6 @@ class TimeHelper {
         if (!self::storageUtc()) return $s;
         $t = strtotime($s);
         return $t === false ? '' : gmdate('Y-m-d H:i:s', $t);
-    }
-
-    /**
-     * 站点业务日 [start, end) 的存储边界串（分日窗口查询统一用）：
-     * 查询写法 col >= ? AND col < ?（两模式通用，替代 date(col)=? 函数比较）。
-     * @return array [start, end]
-     */
-    public static function dayRange($ymd) {
-        $ymd = trim((string)$ymd);
-        if ($ymd === '') return array('', '');
-        $next = date('Y-m-d', strtotime($ymd . ' +1 day'));
-        return array(self::fromLocal($ymd . ' 00:00:00'), self::fromLocal($next . ' 00:00:00'));
     }
 
     /* ==================== 对外接口（UTC 契约） ==================== */
