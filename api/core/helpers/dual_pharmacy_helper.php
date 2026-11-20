@@ -103,6 +103,11 @@ function dual_dispense_order($orderId, $userId) {
     $pdo = DB::getPDO();
     $pdo->beginTransaction();
     try {
+        /* 并发串行化: 同一患者的并发摆药排队 (MySQL/PG 对患者行 FOR UPDATE, 事务尾释放;
+         * SQLite 单写者天然串行; 快照+条件扣减在锁保护下不再穿透透支额度) */
+        if (DB_TYPE === 'mysql' || DB_TYPE === 'postgresql') {
+            DB::execute("SELECT id FROM patients WHERE id = ? FOR UPDATE", [(int)$order['patient_id']]);
+        }
         $funds = patient_funds((int)$order['patient_id']);
         if ($funds['balance'] < $amount) {
             $pdo->rollback();
