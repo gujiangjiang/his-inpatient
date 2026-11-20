@@ -81,10 +81,7 @@ window.refreshWorkstationLayout = async function() {
 
     const loadSidebarIfEmpty = async () => {
         if (sidebar.children.length === 0 && Auth.user) {
-            try {
-                const html = await fetch('/js/shared/sidebar_' + Auth.user.role + '.php').then(r => r.text());
-                sidebar.innerHTML = html;
-            } catch (e) {}
+            await App.loadSidebar(Auth.user.role);
         }
     };
 

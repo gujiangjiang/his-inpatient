@@ -51,8 +51,7 @@ async function patients_patient_list_init() {
     document.getElementById('main-app').style.display = 'flex';
     document.getElementById('login-container').style.display = 'none';
     var user = Auth.user;
-    var sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(function(r) { return r.text(); });
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.loadSidebar(user.role);
 
     // 科室下拉仅展示当前医生权限范围内科室 (admin 全部)
     if (user.role === 'doctor' || user.role === 'admin') {

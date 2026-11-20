@@ -87,13 +87,7 @@ var currentEditor = null;
 var currentPatientId = null;
 
 async function doctor_emr_admission_init() {
-    // 显示工作站
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-
-    // 加载sidebar
-    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('doctor');
 
     // 加载患者列表
     const patients = await AjaxLoader.api('patients/list', { silent: true });

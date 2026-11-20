@@ -22,9 +22,7 @@
 var _nprepList = [];
 
 async function nurse_prepare_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    const sidebar = await fetch('/js/shared/sidebar_nurse.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('nurse');
     document.getElementById('nprep-check-all').addEventListener('change', function () {
         document.querySelectorAll('.nprep-row-check').forEach(c => c.checked = this.checked);
     });

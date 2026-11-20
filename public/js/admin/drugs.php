@@ -32,9 +32,7 @@ var _drugRows = [];
 var _drugTimer = null;
 
 async function admin_drugs_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     await admin_drugs_load();
 }
 

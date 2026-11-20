@@ -31,10 +31,7 @@ var _consultRows = [];
 var _CONSULT_TYPES = ['普通会诊', '急会诊', '多学科会诊', '院内大会诊', '院外会诊', '远程单学科会诊'];
 
 async function clinic_consult_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('doctor');
     clinic_consult_reload();
 }
 

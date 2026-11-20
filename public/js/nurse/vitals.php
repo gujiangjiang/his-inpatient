@@ -22,9 +22,7 @@
 <script>
 var _vitalsPatients = [];
 async function nurse_vitals_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    const sidebar = await fetch('/js/shared/sidebar_nurse.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('nurse');
     const result = await AjaxLoader.api('nurse/patient-list', {silent:true});
     _vitalsPatients = result.data || [];
     const sel = document.getElementById('vitals-patient');

@@ -93,10 +93,7 @@ var _SYS_TZ_COMMON = ['Asia/Shanghai', 'Asia/Urumqi', 'Asia/Hong_Kong', 'Asia/Ta
     'Asia/Tokyo', 'Asia/Singapore', 'America/New_York', 'Europe/London', 'UTC'];
 
 async function admin_sys_configs_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     await Promise.all([loadConfigs(), loadTimezone(), loadBranding()]);
     const file = document.getElementById('syscfg-logo-file');
     if (file) file.addEventListener('change', admin_sys_configs_previewLogo);

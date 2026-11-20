@@ -58,10 +58,7 @@ var _logHasMore = false;
 var _logLoading = false;
 
 async function admin_logs_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     if (window.DateTimePicker) DateTimePicker.initInputs(document);
     admin_logs_tab('server');
 }

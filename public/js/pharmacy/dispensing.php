@@ -35,9 +35,7 @@ var _dispensingScope = 'all';
 var _dispensingQueue = [];
 
 async function pharmacy_dispensing_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    const sidebar = await fetch('/js/shared/sidebar_pharmacy.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('pharmacy');
     document.getElementById('dispense-check-all').addEventListener('change', function () {
         document.querySelectorAll('.dispense-row-check').forEach(c => c.checked = this.checked);
     });

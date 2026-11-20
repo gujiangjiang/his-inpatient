@@ -60,10 +60,7 @@ var _userAll = [];
 var _userPage = 1, _userPer = 15;
 
 async function admin_users_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     const [depts, wards] = await Promise.all([
         AjaxLoader.api('admin/department-list', {silent:true}),
         AjaxLoader.api('admin/ward-list', {silent:true})

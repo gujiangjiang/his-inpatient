@@ -75,10 +75,7 @@ var _diagPopState = { kw: '', offset: 0, hasMore: true, loading: false, cursor: 
 var _diagPopScroll = null;
 
 async function emr_diagnosis_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('doctor');
     document.getElementById('diag-pop-cat').innerHTML = _diagCats.map(([k, label]) =>
         `<option value="${k}">${label}</option>`).join('');
     _diagPopScroll = ScrollLoad.attach(document.getElementById('diag-pop-res'), function() {

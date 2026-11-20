@@ -14,10 +14,7 @@
 
 <script>
 async function nurse_station_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_nurse.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('nurse');
     nurse_station_load();
 }
 

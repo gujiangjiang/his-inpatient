@@ -555,11 +555,7 @@ var OrderStation = {
 };
 
 async function orders_order_station_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const user = Auth.user;
-    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell(Auth.user.role);
     OrderStation.init();
 }
 </script>

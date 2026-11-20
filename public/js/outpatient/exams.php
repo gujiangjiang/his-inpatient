@@ -49,10 +49,7 @@ var _EXAM_STATUS = { pending: '待执行', reported: '已报告' };
 var _EXAM_STATUS_CLS = { pending: 'badge-pending', reported: 'badge-executing' };
 
 async function outpatient_exams_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('doctor');
     outpatient_exams_reload();
 }
 

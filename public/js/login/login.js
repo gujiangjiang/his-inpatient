@@ -36,9 +36,8 @@ async function handleHashChange() {
         return;
     }
 
-    // 加载 sidebar
-    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    // 加载 sidebar (App 层带缓存与失败占位)
+    await App.loadSidebar(user.role);
     window.refreshWorkstationLayout();
 
     // 加载页面

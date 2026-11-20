@@ -18,11 +18,7 @@ var _bedsWards = [];
 var _bedsCurrent = null;
 
 async function patients_beds_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const user = Auth.user;
-    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell(Auth.user.role);
     const r = await AjaxLoader.api('patients/beds?summary=1', { silent: true });
     _bedsWards = r.data || [];
     if (_bedsWards.length === 0) {

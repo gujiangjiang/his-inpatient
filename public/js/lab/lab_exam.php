@@ -26,9 +26,7 @@
 
 <script>
 async function lab_lab_exam_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    const sidebar = await fetch('/js/shared/sidebar_lab.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('lab');
     await loadLabs();
     await loadExams();
 }

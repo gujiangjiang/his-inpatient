@@ -35,10 +35,7 @@ var _dqKind = 'diagnosis';
 var _dqDictList = [];
 
 async function admin_query_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     document.querySelectorAll('#dq-tabs .tab').forEach(function (t) {
         t.addEventListener('click', function () { admin_dq_tab(t.dataset.kind); });
     });

@@ -56,10 +56,7 @@
 
 <script>
 async function doctor_surgery_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_doctor.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('doctor');
     surgery_refresh();
 }
 

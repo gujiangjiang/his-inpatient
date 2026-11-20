@@ -4,10 +4,7 @@ var _BIZ_LABELS = { lab: '检验', exam: '检查', prescription: '处方', treat
 var _AUTH_LABELS = { none: '无', basic: 'Basic', token: 'Token', oauth2: 'OAuth2' };
 
 async function admin_integrations_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     await admin_integrations_load_config();
     loadIntegrations();
 }

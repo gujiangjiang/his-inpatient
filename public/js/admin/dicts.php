@@ -27,10 +27,7 @@ var _dictRows = [];
 var _dictActive = -1;
 
 async function admin_dicts_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     admin_dicts_load();
 }
 

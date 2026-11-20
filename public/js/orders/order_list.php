@@ -47,11 +47,7 @@ var _selectedOrders = new Set();
 var _currentTab = 'draft';
 
 async function orders_order_list_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const user = Auth.user;
-    const sidebar = await fetch('/js/shared/sidebar_' + user.role + '.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell(Auth.user.role);
 
     // 工作站模式下优先使用全局患者上下文
     const ctx = PatientContext.current();

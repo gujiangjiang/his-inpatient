@@ -31,10 +31,7 @@ var _wardDepts = [];
 var _wardAll = [];
 
 async function admin_wards_init() {
-    document.getElementById('main-app').style.display = 'flex';
-    document.getElementById('login-container').style.display = 'none';
-    const sidebar = await fetch('/js/shared/sidebar_admin.php').then(r => r.text());
-    document.getElementById('sidebar').innerHTML = sidebar;
+    await App.mountShell('admin');
     const depts = await AjaxLoader.api('admin/department-list', { silent: true });
     _wardDepts = depts.data || [];
     const sel = document.getElementById('ward-filter-dept');
