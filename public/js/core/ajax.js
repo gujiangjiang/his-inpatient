@@ -113,6 +113,11 @@ const AjaxLoader = {
             .then(async (resp) => {
                 if (silent) this.hideBar();
                 if (!silent) this.removeLoading();
+                // 非 JSON 响应 (如网关 502/超时 HTML) 的防御: 报可读错误而非 SyntaxError
+                const ct = resp.headers.get('content-type') || '';
+                if (ct.indexOf('application/json') === -1) {
+                    throw new Error('服务异常 (HTTP ' + resp.status + ')，请稍后重试');
+                }
                 const result = await resp.json();
                 // 按 HTTP 状态码判断 401
                 if (resp.status === 401) {
@@ -135,7 +140,11 @@ const AjaxLoader = {
             });
     },
 
+    /* 页面加载序列令牌: 快速连点菜单时, 先发后至的旧页面响应被丢弃 (防旧页覆盖新页) */
+    _pageSeq: 0,
+
     loadPage(module, page) {
+        const mySeq = ++this._pageSeq;
         const v = (typeof App !== 'undefined' && App.version) ? App.version : '';
         const url = '/js/' + module + '/' + page + '.php' + (v ? '?v=' + v : '');
         this.initLoading();
@@ -146,16 +155,12 @@ const AjaxLoader = {
             })
             .then(html => {
                 this.removeLoading();
+                if (mySeq !== this._pageSeq) return; /* 已被更新的加载请求取代: 丢弃 */
                 const app = document.getElementById('app-content') || document.getElementById('app');
                 if (app) {
                     app.innerHTML = html;
                     // innerHTML 不会自动执行 <script>, 手动提取并按序执行
-                    const scripts = app.querySelectorAll('script');
-                    scripts.forEach(s => {
-                        const ns = document.createElement('script');
-                        ns.textContent = s.textContent;
-                        s.parentNode.replaceChild(ns, s);
-                    });
+                    if (window.Dom) Dom.execScripts(app);
                 }
                 // 自定义下拉组件增强 (页面注入后)
                 if (window.SelectPicker && app) SelectPicker.initInputs(app);
@@ -173,6 +178,7 @@ const AjaxLoader = {
             .catch(err => {
                 this.hideBar();
                 this.removeLoading();
+                if (mySeq !== this._pageSeq) return; /* 过期请求: 静默 (新页面已在加载) */
                 Dom.toast('页面加载失败：' + err.message, 'error');
             });
     }

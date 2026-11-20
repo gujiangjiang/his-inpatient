@@ -113,6 +113,30 @@ const Dom = {
         ], opts);
     },
 
+    /**
+     * 容器内 <script> 手动提取执行 (innerHTML 注入不会自动跑 script)。
+     * 收敛 loadPage 与 sys_configs 懒加载面板的两份同实现。
+     */
+    execScripts(container) {
+        if (!container) return;
+        container.querySelectorAll('script').forEach(s => {
+            const ns = document.createElement('script');
+            ns.textContent = s.textContent;
+            s.parentNode.replaceChild(ns, s);
+        });
+    },
+
+    /** 防抖 (收敛 8 处 250ms 搜索防抖样板)。返回带 cancel 的包装函数。 */
+    debounce(fn, wait = 250) {
+        let timer = null;
+        const wrapped = function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), wait);
+        };
+        wrapped.cancel = () => clearTimeout(timer);
+        return wrapped;
+    },
+
     formField(def, value) {
         // def 优先，value 在后
         const type = def.type || 'text';
