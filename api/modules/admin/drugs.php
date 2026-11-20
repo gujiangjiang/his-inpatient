@@ -119,7 +119,7 @@ if ($action === 'save') {
         Response::success([], '药品已更新');
     } else {
         // 新增：自动生成编码
-        $code = 'M' . date('YmdHis') . mt_rand(100, 999);
+        $code = 'M' . date('YmdHis') . random_int(100, 999);
         DB::execute("INSERT INTO medications (code, name, specification, unit, price, stock_quantity,
                        spec_pack_qty, spec_pack_unit, spec_dose, spec_dose_unit, allow_split, warn_qty, drug_class, dosage_form,
                        default_dosage, default_freq, default_route, is_active, pharmacy, created_at)

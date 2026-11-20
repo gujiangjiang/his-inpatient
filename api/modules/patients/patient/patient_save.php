@@ -59,8 +59,10 @@ if ($id) {
     } catch (Exception $e) { /* 同步失败不阻断保存 */ }
     Response::success(['id' => $id]);
 } else {
-    $patientNo = 'P' . date('Ymd') . str_pad(DB::selectOne("SELECT COUNT(*) as c FROM patients")['c'] + 1, 4, '0', STR_PAD_LEFT);
-    $admissionNo = 'A' . date('Ymd') . str_pad(DB::selectOne("SELECT COUNT(*) as c FROM patients")['c'] + 1, 4, '0', STR_PAD_LEFT);
+    /* 患者号与住院号同尾号 (既有可观察行为保持); 当日最大尾号+1 替代 COUNT+1 防复用撞唯一索引 */
+    $noTail = seq_serial_tail('patients', 'patient_no', 'P');
+    $patientNo = 'P' . date('Ymd') . $noTail;
+    $admissionNo = 'A' . date('Ymd') . $noTail;
 
     if (!empty($data['bed_no'])) {
         $bedStmt = $pdo->prepare("SELECT * FROM beds WHERE ward_id = ? AND bed_no = ? AND status = 'occupied'");
