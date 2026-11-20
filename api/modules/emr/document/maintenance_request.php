@@ -10,6 +10,7 @@ if ($reason === '') Response::error('请填写维护原因');
 
 $doc = DB::selectOne("SELECT id, status, patient_id, title FROM emr_documents WHERE id = ?", [$docId]);
 if (!$doc) Response::error('文书不存在', 404);
+if (!can_access_patient(Auth::user(), (int)$doc['patient_id'])) Response::error('无权维护该患者的病历', 403);
 if ($doc['status'] !== 'signed') Response::error('仅已签名病历需要维护申请', 400);
 
 $pending = DB::selectOne(

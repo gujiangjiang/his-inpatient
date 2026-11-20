@@ -12,4 +12,5 @@ $record = DB::selectOne("SELECT * FROM emr_records WHERE id = ?", [$id]);
 if (!$record) {
     Response::error('病历不存在', 404);
 }
+if (!can_access_patient(Auth::user(), (int)$record['patient_id'])) Response::error('无权访问该病历', 403);
 Response::success($record);

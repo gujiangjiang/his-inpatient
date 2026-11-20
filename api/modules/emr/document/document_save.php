@@ -21,6 +21,7 @@ $pdo = DB::getPDO();
 $userId = Auth::user()['id'];
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在');
+if (!can_access_patient(Auth::user(), (int)$patientId)) Response::error('无权为该患者保存文书', 403);
 
 $id = isset($data['id']) && $data['id'] ? $data['id'] : null;
 

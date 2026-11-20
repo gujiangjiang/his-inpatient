@@ -8,6 +8,7 @@ $recordType = Validator::get('record_type');
 if (!$patientId) {
     Response::error('请输入患者ID');
 }
+if (!can_access_patient(Auth::user(), (int)$patientId)) Response::error('无权访问该患者病历', 403);
 
 $sql = "SELECT * FROM emr_records WHERE patient_id = ?";
 $params = [$patientId];

@@ -7,6 +7,14 @@ $admissionNo = Validator::get('admission_no');
 
 if (!$patientId && !$admissionNo) Response::error('请输入患者ID或住院号');
 
+/* 归属校验: 患者级/住院号级访问均须在当前用户数据范围内 */
+if ($patientId) {
+    if (!can_access_patient(Auth::user(), (int)$patientId)) Response::error('无权访问该患者文书', 403);
+} else {
+    $p = DB::selectOne("SELECT id FROM patients WHERE admission_no = ? LIMIT 1", [$admissionNo]);
+    if (!$p || !can_access_patient(Auth::user(), (int)$p['id'])) Response::error('无权访问该患者文书', 403);
+}
+
 $sql = "SELECT d.*, c.name as category_name, t.name as template_name,
         u.name as created_name, s.name as signer_name,
         (SELECT mr.id FROM emr_maintenance_requests mr

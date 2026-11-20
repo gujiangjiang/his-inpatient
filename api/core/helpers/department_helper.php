@@ -42,3 +42,10 @@ function can_access_patient($user, $patientId) {
     }
     return false;
 }
+
+/** 批量归属校验: 任一患者越权即 403 (批量打印/列表等场景); 任一患者不存在亦拒绝 */
+function require_access_patients($user, array $patientIds) {
+    foreach (array_values(array_unique(array_map('intval', $patientIds))) as $pid) {
+        if (!$pid || !can_access_patient($user, $pid)) Response::error('无权访问该患者数据', 403);
+    }
+}

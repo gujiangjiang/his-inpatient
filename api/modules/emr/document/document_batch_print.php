@@ -9,13 +9,6 @@ $ids = array_values(array_unique(array_map('intval', $ids)));
 if (!$ids) Response::error('请选择要打印的文书');
 
 $patientId = (int)Validator::get('patient_id', 0);
-if ($patientId) {
-    foreach ($ids as $id) {
-        $row = DB::selectOne("SELECT patient_id FROM emr_documents WHERE id = ?", [$id]);
-        if (!$row) continue;
-        if (!can_access_patient(Auth::user(), $row['patient_id'])) Response::error('无权访问该文书', 403);
-    }
-}
 
 $ph = implode(',', array_fill(0, count($ids), '?'));
 $rows = DB::select(
@@ -31,6 +24,9 @@ $rows = DB::select(
      ORDER BY (c.sort_order IS NULL OR c.sort_order = 0) ASC, c.sort_order ASC, c.id ASC, d.created_at ASC, d.id ASC",
     $ids
 );
+
+/* 归属校验 (无条件): 按文书实际归属逐一校验, 不可因入参省略 patient_id 而绕过 */
+require_access_patients(Auth::user(), array_column($rows, 'patient_id'));
 
 $pdo = DB::getPDO();
 $update = $pdo->prepare("UPDATE emr_documents SET print_count = print_count + 1, updated_at = ? WHERE id = ?");

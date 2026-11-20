@@ -21,6 +21,7 @@ if (!password_verify($password, $user['password'])) {
 
 $doc = DB::selectOne("SELECT * FROM emr_documents WHERE id = ?", [$id]);
 if (!$doc) Response::error('文书不存在');
+if (!can_access_patient(Auth::user(), (int)$doc['patient_id'])) Response::error('无权签名该患者的文书', 403);
 if ($doc['status'] === 'signed') Response::error('文书已签名, 请勿重复签名');
 
 $now = DateHelper::now();

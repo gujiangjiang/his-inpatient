@@ -16,11 +16,12 @@ if (!$recordType || !$patientId || !$contentDelta) {
 $pdo = DB::getPDO();
 $userId = Auth::user()['id'];
 
-// 校验患者隶属
+// 校验患者隶属 (存在 + 数据范围)
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) {
     Response::error('患者不存在');
 }
+if (!can_access_patient(Auth::user(), (int)$patientId)) Response::error('无权为该患者书写病历', 403);
 
 $stmt = $pdo->prepare("INSERT INTO emr_records (patient_id, admission_no, record_type, content_delta, content_html, diagnosis, icd_code, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?)");
 $stmt->execute([

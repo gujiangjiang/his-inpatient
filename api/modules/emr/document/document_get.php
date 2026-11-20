@@ -14,6 +14,7 @@ $doc = DB::selectOne("SELECT d.*, c.name as category_name, t.name as template_na
     WHERE d.id = ?", [$id]);
 
 if (!$doc) Response::error('文书不存在', 404);
+if (!can_access_patient(Auth::user(), (int)$doc['patient_id'])) Response::error('无权访问该文书', 403);
 
 // 解析 JSON 字段
 $doc['doc_meta'] = json_decode($doc['doc_meta'] ?? '{}', true) ?: [];
