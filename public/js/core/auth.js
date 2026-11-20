@@ -53,6 +53,8 @@ const Auth = {
     handleUnauth() {
         sessionStorage.removeItem('session_id');
         this.user = null;
+        /* 会话失效: 关闭 SSE 长连接 (401 后 EventSource 不再重连, 但持连接应主动释放) */
+        if (window.Notify && typeof Notify.stop === 'function') Notify.stop();
         // 跳转到登录页
         if (window.location.hash && window.location.hash !== '#login') {
             window.location.hash = 'login';

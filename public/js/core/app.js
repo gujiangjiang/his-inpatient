@@ -134,6 +134,13 @@ window.navigateTo = function(module, page) {
     }
 };
 
+// 未处理 Promise rejection 全局兜底: 错误 toast 已由 AjaxLoader 统一负责,
+// 此处阻断控制台噪音并留调试线索 (弹窗内 async onclick 失败时弹窗关闭语义不受影响)
+window.addEventListener('unhandledrejection', function (e) {
+    e.preventDefault();
+    if (window.console && console.warn) console.warn('[unhandledrejection]', e.reason);
+});
+
 // 打开占位页 (多个占位菜单共用 doctor/placeholder 路由时, 用标题区分当前项)
 window.openPlaceholder = function(title) {
     window.__placeholderTitle = title;

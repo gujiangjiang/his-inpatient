@@ -104,6 +104,12 @@ const Notify = {
         });
     },
 
+    /** 关闭 SSE 连接 (会话失效/登出时调用, 防过期连接持续重连) */
+    stop() {
+        if (this.es) { try { this.es.close(); } catch (e) { /* ignore */ } this.es = null; }
+        this.started = false; /* 允许重新登录后再次 init */
+    },
+
     async markOne(id) {
         try {
             await AjaxLoader.api('notify/read', { method: 'POST', data: { ids: [id] }, silent: true });

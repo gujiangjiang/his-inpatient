@@ -15,6 +15,14 @@ const ScrollLoad = {
     attach(scrollEl, loadMore, opts) {
         opts = opts || {};
         const offset = opts.offset || 80;
+        // SPA 页面切换后旧 state 持有已卸载容器 (_states 只增不减成泄漏):
+        // attach 时清理已脱离文档的旧状态 (摘监听 + 移出数组)
+        this._states = this._states.filter(function(s) {
+            if (s.el && s.el.isConnected) return true;
+            if (s.el && s.handler) s.el.removeEventListener('scroll', s.handler);
+            s.el = null; s.handler = null; s.loadMore = null;
+            return false;
+        });
         const state = { el: scrollEl, loadMore: loadMore, lock: false, done: false, offset: offset };
         state.handler = function() {
             if (state.lock || state.done || !state.el) return;
@@ -32,6 +40,15 @@ const ScrollLoad = {
         this._states.push(state);
         if (opts.autoCheck !== false) setTimeout(function() { state.handler(); }, 60);
         return state;
+    },
+
+    /** 解绑并移除状态 (主动清理; 页面一般无需调用, attach 已自动回收脱离文档的旧状态) */
+    detach(state) {
+        if (!state) return;
+        if (state.el && state.handler) state.el.removeEventListener('scroll', state.handler);
+        const i = this._states.indexOf(state);
+        if (i >= 0) this._states.splice(i, 1);
+        state.el = null; state.handler = null; state.loadMore = null;
     },
 
     /** 主动检查一次 (数据更新后调用, 内容未满一屏会继续补载) */
