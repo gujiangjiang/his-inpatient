@@ -23,6 +23,13 @@ if (!in_array($__dbType, array('sqlite', 'mysql', 'postgresql'), true)) $__dbTyp
 $__dbPath = trim((string)ConfigDB::get('db.path', ''));
 if ($__dbPath === '') $__dbPath = DATA_DIR . '/hospital.sqlite';
 if (strpos($__dbPath, '/') !== 0) $__dbPath = DATA_DIR . '/' . $__dbPath;   // 相对路径按 data/ 展开
+// 防路径穿越: db.path 可由管理端配置, 归一化后必须仍位于 data/ 目录内, 否则回退默认库
+$__dbDir = realpath(dirname($__dbPath));
+$__dataDir = realpath(DATA_DIR);
+if ($__dbDir === false || $__dataDir === false
+    || ($__dbDir !== $__dataDir && strpos($__dbDir, $__dataDir . '/') !== 0)) {
+    $__dbPath = DATA_DIR . '/hospital.sqlite';
+}
 define('DB_PATH', $__dbPath);
 define('DB_TYPE', $__dbType);
 define('DB_DSN', 'sqlite:' . DB_PATH);
