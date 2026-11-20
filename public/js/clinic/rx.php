@@ -128,31 +128,46 @@ function clinic_rx_print(idx) {
         </tr>`;
     }).join('');
     const doctorName = (g.items[0] || {}).creator_name || '';
+    // 参照门诊标准处方笺：顶部医院名 + 右上条码 + 文书名，随后患者信息（姓名/性别/出生日期/年龄、
+    // 患者ID/住院号/床号/科室 + 临床诊断），℞ 标记 + 药品表，底部取药提示/金额/签名/调配/时间。
+    const age = p.age || (p.birth_date ? Format.age(p.birth_date) : '');
+    const diag = p.admission_diagnosis || '';
     const html = `<div class="sheet a5">
-        <div class="sheet-head">
-            <div class="sheet-brand">
-                ${PrintHelper.brandHeaderHtml('')}
-                <div class="sheet-docname">住院处方笺</div>
+        <div class="rx-head">
+            <div class="rx-brand">${PrintHelper.brandHeaderHtml('')}</div>
+            <div class="rx-barcode">${PrintHelper.barcodeSvg(rxNo)}</div>
+        </div>
+        <div class="rx-title">住院处方笺</div>
+        <div class="rx-info">
+            <div class="rx-info-row">
+                <span>姓名：<b>${Format.escape(p.name || '')}</b></span>
+                <span>性别：<b>${Format.gender(p.gender)}</b></span>
+                <span>出生日期：<b>${Format.escape((p.birth_date || '').slice(0, 10) || '')}</b></span>
+                <span>年龄：<b>${Format.escape(age)}</b></span>
             </div>
-            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rxNo)}</div>
+            <div class="rx-info-row">
+                <span>患者ID：<b>${Format.escape(p.patient_no || p.id || '')}</b></span>
+                <span>住院号：<b>${Format.escape(p.admission_no || '')}</b></span>
+                <span>床号：<b>${Format.escape(p.bed_no || '-')}</b></span>
+                <span>科室：<b>${Format.escape(p.department_name || '')}</b></span>
+            </div>
+            <div class="rx-info-row">${diag ? `<span class="rx-diag">临床诊断：<b>${Format.escape(diag)}</b></span>` : ''}</div>
         </div>
-        <div class="patient-bar">
-            <span>姓名：<b>${Format.escape(p.name || '')}</b></span>
-            <span>性别：<b>${Format.gender(p.gender)}</b></span>
-            <span>年龄：<b>${Format.escape(p.age || '')}</b></span>
-            <span>床号：<b>${Format.escape(p.bed_no || '-')}</b></span>
-            <span>住院号：<b>${Format.escape(p.admission_no || '')}</b></span>
-            <span>开方时间：<b>${Format.escape(g.created_at || '')}</b></span>
-        </div>
+        <div class="rx-rule"></div>
         <div class="rx-mark">℞</div>
         <table class="rx-print">
             ${rxRows}
         </table>
         <div class="rx-end">—————— 处方完毕 ——————</div>
-        <div class="rx-note rx-sign-row"><span class="rx-take">请凭本处方单至${Format.escape(g.pharmacy_name || '药房')}取药</span><span class="rx-sign-right"><span class="rx-amount">金额：¥${total.toFixed(2)}</span><span>医师签名：${Format.escape(doctorName)}</span></span></div>
-        <div class="rx-line"></div>
-        <div class="rx-note rx-disp-row"><span>调配：</span><span>复核、发药：</span></div>
-        <div class="rx-note rx-center">（本处方当日内有效）</div>
+        <div class="rx-foot">
+            <div class="rx-take">请凭本处方单至${Format.escape(g.pharmacy_name || '药房')}取药</div>
+            <div class="rx-amount-row"><span>金额：¥${total.toFixed(2)}</span><span class="rx-doctor">医师签名：${Format.escape(doctorName)}</span></div>
+            <div class="rx-line"></div>
+            <div class="rx-disp-row"><span>调配：</span><span>复核、发药：</span></div>
+            <div class="rx-line"></div>
+            <div class="rx-time-row"><span>开单时间：${Format.escape(g.created_at || '')}</span><span>打印时间：${Format.datetime(new Date().toISOString())}</span></div>
+            <div class="rx-valid">（本处方当日内有效）</div>
+        </div>
     </div>`;
     PrintHelper.printHtml('住院处方笺', html);
 }

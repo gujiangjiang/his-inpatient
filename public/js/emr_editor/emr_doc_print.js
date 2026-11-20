@@ -88,7 +88,7 @@
 
   /** 打开打印窗口并自动打印（opts: 页码范围/内容选择透传 buildHTML） */
   P.print = (doc, patientInfo, opts) => {
-    const win = window.open('', '_blank', 'width=900,height=1000');
+    const win = window.open('', '_blank', 'width=994,height=1323'); // A4 210×297mm ≈ 794×1123px + 窗口装饰/边距
     if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
     win.document.write(P.buildHTML(doc, patientInfo, opts));
     win.document.close();
@@ -174,7 +174,7 @@
 
   /** 批量打印开窗 */
   P.printBatch = (items, patientInfo) => {
-    const win = window.open('', '_blank', 'width=900,height=1000');
+    const win = window.open('', '_blank', 'width=994,height=1323'); // A4 210×297mm ≈ 794×1123px + 窗口装饰/边距
     if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
     win.document.write(P.buildBatch(items, patientInfo));
     win.document.close();

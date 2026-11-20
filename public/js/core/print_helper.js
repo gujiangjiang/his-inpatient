@@ -24,10 +24,10 @@ const PrintHelper = {
         const hasHalf = bodyHtml.indexOf('sheet half-a4') !== -1;
         const pageSize = hasA5 ? 'A5 portrait'
             : (hasHalf ? '210mm 148mm' : 'A4 portrait');
-        // 预览窗口按纸张尺寸：A5 竖→窄高、半A4 横→宽矮、A4→标准
-        const winW = hasHalf ? 980 : (hasA5 ? 700 : 900);
-        const winH = hasHalf ? 700 : (hasA5 ? 880 : 1000);
-        const win = window.open('', '_blank', 'width=' + winW + ',height=' + winH);
+        // 纸张在 96dpi 下的像素尺寸（1mm ≈ 3.7795px），用于精确匹配预览窗口画布
+        const paperW = hasA5 ? 559 : 794;   // 148mm / 210mm
+        const paperH = hasA5 ? 794 : (hasHalf ? 559 : 1123); // 210mm / 148mm / 297mm
+        const win = window.open('', '_blank', 'width=' + (paperW + 200) + ',height=' + (paperH + 200));
         if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
         // 页码注入：给每个 .sheet 底部加「第 x 页 / 共 x 页」（A4/A5/半A4 通用）
         bodyHtml = PrintHelper.withPageNumbers(bodyHtml);
@@ -36,7 +36,9 @@ const PrintHelper = {
     @page { size: ${pageSize}; margin: 0; }
     html, body { margin: 0; padding: 0; }
     .sheet, .sheet.a5, .sheet.half-a4 { box-shadow: none; }
-    body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; margin: 24px; }
+    body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; margin: 12px; }
+    @media screen { body { background: #e8eaed; } .sheet { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18); } }
+    @media print { body { background: #fff; margin: 0; } .sheet { box-shadow: none; } }
     .brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0,1fr); width: max-content; max-width: 100%; min-width: 0; }
     .brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }
     .print-brand-lockup { display: grid; margin: 0 auto 8px; }
@@ -50,16 +52,14 @@ const PrintHelper = {
     .doc-meta { display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 10.5pt; margin: 10px 0; }
     .doc-foot { margin-top: 32px; display: flex; justify-content: space-between; font-size: 10.5pt; }
     /* ===== 门诊式打印公共样式（A4/A5 纸张 + 右上条形码 + 患者信息栏）===== */
-    .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 12mm 14mm 16mm; box-sizing: border-box; position: relative; display: flex; flex-direction: column; }
-    .sheet.a5 { width: 148mm; height: 210mm; padding: 10mm 11mm 13mm; }
-    .sheet.half-a4 { width: 210mm; height: 148mm; padding: 10mm 14mm 14mm; }
+    .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 12mm 14mm 22mm; box-sizing: border-box; position: relative; display: flex; flex-direction: column; }
+    .sheet.a5 { width: 148mm; height: 210mm; padding: 10mm 12mm 20mm; }
+    .sheet.half-a4 { width: 210mm; height: 148mm; padding: 10mm 14mm 20mm; }
     .sheet + .sheet { page-break-before: always; }
-    .sheet .sheet-head, .sheet .patient-bar, .sheet .rx-mark, .sheet table.rx-print, .sheet .sheet-table { flex-shrink: 0; }
+    .sheet .sheet-head, .sheet .patient-bar, .sheet .rx-head, .sheet .rx-info { flex-shrink: 0; }
+    .sheet .rx-mark, .sheet table.rx-print, .sheet .sheet-table, .sheet .rx-foot { flex-shrink: 0; }
     .sheet .sheet-note, .sheet .sheet-tip { flex-shrink: 0; }
-    .sheet-foot, .rx-note.rx-sign-row { margin-top: auto; }
-    .rx-note.rx-sign-row { margin-top: auto !important; }
-    .rx-line { margin-top: 0; }
-    .rx-note.rx-disp-row { margin-top: 0; }
+    .sheet-foot { margin-top: auto; }
     .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
     .sheet-brand { text-align: center; flex: 1; }
     .sheet-brand .print-hospital { font-size: 16pt; }
@@ -80,41 +80,73 @@ const PrintHelper = {
     .sheet-table th, .sheet-table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; }
     .sheet-table th { background: #f5f5f5; font-weight: 600; }
     .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; }
-    .sheet-page-no { position: absolute; left: 0; right: 0; bottom: 9px; text-align: center; font-size: 9pt; color: #333; }
+    .sheet-page-no { position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; font-size: 9pt; color: #333; }
     .sheet-note { margin-top: 10px; font-size: 10.5pt; color: #333; }
     .sheet-tip { margin-top: 2px; font-size: 9.5pt; color: #666; }
-    /* ===== 门诊标准处方样式（A5 无边框，参照标准医院处方笺） ===== */
-    .rx-mark { font-size: 26pt; font-weight: 700; line-height: 1; margin: 6px 0 8px; color: #111; }
-    table.rx-print { width: 100%; border-collapse: collapse; font-size: 11pt; }
-    table.rx-print td { border: none; padding: 4px 6px; vertical-align: middle; text-align: left; }
+    /* ===== 住院处方笺（参照门诊标准处方笺版式，A5 无边框） ===== */
+    .rx-head { position: relative; text-align: center; padding: 2px 0 2px; }
+    .rx-brand { display: inline-block; text-align: center; }
+    .rx-brand .print-hospital { font-size: 20pt; font-weight: 700; letter-spacing: 3px; line-height: 1.3; }
+    .rx-brand .print-hospital2 { font-size: 11.5pt; letter-spacing: 1px; line-height: 1.3; }
+    .rx-barcode { position: absolute; top: 0; right: 0; text-align: right; }
+    .rx-barcode svg { width: 150px; height: auto; }
+    .rx-title { text-align: center; font-size: 17pt; font-weight: 700; letter-spacing: 4px; margin: 8px 0 6px; }
+    .rx-info { font-size: 10.5pt; line-height: 1.85; margin-bottom: 4px; }
+    .rx-info-row { display: flex; flex-wrap: wrap; gap: 3px 16px; }
+    .rx-info-row span { white-space: nowrap; }
+    .rx-info-row b { font-weight: 600; }
+    .rx-info .rx-diag { flex: 1 1 100%; white-space: normal; }
+    .rx-rule { border-top: 2px solid #111; margin: 6px 0 8px; }
+    .rx-mark { font-size: 28pt; font-weight: 700; line-height: 1; margin: 2px 0 8px; color: #111; }
+    table.rx-print { width: 100%; border-collapse: collapse; font-size: 11.5pt; }
+    table.rx-print td { border: none; padding: 7px 6px; vertical-align: middle; text-align: left; }
     table.rx-print td.rx-name { font-weight: 600; }
-    table.rx-print td.rx-qty { text-align: right; white-space: nowrap; }
-    .rx-end { text-align: center; letter-spacing: 2px; color: #333; margin: 10px 0 4px; font-size: 11pt; }
-    .rx-note { margin-top: 8px; font-size: 10.5pt; color: #333; }
-    .rx-note.rx-take { margin-top: 0; }
-    .rx-sign-row .rx-take { flex: 1; text-align: left; font-weight: normal; }
-    .rx-sign-row .rx-sign-right { display: inline-flex; gap: 12px; align-items: baseline; white-space: nowrap; }
-    .rx-sign-row .rx-sign-right .rx-amount { font-weight: 600; }
-    .rx-sign-row { display: flex; align-items: center; font-weight: 600; margin-top: 10px; }
-    .rx-sign-row .rx-amount { flex: 1; text-align: left; }
-    .rx-disp-row { display: flex; font-size: 10.5pt; line-height: 1.8; margin-top: 4px; margin-bottom: 4px; }
+    table.rx-print td.rx-dose { width: 17%; text-align: center; }
+    table.rx-print td.rx-route { width: 11%; text-align: center; }
+    table.rx-print td.rx-freq { width: 15%; text-align: center; }
+    table.rx-print td.rx-qty { width: 16%; text-align: right; white-space: nowrap; }
+    table.rx-print col.rx-c-name { width: 41%; }
+    .rx-end { text-align: center; letter-spacing: 2px; color: #333; margin: 18px 0 10px; font-size: 11.5pt; }
+    .rx-foot { margin-top: auto; }
+    .rx-take { font-size: 10.5pt; margin-bottom: 4px; }
+    .rx-amount-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 11.5pt; font-weight: 600; }
+    .rx-amount-row .rx-doctor { white-space: nowrap; }
+    .rx-line { border-bottom: 1px solid #111; margin: 3px 0; }
+    .rx-disp-row { display: flex; font-size: 10.5pt; line-height: 1.9; }
     .rx-disp-row span { flex: 1; text-align: left; }
-    .rx-center { text-align: center; }
-    .rx-line { border-bottom: 1px solid #111; padding-bottom: 6px; margin-bottom: 6px; }
+    .rx-time-row { display: flex; font-size: 10pt; color: #333; line-height: 1.9; }
+    .rx-time-row span:first-child { flex: 1; }
+    .rx-valid { text-align: center; font-size: 10.5pt; margin-top: 6px; }
     @media print {
         body { margin: 0; }
         .sheet { box-shadow: none; }
         .no-print { display: none; }
     }
 </style></head><body>${bodyHtml}
-<script>window.onload = function () { window.print(); };<\/script>
+<script>
+(function () {
+    var targetW = ${paperW}, targetH = ${paperH};
+    var margin = 12;
+    function fit() {
+        try {
+            var cw = Math.max(0, window.outerWidth - window.innerWidth);
+            var ch = Math.max(0, window.outerHeight - window.innerHeight);
+            window.resizeTo(targetW + margin * 2 + cw, targetH + margin * 2 + ch);
+        } catch (e) {}
+    }
+    window.onload = function () {
+        setTimeout(function () { fit(); window.print(); }, 60);
+    };
+})();
+<\/script>
 </body></html>`);
         win.document.close();
     },
 
     /* 打印完整 HTML 文档 (与预览 iframe 使用同一份文档, 保证一模一样) */
     printDocument(docHtml) {
-        const win = window.open('', '_blank', 'width=900,height=1000');
+        // EMR 文档均为 A4（210×297mm ≈ 794×1123px），窗口尺寸按纸张匹配
+        const win = window.open('', '_blank', 'width=994,height=1323');
         if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
         win.document.write(docHtml);
         win.document.close();
