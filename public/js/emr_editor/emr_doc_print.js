@@ -183,31 +183,59 @@
 
   /**
    * 批量打印合并组装：病程类(重排小标题)与非病程类(原样快照)合并到同一打印文档。
-   * 只弹一个预览窗口，所有内容按顺序连续分页，页码全局连续。
+   * 只弹一个预览窗口。**每类文书独立成形、独立计算页码**，避免相互串样。
+   * 病程组的抬头取「勾选的多个病程记录中时间最早的那个」病程的抬头。
    * items: [{ doc, stamp, signHtml, repaginate, rawHtml }]
-   *   - repaginate=true: 用 L.paginate 重排 + 小标题/签名（与 buildBatch 一致）
+   *   - repaginate=true: 用 L.paginate 重排 + 小标题/签名（抬头用最早病程的）
    *   - repaginate=false: rawHtml 为其完整快照文档（含抬头），提取其中 .page 原样插入
    */
   P.buildCombined = (items, patientInfo) => {
     const info = patientInfo || {};
     const all = items.filter(x => x && x.doc);
     if (!all.length) return '';
-    // 页面尺寸与统一页头取第一文书
-    const first = L.paginate(all[0].doc, info);
-    const d = first.dim;
-    const firstHeader = all[0].doc.header || {};
-    const pageEls = [];      // 存 .page DOM 元素，遍历完统一回填页码
     const tmp = document.createElement('div');   // 解析 raw 快照用
-
     const elOf = (html) => {
       const t = document.createElement('div');
       t.innerHTML = html;
       return t.firstElementChild;
     };
 
-    all.forEach(it => {
-      if (it.repaginate) {
-        // 病程：重排 + 小标题 + 签名
+    // 保持用户勾选顺序输出；按类分离便于独立算页码与取最早病程抬头
+    const courses = all.filter(x => x.repaginate);
+    const raws = all.filter(x => !x.repaginate);
+    const ordered = [...courses, ...raws];   // 病程在前、其他在后（保持原勾选内序）
+
+    // 病程组抬头：取勾选病程中时间最早(stamp 最小)的那个病程的 header
+    let courseHeader = {};
+    let courseDim = null;
+    if (courses.length) {
+      const sorted = courses.slice().sort((a, b) => {
+        const ta = (a.stamp || a.doc.updated_at || a.doc.created_at || '');
+        const tb = (b.stamp || b.doc.updated_at || b.doc.created_at || '');
+        return String(ta).localeCompare(String(tb));
+      });
+      courseHeader = (sorted[0].doc.header || {});
+      const first = L.paginate(sorted[0].doc, info);
+      courseDim = first.dim;
+    }
+    // 非病程组的尺寸：取第一份 raw 快照或 doc 的尺寸作为页面统一尺寸
+    let rawDim = null;
+    if (raws.length) {
+      rawDim = L.paginate(raws[0].doc, info).dim;
+    }
+    const dim = courseDim || rawDim || L.paginate(all[0].doc, info).dim;
+    const d = dim;
+
+    const pageEls = [];   // 全部 .page 元素（有序输出）
+
+    // ---- 病程组：独立成形，组内自算页码，抬头用最早病程 ----
+    if (courses.length) {
+      const cTotal = courses.reduce((n, it) => {
+        const res = L.paginate(it.doc, info);
+        return n + (res.pages.length || 1);
+      }, 0);
+      let cIdx = 0;
+      courses.forEach(it => {
         const doc = it.doc;
         const res = L.paginate(doc, info);
         const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
@@ -218,42 +246,53 @@
           let b = body;
           if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
           if (pi === docPages.length - 1 && it.signHtml) b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
-          pageEls.push(elOf(pageHTML(d, firstHeader, b, 0, 1, info)));
+          pageEls.push(elOf(pageHTML(d, courseHeader, b, cIdx, cTotal, info)));
+          cIdx++;
         });
-      } else {
-        // 非病程：提取快照文档的 .page 原样插入（保留其自身抬头）
+      });
+    }
+
+    // ---- 非病程组：提取各自快照 .page 原样插入，组内独立页码 ----
+    if (raws.length) {
+      // 每份 raw 快照自身可能含多页；统计全部页数用于组内页码
+      const rawPagesAll = [];
+      raws.forEach(it => {
         let html = it.rawHtml || '';
         if (!html) {
           try { html = P.buildHTML(it.doc, info); } catch (e) { html = ''; }
         }
         tmp.innerHTML = html;
-        const rawPages = Array.from(tmp.querySelectorAll('.page'));
-        if (rawPages.length) {
-          rawPages.forEach(pg => pageEls.push(pg));
+        const rps = Array.from(tmp.querySelectorAll('.page'));
+        if (rps.length) {
+          rawPagesAll.push({ it, pages: rps });
         } else {
-          // 兜底：无 .page 时按病程重排
+          // 兜底：无 .page 时按病程重排方式生成
           const res = L.paginate(it.doc, info);
           const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
-          docPages.forEach((body, pi) => {
-            const stamp = (it.stamp || it.doc.updated_at || it.doc.created_at || '').toString();
-            const title = it.doc.title || '文书';
-            const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
+          const stamp = (it.stamp || it.doc.updated_at || it.doc.created_at || '').toString();
+          const title = it.doc.title || '文书';
+          const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
+          const pages = docPages.map((body, pi) => {
             let b = body;
             if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
             if (pi === docPages.length - 1 && it.signHtml) b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
-            pageEls.push(elOf(pageHTML(d, firstHeader, b, 0, 1, info)));
+            return elOf(pageHTML(d, it.doc.header || {}, b, 0, 1, info));
           });
+          rawPagesAll.push({ it, pages });
         }
         tmp.innerHTML = '';
-      }
-    });
-
-    // 统一回填全局连续页码
-    const total = pageEls.length;
-    pageEls.forEach((pg, i) => {
-      const pn = pg.querySelector('.pg-foot .emr-fp-page');
-      if (pn) pn.textContent = '第 ' + (i + 1) + ' 页 / 共 ' + total + ' 页';
-    });
+      });
+      const rawTotal = rawPagesAll.reduce((n, g) => n + g.pages.length, 0);
+      let rIdx = 0;
+      rawPagesAll.forEach(({ pages }) => {
+        pages.forEach(pg => {
+          const pn = pg.querySelector('.pg-foot .emr-fp-page');
+          if (pn) pn.textContent = '第 ' + (rIdx + 1) + ' 页 / 共 ' + rawTotal + ' 页';
+          rIdx++;
+        });
+        pageEls.push(...pages);
+      });
+    }
 
     const style = [
       '@page { size: A4; margin: 0; }',
