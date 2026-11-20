@@ -15,15 +15,9 @@ $sql = "SELECT p.*, d.name as department_name, w.name as ward_name,
         WHERE p.status = 'active' AND p.bed_no IS NOT NULL AND pa.attending_doctor_id IS NULL";
 $params = [];
 
-if ($user['role'] === 'doctor') {
-    $allowed = allowed_department_ids($user);
-    if ($allowed) {
-        $sql .= " AND p.department_id IN (" . implode(',', array_fill(0, count($allowed), '?')) . ")";
-        $params = array_merge($params, $allowed);
-    } else {
-        $sql .= " AND 1 = 0";
-    }
-}
+// 医生按授权科室范围过滤 (无授权则空集); 该入口仅 admin/doctor, helper 的护士分支不触发
+list($scopeSql, $scopeParams) = scope_where($user, 'p.ward_id', 'p.department_id');
+if ($scopeSql !== '') { $sql .= $scopeSql; $params = array_merge($params, $scopeParams); }
 
 $stmt = DB::getPDO()->prepare($sql);
 $stmt->execute($params);

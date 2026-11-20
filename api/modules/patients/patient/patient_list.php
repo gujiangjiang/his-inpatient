@@ -30,19 +30,8 @@ if ($departmentId) {
 }
 
 // 护士按病区过滤；医生严格按授权科室范围过滤 (无授权则空集)
-if ($user['role'] === 'nurse') {
-    $sql .= " AND p.ward_id = ?";
-    $params[] = $user['ward_id'];
-} elseif ($user['role'] === 'doctor') {
-    $allowed = allowed_department_ids($user);
-    if ($allowed) {
-        $placeholders = implode(',', array_fill(0, count($allowed), '?'));
-        $sql .= " AND p.department_id IN ({$placeholders})";
-        $params = array_merge($params, $allowed);
-    } else {
-        $sql .= " AND 1 = 0";
-    }
-}
+list($scopeSql, $scopeParams) = scope_where($user, 'p.ward_id', 'p.department_id');
+if ($scopeSql !== '') { $sql .= $scopeSql; $params = array_merge($params, $scopeParams); }
 
 $sql .= " ORDER BY p.ward_id ASC, p.bed_no ASC, p.id ASC";
 

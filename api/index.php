@@ -12,6 +12,7 @@ require_once __DIR__ . '/core/helpers/date_helper.php';
 require_once __DIR__ . '/core/helpers/string_helper.php';
 require_once __DIR__ . '/core/helpers/id_generator_helper.php';
 require_once __DIR__ . '/core/helpers/department_helper.php';
+require_once __DIR__ . '/core/helpers/access_scope_helper.php';
 require_once __DIR__ . '/core/helpers/fee_helper.php';
 require_once __DIR__ . '/core/helpers/patient_helper.php';
 require_once __DIR__ . '/core/helpers/dept_helper.php';

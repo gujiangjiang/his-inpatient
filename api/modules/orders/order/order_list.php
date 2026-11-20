@@ -42,21 +42,10 @@ if ($dateTo) {
     $params[] = $dateTo . ' 23:59:59';
 }
 
-// 按角色过滤
+// 按角色过滤 (orders 表无病区/科室列, 走患者子查询形态)
 $user = Auth::user();
-if ($user['role'] === 'nurse') {
-    $where .= " AND o.patient_id IN (SELECT id FROM patients WHERE ward_id = ?)";
-    $params[] = $user['ward_id'];
-} elseif ($user['role'] === 'doctor') {
-    $allowed = allowed_department_ids($user);
-    if ($allowed) {
-        $placeholders = implode(',', array_fill(0, count($allowed), '?'));
-        $where .= " AND o.patient_id IN (SELECT id FROM patients WHERE department_id IN ({$placeholders}))";
-        $params = array_merge($params, $allowed);
-    } else {
-        $where .= " AND 1 = 0";
-    }
-}
+list($scopeSql, $scopeParams) = scope_where($user, '', 'o', true);
+if ($scopeSql !== '') { $where .= $scopeSql; $params = array_merge($params, $scopeParams); }
 
 $offset = ($page - 1) * $perPage;
 
