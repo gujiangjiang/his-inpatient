@@ -107,6 +107,7 @@ const PatientSwitcher = {
         const overlay = Dom.modal('待入科/接收患者', '<div class="switcher-loading">加载中...</div>', [
             { text: '关闭', type: 'default' }
         ]);
+        this._overlay = overlay; /* 记录本面板弹层: onSelectCard 精确关闭, 不误删多层弹窗时更上层 */
         try {
             const r = await AjaxLoader.api('patients/incoming', { silent: true });
             const patients = r.data.data || [];
@@ -152,8 +153,9 @@ const PatientSwitcher = {
      */
     async onSelectCard(patientId, tab) {
         this.closePanel();
-        const overlay = document.querySelector('.modal-overlay');
-        if (overlay) document.body.removeChild(overlay);
+        /* 关闭本面板自己的弹层 (原 querySelector 取第一个 overlay 会误删多层弹窗时更上层的) */
+        if (this._overlay && this._overlay.parentNode) this._overlay.remove();
+        this._overlay = null;
 
         if (tab === 'incoming') {
             await this.showAssignDialog(patientId);

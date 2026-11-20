@@ -173,6 +173,9 @@ PatientContext.fillInfoBar = function(p) {
 PatientContext.refreshFundsBar = function(patientId) {
     if (!patientId) return;
     AjaxLoader.api('patients/funds?patient_id=' + patientId, { silent: true }).then(r => {
+        /* 患者令牌: 响应返回时已切换患者则丢弃 (防旧患者费用覆盖新患者) */
+        const cur = PatientContext.current();
+        if (!cur || String(cur.id) !== String(patientId)) return;
         const f = r.data;
         const el = document.getElementById('pib-fee');
         if (!f || !el) return;

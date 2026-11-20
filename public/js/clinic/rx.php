@@ -216,6 +216,8 @@ var RxPanel = {
         this.pharmacyType = 'center';
         this.offline = false;
         this.source = '';
+        /* 面板代数令牌: 重开/切换药房/换关键词时递增, 旧请求响应到达后按代数丢弃 */
+        this._gen = (this._gen || 0) + 1;
         this.renderSource();   // 初始渲染「加载中」，fetch 完成后按真实 source 更新
         Dom.modal('新方（处方开具）', this.html(), [
             { text: '开具', type: 'primary', onclick: () => this.submit() },
@@ -249,6 +251,7 @@ var RxPanel = {
         this.listTotal = 0;
         this.selected = [];
         this.source = '';
+        this._gen = (this._gen || 0) + 1; /* 旧药房请求响应作废 */
         document.querySelectorAll('.rx-ph-type').forEach(b => b.classList.toggle('active', b.dataset.type === type));
         this.renderSource();
         this.renderList();
@@ -259,6 +262,7 @@ var RxPanel = {
 
     /* 分页拉取目录 (滚动触底续载, 一次 30 条) */
     fetchList(reset) {
+        const gen = this._gen || 0;
         if (reset) { this.catalog = []; this.listTotal = 0; }
         if (!reset && this.catalog.length >= this.listTotal) return Promise.resolve(false);
         const params = new URLSearchParams({ limit: 30, offset: this.catalog.length });
@@ -266,6 +270,7 @@ var RxPanel = {
         if (this.cat) params.set('category', this.cat);
         params.set('pharmacy_type', this.pharmacyType);
         return AjaxLoader.api('rx/catalog?' + params.toString(), { silent: true }).then(r => {
+            if (gen !== (this._gen || 0)) return false; /* 过期响应: 面板已重开/切换, 丢弃 */
             this.source = r.source || this.source;
             this.offline = !!r.offline;
             this.listTotal = r.total != null ? Number(r.total) : (r.data || []).length;
@@ -307,6 +312,7 @@ var RxPanel = {
         this.kw = v.trim();
         clearTimeout(this._kwTimer);
         this._kwTimer = setTimeout(() => {
+            this._gen = (this._gen || 0) + 1; /* 旧关键词请求作废 */
             ScrollLoad.reset(this._scroll);
             this.fetchList(true);
         }, 250);
@@ -316,6 +322,7 @@ var RxPanel = {
         document.querySelectorAll('#rx-cats .apply-chip').forEach(c => c.classList.remove('active'));
         el.classList.add('active');
         this.cat = el.dataset.cat;
+        this._gen = (this._gen || 0) + 1; /* 旧分类请求作废 */
         ScrollLoad.reset(this._scroll);
         this.fetchList(true);
     },

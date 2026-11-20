@@ -26,6 +26,8 @@ const OrderSets = {
 
     /* ================= 主模态框 (两栏) ================= */
     async open() {
+        /* 重入守卫: 弹窗已打开时忽略再次触发 (原二次 open 会覆盖 this.overlay 且双弹窗并发 reload) */
+        if (this.overlay && document.body.contains(this.overlay)) return;
         const content = '<div class="osets">'
             + '<div class="osets-left">'
             + '<input type="text" class="form-control osets-search" id="osets-search" placeholder="搜索组套名称…">'

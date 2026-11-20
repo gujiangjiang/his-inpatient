@@ -59,6 +59,9 @@ var _logLoading = false;
 
 async function admin_logs_init() {
     await App.mountShell('admin');
+    /* SPA 切页后上一轮的 3 秒实时轮询必须停掉 (定时器持有旧 DOM 引用, 原仅在页内 refresh 时清理) */
+    clearInterval(_logLiveTimer);
+    _logLiveTimer = null;
     if (window.DateTimePicker) DateTimePicker.initInputs(document);
     admin_logs_tab('server');
 }
