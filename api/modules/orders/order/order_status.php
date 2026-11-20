@@ -12,18 +12,8 @@ $pdo = DB::getPDO();
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
 
-// 状态机校验 (与 order_verify 一致: 开单/停止/作废均需护士确认)
-$validTransition = [
-    'draft' => ['pending'],
-    'pending' => ['verified', 'draft', 'invalid_pending'],
-    'invalid_pending' => ['invalid'],
-    'stop_pending' => ['stopped'],
-    'verified' => ['executing', 'completed', 'invalid_pending', 'stop_pending'],
-    'executing' => ['completed', 'invalid_pending', 'stop_pending'],
-    'completed' => [],
-    'stopped' => [],
-    'invalid' => []
-];
+// 状态机校验 (通用流转表, 含回退/申请作废/申请停止; 与 order_verify 的确认侧表语义不同)
+$validTransition = order_transitions_general();
 if (!in_array($status, $validTransition[$order['status']] ?? [])) {
     Response::error('非法状态跳转：' . $order['status'] . ' → ' . $status);
 }
@@ -40,14 +30,7 @@ if ($status === 'stopped') {
 
 /* 手术医嘱不可直接作废: 需在「手术」页面取消手术申请 */
 if ($status === 'invalid_pending') {
-    $checkIds = [(int)$id];
-    if (!empty($order['parent_id'])) $checkIds[] = (int)$order['parent_id'];
-    $phS = implode(',', array_fill(0, count($checkIds), '?'));
-    $isSurgeryOrder = (($order['category'] ?? '') === 'surgery') || ((int)(DB::selectOne(
-        "SELECT COUNT(*) AS n FROM surgeries WHERE order_id IN ($phS)", $checkIds)['n'] ?? 0) > 0);
-    if ($isSurgeryOrder) {
-        Response::error('手术医嘱不可直接作废：请在「手术」页面「已申请手术」列表中取消手术（取消后该医嘱自动作废）');
-    }
+    order_guard_not_surgery($order);
 }
 
 $pdo->beginTransaction();

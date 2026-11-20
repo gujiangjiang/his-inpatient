@@ -14,18 +14,8 @@ $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
 if (!can_access_patient(Auth::user(), $order['patient_id'])) Response::error('权限不足', 403);
 
-    // 状态校验: 医嘱核对状态机
-    $validTransition = [
-        'draft' => ['pending'],                     // 草稿只能提交为 pending
-        'pending' => ['verified'],                  // 待核对 -> 核对
-        'invalid_pending' => ['invalid'],           // 待作废 -> 确认作废
-        'stop_pending' => ['stopped'],              // 待停止 -> 确认停止
-        'verified' => ['executing', 'completed'],
-        'executing' => ['completed'],
-        'completed' => [],
-        'stopped' => [],
-        'invalid' => []
-    ];
+    // 状态校验: 医嘱核对状态机 (确认侧, 与通用流转表语义不同——无回退/申请类目标)
+    $validTransition = order_transitions_verify();
 if (!in_array($status, $validTransition[$order['status']] ?? [])) {
     Response::error('非法状态跳转：' . $order['status'] . ' → ' . $status);
 }

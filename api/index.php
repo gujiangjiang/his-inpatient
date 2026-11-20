@@ -24,6 +24,7 @@ require_once __DIR__ . '/core/dict_db.php';
 require_once __DIR__ . '/core/emr_dicts.php';
 require_once __DIR__ . '/core/helpers/notify_helper.php';
 require_once __DIR__ . '/core/helpers/order_set_helper.php';
+require_once __DIR__ . '/core/helpers/order_state_helper.php';
 require_once __DIR__ . '/core/helpers/pub_helper.php';
 require_once __DIR__ . '/core/helpers/net_diag_helper.php';
 require_once __DIR__ . '/core/helpers/dual_pharmacy_helper.php';
