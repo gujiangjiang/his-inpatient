@@ -243,8 +243,14 @@ class Cache {
 
     private static function fileSet($key, $value, $ttl) {
         $dir = self::cacheDir();
-        if (!is_dir($dir)) @mkdir($dir, 0777, true);
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
         $row = json_encode(array('e' => time() + (int)$ttl, 'v' => $value));
-        return @file_put_contents(self::filePath($key), $row, LOCK_EX) !== false;
+        /* tmp + rename 原子写: 并发场景下读侧不再可能读到半截 JSON (读侧已有容错, 写侧同步加固) */
+        $target = self::filePath($key);
+        $tmp = $target . '.' . (string)getmypid() . '.tmp';
+        if (@file_put_contents($tmp, $row, LOCK_EX) === false) return false;
+        $ok = @rename($tmp, $target);
+        if (!$ok) @unlink($tmp);
+        return $ok;
     }
 }
