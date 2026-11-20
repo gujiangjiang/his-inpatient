@@ -11,6 +11,7 @@ $set = DB::selectOne("SELECT * FROM order_sets WHERE id = ? AND is_active = 1", 
 if (!$set) Response::error('组套不存在');
 $patient = DB::selectOne("SELECT * FROM patients WHERE id = ?", [$patientId]);
 if (!$patient) Response::error('患者不存在');
+if (!can_access_patient(Auth::user(), (int)$patientId)) Response::error('无权操作该患者', 403);
 if (!is_patient_admitted($patientId)) Response::error('患者尚未入科（未指派主管医师），不能开医嘱');
 
 $clientItems = Validator::get('items');
@@ -67,6 +68,7 @@ $items = $checkedAvail;
 
 $userId = Auth::user()['id'];
 $now = DateHelper::now();
+$startAt = TimeHelper::nowLocal();   /* start_date 为业务日期时间字段: 本地墙钟口径 (与 order_save 一致, UTC 存储模式下原写 UTC 串有漂移) */
 $status = (int)Validator::get('submit', 0) ? 'pending' : 'draft';
 /* 成组判定: 客户端勾选成组 (相同 group_seq>0) 按组分; 兼容旧组套 (无分组的药品组套整体成组) */
 $hasGroupSeq = is_array($clientItems) && count($clientItems);
@@ -113,7 +115,7 @@ try {
             $item['drug_id'], $item['dosage'], $item['dosage_unit'],
             $item['usage_name'], $item['usage_rate'],
             $freqCode, $freqDetail, '',
-            $gseq, 0, $now, $userId, $now, $now
+            $gseq, 0, $startAt, $userId, $now, $now
         ]);
         $id = $pdo->lastInsertId();
         if (!empty($item['notes'])) {

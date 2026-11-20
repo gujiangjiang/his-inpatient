@@ -26,10 +26,18 @@ $vteCaprini = Validator::get('vte_caprini', '');
 $vteBleeding = Validator::get('vte_bleeding', '');
 $isCritical = (int)Validator::get('is_critical', 0);
 
-// 数据权限: 医生只能向授权科室登记/调整患者
+// 数据权限: 医生只能向授权科室登记/调整患者 (编辑时患者当前科室同样须在授权范围, 防跨科室搬移)
 $currentUser = Auth::user();
-if ($currentUser['role'] === 'doctor' && !can_access_department($currentUser, $departmentId)) {
-    Response::error('无权操作该科室', 403);
+if ($currentUser['role'] === 'doctor') {
+    if (!can_access_department($currentUser, $departmentId)) {
+        Response::error('无权操作该科室', 403);
+    }
+    if ($id) {
+        $curDept = (int)(DB::selectOne("SELECT department_id FROM patients WHERE id = ?", [$id])['department_id'] ?? 0);
+        if ($curDept && !can_access_department($currentUser, $curDept)) {
+            Response::error('无权操作其他科室的患者', 403);
+        }
+    }
 }
 
 $pdo = DB::getPDO();
