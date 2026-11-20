@@ -41,20 +41,30 @@ $now = DateHelper::now();
 $nowLocal = TimeHelper::nowLocal();   // 业务日期时间字段（start_date 等）按本地墙钟
 $orderNo = doc_no('O');
 
-DB::execute("UPDATE orders SET is_group_main = 1, updated_at = ? WHERE id = ?", [$now, $root['id']]);
-DB::execute(
-    "INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period,
-        order_no, content, category, status, drug_id, dosage, dosage_unit, base_dosage, usage_name, usage_rate,
-        freq_code, freq_detail, billing_flags, group_seq, sort_no, start_date, created_by, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-    [
-        $root['patient_id'], $root['admission_no'], $root['id'], 0, 'medication',
-        $root['order_period'] ?: 'long',
-        $orderNo, $item['content'], 'medication', 'draft',
-        $item['drug_id'] ?? null, $item['dosage'] ?? '', $item['dosage_unit'] ?? '', $item['base_dosage'] ?? '',
-        $root['usage_name'] ?? '', $root['usage_rate'] ?? '',
-        '', '', $item['billing_flags'] ?? '',
-        $seq, 0, $root['start_date'] ?: $nowLocal, $userId, $now, $now
-    ]
-);
-Response::success(['id' => DB::getPDO()->lastInsertId(), 'root_id' => $root['id']]);
+/* 两步写包事务: 标组主与插子项原子化 (原 INSERT 失败时组主已被误标) */
+$pdo = DB::getPDO();
+$pdo->beginTransaction();
+try {
+    DB::execute("UPDATE orders SET is_group_main = 1, updated_at = ? WHERE id = ?", [$now, $root['id']]);
+    DB::execute(
+        "INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period,
+            order_no, content, category, status, drug_id, dosage, dosage_unit, base_dosage, usage_name, usage_rate,
+            freq_code, freq_detail, billing_flags, group_seq, sort_no, start_date, created_by, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        [
+            $root['patient_id'], $root['admission_no'], $root['id'], 0, 'medication',
+            $root['order_period'] ?: 'long',
+            $orderNo, $item['content'], 'medication', 'draft',
+            $item['drug_id'] ?? null, $item['dosage'] ?? '', $item['dosage_unit'] ?? '', $item['base_dosage'] ?? '',
+            $root['usage_name'] ?? '', $root['usage_rate'] ?? '',
+            '', '', $item['billing_flags'] ?? '',
+            $seq, 0, $root['start_date'] ?: $nowLocal, $userId, $now, $now
+        ]
+    );
+    $newId = (int)$pdo->lastInsertId();
+    $pdo->commit();
+    Response::success(['id' => $newId, 'root_id' => $root['id']]);
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) $pdo->rollback();
+    Response::error('成组失败：' . $e->getMessage());
+}

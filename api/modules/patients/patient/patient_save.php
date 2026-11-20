@@ -80,35 +80,48 @@ if ($id) {
         }
     }
 
-    $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, nursing_level, fee_type, allergy_history, vte_caprini, vte_bleeding, is_critical, prepay_fee, overdraft_limit, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
-    $stmt->execute([
-        $patientNo, $name, $gender, $birthDate,
-        $data['id_card'] ?? '',
-        $admissionNo, $departmentId, $wardId,
-        $data['bed_no'] ?? '',
-        $data['admission_date'] ?? DateHelper::now(),
-        $data['admission_diagnosis'] ?? '',
-        $data['admission_icd_code'] ?? '',
-        $nursingLevel, $feeType, $allergyHistory, $vteCaprini, $vteBleeding, $isCritical,
-        (float)($data['prepay_fee'] ?? 0),
-        (float)($data['overdraft_limit'] ?? 1000),
-        'active',
-        DateHelper::now()
-    ]);
-    $newId = (int)$pdo->lastInsertId();
+    /* 建档原子化: 患者插入 + 占床 + 诊断种子 同事务 (此前无事务, 中途失败留半截数据);
+     * 占床 UPDATE 带空床条件原子占用 (并发同抢一床时仅一者成功) */
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare("INSERT INTO patients (patient_no, name, gender, birth_date, id_card, admission_no, department_id, ward_id, bed_no, admission_date, admission_diagnosis, admission_icd_code, nursing_level, fee_type, allergy_history, vte_caprini, vte_bleeding, is_critical, prepay_fee, overdraft_limit, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        $stmt->execute([
+            $patientNo, $name, $gender, $birthDate,
+            $data['id_card'] ?? '',
+            $admissionNo, $departmentId, $wardId,
+            $data['bed_no'] ?? '',
+            $data['admission_date'] ?? DateHelper::now(),
+            $data['admission_diagnosis'] ?? '',
+            $data['admission_icd_code'] ?? '',
+            $nursingLevel, $feeType, $allergyHistory, $vteCaprini, $vteBleeding, $isCritical,
+            (float)($data['prepay_fee'] ?? 0),
+            (float)($data['overdraft_limit'] ?? 1000),
+            'active',
+            DateHelper::now()
+        ]);
+        $newId = (int)$pdo->lastInsertId();
 
-    if (!empty($data['bed_no'])) {
-        $bedUpdate = $pdo->prepare("UPDATE beds SET status = 'occupied', patient_id = ? WHERE ward_id = ? AND bed_no = ?");
-        $bedUpdate->execute([$newId, $wardId, $data['bed_no']]);
+        if (!empty($data['bed_no'])) {
+            $bedUpdate = $pdo->prepare("UPDATE beds SET status = 'occupied', patient_id = ? WHERE ward_id = ? AND bed_no = ? AND (status = 'free' OR (status = 'occupied' AND (patient_id IS NULL OR patient_id = 0)))");
+            $bedAff = $bedUpdate->execute([$newId, $wardId, $data['bed_no']]) ? $bedUpdate->rowCount() : 0;
+            if ($bedAff !== 1) {
+                $pdo->rollback();
+                Response::error('床位已被占用，请更换床位');
+            }
+        }
+
+        /* 入院自带诊断 = 门(急)诊诊断: 归入诊断模块 (供优先级联动与病历引用) */
+        $seedName = trim((string)($data['admission_diagnosis'] ?? ''));
+        if ($seedName !== '') {
+            try {
+                emr_diag_seed_outpatient($newId, $admissionNo, $seedName, (string)($data['admission_icd_code'] ?? ''));
+            } catch (Exception $e) { /* 诊断联动失败不阻断入院办理 */ }
+        }
+
+        $pdo->commit();
+        Response::success(['id' => $newId, 'patient_no' => $patientNo, 'admission_no' => $admissionNo]);
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollback();
+        Response::error('入院办理失败：' . $e->getMessage());
     }
-
-    /* 入院自带诊断 = 门(急)诊诊断: 归入诊断模块 (供优先级联动与病历引用) */
-    $seedName = trim((string)($data['admission_diagnosis'] ?? ''));
-    if ($seedName !== '') {
-        try {
-            emr_diag_seed_outpatient($newId, $admissionNo, $seedName, (string)($data['admission_icd_code'] ?? ''));
-        } catch (Exception $e) { /* 诊断联动失败不阻断入院办理 */ }
-    }
-
-    Response::success(['id' => $newId, 'patient_no' => $patientNo, 'admission_no' => $admissionNo]);
 }

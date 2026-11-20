@@ -10,6 +10,14 @@ $user = Auth::user();
 if ($user['role'] !== 'admin' && (int)$set['created_by'] !== (int)$user['id']) {
     Response::error('仅创建者或管理员可删除该组套');
 }
-DB::execute("DELETE FROM order_set_items WHERE set_id = ?", [$id]);
-DB::execute("DELETE FROM order_sets WHERE id = ?", [$id]);
+$pdo = DB::getPDO();
+$pdo->beginTransaction();
+try {
+    DB::execute("DELETE FROM order_set_items WHERE set_id = ?", [$id]);
+    DB::execute("DELETE FROM order_sets WHERE id = ?", [$id]);
+    $pdo->commit();
+} catch (Exception $e) {
+    if ($pdo->inTransaction()) $pdo->rollback();
+    Response::error('删除失败：' . $e->getMessage());
+}
 Response::success(['id' => (int)$id]);

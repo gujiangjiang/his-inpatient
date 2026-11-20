@@ -150,13 +150,21 @@ function dual_prepare_order($orderId, $userId, $planTime = '') {
     return ['ok' => true, 'msg' => '已申请预摆药'];
 }
 
-/** 发药送达（药师/护士：dispensed → delivered） */
+/** 发药送达（药师/护士：dispensed → delivered；两表写包事务） */
 function dual_deliver_order($orderId, $userId) {
     $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$orderId]);
     if (!$order) return ['ok' => false, 'msg' => '医嘱不存在'];
     if ($order['dispense_status'] !== 'dispensed') return ['ok' => false, 'msg' => '医嘱尚未发药，不能送达'];
-    DB::execute("UPDATE orders SET dispense_status = 'delivered', updated_at = ? WHERE id = ? AND dispense_status = 'dispensed'",
-        [DateHelper::now(), $order['id']]);
-    DB::execute("UPDATE dispensing_records SET stage = 'delivered' WHERE order_id = ? AND status = 'dispensed'", [$order['id']]);
-    return ['ok' => true, 'msg' => '已送达'];
+    $pdo = DB::getPDO();
+    $pdo->beginTransaction();
+    try {
+        DB::execute("UPDATE orders SET dispense_status = 'delivered', updated_at = ? WHERE id = ? AND dispense_status = 'dispensed'",
+            [DateHelper::now(), $order['id']]);
+        DB::execute("UPDATE dispensing_records SET stage = 'delivered' WHERE order_id = ? AND status = 'dispensed'", [$order['id']]);
+        $pdo->commit();
+        return ['ok' => true, 'msg' => '已送达'];
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollback();
+        return ['ok' => false, 'msg' => '送达失败：' . $e->getMessage()];
+    }
 }
