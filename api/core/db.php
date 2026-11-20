@@ -96,4 +96,34 @@ class DB {
         $stmt->execute($params);
         return $stmt->rowCount();
     }
+
+    /**
+     * 幂等 upsert（三方言兼容）：按唯一键存在则更新非键列，否则整行插入。
+     * 替代「先 SELECT 判存在 → UPDATE/INSERT」的非原子写法（并发窗口不丢更新）：
+     *  1) 先 UPDATE（条件为唯一键），命中行数 > 0 即完成；
+     *  2) 未命中 → INSERT；并发窗口撞唯一键（如 MySQL 同值更新计 0 行的边界）
+     *     捕获后回退再 UPDATE 一次，最终语义幂等。
+     * $table/$uniqueCols 仅限调用方字面量（同 insert/update 表名约定）。
+     */
+    public static function upsert($table, array $data, array $uniqueCols) {
+        $whereParts = [];
+        $whereParams = [];
+        foreach ($uniqueCols as $c) {
+            $whereParts[] = "{$c} = ?";
+            $whereParams[] = $data[$c];
+        }
+        $where = implode(' AND ', $whereParts);
+        $updCols = array_diff_key($data, array_flip($uniqueCols));
+        if ($updCols) {
+            $aff = self::update($table, $updCols, $where, $whereParams);
+            if ($aff > 0) return 'updated';
+        }
+        try {
+            self::insert($table, $data);
+            return 'inserted';
+        } catch (PDOException $e) {
+            if ($updCols) self::update($table, $updCols, $where, $whereParams);
+            return 'updated';
+        }
+    }
 }

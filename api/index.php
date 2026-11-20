@@ -1,43 +1,6 @@
 <?php
-// api/index.php - 统一路由入口
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/core/db.php';
-require_once __DIR__ . '/core/Cache.php';
-require_once __DIR__ . '/core/auth.php';
-require_once __DIR__ . '/core/response.php';
-require_once __DIR__ . '/core/validator.php';
-require_once __DIR__ . '/core/setup_guard.php';
-require_once __DIR__ . '/core/helpers/time_helper.php';
-require_once __DIR__ . '/core/helpers/date_helper.php';
-require_once __DIR__ . '/core/helpers/string_helper.php';
-require_once __DIR__ . '/core/helpers/id_generator_helper.php';
-require_once __DIR__ . '/core/helpers/department_helper.php';
-require_once __DIR__ . '/core/helpers/access_scope_helper.php';
-require_once __DIR__ . '/core/helpers/fee_helper.php';
-require_once __DIR__ . '/core/helpers/patient_helper.php';
-require_once __DIR__ . '/core/helpers/dept_helper.php';
-require_once __DIR__ . '/core/helpers/emr_guard_helper.php';
-require_once __DIR__ . '/core/helpers/emr_slot_value.php';
-require_once __DIR__ . '/core/helpers/emr_calc_helper.php';
-require_once __DIR__ . '/core/helpers/emr_diagnosis_helper.php';
-require_once __DIR__ . '/core/dict_db.php';
-require_once __DIR__ . '/core/emr_dicts.php';
-require_once __DIR__ . '/core/helpers/notify_helper.php';
-require_once __DIR__ . '/core/helpers/order_set_helper.php';
-require_once __DIR__ . '/core/helpers/order_state_helper.php';
-require_once __DIR__ . '/core/helpers/pub_helper.php';
-require_once __DIR__ . '/core/helpers/net_diag_helper.php';
-require_once __DIR__ . '/core/helpers/dual_pharmacy_helper.php';
-require_once __DIR__ . '/core/helpers/opd_pharmacy_helper.php';
-require_once __DIR__ . '/core/helpers/audit_helper.php';
-require_once __DIR__ . '/core/helpers/cache_driver_helper.php';
-require_once __DIR__ . '/core/helpers/log_helper.php';
-require_once __DIR__ . '/core/helpers/opd_helper.php';
-require_once __DIR__ . '/core/helpers/opd_order_push.php';
-require_once __DIR__ . '/core/helpers/catalog_sync.php';
-require_once __DIR__ . '/core/migration.php';
-require_once __DIR__ . '/core/schema_guard.php';
-require_once __DIR__ . '/routes.php';
+// api/index.php - 统一路由入口 (基础设施加载见 core/bootstrap.php)
+require_once __DIR__ . '/core/bootstrap.php';
 
 // API 必须输出纯净 JSON: 警告/异常不得混入响应体 (否则前端 JSON.parse 报 Unexpected token '<')
 ini_set('display_errors', '0');
