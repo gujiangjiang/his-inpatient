@@ -20,8 +20,9 @@ $params = [];
 if ($patientId) {
     $sql .= " AND o.patient_id = ?";
     $params[] = $patientId;
-} elseif ($user['role'] === 'nurse') {
-    // 护士只能看本病区患者的医嘱
+}
+if ($user['role'] === 'nurse') {
+    // 护士只能看本病区患者的医嘱 (与 patient_id 条件叠加, 不可因传 patient_id 绕开病区过滤)
     $sql .= " AND o.patient_id IN (SELECT id FROM patients WHERE ward_id = ?) ";
     $params[] = $user['ward_id'];
 }

@@ -14,6 +14,8 @@ $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
 if (!can_access_patient(Auth::user(), $order['patient_id'])) Response::error('权限不足', 403);
 
+/* 并发守卫标记: 主路径 UPDATE 带原状态条件, rowCount=0 即说明状态已被并发变更 */
+
     // 状态校验: 医嘱核对状态机 (确认侧, 与通用流转表语义不同——无回退/申请类目标)
     $validTransition = order_transitions_verify();
 if (!in_array($status, $validTransition[$order['status']] ?? [])) {
@@ -49,9 +51,13 @@ try {
             WHERE parent_id = ? AND status = 'stop_pending'")
             ->execute([$userId, $now, $now, $now, $id]);
     } else {
-        // 核对/执行/完成: 更新主医嘱并级联子医嘱
-        $stmt = $pdo->prepare("UPDATE orders SET status = ?, verified_by = ?, verified_at = ?, updated_at = ? WHERE id = ?");
-        $stmt->execute([$status, $userId, $now, $now, $id]);
+        // 核对/执行/完成: 更新主医嘱并级联子医嘱 (WHERE 带原状态, 防并发双写)
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, verified_by = ?, verified_at = ?, updated_at = ? WHERE id = ? AND status = ?");
+        $stmt->execute([$status, $userId, $now, $now, $id, $order['status']]);
+        if ($stmt->rowCount() === 0) {
+            $pdo->rollback();
+            Response::error('医嘱状态已变化，请刷新后重试');
+        }
         if ($isRoot) {
             $pdo->prepare("UPDATE orders SET status = ?, verified_by = ?, verified_at = ?, updated_at = ? WHERE parent_id = ?")
                 ->execute([$status, $userId, $now, $now, $id]);

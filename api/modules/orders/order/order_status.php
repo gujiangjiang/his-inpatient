@@ -11,6 +11,7 @@ if (!$id || !$status) Response::error('请输入医嘱ID和状态');
 $pdo = DB::getPDO();
 $order = DB::selectOne("SELECT * FROM orders WHERE id = ?", [$id]);
 if (!$order) Response::error('医嘱不存在');
+if (!can_access_patient(Auth::user(), (int)$order['patient_id'])) Response::error('无权操作该患者的医嘱', 403);
 
 // 状态机校验 (通用流转表, 含回退/申请作废/申请停止; 与 order_verify 的确认侧表语义不同)
 $validTransition = order_transitions_general();
@@ -36,12 +37,17 @@ if ($status === 'invalid_pending') {
 $pdo->beginTransaction();
 try {
     $now = DateHelper::now();
+    /* 状态守卫: WHERE 带原状态, 防并发下状态被他人先行变更后盲目覆盖 */
     if ($status === 'stopped') {
-        $stmt = $pdo->prepare("UPDATE orders SET status = ?, stop_date = ?, stopped_by = ?, updated_at = ? WHERE id = ?");
-        $stmt->execute([$status, $now, Auth::user()['id'], $now, $id]);
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, stop_date = ?, stopped_by = ?, updated_at = ? WHERE id = ? AND status = ?");
+        $stmt->execute([$status, $now, Auth::user()['id'], $now, $id, $order['status']]);
     } else {
-        $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ?");
-        $stmt->execute([$status, $now, $id]);
+        $stmt = $pdo->prepare("UPDATE orders SET status = ?, updated_at = ? WHERE id = ? AND status = ?");
+        $stmt->execute([$status, $now, $id, $order['status']]);
+    }
+    if ($stmt->rowCount() === 0) {
+        $pdo->rollback();
+        Response::error('医嘱状态已变化，请刷新后重试');
     }
 
     // 级联子医嘱

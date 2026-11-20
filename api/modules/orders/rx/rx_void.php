@@ -13,7 +13,8 @@ if ($rxNo !== '') {
     $rows = DB::select("SELECT id, patient_id, status FROM orders WHERE id IN ($ph) AND notes = '处方'", $ids);
 }
 if (!$rows) Response::error('处方不存在', 404);
-if (!can_access_patient(Auth::user(), (int)$rows[0]['patient_id'])) Response::error('无权操作该患者', 403);
+/* 归属校验: 混合 ids 可能跨患者, 逐行校验 (原仅校验首行可被绕过) */
+require_access_patients(Auth::user(), array_column($rows, 'patient_id'));
 
 $voidIds = [];
 foreach ($rows as $r) {
