@@ -13,7 +13,6 @@ require_once __DIR__ . '/../api/core/setup_guard.php';
 require_once __DIR__ . '/../api/core/helpers/time_helper.php';
 require_once __DIR__ . '/../api/core/helpers/date_helper.php';
 require_once __DIR__ . '/../api/core/helpers/string_helper.php';
-require_once __DIR__ . '/../api/core/helpers/upload_helper.php';
 require_once __DIR__ . '/../api/core/migration.php';
 require_once __DIR__ . '/../api/core/schema_guard.php';
 
