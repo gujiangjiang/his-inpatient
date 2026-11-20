@@ -150,20 +150,20 @@ const Dom = {
             html += '<label class="form-label">' + Format.escape(label) + '</label>';
         }
         if (type === 'select') {
-            html += '<select name="' + name + '"' + cls + ' ' + required + '>';
+            html += '<select name="' + Format.escape(name) + '"' + cls + ' ' + required + '>';
             if (def.options) {
                 def.options.forEach(opt => {
                     const selected = (opt.value == value) ? ' selected' : '';
-                    html += '<option value="' + opt.value + '"' + selected + '>' + Format.escape(opt.label) + '</option>';
+                    html += '<option value="' + Format.escape(opt.value) + '"' + selected + '>' + Format.escape(opt.label) + '</option>';
                 });
             }
             html += '</select>';
         } else if (type === 'textarea') {
-            html += '<textarea name="' + name + '" ' + cls + ' ' + required + ' rows="' + (def.rows || 4) + '">' + Format.escape(value || '') + '</textarea>';
+            html += '<textarea name="' + Format.escape(name) + '" ' + cls + ' ' + required + ' rows="' + (def.rows || 4) + '">' + Format.escape(value || '') + '</textarea>';
         } else if (type === 'hidden') {
             html += '<input type="hidden" name="' + name + '" value="' + Format.escape(value || '') + '">';
         } else {
-            html += '<input type="' + type + '" name="' + name + '" ' + cls + ' ' + required + ' value="' + Format.escape(value || '') + '">';
+            html += '<input type="' + type + '" name="' + Format.escape(name) + '" ' + cls + ' ' + required + ' value="' + Format.escape(value || '') + '">';
         }
         html += '</div>';
         return html;

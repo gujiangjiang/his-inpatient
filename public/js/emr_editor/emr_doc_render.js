@@ -7,8 +7,9 @@
   'use strict';
   const M = window.EmrDoc;
   const R = (window.EmrRender = {});
-  const esc = (s) => String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  /* 统一走 Format.escape (含单引号); 加载序 format.js 先于本文件, fallback 防御 */
+  const esc = (s) => (window.Format ? Format.escape(s) : String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
 
   const PX = 96 / 72;
   const pt = (v) => v ? (Math.round(v * PX * 100) / 100) + 'px' : '';

@@ -20,7 +20,7 @@ const OrderDetail = {
         const readonly = o.status !== 'draft' || o.is_auto_generated == 1;
         const ro = readonly ? 'disabled' : '';
         const flags = (o.billing_flags || '').split(',');
-        const flagBox = (v) => `<label class="osd-flag"><input type="checkbox" class="osd-flagbox" value="${v}" ${flags.includes(v) ? 'checked' : ''} ${ro}>${v}</label>`;
+        const flagBox = (v) => `<label class="osd-flag"><input type="checkbox" class="osd-flagbox" value="${Format.escape(v)}" ${flags.includes(v) ? 'checked' : ''} ${ro}>${Format.escape(v)}</label>`;
         const dur = this.parseDuration(o.duration);
         const isTemp = o.order_period === 'temp';
         const isMed = o.category === 'medication';

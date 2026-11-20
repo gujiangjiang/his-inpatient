@@ -56,9 +56,9 @@
     return close;
   };
 
-  /** 转义文本 (标签等动态值写入 innerHTML 前必用) */
-  const esc = (s) => String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  /** 转义文本 (标签等动态值写入 innerHTML 前必用); 统一走 Format.escape (含单引号) */
+  const esc = (s) => (window.Format ? Format.escape(s) : String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
 
   /**
    * 通用「管理列表」模态框外壳 (模板管理/内容库共用):

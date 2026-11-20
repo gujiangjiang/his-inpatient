@@ -178,7 +178,7 @@ function patients_wall_render() {
         var level = String(p.nursing_level || '3');
         var nursing = _wallNursingText[level] || '三级护理';
         var roman = _wallNursingRoman[level] || 'Ⅲ';
-        var bed = roman + ' | ' + (p.bed_no || '-');
+        var bed = Format.escape(roman + ' | ' + (p.bed_no || '-'));
         var days = patients_wall_days(p);
         var age = patients_wall_age(p);
         var ward = [p.department_name, p.ward_name].filter(Boolean).join('-');

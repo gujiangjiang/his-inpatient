@@ -5,8 +5,9 @@
   'use strict';
   const L = window.EmrLayout;
   const P = (window.EmrPrint = {});
-  const esc = (s) => String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  /* 统一走 Format.escape (含单引号); 加载序 format.js 先于本文件, fallback 防御 */
+  const esc = (s) => (window.Format ? Format.escape(s) : String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
 
   /** 单页 HTML: 抬头(医院名+文书名+信息栏) + 正文区 + 页脚(页码) */
   const pageHTML = (d, header, bodyHTML, idx, total, patientInfo) => {
