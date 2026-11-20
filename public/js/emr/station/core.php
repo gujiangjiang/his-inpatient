@@ -107,7 +107,7 @@ async function emr_saveDraft(auto) {
         _emrCurrentDoc.id = r.data.id;
         _emrCurrentDoc.doc_meta = meta;
         _emrEditor.markSaved();
-        setSaveState('已保存 ' + emrNowStamp().slice(11), 'saved');
+        setSaveState('已保存 ' + Format.nowStamp().slice(11), 'saved');
         if (!isAuto) Dom.toast('草稿已保存', 'success');
         refreshDocs();
     } catch (e) {

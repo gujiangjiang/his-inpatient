@@ -128,7 +128,7 @@ window.refreshWorkstationLayout = async function() {
  */
 PatientContext.fillInfoBar = function(p) {
     if (!p) return;
-    const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+    const age = Format.ageSimple(p.birth_date);
     const set = (id, v) => {
         const el = document.getElementById(id);
         if (el) el.textContent = v;

@@ -97,7 +97,7 @@ async function emr_refLoadDocs(seq) {
     emr_refListRender(docs.map(function (d) {
         return {
             name: (d.title || d.template_name || '未命名文书') + (d.status === 'signed' ? '（已签名）' : ''),
-            time: emrStamp(d.updated_at || d.created_at || ''),
+            time: Format.stamp(d.updated_at || d.created_at || ''),
             load: async function () {
                 if (_emrRefCache[d.id] != null) return _emrRefCache[d.id];
                 const dr = await AjaxLoader.api('emr/document-get?id=' + d.id, { silent: true });
@@ -113,7 +113,7 @@ async function emr_refLoadLab(seq) {
     await emr_refLoadSource('lab/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: x.exam_name || '检验报告',
-            time: emrStamp(x.reported_at || x.created_at || ''),
+            time: Format.stamp(x.reported_at || x.created_at || ''),
             load: async function () {
                 const dr = await AjaxLoader.api('lab/detail?id=' + x.id, { silent: true });
                 const d = dr.data || {};
@@ -130,7 +130,7 @@ async function emr_refLoadExam(seq) {
     await emr_refLoadSource('exam/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: (x.exam_type || '检查') + (x.body_part ? '·' + x.body_part : ''),
-            time: emrStamp(x.reported_at || x.created_at || ''),
+            time: Format.stamp(x.reported_at || x.created_at || ''),
             load: async function () {
                 return '【' + (x.exam_type || '') + (x.body_part ? '（' + x.body_part + '）' : '') + '】' + (x.reported_at ? ' 报告时间 ' + x.reported_at : '')
                     + (x.findings ? '\n检查所见：' + x.findings : '')
@@ -146,7 +146,7 @@ async function emr_refLoadOrders(seq) {
     await emr_refLoadSource('orders/list?patient_id=' + _emrPatient.id, function (x) {
         return {
             name: (x.content || '医嘱') + (x.dosage ? ' ' + x.dosage : '') + (x.frequency ? ' ' + x.frequency : ''),
-            time: emrStamp(x.start_date || x.created_at || '') + (x.status ? ' · ' + x.status : ''),
+            time: Format.stamp(x.start_date || x.created_at || '') + (x.status ? ' · ' + x.status : ''),
             load: async function () {
                 return (x.order_period === 'temp' ? '临时医嘱' : '长期医嘱') + '：' + (x.content || '')
                     + (x.dosage ? '\n剂量：' + x.dosage + (x.dosage_unit || '') : '')
@@ -163,7 +163,7 @@ async function emr_refLoadContent(seq) {
     await emr_refLoadSource('emr/content-list', function (x) {
         return {
             name: (x.category_name ? '[' + x.category_name + '] ' : '') + x.name,
-            time: emrStamp(x.updated_at || ''),
+            time: Format.stamp(x.updated_at || ''),
             load: async function () { return x.content || '（空内容）'; }
         };
     }, seq);

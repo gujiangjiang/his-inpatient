@@ -128,7 +128,7 @@ const PatientSwitcher = {
      * 生成患者文字方块 HTML
      */
     renderCardHtml(p, tab) {
-        const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+        const age = Format.ageSimple(p.birth_date);
         const gender = Format.gender(p.gender);
         const attending = p.attending_name || p.doctor_name || '';
         const level = String(p.nursing_level || '3');
@@ -236,7 +236,7 @@ const PatientSwitcher = {
         if (!summary) return;
         const p = PatientContext.current();
         if (p) {
-            const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+            const age = Format.ageSimple(p.birth_date);
             summary.textContent = '患者: ' + p.name + ' (' + Format.gender(p.gender) + '/' + age + ') 床 ' + (p.bed_no || '-');
         } else {
             summary.textContent = '请选择患者';

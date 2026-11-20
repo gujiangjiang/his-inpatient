@@ -144,7 +144,7 @@ var OrderStation = {
         const body = document.getElementById('os-assist-body');
         if (!nameEl || !body) return;
         nameEl.textContent = p.name || '';
-        const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+        const age = Format.ageSimple(p.birth_date);
         let html = '';
         if (p.allergy_history) {
             html += '<div class="os-assist-warn">' + svgIcon('common/status/warning', 14) + ' 过敏史：' + Format.escape(p.allergy_history) + '</div>';

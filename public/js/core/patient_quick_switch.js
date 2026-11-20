@@ -62,7 +62,7 @@ const PatientQuickSwitch = {
             return;
         }
         list.innerHTML = this.patients.map(p => {
-            const age = p.birth_date ? (new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+            const age = Format.ageSimple(p.birth_date);
             const level = String(p.nursing_level || '3');
             const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[level] || 'Ⅲ';
             const active = p.id == this.currentId;

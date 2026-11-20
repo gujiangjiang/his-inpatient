@@ -72,7 +72,7 @@ function renderCategoryTree() {
             item.className = 'emr-doc-item' + (d.status === 'signed' ? ' signed' : '');
             const fullTitle = d.title || d.template_name || '未命名文书';
             item.innerHTML = '<span class="emr-doc-title-text" title="' + Format.escape(fullTitle) + '">' + Format.escape(fullTitle) + '</span>' +
-                '<span class="emr-doc-time">' + Format.escape(emrStamp(d.updated_at || d.created_at || '')) + '</span>' +
+                '<span class="emr-doc-time">' + Format.escape(Format.stamp(d.updated_at || d.created_at || '')) + '</span>' +
                 (d.maint_pending_id ? '<span class="emr-doc-maint" title="维护申请待管理员审核">维护待审</span>' : '') +
                 '<span class="emr-doc-status-tag ' + (d.status === 'signed' ? 'signed' : 'draft') + '">' + (d.status === 'signed' ? '已签名' : '草稿') + '</span>';
             item.onclick = () => emr_openDocument(d.id);
@@ -162,7 +162,7 @@ async function emr_batchPrintDialog() {
                     + '<input type="checkbox" class="emr-bp-chk" value="' + d.id + '"' + checkedAttr + '>'
                     + '<span class="emr-tpm-rname" title="' + Format.escape(d.title || d.template_name || '未命名文书') + '">' + Format.escape(d.title || d.template_name || '未命名文书') + '</span>'
                     + signedTag
-                    + '<span class="emr-bp-meta">' + Format.escape(emrStamp(d.updated_at || d.created_at || '')) + '</span>'
+                    + '<span class="emr-bp-meta">' + Format.escape(Format.stamp(d.updated_at || d.created_at || '')) + '</span>'
                     + '<span class="emr-bp-count" title="该文书累计打印次数">打印 ' + cnt + ' 次</span>'
                     + '</label>';
             }).join('');
@@ -275,7 +275,7 @@ async function emr_openTemplatePicker(categoryId) {
         }).join('');
     }
 
-    const nowStamp = emrNowStamp();
+    const nowStamp = Format.nowStamp();
     const content = '<div class="emr-tpl-picker">'
         + '<div class="emr-tpl-tabs"><span class="emr-tpl-tab active" data-tab="mine">本科室</span><span class="emr-tpl-tab" data-tab="all">全院</span></div>'
         + '<div class="emr-tpl-list" id="emr-tpl-list">' + mineHTML() + '</div>'
@@ -378,7 +378,7 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
         if (slot.def) EmrOps.setSlotValue(p, slot.key, slot.def);
     });
     /* 记录日期 = 模板选择时指定的日期时间 (默认当前时间; 可点击修改; 不参与首页同步) */
-    EmrOps.setSlotValueByKey(doc.body, 'p_recorddate_val', opts.datetime || emrNowStamp());
+    EmrOps.setSlotValueByKey(doc.body, 'p_recorddate_val', opts.datetime || Format.nowStamp());
     /* 字段引用: 仅在首次创建时自动调用一次 (保存即固化, 之后打开不再变化) */
     try { await resolveRefFields(doc); } catch (e) { console.error('字段引用解析失败', e); }
     /* 自动计算项: 预填/引用完成后按当前文书字段刷新一次 */
@@ -401,7 +401,7 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
 function buildPatientInfo() {
     const p = _emrPatient || PatientContext.current();
     if (!p) return {};
-    const age = p.birth_date ? Math.max(0, new Date().getFullYear() - new Date(p.birth_date).getFullYear()) : '';
+    const age = Format.ageSimple(p.birth_date);
     return {
         name: p.name || '', gender: Format.gender(p.gender), age: String(age),
         department: p.department_name || '', ward_name: p.ward_name || '',
@@ -462,26 +462,7 @@ async function emr_openDocument(docId) {
 }
 
 /* ================= 病案首页单项同步 (仅编辑状态; 已签名=法律快照不动) ================= */
-/** 时间戳 'YYYY-MM-DD HH:mm' */
-function emrNowStamp() {
-    const d = new Date();
-    const p = n => String(n).padStart(2, '0');
-    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
-}
-/** 取日期部分 'YYYY-MM-DD' */
-function emrYMD(v) {
-    if (!v) return '';
-    const m = String(v).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-    return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : String(v).slice(0, 10);
-}
-/** 日期+时间 'YYYY-MM-DD HH:mm' (无时间部分时仅日期) */
-function emrStamp(v) {
-    if (!v) return '';
-    const m = String(v).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2}))?/);
-    if (!m) return String(v);
-    const d = m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
-    return m[4] != null ? d + ' ' + m[4].padStart(2, '0') + ':' + m[5].padStart(2, '0') : d;
-}
+/* 时间戳工具 emrNowStamp/emrYMD/emrStamp 已下沉 Format.nowStamp/ymd/stamp (core/format.js) */
 /* 固化字段 (dyn 只读): 用户不可修改, 始终自动跟随病案首页 */
 var CASE_DYN = {
     p_name: (c, p) => c.name || (p && p.name) || '',
@@ -500,7 +481,7 @@ var CASE_SYNC = {
     p_occupation_val: (c) => c.occupation || '',
     p_workunit_val: (c) => c.work_unit || '',
     p_address_val: (c) => [c.addr_prov, c.addr_city, c.addr_county, c.addr_detail].filter(x => x && String(x).trim()).join(''),
-    p_admitdate_val: (c, p) => emrStamp((p && p.admission_date) || c.admit_time || ''),
+    p_admitdate_val: (c, p) => Format.stamp((p && p.admission_date) || c.admit_time || ''),
     /* p_teller_val: 无首页来源, 不参与同步 */
     /* p_recorddate_val: 建档时间, 由创建流程写入, 可点选修改 */
 };

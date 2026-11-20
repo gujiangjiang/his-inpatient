@@ -11,7 +11,7 @@ const Format = {
     },
 
     gender(g) {
-        const map = { 'male': '男', 'female': '女', 'male': '男', 'female': '女', '1': '男', '2': '女', '男': '男', '女': '女' };
+        const map = { 'male': '男', 'female': '女', '1': '男', '2': '女', '男': '男', '女': '女' };
         return map[g] || g || '未知';
     },
 
@@ -97,5 +97,38 @@ const Format = {
         if (isNaN(d.getTime())) return dt;
         const p = n => String(n).padStart(2, '0');
         return String(d.getFullYear()).slice(2) + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    },
+
+    /* ==================== 本地墙钟时间工具 (原病历站 emrNowStamp/emrYMD/emrStamp 下沉) ==================== */
+
+    /** 当前本地墙钟 'YYYY-MM-DD HH:mm' (业务日期时间默认值) */
+    nowStamp() {
+        const d = new Date();
+        const p = n => String(n).padStart(2, '0');
+        return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    },
+
+    /** 取日期部分 'YYYY-MM-DD' (容错 / 分隔与缺时间部分) */
+    ymd(v) {
+        if (!v) return '';
+        const m = String(v).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+        return m ? m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0') : String(v).slice(0, 10);
+    },
+
+    /** 日期+时间 'YYYY-MM-DD HH:mm' (无时间部分时仅日期; 非日期串原样返回) */
+    stamp(v) {
+        if (!v) return '';
+        const m = String(v).match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2}))?/);
+        if (!m) return String(v);
+        const d = m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+        return m[4] != null ? d + ' ' + m[4].padStart(2, '0') + ':' + m[5].padStart(2, '0') : d;
+    },
+
+    /** 简化年龄 (年差法, 各页内联实现的统一入口; 与 age() 精确到天的语义区分) */
+    ageSimple(birth) {
+        if (!birth) return '';
+        const b = new Date(birth);
+        if (isNaN(b.getTime())) return '';
+        return Math.max(0, new Date().getFullYear() - b.getFullYear());
     }
 };
