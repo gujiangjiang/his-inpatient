@@ -27,7 +27,12 @@ const Dom = {
         }, 3000);
     },
 
-    modal(title, content, buttons = []) {
+    /**
+     * 通用弹窗。契约: title/content 为 HTML 串, 含动态数据时调用方须先 Format.escape。
+     * buttons: [{text, type, onclick}] — onclick 返回 false (同步) 或解析为 false 的 Promise 时保留弹窗。
+     * opts.large: 弹窗加 modal-lg 宽样式 (原 overlay.querySelector('.modal').classList.add('modal-lg') 样板收敛)。
+     */
+    modal(title, content, buttons = [], opts = {}) {
         // 支持弹窗叠加 (如开嘱编辑器上再打开药品检索): 不清除已有弹窗, 层级递增
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -35,11 +40,15 @@ const Dom = {
         if (stack > 0) overlay.style.zIndex = 1000 + stack * 10;
 
         const modal = document.createElement('div');
-        modal.className = 'modal';
+        modal.className = 'modal' + (opts.large ? ' modal-lg' : '');
         const closeHtml = '<button type="button" class="modal-close" title="关闭">' +
             (window.svgIcon ? svgIcon('common/actions/close', 14) : '×') + '</button>';
-        /* 安全关闭: onclick 可能已自行关闭弹窗 (remove) → 再次移除会抛 NotFoundError */
-        const closeOverlay = () => { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); };
+        /* 统一关闭: 摘除 Esc 监听 + 安全移除 (onclick 可能已自行关闭弹窗 → 防二次移除抛 NotFoundError) */
+        let onKey = null;
+        const closeOverlay = () => {
+            if (onKey) document.removeEventListener('keydown', onKey);
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        };
         modal.innerHTML = `
             <div class="modal-header"><span class="modal-title">${title}</span>${closeHtml}</div>
             <div class="modal-body">${content}</div>
@@ -75,15 +84,14 @@ const Dom = {
         document.body.appendChild(overlay);
         if (window.SelectPicker) SelectPicker.initInputs(overlay);
 
-        // 关闭交互: X 按钮 / 点击遮罩空白处 / Esc (仅最上层)
-        overlay.querySelector('.modal-close').addEventListener('click', () => overlay.remove());
-        overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) overlay.remove(); });
-        const onKey = (e) => {
+        // 关闭交互: X 按钮 / 点击遮罩空白处 / Esc (仅最上层) — 全部走 closeOverlay 统一摘除监听
+        overlay.querySelector('.modal-close').addEventListener('click', closeOverlay);
+        overlay.addEventListener('mousedown', (e) => { if (e.target === overlay) closeOverlay(); });
+        onKey = (e) => {
             if (e.key !== 'Escape') return;
             const all = document.querySelectorAll('.modal-overlay');
             if (all.length && all[all.length - 1] === overlay && document.body.contains(overlay)) {
-                overlay.remove();
-                document.removeEventListener('keydown', onKey);
+                closeOverlay();
             } else if (!document.body.contains(overlay)) {
                 document.removeEventListener('keydown', onKey);
             }
@@ -91,6 +99,18 @@ const Dom = {
         document.addEventListener('keydown', onKey);
 
         return overlay;
+    },
+
+    /**
+     * 确认弹窗 (删除/作废等二选一确认样板收敛, 原 16+ 处 Dom.modal + 双按钮复制)。
+     * message 为 HTML 串, 含动态数据时调用方先转义。
+     * opts: { danger: 危险操作红色按钮, okText, cancelText, large }
+     */
+    confirm(title, message, onOk, opts = {}) {
+        return this.modal(title, '<p>' + message + '</p>', [
+            { text: opts.okText || '确定', type: opts.danger ? 'danger' : 'primary', onclick: onOk },
+            { text: opts.cancelText || '取消', type: 'default' }
+        ], opts);
     },
 
     formField(def, value) {
