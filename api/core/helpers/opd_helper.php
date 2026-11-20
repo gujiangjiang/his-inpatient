@@ -53,6 +53,9 @@ function opd_http($method, $url, $headers = [], $body = null, $timeout = 8) {
     $__code = 0;
     if (function_exists('curl_init')) {
         $ch = curl_init($__url);
+        /* 出站 TLS 证书校验默认开启 (与流式回退分支的默认行为对齐);
+         * 内网自签环境可在 config.db 配 opd.tls_verify=0 关闭 (恢复旧不校验行为) */
+        $__tlsVerify = (string)ConfigDB::get('opd.tls_verify', '1') !== '0';
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CUSTOMREQUEST => $method,
@@ -60,7 +63,8 @@ function opd_http($method, $url, $headers = [], $body = null, $timeout = 8) {
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYPEER => $__tlsVerify,
+            CURLOPT_SSL_VERIFYHOST => $__tlsVerify ? 2 : 0,
             CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
         ]);
         if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
