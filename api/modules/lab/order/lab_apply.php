@@ -21,7 +21,6 @@ if (!$items) Response::error('未找到可用的检验项目');
 $status = 'pending';
 $now = DateHelper::now();
 $nowLocal = TimeHelper::nowLocal();   // 业务日期时间字段（start_date 等）按本地墙钟
-$base = (int)DB::selectOne("SELECT COUNT(*) as c FROM lab_reports")['c'];
 $pdo = DB::getPDO();
 $opdPush = ['processed' => 0, 'success' => 0, 'failed' => 0];
 $pdo->beginTransaction();
@@ -31,7 +30,7 @@ try {
     $i = 0;
     foreach ($items as $it) {
         $i++;
-        $reportNo = 'LAB' . date('Ymd') . str_pad((string)($base + $i), 4, '0', STR_PAD_LEFT);
+        $reportNo = seq_serial('lab_reports', 'report_no', 'LAB');
         $reportId = (int)DB::insert('lab_reports', [
             'patient_id' => $patientId,
             'admission_no' => $patient['admission_no'],
@@ -62,7 +61,7 @@ try {
                 'created_at' => $now,
             ]);
         }
-        $orderNo = 'O' . date('YmdHis') . str_pad((string)random_int(0, 999), 3, '0', STR_PAD_LEFT);
+        $orderNo = doc_no('O');
         $orderId = (int)DB::insert('orders', [
             'patient_id' => $patientId,
             'admission_no' => $patient['admission_no'],
