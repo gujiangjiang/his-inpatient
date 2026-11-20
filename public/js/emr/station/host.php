@@ -79,15 +79,12 @@ function emr_showVersions() {
 }
 
 function emr_restoreVersion(versionId) {
-    Dom.modal('确认恢复', '<p>将覆盖当前草稿内容，确定恢复该历史版本吗？</p>', [
-        { text: '恢复', type: 'danger', onclick: function() {
+    Dom.confirm('确认恢复', '将覆盖当前草稿内容，确定恢复该历史版本吗？', function() {
             AjaxLoader.api('emr/version-restore', { method: 'POST', data: { version_id: versionId } }).then(r => {
                 Dom.toast('已恢复', 'success');
                 emr_openDocument(r.data.id);
             });
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '恢复' });
 }
 
 /* ================= 撤销/重做 ================= */
@@ -111,8 +108,7 @@ function emr_showContextMenu(e, doc) {
 }
 
 function emr_deleteDoc(docId) {
-    Dom.modal('确认删除', '<p>确认删除此文书吗？已签名文书不可删除。</p>', [
-        { text: '删除', type: 'danger', onclick: function() {
+    Dom.confirm('确认删除', '确认删除此文书吗？已签名文书不可删除。', function() {
             AjaxLoader.api('emr/document-delete?id=' + docId, { method: 'POST' }).then(() => {
                 Dom.toast('已删除', 'success');
                 document.getElementById('emr-editor').style.display = 'none';
@@ -120,9 +116,7 @@ function emr_deleteDoc(docId) {
                 if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
                 refreshDocs();
             });
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '删除' });
 }
 
 /* ================= 工具条事件 ================= */

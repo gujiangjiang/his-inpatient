@@ -224,15 +224,12 @@ var emr_openTemplateManager = EmrUI.managedList({
         if (a === 'props') { emr_tplPropsDialog(t, api); return; }
         if (a === 'publish') { emr_pubDialog(t, '模板', api); return; }
         if (a === 'del') {
-            Dom.modal('删除模板', '<p>确认删除模板「' + Format.escape(t.name) + '」？引用该模板的文书不受影响（内容独立保存）。</p>', [
-                { text: '删除', type: 'danger', onclick: async function () {
-                    await AjaxLoader.api('emr/template-delete?id=' + t.id, { method: 'POST' });
-                    Dom.toast('已删除', 'success');
-                    await api.reload();
-                    api.rerender();
-                } },
-                { text: '取消', type: 'default' }
-            ]);
+            Dom.confirm('删除模板', '确认删除模板「' + Format.escape(t.name) + '」？引用该模板的文书不受影响（内容独立保存）。', async function () {
+                await AjaxLoader.api('emr/template-delete?id=' + t.id, { method: 'POST' });
+                Dom.toast('已删除', 'success');
+                await api.reload();
+                api.rerender();
+            }, { danger: true, okText: '删除' });
             return;
         }
         if (a === 'clone') {
@@ -282,15 +279,12 @@ var emr_openContentManager = EmrUI.managedList({
         if (a === 'edit') { emr_contentEditDialog(t, api.cats, api.reload, api.rerender); return; }
         if (a === 'publish') { emr_pubDialog(t, '内容', api); return; }
         if (a === 'del') {
-            Dom.modal('删除内容', '<p>确认删除内容「' + Format.escape(t.name) + '」？</p>', [
-                { text: '删除', type: 'danger', onclick: async function () {
-                    await AjaxLoader.api('emr/content-delete?id=' + t.id, { method: 'POST' });
-                    Dom.toast('已删除', 'success');
-                    await api.reload();
-                    api.rerender();
-                } },
-                { text: '取消', type: 'default' }
-            ]);
+            Dom.confirm('删除内容', '确认删除内容「' + Format.escape(t.name) + '」？', async function () {
+                await AjaxLoader.api('emr/content-delete?id=' + t.id, { method: 'POST' });
+                Dom.toast('已删除', 'success');
+                await api.reload();
+                api.rerender();
+            }, { danger: true, okText: '删除' });
             return;
         }
         if (a === 'clone') {

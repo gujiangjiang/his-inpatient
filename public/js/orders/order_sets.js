@@ -74,21 +74,18 @@ const OrderSets = {
     confirmDelete() {
         const set = this.currentSet();
         if (!set) return;
-        Dom.modal('删除确认', '<p>确认删除组套「' + Format.escape(set.name) + '」？（条目一并删除，不可恢复）</p>', [
-            { text: '删除', type: 'danger', onclick: async () => {
-                try {
-                    await AjaxLoader.api('orders/set-delete', { method: 'POST', data: { id: set.id } });
-                    Dom.toast('已删除组套', 'success');
-                    this.currentId = null;
-                    this.work = [];
-                    await this.reload();
-                    this.renderLeft();
-                    if (this.sets.length) this.select(this.sets[0].id);
-                    else this.renderRight();
-                } catch (err) { /* 已提示 */ }
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('删除确认', '确认删除组套「' + Format.escape(set.name) + '」？（条目一并删除，不可恢复）', async () => {
+            try {
+                await AjaxLoader.api('orders/set-delete', { method: 'POST', data: { id: set.id } });
+                Dom.toast('已删除组套', 'success');
+                this.currentId = null;
+                this.work = [];
+                await this.reload();
+                this.renderLeft();
+                if (this.sets.length) this.select(this.sets[0].id);
+                else this.renderRight();
+            } catch (err) { /* 已提示 */ }
+        }, { danger: true, okText: '删除' });
     },
 
     async reload() {

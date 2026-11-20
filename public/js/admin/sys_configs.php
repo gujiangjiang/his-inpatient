@@ -282,15 +282,12 @@ async function admin_sys_configs_uploadLogo() {
 }
 
 function admin_sys_configs_removeLogo() {
-    Dom.modal('恢复默认 Logo', '<p>确认删除当前医院 Logo，并恢复系统默认 SVG 图标？</p>', [
-        { text: '恢复默认', type: 'danger', onclick: async () => {
+    Dom.confirm('恢复默认 Logo', '确认删除当前医院 Logo，并恢复系统默认 SVG 图标？', async () => {
             const form = new FormData(); form.append('action', 'remove');
             const r = await AjaxLoader.api('admin/branding-save', { method: 'POST', data: form });
             if (r.data) applyHospitalBranding(r.data);
             await loadBranding();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '恢复默认' });
 }
 
 async function admin_sys_configs_saveGroup(group) {

@@ -188,14 +188,11 @@ function outpatient_exams_printAll() {
 }
 
 function outpatient_exams_applyDelete(id) {
-    Dom.modal('删除检查申请', '<p>删除该检查申请？关联医嘱将标记为「作废」（已核对医嘱需先在医嘱列表处理）。</p>', [
-        { text: '删除', type: 'danger', onclick: async function() {
+    Dom.confirm('删除检查申请', '删除该检查申请？关联医嘱将标记为「作废」（已核对医嘱需先在医嘱列表处理）。', async function() {
             await AjaxLoader.api('exam/delete', { method: 'POST', data: { id } });
             Dom.toast('已删除', 'success');
             outpatient_exams_loadApply();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '删除' });
 }
 
 /* ===== 门诊检查报告 (门诊) ===== */

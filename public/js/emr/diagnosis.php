@@ -185,25 +185,19 @@ function emr_diagnosis_sync(mode) {
 }
 
 function emr_diagnosis_delete(id) {
-    Dom.modal('删除诊断', '<p>删除该诊断？</p>', [
-        { text: '删除', type: 'danger', onclick: async function() {
+    Dom.confirm('删除诊断', '删除该诊断？', async function() {
             await AjaxLoader.api('emr/diagnosis-delete', { method: 'POST', data: { id: id } });
             Dom.toast('已删除', 'success');
             emr_diagnosis_load();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '删除' });
 }
 
 function emr_diagnosis_deleteTemplate(id) {
-    Dom.modal('删除常用诊断', '<p>删除该常用诊断模板？</p>', [
-        { text: '删除', type: 'danger', onclick: async function() {
+    Dom.confirm('删除常用诊断', '删除该常用诊断模板？', async function() {
             await AjaxLoader.api('emr/diagnosis-template-delete', { method: 'POST', data: { id: id } });
             Dom.toast('已删除', 'success');
             emr_diagnosis_load();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '删除' });
 }
 
 /* ===== 添加诊断悬浮窗 ===== */

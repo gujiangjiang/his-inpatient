@@ -241,13 +241,10 @@ function clinic_consult_reply(id) {
 }
 
 function clinic_consult_delete(id) {
-    Dom.modal('删除会诊', '<p>删除该会诊申请及其关联医嘱？</p>', [
-        { text: '删除', type: 'danger', onclick: async function() {
+    Dom.confirm('删除会诊', '删除该会诊申请及其关联医嘱？', async function() {
             await AjaxLoader.api('consult/delete', { method: 'POST', data: { id: id } });
             Dom.toast('已删除', 'success');
             clinic_consult_load();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '删除' });
 }
 </script>

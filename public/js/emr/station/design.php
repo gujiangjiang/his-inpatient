@@ -284,14 +284,11 @@ function emr_dsnTableContext(tblId, ri, ci, x, y) {
         if (a === 'del-col') return withTbl(function (t) { EmrOps.tableDelColAt(t, ci); });
         if (a === 'props') { emr_dsnTableProps(tblId); return; }
         if (a === 'tbl-del') {
-            Dom.modal('删除表格', '<p>确认从模板中删除整个表格？</p>', [
-                { text: '删除', type: 'danger', onclick: function () {
+            Dom.confirm('删除表格', '确认从模板中删除整个表格？', function () {
                     if (!_emrEditor) return;
                     EmrOps.removeBlockById(_emrEditor.getDoc().body, tblId);
                     _emrEditor.refresh();
-                } },
-                { text: '取消', type: 'default' }
-            ]);
+                }, { danger: true, okText: '删除' });
         }
     });
 }
@@ -348,10 +345,7 @@ function emr_dsnItemContext(item, p, o, x, y) {
     EmrUI.floatMenu(items, x, y, function (a) {
         if (a === 'props') { emr_dsnShowProps(item, p, o); return; }
         if (a === 'del') {
-            Dom.modal('删除固定元素', '<p>确认从模板中删除该元素？删除后文书结构中不再保留。</p>', [
-                { text: '删除', type: 'danger', onclick: function () { if (_emrEditor) _emrEditor.removeItem(p, item); } },
-                { text: '取消', type: 'default' }
-            ]);
+            Dom.confirm('删除固定元素', '确认从模板中删除该元素？删除后文书结构中不再保留。', function () { if (_emrEditor) _emrEditor.removeItem(p, item); }, { danger: true, okText: '删除' });
         }
     });
 }

@@ -191,14 +191,11 @@ function clinic_rx_delete(idx) {
     if (!g) return;
     const ids = g.items.filter(it => it.status === 'draft').map(it => it.id);
     if (!ids.length) return;
-    Dom.modal('删除处方', '<p>删除该处方草稿医嘱？</p>', [
-        { text: '删除', type: 'danger', onclick: async function() {
+    Dom.confirm('删除处方', '删除该处方草稿医嘱？', async function() {
             await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: ids } });
             Dom.toast('已删除', 'success');
             clinic_rx_load();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '删除' });
 }
 
 /* ===== 开方面板 ===== */

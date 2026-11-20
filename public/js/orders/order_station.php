@@ -532,16 +532,13 @@ var OrderStation = {
         if (event) event.stopPropagation();
         const ids = isRootRow ? [rootId] : [orderId];
         const tip = isRootRow ? '确认删除<b>整组</b>医嘱？（主医嘱及其全部子医嘱）' : '确认删除该条子医嘱？';
-        Dom.modal('删除确认', '<p>' + tip + '</p>', [
-            { text: '删除', type: 'danger', onclick: async () => {
-                try {
-                    await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: ids } });
-                    Dom.toast(isRootRow ? '已删除整组医嘱' : '已删除子医嘱', 'success');
-                    OrderStation.refresh();
-                } catch (e) { /* 已提示 */ }
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        Dom.confirm('删除确认', tip, async () => {
+            try {
+                await AjaxLoader.api('orders/batch-delete', { method: 'POST', data: { ids: ids } });
+                Dom.toast(isRootRow ? '已删除整组医嘱' : '已删除子医嘱', 'success');
+                OrderStation.refresh();
+            } catch (e) { /* 已提示 */ }
+        }, { danger: true, okText: '删除' });
     },
     /* 提交按钮: 默认提交该患者全部草稿医嘱 (无需勾选) */
     async submitAllDrafts() {

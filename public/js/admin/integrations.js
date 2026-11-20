@@ -157,14 +157,11 @@ async function admin_integrations_auditList() {
 }
 
 function admin_integrations_auditClear() {
-    Dom.modal('清空变更记录', '<p>确定清空全部配置变更记录？</p>', [
-        { text: '清空', type: 'danger', onclick: async function() {
+    Dom.confirm('清空变更记录', '确定清空全部配置变更记录？', async function() {
             await AjaxLoader.api('admin/integration-audit-clear', { method: 'POST' });
             Dom.toast('已清空', 'success');
             admin_integrations_auditList();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '清空' });
 }
 
 function admin_integrations_push() {
@@ -236,14 +233,11 @@ async function admin_integrations_toggle(id) {
 }
 
 function admin_integrations_delete(id) {
-    Dom.modal('确认删除', '<p>删除该对接端点？</p>', [
-        { text: '删除', type: 'danger', onclick: async function() {
+    Dom.confirm('确认删除', '删除该对接端点？', async function() {
             await AjaxLoader.api('admin/integration-delete', { method: 'POST', data: { id } });
             Dom.toast('已删除', 'success');
             loadIntegrations();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '删除' });
 }
 
 function showIntegrationForm(item) {

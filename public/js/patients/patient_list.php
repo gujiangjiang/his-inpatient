@@ -246,13 +246,10 @@ function patients_edit(id) {
 }
 
 function patients_discharge(id) {
-    Dom.modal('确认出院', '<p>确认患者出院吗？</p>', [
-        { text: '确认', type: 'danger', onclick: async function() {
+    Dom.confirm('确认出院', '确认患者出院吗？', async function() {
             await AjaxLoader.api('patients/discharge', { method: 'POST', data: { id: id } });
             patients_wall_load();
-        } },
-        { text: '取消', type: 'default' }
-    ]);
+        }, { danger: true, okText: '确认' });
 }
 
 function showPatientForm(p) {

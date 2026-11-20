@@ -211,15 +211,12 @@ const LabPanel = {
     },
 
     deletePanel(id) {
-        Dom.modal('删除套组', '<p>删除该常用套组？</p>', [
-            { text: '删除', type: 'danger', onclick: async function() {
+        Dom.confirm('删除套组', '删除该常用套组？', async function() {
                 await AjaxLoader.api('lab/panel-delete', { method: 'POST', data: { id } });
                 Dom.toast('已删除', 'success');
                 LabPanel.panels = LabPanel.panels.filter(p => p.id != id);
                 LabPanel.renderPanels();
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+            }, { danger: true, okText: '删除' });
     },
 
     async submit() {
