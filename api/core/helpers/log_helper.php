@@ -59,7 +59,15 @@ function log_maintain_once() {
     try {
         $days = (int)(ConfigDB::get('log.retention_days', 7) ?? 7);
         if ($days > 0) {
-            DB::execute("DELETE FROM system_logs WHERE created_at < datetime('now', ?)", ['-' . $days . ' days']);
+            // created_at 存 UTC 串, 边界统一取「UTC 当前时刻 - N 天」(按方言分发;
+            // 原 datetime('now',?) 为 SQLite 专用, MySQL/PG 下静默失效)
+            if (DB_TYPE === 'mysql') {
+                DB::execute("DELETE FROM system_logs WHERE created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? DAY)", [$days]);
+            } elseif (DB_TYPE === 'postgresql') {
+                DB::execute("DELETE FROM system_logs WHERE created_at < timezone('UTC', now()) - (?::text || ' days')::interval", [$days]);
+            } else {
+                DB::execute("DELETE FROM system_logs WHERE created_at < datetime('now', ?)", ['-' . $days . ' days']);
+            }
         }
     } catch (\Throwable $e) {
         // 清理失败不影响本次写入

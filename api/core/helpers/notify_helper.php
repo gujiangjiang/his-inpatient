@@ -5,15 +5,25 @@
 //       notify_list/notify_fetch_after/notify_unread_count 供列表与 SSE 增量使用。
 // 存储: 主业务库 app_notifications (迁移 056; 懒建表兜底)
 
-/** 懒创建通知表 (首次使用即可用) */
+/** 懒创建通知表 (首次使用即可用; 探测/DDL 按数据库方言, 迁移 056 为正规建表路径) */
 function notify_schema_ensure()
 {
     static $ensured = false;
     if ($ensured) return;
     $ensured = true;
     try {
-        $exists = DB::selectOne("SELECT name FROM sqlite_master WHERE type='table' AND name='app_notifications'");
-        if (!$exists) {
+        if (DB::table('app_notifications')) return;
+        if (DB_TYPE === 'mysql') {
+            DB::getPDO()->exec("CREATE TABLE IF NOT EXISTS app_notifications (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, type VARCHAR(30) NOT NULL,
+                title VARCHAR(200) NOT NULL, body TEXT, link VARCHAR(200), ref_type VARCHAR(30), ref_id INT,
+                meta TEXT, is_read TINYINT DEFAULT 0, created_at VARCHAR(19))");
+        } elseif (DB_TYPE === 'postgresql') {
+            DB::getPDO()->exec("CREATE TABLE IF NOT EXISTS app_notifications (
+                id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL, type VARCHAR(30) NOT NULL,
+                title VARCHAR(200) NOT NULL, body TEXT, link VARCHAR(200), ref_type VARCHAR(30), ref_id INTEGER,
+                meta TEXT, is_read SMALLINT DEFAULT 0, created_at VARCHAR(19))");
+        } else {
             DB::getPDO()->exec("CREATE TABLE IF NOT EXISTS app_notifications (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, type VARCHAR(30) NOT NULL,
                 title VARCHAR(200) NOT NULL, body TEXT, link VARCHAR(200), ref_type VARCHAR(30), ref_id INTEGER,

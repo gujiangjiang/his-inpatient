@@ -39,10 +39,15 @@ class DB {
         }
     }
 
+    /** 表存在性探测 (方言无关): 不存在/不可查询返回 false, 不抛异常 */
     public static function table($name) {
-        $db = self::getPDO();
-        $stmt = $db->query("SELECT 1 FROM {$name} LIMIT 1");
-        return $stmt !== false;
+        try {
+            $db = self::getPDO();
+            $stmt = $db->query("SELECT 1 FROM {$name} LIMIT 1");
+            return $stmt !== false;
+        } catch (PDOException $e) {
+            return false;
+        }
     }
 
     public static function select($sql, $params = []) {
