@@ -191,6 +191,8 @@
    */
   P.buildCombined = (items, patientInfo) => {
     const info = patientInfo || {};
+    // 顺序：items 已由后端按「类别 sort_order + 类别内创建时间」排好，
+    // 这里保持传入顺序输出；同类别连在一起，页码按类别独立累计。
     const all = items.filter(x => x && x.doc);
     if (!all.length) return '';
     const tmp = document.createElement('div');   // 解析 raw 快照用
@@ -200,99 +202,106 @@
       return t.firstElementChild;
     };
 
-    // 保持用户勾选顺序输出；按类分离便于独立算页码与取最早病程抬头
-    const courses = all.filter(x => x.repaginate);
-    const raws = all.filter(x => !x.repaginate);
-    const ordered = [...courses, ...raws];   // 病程在前、其他在后（保持原勾选内序）
+    // 类别分组（保持后端排序后的相对顺序）：repaginate=病程类，其余=其他类
+    const groups = [];     // [{ kind: 'course'|'raw', items: [] }]
+    all.forEach(it => {
+      const kind = it.repaginate ? 'course' : 'raw';
+      const last = groups[groups.length - 1];
+      if (last && last.kind === kind) last.items.push(it);
+      else groups.push({ kind, items: [it] });
+    });
 
     // 病程组抬头：取勾选病程中时间最早(stamp 最小)的那个病程的 header
+    const courseGroup = groups.find(g => g.kind === 'course');
     let courseHeader = {};
     let courseDim = null;
-    if (courses.length) {
-      const sorted = courses.slice().sort((a, b) => {
+    if (courseGroup) {
+      const sorted = courseGroup.items.slice().sort((a, b) => {
         const ta = (a.stamp || a.doc.updated_at || a.doc.created_at || '');
         const tb = (b.stamp || b.doc.updated_at || b.doc.created_at || '');
         return String(ta).localeCompare(String(tb));
       });
       courseHeader = (sorted[0].doc.header || {});
-      const first = L.paginate(sorted[0].doc, info);
-      courseDim = first.dim;
+      courseDim = L.paginate(sorted[0].doc, info).dim;
     }
     // 非病程组的尺寸：取第一份 raw 快照或 doc 的尺寸作为页面统一尺寸
+    const rawGroup = groups.find(g => g.kind === 'raw');
     let rawDim = null;
-    if (raws.length) {
-      rawDim = L.paginate(raws[0].doc, info).dim;
+    if (rawGroup) {
+      rawDim = L.paginate(rawGroup.items[0].doc, info).dim;
     }
     const dim = courseDim || rawDim || L.paginate(all[0].doc, info).dim;
     const d = dim;
 
     const pageEls = [];   // 全部 .page 元素（有序输出）
 
-    // ---- 病程组：独立成形，组内自算页码，抬头用最早病程 ----
-    if (courses.length) {
-      const cTotal = courses.reduce((n, it) => {
-        const res = L.paginate(it.doc, info);
-        return n + (res.pages.length || 1);
-      }, 0);
-      let cIdx = 0;
-      courses.forEach(it => {
-        const doc = it.doc;
-        const res = L.paginate(doc, info);
-        const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
-        const stamp = (it.stamp || doc.updated_at || doc.created_at || '').toString();
-        const title = doc.title || '文书';
-        const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
-        docPages.forEach((body, pi) => {
-          let b = body;
-          if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
-          if (pi === docPages.length - 1 && it.signHtml) b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
-          pageEls.push(elOf(pageHTML(d, courseHeader, b, cIdx, cTotal, info)));
-          cIdx++;
-        });
-      });
-    }
-
-    // ---- 非病程组：提取各自快照 .page 原样插入，组内独立页码 ----
-    if (raws.length) {
-      // 每份 raw 快照自身可能含多页；统计全部页数用于组内页码
-      const rawPagesAll = [];
-      raws.forEach(it => {
-        let html = it.rawHtml || '';
-        if (!html) {
-          try { html = P.buildHTML(it.doc, info); } catch (e) { html = ''; }
-        }
-        tmp.innerHTML = html;
-        const rps = Array.from(tmp.querySelectorAll('.page'));
-        if (rps.length) {
-          rawPagesAll.push({ it, pages: rps });
-        } else {
-          // 兜底：无 .page 时按病程重排方式生成
+    // ---- 按类别顺序逐组输出；病程组内自算页码并统一最早抬头，其他组各自独立 ----
+    groups.forEach(group => {
+      if (group.kind === 'course') {
+        // 病程组：独立成形，组内自算页码，抬头用最早病程
+        const items = group.items;
+        const cTotal = items.reduce((n, it) => {
           const res = L.paginate(it.doc, info);
+          return n + (res.pages.length || 1);
+        }, 0);
+        let cIdx = 0;
+        items.forEach(it => {
+          const doc = it.doc;
+          const res = L.paginate(doc, info);
           const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
-          const stamp = (it.stamp || it.doc.updated_at || it.doc.created_at || '').toString();
-          const title = it.doc.title || '文书';
+          const stamp = (it.stamp || doc.updated_at || doc.created_at || '').toString();
+          const title = doc.title || '文书';
           const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
-          const pages = docPages.map((body, pi) => {
+          docPages.forEach((body, pi) => {
             let b = body;
             if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
             if (pi === docPages.length - 1 && it.signHtml) b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
-            return elOf(pageHTML(d, it.doc.header || {}, b, 0, 1, info));
+            pageEls.push(elOf(pageHTML(d, courseHeader, b, cIdx, cTotal, info)));
+            cIdx++;
           });
-          rawPagesAll.push({ it, pages });
-        }
-        tmp.innerHTML = '';
-      });
-      const rawTotal = rawPagesAll.reduce((n, g) => n + g.pages.length, 0);
-      let rIdx = 0;
-      rawPagesAll.forEach(({ pages }) => {
-        pages.forEach(pg => {
-          const pn = pg.querySelector('.pg-foot .emr-fp-page');
-          if (pn) pn.textContent = '第 ' + (rIdx + 1) + ' 页 / 共 ' + rawTotal + ' 页';
-          rIdx++;
         });
-        pageEls.push(...pages);
-      });
-    }
+      } else {
+        // 其他类别组：提取各自快照 .page 原样插入，组内独立页码
+        const items = group.items;
+        const rawPagesAll = [];
+        items.forEach(it => {
+          let html = it.rawHtml || '';
+          if (!html) {
+            try { html = P.buildHTML(it.doc, info); } catch (e) { html = ''; }
+          }
+          tmp.innerHTML = html;
+          const rps = Array.from(tmp.querySelectorAll('.page'));
+          if (rps.length) {
+            rawPagesAll.push({ it, pages: rps });
+          } else {
+            // 兜底：无 .page 时按病程重排方式生成
+            const res = L.paginate(it.doc, info);
+            const docPages = res.pages.length ? res.pages : ['<div class="p"><div class="pc"><br></div></div>'];
+            const stamp = (it.stamp || it.doc.updated_at || it.doc.created_at || '').toString();
+            const title = it.doc.title || '文书';
+            const timeStr = stamp.replace(/[-:T]/g, m => m === 'T' ? ' ' : m).slice(0, 16);
+            const pages = docPages.map((body, pi) => {
+              let b = body;
+              if (pi === 0) b = '<div class="emr-batch-title"><span class="emr-bt-cell emr-bt-time">' + esc(timeStr) + '</span><span class="emr-bt-cell emr-bt-name">' + esc(title) + '</span><span class="emr-bt-cell emr-bt-void"></span></div>' + b;
+              if (pi === docPages.length - 1 && it.signHtml) b = b + '<div class="emr-batch-sign">' + it.signHtml + '</div>';
+              return elOf(pageHTML(d, it.doc.header || {}, b, 0, 1, info));
+            });
+            rawPagesAll.push({ it, pages });
+          }
+          tmp.innerHTML = '';
+        });
+        const rawTotal = rawPagesAll.reduce((n, g2) => n + g2.pages.length, 0);
+        let rIdx = 0;
+        rawPagesAll.forEach(({ pages }) => {
+          pages.forEach(pg => {
+            const pn = pg.querySelector('.pg-foot .emr-fp-page');
+            if (pn) pn.textContent = '第 ' + (rIdx + 1) + ' 页 / 共 ' + rawTotal + ' 页';
+            rIdx++;
+          });
+          pageEls.push(...pages);
+        });
+      }
+    });
 
     const style = [
       '@page { size: A4; margin: 0; }',

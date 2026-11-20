@@ -21,13 +21,14 @@ $ph = implode(',', array_fill(0, count($ids), '?'));
 $rows = DB::select(
     "SELECT d.id, d.patient_id, d.category_id, d.title, d.doc_meta, d.doc_json,
             d.content_html, d.status, d.created_at, d.updated_at, d.signed_at, d.print_count,
-            c.name AS category_name, u.name AS signer_name, t.name AS template_name
+            c.name AS category_name, c.sort_order AS category_sort, u.name AS signer_name,
+            t.name AS template_name
      FROM emr_documents d
      LEFT JOIN emr_categories c ON d.category_id = c.id
      LEFT JOIN emr_templates t ON d.template_id = t.id
      LEFT JOIN users u ON d.signer_id = u.id
      WHERE d.id IN ($ph)
-     ORDER BY d.created_at ASC",
+     ORDER BY (c.sort_order IS NULL OR c.sort_order = 0) ASC, c.sort_order ASC, c.id ASC, d.created_at ASC, d.id ASC",
     $ids
 );
 
