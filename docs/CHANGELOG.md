@@ -4,6 +4,87 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.54.0] - 2026-11-21
+
+大版本复盘重构：横向越权收口、并发竞态修复、公共逻辑下沉、巨石文件拆分。
+全部改动遵循「零功能回退」——合法交互行为、API 契约与响应结构不变。
+
+### 安全
+- **病历文书全链路补患者归属校验**（12 处）：document save/get/sign/list/version_list/
+  version_restore/maintenance_request/batch_print 与旧结构化 emr/station save/list/get，
+  此前仅校验患者存在，doctor 角色可按 id 枚举读写全院病历并签名锁定
+- **批量打印权限校验无条件化**：原不传 patient_id 即整体跳过校验，可枚举 ids 拉取
+  任意文书全文；现按文书实际归属逐一校验（新增 require_access_patients 批量守卫）
+- **毁方逐行归属校验**：原仅校验首行患者，混合 ids 可越权作废他患处方
+- **医嘱状态机归属校验**：order_status 原无任何患者/病区校验（对照 order_verify 补齐）
+- **护士医嘱列表病区过滤叠加**：原 elseif 结构传 patient_id 即绕开病区过滤
+- **检验明细绑定 report_id**：原可按 item.id 越权改写任意检验单结果
+- **检验/检查申请一致性**：admission_no 改服务端按患者反查（防 A 患者挂 B 住院号）+ 归属校验
+- **会话固定防御**：登录成功即 session_regenerate_id(true)
+- **CSRF 轻量防线**：写方法（POST/PUT/DELETE/PATCH）强制 X-Requested-With 头
+  （前端 AjaxLoader 已全站附加，零前端改动；GET 与 SSE 不受限）
+- **db.path 路径穿越防御**：归一化后强制限定 data/ 目录内
+- **出站 TLS 默认校验**：门诊/PACS 互调开启证书校验（内网自签可配 opd.tls_verify=0 关闭）
+- **患者跨科室搬移防御**：doctor 编辑患者时同时校验其当前科室授权
+- **XSS 补漏**：床号/计价标志/表单 name 与 option value 转义；emr_ui/emr_doc_render/
+  emr_doc_print 三份局部 esc 统一委托 Format.escape（补单引号）
+
+### 修复
+- **outpatient 标志列运算符优先级**：`??` 与三元混写致该列几乎恒写 1（列暂无读取方，
+  语义回归迁移 064 定义）
+- **组套套用 start_date 口径**：改 TimeHelper::nowLocal() 本地墙钟（业务日期时间字段，
+  与 order_save 一致；原在 UTC 存储模式下漂移 8 小时）
+- **数据库方言兼容**：DB::table() 探测改 try/catch（不存在的表返回 false 而非抛异常）；
+  通知懒建表 DDL 按三方言分发；日志保留清理按方言分发（原仅 SQLite 生效）
+- **并发竞态**：摆药库存扣减带余量条件（防 TOCTOU 超卖）；余额扣费事务内患者行
+  FOR UPDATE 串行化；医嘱核对/状态主路径 UPDATE 带原状态守卫（并发先变即拒绝）
+- **事务补齐**：患者建档（插入+占床+诊断种子）包事务且占床带空床条件原子化；
+  成组追加、组套删除、发药送达两表写包事务
+- **单号防复用**：流水号 COUNT(*)+1 → 当日最大尾号+1（消除删除记录后复用已存在
+  尾号撞唯一索引）；医嘱/处方随机源统一 random_int
+- **前端健壮性**：SPA 页面加载序列令牌（防旧页覆盖新页）；API 非 JSON 响应可读报错；
+  费用栏患者令牌；RxPanel 面板代数令牌（重开/切药房/换关键词过期响应丢弃）；
+  组套弹窗重入守卫；患者切换面板精确关闭自身弹层；日志页定时器进入即清理
+- **内存泄漏**：Dom.modal 全部关闭路径统一摘除 Esc 监听；ScrollLoad attach 时自动
+  回收脱离文档的旧状态（含 detach API）；会话失效时关闭 SSE 长连接
+
+### 变更
+- **公共逻辑下沉**（后端）：统一单号生成器 id_generator_helper（doc_no/seq_serial，
+  收敛 15 处复制）；列表数据范围过滤 scope_where（收敛 3 处）；医嘱双状态机与手术
+  作废守卫集中定义 order_state_helper（两张状态机语义不同，命名区分防误用）；
+  DB::upsert 三方言幂等写；基础设施加载收敛 core/bootstrap.php（分组 require）
+- **公共逻辑下沉**（前端）：App.mountShell/loadSidebar 收敛 41 处页面 init 样板
+  （侧边栏加载获得 r.ok 检查/失败占位/会话缓存）；Dom.confirm 收敛 23 处危险确认
+  弹窗；Dom.modal 支持 opts.large；Dom.execScripts/Dom.debounce 收敛双份实现；
+  emrNowStamp/emrYMD/emrStamp 下沉 Format.nowStamp/ymd/stamp（12 处改引）；
+  Format.ageSimple 统一 8 处年差法年龄；unhandledrejection 全局兜底
+- **巨石文件拆分**（纯搬运，函数/方法清单与原文件逐项 diff 一致）：
+  - api: opd_helper（270 行/9 职责）→ opd/ 六文件（settings/http/fhir/his/pacs/common）
+  - 病历站: emr/station/design.php（662 行）→ design/ 五片；init.php（618 行）→ init/ 五片
+  - 医嘱站: orders/order_station.php（558 行）→ 主文件 + os/ 三片（assist/render/edit，
+    Object.assign 挂载单例，热键行为不变）
+  - 处方: clinic/rx.php → rx.php + rx/panel.php；诊断: emr/diagnosis.php → list + search_pop
+  - 组套: orders/order_sets.js → 主模态 + order_sets/editor.js（注册 assets.php）
+- Cache 文件驱动：目录权限 0755 + tmp+rename 原子写
+
+### 性能
+- 消除 N+1：卡片墙护理等级批量 IN 查询；批量打印计数批量 UPDATE + 一次回读
+
+### 移除
+- 死代码：order_delete.php（无路由注册的危险占位接口）、ArrayHelper（全类零调用）、
+  UploadHelper（零调用且无白名单上传隐患）、integration_helper（TODO 桩）、
+  dual_execute_order/audit_type_name/TimeHelper::dayRange/modeName 等零调用函数
+- 不可达孤儿页面 orders/order_list.php（325 行「医嘱管理」页，已被医嘱工作站取代，
+  全站无导航入口）
+
+### 验证
+- php-lint 374 文件全通过；bootstrap 加载冒烟（15 项基础设施全注册）、
+  opd 拆分冒烟（20 个对外函数）、Cache 读写删回路、DB::table 探测行为
+- 前端全部拆分片段经 node --check 语法校验；每个拆分文件的函数/方法清单与
+  原文件逐项 diff 一致
+- 待部署后回归：医嘱全流程（开嘱→核对→摆药→送达→执行）、病历新建/签名/批量打印、
+  检验检查开单、患者建档占床、门诊互通（自签环境需配 opd.tls_verify=0）
+
 ## [0.53.15] - 2026-11-20
 
 ### 修复
