@@ -11,6 +11,35 @@ var _emrDesign = null;        // 模板设计状态 {id, name, categoryId, recor
 var _emrReviseMode = false;   // 修订留痕模式 (签名后经维护批准解锁的文书)
 var _emrCategories = _emrCategories || [];
 
+/** 病历树移动端抽屉开关 (仅窄屏使用): 显示切换按钮 */
+function emr_treeToggle() {
+    const tree = document.getElementById('emr-tree');
+    if (!tree) return;
+    tree.classList.toggle('open');
+}
+function emr_treeOpen() {
+    const tree = document.getElementById('emr-tree');
+    if (tree) tree.classList.add('open');
+}
+/** 移动端病历树/开关按钮显隐 (页面加载与 resize 时调用) */
+function emr_treeFitMobile() {
+    const isMobile = window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+    const openBtn = document.getElementById('emr-tree-openbtn');
+    const openBar = document.getElementById('emr-tree-openbar');
+    const closeBtn = document.getElementById('emr-tree-toggle');
+    const tree = document.getElementById('emr-tree');
+    if (isMobile) {
+        if (openBtn) openBtn.style.display = '';
+        if (openBar) openBar.style.display = '';
+        if (closeBtn) closeBtn.style.display = '';
+    } else {
+        if (openBtn) openBtn.style.display = 'none';
+        if (openBar) openBar.style.display = 'none';
+        if (closeBtn) closeBtn.style.display = 'none';
+        if (tree) tree.classList.remove('open');
+    }
+}
+
 /* ================= 初始化 / 树 ================= */
 async function emr_station_init() {
     _emrPatient = PatientContext.current();
@@ -19,6 +48,21 @@ async function emr_station_init() {
     await loadDocuments();
     await loadQc();
     renderCategoryTree();
+    emr_treeFitMobile();
+    /* 病历树抽屉: 点击任意文档/分类后收起 */
+    const tree = document.getElementById('emr-tree');
+    if (tree) {
+        tree.addEventListener('click', function (e) {
+            if (window.matchMedia && window.matchMedia('(max-width: 768px)').matches
+                && (e.target.closest('.emr-doc-item') || e.target.closest('.emr-cat-header'))) {
+                tree.classList.remove('open');
+            }
+        });
+    }
+    /* 跨断点切换 (桌面↔窄屏) 时同步病历树开关显隐 */
+    if (window._emrFitBound) return;
+    window._emrFitBound = true;
+    window.addEventListener('resize', function () { emr_treeFitMobile(); });
 }
 
 async function loadCategories() {

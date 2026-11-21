@@ -28,7 +28,7 @@ async function emr_enterTemplateDesign(tid, opts) {
     const dsEl = document.getElementById('emr-doc-status');
     dsEl.textContent = ''; dsEl.className = 'emr-doc-status';
     /* 左栏切换为「模板设计」面板 */
-    document.getElementById('emr-tree-header').textContent = '模板设计';
+    document.getElementById('emr-tree-title').textContent = '模板设计';
     document.getElementById('emr-category-tree').style.display = 'none';
     document.getElementById('emr-tree-foot').style.display = 'none';
     document.getElementById('emr-design-panel').style.display = '';
@@ -51,7 +51,7 @@ function emr_exitTemplateDesign() {
     EmrOps.setDesignMode(false);
     _emrDesign = null;
     /* 左栏还原为病历文书树 */
-    document.getElementById('emr-tree-header').textContent = '病历文书';
+    document.getElementById('emr-tree-title').textContent = '病历文书';
     document.getElementById('emr-category-tree').style.display = '';
     document.getElementById('emr-tree-foot').style.display = '';
     document.getElementById('emr-design-panel').style.display = 'none';

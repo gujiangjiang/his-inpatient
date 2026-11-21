@@ -1,11 +1,71 @@
 /* ===== 病历工作站 (EMR Station) ===== */
 .emr-station {
+    position: relative; /* 移动端左栏抽屉的定位基准 */
     display: flex;
     height: 100%;
     min-height: 500px;
     border: 1px solid #e4e7ed;
     border-radius: 8px;
     overflow: hidden;
+}
+
+/* ===== 移动端: 病历站左栏抽屉化 + 编辑区全宽 ===== */
+@media (max-width: 768px) {
+    .emr-station { min-height: 0; }
+    .emr-tree {
+        position: absolute;
+        left: 0; top: 0; bottom: 0;
+        width: 78vw;
+        max-width: 280px;
+        z-index: 85;
+        transform: translateX(-100%);
+        transition: transform .22s ease;
+        box-shadow: 2px 0 10px rgba(0,0,0,.08);
+        background: #f8f9fb;
+    }
+    .emr-tree.open { transform: translateX(0); }
+    .emr-editor-pane { min-width: 0; }
+    .emr-tree-header { display: flex; align-items: center; gap: 8px; }
+    /* 病历树开关按钮: 移动端抽屉显示 */
+    .emr-tree-toggle { display: inline-flex; }
+    /* 病历站工具条: 横向滚动不换行 (操作多, 保留全部入口) */
+    .emr-station .emr-toolbar,
+    .emr-station #emr-design-bar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 8px;
+        gap: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .emr-station .emr-toolbar .btn,
+    .emr-station .emr-toolbar .fmt-btn,
+    .emr-station #emr-design-bar .btn { flex-shrink: 0; white-space: nowrap; }
+    .emr-station .emr-toolbar .emr-tb-sep,
+    .emr-station #emr-design-bar .emr-tb-sep { flex-shrink: 0; }
+    .emr-toolbar .emr-tb-spacer { display: none; }
+    #emr-design-bar .emr-dsn-tip { max-width: 40vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 病历站状态栏: 换行保持可读 */
+    .emr-statusbar { flex-wrap: wrap; gap: 6px 12px; padding: 6px 10px; }
+    .emr-statusbar .emr-sb-count { margin-left: auto; }
+    /* 引用面板: 左右两栏改为上下 */
+    .emr-refp { bottom: 26px; height: 240px; }
+    .emr-refp-body { flex-direction: column; }
+    .emr-refp-left { width: 100%; flex: none; max-height: 96px; border-right: none; border-bottom: 1px solid #eef2f7; }
+    .emr-refp-head { flex-wrap: wrap; gap: 4px; }
+    /* 设计面板: 抽屉内滚动 */
+    .emr-dsn-panel { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    /* 模板/属性弹窗: 窄屏降单列 */
+    .emr-newtpl { flex-direction: column; }
+    .emr-newtpl-left { width: 100%; }
+    .emr-tpm-body { flex-direction: column; height: auto; max-height: none; }
+    .emr-tpm-cats, .emr-tpm-depts { width: 100%; max-height: 150px; }
+    .emr-tpm-main { min-height: 220px; }
+    .emr-dc, .emr-tpl-picker, .emr-tpm { min-width: 0; }
+    /* 病历树头部/节点紧凑 */
+    .emr-tree-header { padding: 9px 14px; }
+    .emr-cat-header { padding: 8px 14px; }
+    .emr-doc-item { flex-wrap: wrap; }
+    .emr-doc-time { display: none; }
 }
 
 /* 二级左栏: 病历分类树 */
@@ -17,6 +77,8 @@
     display: flex;
     flex-direction: column;
 }
+/* 病历树抽屉开关按钮: 默认隐藏, 仅移动端显示 */
+.emr-tree-toggle { display: none; }
 .emr-category-tree { flex: 1; overflow-y: auto; }
 .emr-tree-foot {
     flex: none;

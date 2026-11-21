@@ -1,8 +1,11 @@
 <?php header("Content-Type: text/html; charset=utf-8"); require_once __DIR__ . '/../../icons/icon.php'; ?>
 <div class="emr-station">
     <!-- 二级左栏: 病历分类树 + 文书目录 -->
-    <div class="emr-tree">
-        <div class="emr-tree-header" id="emr-tree-header">病历文书</div>
+    <div class="emr-tree" id="emr-tree">
+        <div class="emr-tree-header" id="emr-tree-header">
+            <button type="button" class="btn btn-small btn-primary emr-tree-toggle" id="emr-tree-toggle" onclick="emr_treeToggle()" title="关闭病历树">收起</button>
+            <span id="emr-tree-title">病历文书</span>
+        </div>
         <div id="emr-category-tree" class="emr-category-tree"></div>
         <div id="emr-design-panel" class="emr-dsn-panel" style="display:none">
             <div class="emr-dsn-sec">
@@ -64,9 +67,11 @@
     <div class="emr-editor-pane">
         <div id="emr-editor-empty" class="emr-editor-empty">
             <p>请从左侧选择病历文书，或点击分类后的 <b>＋</b> 从模板新建</p>
+            <button type="button" class="btn btn-small btn-primary emr-tree-openbtn" id="emr-tree-openbtn" onclick="emr_treeOpen()" style="display:none">打开病历树</button>
         </div>
         <div id="emr-editor" class="emr-editor" style="display:none">
             <div class="emr-toolbar" id="emr-toolbar">
+                <button type="button" class="btn btn-small emr-tree-open" id="emr-tree-openbar" onclick="emr_treeOpen()" title="病历文书目录" style="display:none"><?= icon('common/arrows', 'caret-right', 12) ?> 病历</button>
                 <button type="button" class="btn btn-small fmt-btn fmt-b" id="btn-bold" title="加粗">B</button>
                 <button type="button" class="btn btn-small fmt-btn fmt-i" id="btn-italic" title="斜体">I</button>
                 <button type="button" class="btn btn-small fmt-btn fmt-u" id="btn-underline" title="下划线">U</button>
