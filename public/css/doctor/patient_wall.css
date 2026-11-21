@@ -133,6 +133,22 @@
 .wall-grid.compact .pw-foot { display: none; }
 .wall-grid.compact .pw-diagnosis { display: none; }
 
+/* ===== 移动端: 患者卡片墙窄屏适配 ===== */
+@media (max-width: 768px) {
+    .wall-grid { grid-template-columns: 1fr; }
+    .wall-grid.compact { grid-template-columns: 1fr; }
+    .wall-scroll { padding: 10px; }
+    /* 顶部筛选工具条: 换行 */
+    .wall-page .flex-between { flex-wrap: wrap; gap: 8px; }
+    .wall-page .flex-between > div { display: flex; flex-wrap: wrap; gap: 6px; }
+    #wall-dept { width: 100% !important; }
+    /* 底部统计条: 图例换行 */
+    .wall-footer { flex-wrap: wrap; gap: 8px; }
+    .wall-legend { width: 100%; margin-left: 0; flex-wrap: wrap; }
+    /* 切换患者悬浮窗: 全宽贴边 */
+    .pqs-panel { width: calc(100vw - 24px); left: 12px !important; right: 12px; max-width: none; }
+}
+
 /* ===== 底部统计条 ===== */
 .wall-footer {
     flex-shrink: 0;

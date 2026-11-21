@@ -686,3 +686,39 @@
 .osets-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .osets-line-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .osets-line .osets-bad, .osets-line .os-tag { flex-shrink: 0; }
+
+/* ===== 移动端: 医嘱工作站窄屏适配 ===== */
+@media (max-width: 768px) {
+    .order-station { height: 100%; }
+    /* 工具条: 横向滚动, 保留全部入口 */
+    .os-toolbar {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 6px 8px;
+    }
+    .os-toolbar .os-tool { flex-shrink: 0; }
+    .os-toolbar .os-sep { flex-shrink: 0; }
+    /* 过滤条: 分组换行 */
+    .os-filter { gap: 6px 12px; padding: 7px 10px; }
+    .os-filter-group { flex-wrap: wrap; gap: 6px; }
+    .os-filter .os-date-input { width: auto; flex: 1; min-width: 90px; }
+    /* 医嘱表: 保持列宽, 容器横向滚动 */
+    .os-table { min-width: 820px; }
+    /* 悬浮面板: 窄屏全宽贴边 (保证可读可点) */
+    .os-qa, .os-detail, .os-dose-panel, .os-pick {
+        width: calc(100vw - 24px);
+        max-width: 420px;
+        left: 12px !important;
+        right: 12px;
+    }
+    .os-qa .os-qa-meta { max-width: 130px; }
+    /* 开嘱/药品搜索弹窗: 窄屏全宽 */
+    .order-editor, .drug-search { min-width: 0; max-width: 100%; }
+    .ds-spec { width: auto; }
+    /* 组套: 纵向堆叠 */
+    .osets { flex-direction: column; height: auto; }
+    .osets-left { width: 100%; max-height: 200px; }
+    .osets-right { min-height: 300px; }
+    .osets-modal { max-width: 100%; width: 96vw; }
+}

@@ -216,3 +216,29 @@
 /* 病案首页·省市县级联 (独立字典库: 省市县+邮编; 选定区县将邮编写入对应邮编输入框) */
 .cf-region { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .cf-region .form-control { flex: 1; min-width: 90px; }
+
+/* ===== 移动端: 临床面板窄屏适配 ===== */
+@media (max-width: 768px) {
+    /* 申请面板 (检验/检查): 左右两栏纵向堆叠 */
+    .apply-panel { flex-direction: column; gap: 12px; min-height: 0; }
+    .apply-left { width: 100%; }
+    .apply-right { border-left: none; padding-left: 0; border-top: 1px solid #eef2f7; padding-top: 12px; }
+    /* 病案首页编辑: 网格降单列 */
+    .cf-grid { grid-template-columns: 1fr; }
+    .cf-fee-grid { grid-template-columns: 1fr; }
+    .cf-span-2, .cf-span-3, .cf-span-4 { grid-column: span 1; }
+    /* 会诊步骤条: 换行 */
+    .consult-flow { flex-wrap: wrap; gap: 10px; }
+    .consult-step { flex: 1 1 30%; }
+    /* 诊断页: 左右栏纵向堆叠 */
+    .diag-layout { flex-direction: column; }
+    .diag-right { width: 100%; }
+    .diag-label { width: 108px; }
+    .diag-add { flex-wrap: wrap; }
+    .diag-cat-select { width: 100%; }
+    .diag-row { flex-wrap: wrap; }
+    .diag-match-row { flex-wrap: wrap; gap: 6px; }
+    /* 诊断添加/ICD 浮层: 全宽 */
+    .diag-pop { width: calc(100vw - 24px); max-width: 100%; }
+    .icd-pop { max-width: calc(100vw - 24px); }
+}
