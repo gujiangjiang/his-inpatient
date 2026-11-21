@@ -39,9 +39,17 @@
     position: relative;
     background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
     padding: 9px 11px; cursor: pointer; transition: box-shadow .15s, border-color .15s;
+    min-height: 118px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 .nurse-bed-card:hover { border-color: #7fd4d4; box-shadow: 0 3px 12px rgba(26,163,163,.16); }
-.nurse-bed-card.free { background: #f8fafc; border-style: dashed; }
+.nurse-bed-card.free {
+    background: #f8fafc; border-style: dashed;
+    justify-content: center;
+    min-height: 118px;
+}
 .nurse-bed-card.critical { border-color: #f56c6c; }
 .nurse-bed-card.allergy { border-left: 3px solid #f56c6c; }
 .nurse-bed-card .nbc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
@@ -59,7 +67,6 @@
 .nurse-bed-card .nbc-sub .nbc-label { color: #a8abb2; }
 .nurse-bed-card .nbc-diag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nurse-bed-card .nbc-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
-.nurse-bed-card .nbc-foot { margin-top: auto; }
 .nbc-badge {
     display: inline-flex; align-items: center; gap: 3px;
     font-size: 11px; line-height: 1; padding: 3px 7px; border-radius: 8px;
@@ -70,7 +77,7 @@
 .nbc-badge.info { background: #409eff; }
 .nbc-badge.ok { background: #2fb344; }
 .nurse-bed-card .nbc-foot {
-    display: flex; align-items: center; gap: 6px; margin-top: 5px;
+    display: flex; align-items: center; gap: 6px; margin-top: auto; padding-top: 5px;
     font-size: 11px; color: #909399;
 }
 .nbc-days { margin-left: auto; }
