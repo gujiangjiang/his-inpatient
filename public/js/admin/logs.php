@@ -129,6 +129,7 @@ async function admin_logs_load() {
     const r = await AjaxLoader.api('admin/logs?action=list&' + new URLSearchParams(_logsFilter()).toString(), { silent: true });
     const d = r.data || {};
     const view = document.getElementById('logs-view');
+    if (!view) return; /* SPA 竞态: 防抖/轮询回调在切页后触发, 容器已被替换 */
     if (d.error) { view.innerHTML = '<div class="empty-tip" style="color:#e5484d">' + Format.escape(d.error) + '</div>'; return; }
     view.innerHTML = (d.list || []).map(_logsRowHtml).join('') || '<div class="empty-tip">暂无日志</div>';
     _logLastId = (d.list && d.list.length) ? d.list[d.list.length - 1].id : _logLastId;
@@ -143,6 +144,7 @@ async function admin_logs_poll() {
     const rows = d.list || [];
     if (rows.length) {
         const view = document.getElementById('logs-view');
+        if (!view) return; /* SPA 竞态: 轮询定时器在切页后触发, 容器已被替换 */
         view.innerHTML = view.innerHTML.replace('<div class="empty-tip">暂无日志</div>', '');
         view.innerHTML += rows.map(_logsRowHtml).join('');
         _logLastId = rows[rows.length - 1].id;
@@ -153,6 +155,7 @@ async function admin_logs_poll() {
 
 function _logsApplyCounts(counts) {
     const nav = document.getElementById('logs-cat-nav');
+    if (!nav) return; /* SPA 竞态守卫 */
     const total = Object.values(counts || {}).reduce((s, v) => s + v, 0);
     const all = nav.querySelector('[data-cat=""] .mini-badge');
     if (all) all.textContent = total || '';
@@ -162,6 +165,7 @@ async function admin_logs_load_server() {
     const r = await AjaxLoader.api('admin/logs?action=server', { silent: true });
     const d = r.data || {};
     const view = document.getElementById('logs-view');
+    if (!view) return; /* SPA 竞态守卫 */
     if (!d.exists) { view.innerHTML = '<div class="empty-tip">暂无服务器日志文件（data/logs/app.log）</div>'; return; }
     view.innerHTML = (d.lines || []).map(l =>
         '<div class="log-line"><div class="log-main" style="flex:1;min-width:0;font-family:ui-monospace,monospace;font-size:12px">' + Format.escape(l) + '</div></div>'

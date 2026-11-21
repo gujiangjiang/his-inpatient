@@ -102,6 +102,8 @@ function _userFiltered() {
 }
 
 async function admin_users_load() {
+    /* SPA 竞态守卫: 搜索防抖定时器在切页后触发时, 面板元素已被替换出 DOM */
+    if (!document.getElementById('user-table-body')) return;
     const r = await AjaxLoader.api('admin/user-list', {silent:true});
     _userAll = r.data || [];
     const filtered = _userFiltered();

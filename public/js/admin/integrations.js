@@ -110,14 +110,19 @@ async function admin_integrations_test() {
 /* 检查/检验项目列表（外部接口开启时显示） */
 var _itgCatalogType = 'lab';
 async function admin_itg_catalog_load() {
-    const kw = (document.getElementById('itg-catalog-kw').value || '').trim();
+    /* SPA 竞态守卫: 搜索防抖定时器在切页后触发时, 面板元素已被替换出 DOM */
+    const kwEl = document.getElementById('itg-catalog-kw');
+    const srcEl = document.getElementById('itg-catalog-source');
+    const hintEl = document.getElementById('itg-catalog-hint');
+    const tbody = document.getElementById('itg-catalog-body');
+    if (!kwEl || !srcEl || !hintEl || !tbody) return;
+    const kw = (kwEl.value || '').trim();
     const q = 'kind=' + _itgCatalogType + (kw ? '&kw=' + encodeURIComponent(kw) : '') + '&limit=100';
     const r = await AjaxLoader.api('admin/query?' + q, { silent: true });
     const rows = (r.data && r.data.rows) || [];
     const src = (r.data && r.data.source) || '';
-    document.getElementById('itg-catalog-source').textContent = src ? '来源：' + src : '';
-    document.getElementById('itg-catalog-hint').textContent = src && src.indexOf('内置') !== -1 ? '外部接口未开启或无数据，当前显示本地内置目录' : '';
-    const tbody = document.getElementById('itg-catalog-body');
+    srcEl.textContent = src ? '来源：' + src : '';
+    hintEl.textContent = src && src.indexOf('内置') !== -1 ? '外部接口未开启或无数据，当前显示本地内置目录' : '';
     tbody.innerHTML = '';
     if (!rows.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty-tip">暂无项目</div></td></tr>'; }
     rows.forEach(x => {
