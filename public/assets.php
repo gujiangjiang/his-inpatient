@@ -69,6 +69,7 @@ class Asset {
         '/js/orders/dose_picker.js',
         '/js/orders/cell_picker.js',
         '/js/orders/order_sets.js',
+        '/js/orders/order_sets/editor.js',
         '/js/clinic/lab_panel.js',
         '/js/clinic/exam_panel.js',
         '/js/case_front_page/home_fields.js',
