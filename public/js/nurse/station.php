@@ -144,12 +144,6 @@ var NurseStation = {
     batchPrepare() {
         const bar = document.getElementById('nb-batchbar');
         if (bar.style.display === 'none') { Dom.toast('当前病区暂无待摆药药品', 'info'); return; }
-        const sel = document.getElementById('nb-batch-sel');
-        if (!sel) {
-            const body = document.createElement('div');
-            body.id = 'nb-batch-sel';
-            document.getElementById('nb-batchbar').appendChild(body);
-        }
         // 打开批量选择弹窗
         const rows = this.batchRows.filter(x => x.dispense_status !== 'prepared');
         if (!rows.length) { Dom.toast('当前病区待摆药医嘱均已预摆', 'info'); return; }
