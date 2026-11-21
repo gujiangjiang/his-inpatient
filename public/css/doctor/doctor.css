@@ -286,7 +286,7 @@
 .sidebar.sidebar-mini .menu-group { text-align: center; padding: 10px 0 4px; }
 .sidebar.sidebar-mini .menu-item { justify-content: center; padding: 9px 0; }
 
-/* 移动端：抽屉式侧边栏 */
+/* 移动端：抽屉式侧边栏 + 窄屏布局（长期支持） */
 @media (max-width: 768px) {
     .main-container { position: relative; }
     .sidebar {
@@ -302,11 +302,47 @@
     .sidebar.sidebar-mini { width: 240px; }  /* 移动端总是全宽抽屉 */
     .sidebar.sidebar-mini .menu-text { display: block; }
     .sidebar.sidebar-mini .menu-item { justify-content: flex-start; padding: 9px 14px; }
-    .main-content { padding: 14px; }
+    .main-content { padding: 12px; }
     .main-content:has(> .order-station),
     .main-content:has(> .wall-page) { padding: 0; overflow: hidden; }
-    .page-head { margin-bottom: 14px; }
-    .page-title { font-size: 18px; }
+    .page-head { margin-bottom: 12px; }
+    .page-title { font-size: 17px; }
+    /* 顶部导航栏: 收紧间距, 窄屏不挤压 */
+    .topbar { padding: 0 10px; gap: 8px; }
+    .topbar-left { gap: 8px; min-width: 0; }
+    .topbar-right { gap: 8px; }
+    .hospital-brand { gap: 6px; }
+    .hospital-logo { max-width: 64px; height: 28px; }
+    .hospital-title-wrap { max-width: 34vw; }
+    .hospital-name { font-size: 13px; }
+    .hospital-name2 { font-size: 9px; }
+    #user-info { max-width: 22vw; overflow: hidden; text-overflow: ellipsis; }
+    #user-info, .topbar-right .btn { font-size: 12px; padding: 4px 10px; }
+    /* 患者上下文切换器: 面板贴边全宽 */
+    .patient-switcher-trigger { max-width: 42vw; padding: 5px 10px; font-size: 12px; }
+    .patient-switcher-panel {
+        position: fixed;
+        left: 0; right: 0; top: 52px; bottom: 0;
+        width: auto; max-width: none;
+        max-height: none; height: auto;
+        border-radius: 0;
+        box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    }
+    .patient-switcher-panel .switcher-tab-content { max-height: calc(100vh - 132px); }
+    /* 患者信息栏: 行内换行 + 操作按钮换行 */
+    .patient-info-bar { gap: 6px 14px; padding: 7px 10px; }
+    .patient-info-bar .pib-actions { width: 100%; justify-content: flex-end; padding-top: 2px; }
+    .pib-diagnosis { max-width: 100%; }
+    .pib-name { font-size: 15px; }
+    /* 页头操作按钮组: 换行不溢出 */
+    .page-head.flex-between { flex-wrap: wrap; gap: 8px; }
+    .page-head.flex-between > div:last-child { display: flex; flex-wrap: wrap; gap: 6px; }
+    /* 通知面板贴右全宽 */
+    .notify-panel { width: 88vw; right: -4px; }
+    /* 通用表格: 保持列宽不被挤压, 外层容器横向滚动 */
+    .table { min-width: 640px; }
+    /* 通用 flex-between 头部 (h2 + 操作按钮): 窄屏换行 */
+    .flex-between { flex-wrap: wrap; gap: 8px; }
 }
 /* 移动端抽屉遮罩 */
 .sidebar-mask {

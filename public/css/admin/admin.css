@@ -189,4 +189,14 @@
     .status-row { flex-wrap: wrap; }
     /* 审核/字典行内操作换行 */
     .rv-row { flex-wrap: wrap; }
+    /* 弹窗窄屏贴边全宽 */
+    .modal-overlay { padding: 16px 10px 12px; }
+    .modal { width: 100%; max-height: calc(100vh - 28px); }
+    .modal .modal-header { padding: 12px 14px; }
+    .modal .modal-body { padding: 14px; }
+    .modal .modal-footer { padding: 10px 14px; flex-wrap: wrap; }
+    /* 页头操作按钮换行 */
+    .page-head.flex-between { flex-wrap: wrap; gap: 8px; }
+    /* 病床网格: 两列 */
+    .bed-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }

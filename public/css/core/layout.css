@@ -243,6 +243,20 @@
 .fs-13 { font-size: 13px; }
 .page-sub { font-size: 12px; color: #909399; font-weight: 400; margin-left: 8px; }
 .cell-ellipsis { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 窄屏（移动端）通用布局收拢: 弹窗贴边全宽 / 键值网格单列 / 页头换行 */
+@media (max-width: 768px) {
+    .modal-overlay { padding: 14px 10px 10px; }
+    .modal { width: 100%; max-height: calc(100vh - 24px); }
+    .modal .modal-header { padding: 11px 14px; }
+    .modal .modal-body { padding: 14px; }
+    .modal .modal-footer { padding: 10px 14px; flex-wrap: wrap; }
+    .kv-grid { grid-template-columns: 1fr; }
+    .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .tabs .tab { flex-shrink: 0; padding: 9px 14px; }
+    .row { flex-wrap: wrap; }
+    .row > .col { flex: 1 1 100%; }
+}
 /* Tabs (页内标签切换) */
 .tabs {
     display: flex;
