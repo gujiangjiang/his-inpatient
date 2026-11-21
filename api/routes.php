@@ -104,11 +104,12 @@ function getRoutes() {
         'nurse/prepare' => ['nurse/prepare.php', ['admin', 'nurse']],
         // 护士站床位一览表 + 护理文书 (体温单/护理记录单/常规护理文书)
         'nurse/bedboard' => ['nurse/bedboard.php', ['admin', 'nurse']],
-        'nurse/temperature' => ['nurse/temperature.php', ['admin', 'nurse']],
-        'nurse/nursing-notes' => ['nurse/nursing_notes.php', ['admin', 'nurse']],
-        'nurse/nursing-docs' => ['nurse/nursing_docs.php', ['admin', 'nurse']],
+        'nurse/temperature' => ['nurse/temperature.php', ['admin', 'nurse', 'doctor']],
+        'nurse/nursing-notes' => ['nurse/nursing_notes.php', ['admin', 'nurse', 'doctor']],
+        'nurse/nursing-docs' => ['nurse/nursing_docs.php', ['admin', 'nurse', 'doctor']],
         'nurse/transfer-bed' => ['nurse/transfer_bed.php', ['admin', 'nurse']],
         'nurse/admit' => ['nurse/admit.php', ['admin', 'nurse']],
+        'nurse/verify-batch' => ['nurse/verify_batch.php', ['admin', 'nurse']],
 
         // 医嘱
         'orders/save' => ['orders/order/order_save.php', ['admin', 'doctor']],

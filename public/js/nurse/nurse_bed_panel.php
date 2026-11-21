@@ -84,6 +84,7 @@ var NurseBedPanel = {
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/order-list?patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
+            const pendingN = rows.filter(o => o.status === 'pending').length;
             const catLabel = c => c === 'medication' ? '药品' : '医嘱';
             const actHtml = o => {
                 if (o.status === 'invalid') return '<span class="fs-12 text-muted">已作废</span>';
@@ -103,8 +104,27 @@ var NurseBedPanel = {
                     <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
                     <td>${actHtml(o)}</td></tr>`).join('')
                 : '<tr><td colspan="5"><div class="empty-state">暂无医嘱</div></td></tr>';
-            box.innerHTML = `<table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table>`;
+            const toolbar = pendingN > 0
+                ? `<div class="nurse-op-actions">
+                    <button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对（${pendingN} 条）</button>
+                    <span class="fs-12 text-muted">全部待核查医嘱一键核对</span>
+                  </div>`
+                : '';
+            box.innerHTML = toolbar + `<table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table>`;
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
+    },
+
+    /* 一键核对: 批量核查该患者全部待核查医嘱 */
+    async verifyAll() {
+        const pid = this.patient.id;
+        Dom.confirm('一键核对', '将核查该患者全部待核查医嘱，确认继续？', async function () {
+                try {
+                    const r = await AjaxLoader.api('nurse/verify-batch', { method: 'POST', data: { patient_id: pid } });
+                    Dom.toast(r.message || '已核对', 'success');
+                    NurseBedPanel.refresh();
+                    if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+                } catch (e) { /* 已提示 */ }
+            }, { okText: '一键核对' });
     },
 
     async verifyOrder(id) {
