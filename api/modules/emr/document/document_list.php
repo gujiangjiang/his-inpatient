@@ -1,6 +1,6 @@
 <?php
 // api/modules/emr/document_list.php
-Auth::requireRole(['admin', 'doctor']);
+Auth::requireRole(['admin', 'doctor', 'nurse']);
 $patientId = Validator::get('patient_id');
 $categoryId = Validator::get('category_id');
 $admissionNo = Validator::get('admission_no');

@@ -1,6 +1,6 @@
 <?php
 // api/modules/emr/document_get.php
-Auth::requireRole(['admin', 'doctor']);
+Auth::requireRole(['admin', 'doctor', 'nurse']);
 $id = Validator::get('id');
 if (!$id) Response::error('请输入文书ID');
 

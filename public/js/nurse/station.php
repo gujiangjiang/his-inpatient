@@ -144,6 +144,9 @@ var NurseStation = {
     batchPrepare() {
         const bar = document.getElementById('nb-batchbar');
         if (bar.style.display === 'none') { Dom.toast('当前病区暂无待摆药药品', 'info'); return; }
+        // 当前病区名
+        const ward = this.data.find(x => String(x.ward.id) === String(this.activeWardId));
+        const wardName = ward ? (ward.ward.name || '') : '';
         // 打开批量选择弹窗
         const rows = this.batchRows.filter(x => x.dispense_status !== 'prepared');
         if (!rows.length) { Dom.toast('当前病区待摆药医嘱均已预摆', 'info'); return; }
@@ -161,7 +164,7 @@ var NurseStation = {
             <div class="flex-between mt-10">
                 <span class="text-muted">计划时间：<input type="datetime-local" id="nb-batch-plan" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px"></span>
             </div>`;
-        const overlay = Dom.modal('批量预摆药 - ' + (ward.ward.name || ''), content, [
+        const overlay = Dom.modal('批量预摆药 - ' + (wardName || ''), content, [
             { text: '全部勾选', type: 'default', onclick: function () {
                 document.querySelectorAll('.nbb-check').forEach(c => c.checked = true);
             } },

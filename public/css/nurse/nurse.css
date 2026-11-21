@@ -59,6 +59,7 @@
 .nurse-bed-card .nbc-sub .nbc-label { color: #a8abb2; }
 .nurse-bed-card .nbc-diag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nurse-bed-card .nbc-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.nurse-bed-card .nbc-foot { margin-top: auto; }
 .nbc-badge {
     display: inline-flex; align-items: center; gap: 3px;
     font-size: 11px; line-height: 1; padding: 3px 7px; border-radius: 8px;
@@ -106,6 +107,8 @@
 .temp-date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .temp-date-nav .td-date { font-size: 14px; font-weight: 600; color: #303133; }
 .temp-grid-wrap { overflow-x: auto; }
+.temp-chart-wrap { overflow-x: auto; background: #fff; border: 1px solid #eef2f7; border-radius: 8px; padding: 8px; }
+.temp-chart-svg { display: block; min-width: 680px; }
 .temp-grid {
     width: 100%; min-width: 660px; border-collapse: collapse; font-size: 12px;
 }
