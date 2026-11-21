@@ -145,4 +145,9 @@ var NurseTempPage = {
         }).catch(() => {});
     }
 };
+
+/* SPA 页面初始化入口 (AjaxLoader 调用 window.nurse_temperature_init) */
+async function nurse_temperature_init() {
+    await NurseTempPage.init();
+}
 </script>

@@ -108,4 +108,9 @@ var NurseDocPage = {
             }, { danger: true, okText: '删除' });
     }
 };
+
+/* SPA 页面初始化入口 (AjaxLoader 调用 window.nurse_nursing_docs_init) */
+async function nurse_nursing_docs_init() {
+    await NurseDocPage.init();
+}
 </script>
