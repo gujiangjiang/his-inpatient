@@ -109,6 +109,7 @@ async function admin_integrations_test() {
 
 /* 检查/检验项目列表（外部接口开启时显示） */
 var _itgCatalogType = 'lab';
+var _itgCatTimer = null;
 async function admin_itg_catalog_load() {
     /* SPA 竞态守卫: 搜索防抖定时器在切页后触发时, 面板元素已被替换出 DOM */
     const kwEl = document.getElementById('itg-catalog-kw');

@@ -58,6 +58,7 @@
 var _deptOptions = [], _wardOptions = [];
 var _userAll = [];
 var _userPage = 1, _userPer = 15;
+var _userTimer = null;
 
 async function admin_users_init() {
     await App.mountShell('admin');
