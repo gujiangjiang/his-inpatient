@@ -82,7 +82,7 @@
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(doc.title || '病历') + '</title>'
       + '<style>' + style + '</style></head><body>'
       + pages.map((b, i) => pageHTML(d, doc.header || {}, b, i, pages.length, info)).join('')
-      + '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>'
+      + (o.noPrint ? '' : '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>')
       + '</body></html>';
     return html;
   };

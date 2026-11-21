@@ -172,35 +172,55 @@ var NurseBedPanel = {
         AjaxLoader.api('emr/document-get?id=' + id, { silent: true }).then(r => {
             const d = r.data;
             if (!d) return;
-            let body = '';
-            if (d.content_html) {
-                const tmp = document.createElement('div');
-                tmp.innerHTML = d.content_html;
-                body = tmp.textContent;
+            const p = this.patient;
+            // 患者信息 (供打印快照/重排页眉)
+            const info = {
+                name: p.patient_name || p.name || '',
+                gender: Format.gender(p.gender),
+                age: p.age ? p.age + ' 岁' : '',
+                department: p.department_name || '',
+                ward_name: p.ward_name || '',
+                bed_no: p.bed_no || '',
+                admission_no: p.admission_no || ''
+            };
+            let html = '';
+            if (d.content_html && d.content_html.indexOf('<!DOCTYPE') !== -1) {
+                // 已签名快照: 直接复用完整打印文档
+                html = d.content_html;
             } else if (d.doc_json) {
-                // 字处理模型: 提取段落文本
-                const walk = (blocks) => {
-                    let s = '';
-                    (blocks || []).forEach(b => {
-                        if (b.t === 'p') s += (b.runs || []).map(it => it.text || it.fb || '').join('') + '\n';
-                        else if (b.t === 'tbl') (b.rows || []).forEach(row => {
-                            (row.cells || []).forEach(c => { s += walk(c.blocks) + '  '; });
-                            s += '\n';
-                        });
-                    });
-                    return s;
-                };
-                body = walk(d.doc_json.body || []);
+                // 未签名/无快照: 重新分页生成 (与医生打印一致, 预览不自动弹打印)
+                try { html = EmrPrint.buildHTML(d.doc_json, info, { noPrint: true }); } catch (e) { /* 回退 */ }
             }
-            Dom.modal('病历 - ' + Format.escape(d.title || ''), `
-                <div class="kv-grid mb-10">
-                    <div class="kv-item"><b>分类</b><span>${Format.escape(d.category_name || '')}</span></div>
-                    <div class="kv-item"><b>状态</b><span>${d.status === 'signed' ? '已签名' : '草稿'}</span></div>
-                    <div class="kv-item"><b>签名</b><span>${Format.escape(d.signer_name || '-')}</span></div>
-                    <div class="kv-item"><b>更新时间</b><span>${Format.escape((d.updated_at || '').slice(0, 16))}</span></div>
-                </div>
-                <div class="ndoc-content-view">${Format.escape(body || '（空文书）')}</div>`,
-                [{ text: '关闭', type: 'default' }]);
+            // iframe 预览: 剥离脚本 (快照可能含自动打印 onload)
+            html = String(html || '').replace(/<script[\s\S]*?<\/script>/gi, '');
+            if (!html) { Dom.toast('该文书暂无内容可预览', 'info'); return; }
+            // 打印预览: iframe 以 100% 原尺寸渲染, transform 等比缩放显示
+            const overlay = Dom.modal('病历预览 - ' + Format.escape(d.title || ''), '<div class="cf-preview-scale" id="nbp-preview-scale"><iframe class="cf-preview-frame" id="nbp-preview-frame" scrolling="no"></iframe></div>', [
+                { text: '打印', type: 'primary', onclick: function () {
+                    const win = window.open('', '_blank', 'width=994,height=1323');
+                    if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
+                    win.document.write(html);
+                    win.document.close();
+                } },
+                { text: '关闭', type: 'default' }
+            ]);
+            overlay.querySelector('.modal').classList.add('modal-cf-preview');
+            const wrap = overlay.querySelector('#nbp-preview-scale');
+            const frame = overlay.querySelector('#nbp-preview-frame');
+            const fit = () => {
+                const avail = wrap.clientWidth || 820;
+                const s = Math.min(1, avail / 794);
+                const doc = frame.contentDocument;
+                const h = doc ? Math.max(doc.documentElement.scrollHeight, 2280) : 2280;
+                frame.style.width = '794px';
+                frame.style.height = h + 'px';
+                frame.style.transform = 'scale(' + s + ')';
+                frame.style.transformOrigin = 'top left';
+                wrap.style.height = Math.ceil(h * s) + 'px';
+            };
+            frame.addEventListener('load', fit);
+            frame.srcdoc = html;
+            setTimeout(fit, 120);
         }).catch(() => {});
     },
 
