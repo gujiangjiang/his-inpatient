@@ -1,13 +1,14 @@
 <?php
 // api/modules/nurse/temperature.php - 体温单 (结构化录入/查询)
-// 动作: list 查询某患者体温记录 | save 录入单条时点数据 | delete 删除单条
-Auth::requireRole(['admin', 'nurse']);
+// 动作: list 查询某患者体温记录 (admin/nurse/doctor 只读) | save 录入 (admin/nurse) | delete 删除 (admin/nurse)
 $action = Validator::get('action', 'list');
+$user = Auth::user();
 
 if ($action === 'list') {
+    Auth::requireRole(['admin', 'nurse', 'doctor']);
     $patientId = Validator::get('patient_id');
     if (!$patientId) Response::error('请输入患者ID');
-    if (!can_access_patient(Auth::user(), (int)$patientId)) Response::error('无权访问该患者', 403);
+    if (!can_access_patient($user, (int)$patientId)) Response::error('无权访问该患者', 403);
     $rows = DB::select(
         "SELECT tc.*, u.name AS recorder_name
          FROM temperature_charts tc
@@ -15,6 +16,10 @@ if ($action === 'list') {
          WHERE tc.patient_id = ?
          ORDER BY tc.record_date DESC, tc.time_slot ASC", [$patientId]);
     Response::success($rows);
+}
+
+if ($action === 'save' || $action === 'delete') {
+    Auth::requireRole(['admin', 'nurse']);
 }
 
 if ($action === 'save') {

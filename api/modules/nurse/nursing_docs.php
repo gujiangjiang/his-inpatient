@@ -1,13 +1,14 @@
 <?php
 // api/modules/nurse/nursing_docs.php - 常规护理文书 (入院评估/护理计划/健康宣教/转科记录等)
-// 动作: list 查询某患者文书 | save 新增/更新 | delete 删除
-Auth::requireRole(['admin', 'nurse']);
+// 动作: list 查询 (admin/nurse/doctor 只读) | save 新增/更新 (admin/nurse) | delete 删除 (admin/nurse)
 $action = Validator::get('action', 'list');
+$user = Auth::user();
 
 if ($action === 'list') {
+    Auth::requireRole(['admin', 'nurse', 'doctor']);
     $patientId = Validator::get('patient_id');
     if (!$patientId) Response::error('请输入患者ID');
-    if (!can_access_patient(Auth::user(), (int)$patientId)) Response::error('无权访问该患者', 403);
+    if (!can_access_patient($user, (int)$patientId)) Response::error('无权访问该患者', 403);
     $rows = DB::select(
         "SELECT nd.*, u.name AS recorder_name
          FROM nursing_docs nd
@@ -15,6 +16,10 @@ if ($action === 'list') {
          WHERE nd.patient_id = ?
          ORDER BY nd.created_at DESC, nd.id DESC", [$patientId]);
     Response::success($rows);
+}
+
+if ($action === 'save' || $action === 'delete') {
+    Auth::requireRole(['admin', 'nurse']);
 }
 
 if ($action === 'save') {
