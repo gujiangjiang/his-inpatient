@@ -23,6 +23,7 @@ class Asset {
         '/css/emr/emr_editor.css',
         '/css/admin/admin.css',
         '/css/clinic/clinic.css',
+        '/css/nurse/nurse.css',
     ];
 
     /** 脚本 (按顺序加载: 公共单例 → 图标桥 → 组件 → 登录; 无第三方库, 全部自研) */

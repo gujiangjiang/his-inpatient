@@ -1,0 +1,164 @@
+/* public/css/nurse/nurse.css - 护士站 (床位一览表 + 护理文书) */
+
+/* ===== 床位一览表 ===== */
+.nurse-board { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #f4f6f8; }
+.nurse-board-head {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px;
+    padding: 8px 14px; border-bottom: 1px solid #e4e7ed; background: #fff; flex-shrink: 0;
+}
+.nurse-board-head .nb-title { font-size: 15px; font-weight: 700; color: #1f2d3d; }
+.nurse-board-head .nb-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* 病区 Tabs */
+.nurse-ward-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.nurse-ward-tab {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 16px;
+    background: #fff; color: #606266; font-size: 13px; cursor: pointer; transition: all .15s;
+}
+.nurse-ward-tab:hover { border-color: var(--primary); color: var(--primary); }
+.nurse-ward-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.nurse-ward-tab .tab-count { font-size: 11px; opacity: .85; }
+
+/* 病区占用统计条 */
+.nurse-ward-stat {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+    padding: 7px 14px; border-bottom: 1px solid #eef2f7; background: #fafbfd; font-size: 12px; color: #64748b;
+}
+.nurse-ward-stat b { color: #303133; }
+.nurse-ward-stat .ns-item { display: inline-flex; align-items: center; gap: 5px; }
+
+/* 床位卡片墙 */
+.nurse-bed-scroll { flex: 1; overflow-y: auto; padding: 12px 14px; -webkit-overflow-scrolling: touch; }
+.nurse-bed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+    gap: 10px;
+}
+.nurse-bed-card {
+    position: relative;
+    background: #fff; border: 1px solid #e4e7ed; border-radius: 8px;
+    padding: 9px 11px; cursor: pointer; transition: box-shadow .15s, border-color .15s;
+}
+.nurse-bed-card:hover { border-color: #7fd4d4; box-shadow: 0 3px 12px rgba(26,163,163,.16); }
+.nurse-bed-card.free { background: #f8fafc; border-style: dashed; }
+.nurse-bed-card.critical { border-color: #f56c6c; }
+.nurse-bed-card.allergy { border-left: 3px solid #f56c6c; }
+.nurse-bed-card .nbc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.nbc-bed {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 44px; height: 22px; padding: 0 6px; border-radius: 4px;
+    color: #fff; font-size: 12px; font-weight: 600; flex-shrink: 0;
+}
+.nbc-bed.level-special { background: #c0392b; }
+.nbc-bed.level-1 { background: #f56c6c; }
+.nbc-bed.level-2 { background: #409eff; }
+.nbc-bed.level-3 { background: #909399; }
+.nurse-bed-card .nbc-name { font-size: 15px; font-weight: 700; color: #303133; }
+.nurse-bed-card .nbc-sub { font-size: 12px; color: #606266; line-height: 19px; }
+.nurse-bed-card .nbc-sub .nbc-label { color: #a8abb2; }
+.nurse-bed-card .nbc-diag { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nurse-bed-card .nbc-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.nbc-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; line-height: 1; padding: 3px 7px; border-radius: 8px;
+    color: #fff; background: #a8b0bd;
+}
+.nbc-badge.warn { background: #e6a23c; }
+.nbc-badge.danger { background: #f56c6c; }
+.nbc-badge.info { background: #409eff; }
+.nbc-badge.ok { background: #2fb344; }
+.nurse-bed-card .nbc-foot {
+    display: flex; align-items: center; gap: 6px; margin-top: 5px;
+    font-size: 11px; color: #909399;
+}
+.nbc-days { margin-left: auto; }
+.nbc-days b { color: #f56c6c; }
+
+/* 批量摆药条 */
+.nurse-batchbar {
+    flex-shrink: 0;
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+    padding: 8px 14px; border-top: 1px solid #e4e7ed; background: #fff;
+}
+.nurse-batchbar .nbb-hint { font-size: 12px; color: #64748b; }
+.nurse-batchbar .nbb-count { font-size: 12px; font-weight: 600; color: var(--primary); }
+
+/* 床位卡片操作面板 */
+.nurse-op-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #e4e7ed; margin-bottom: 12px; }
+.nurse-op-tab {
+    padding: 8px 16px; border: none; background: transparent; font-size: 13px;
+    color: #606266; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.nurse-op-tab:hover { color: var(--primary); }
+.nurse-op-tab.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
+.nurse-op-body { min-height: 240px; max-height: 56vh; overflow-y: auto; }
+.nurse-op-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.nurse-op-action {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px;
+    background: #fff; color: #303133; font-size: 13px; cursor: pointer; transition: all .15s;
+}
+.nurse-op-action:hover { border-color: var(--primary); color: var(--primary); }
+.nurse-op-action svg { color: var(--primary); }
+
+/* ===== 体温单 ===== */
+.temp-date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.temp-date-nav .td-date { font-size: 14px; font-weight: 600; color: #303133; }
+.temp-grid-wrap { overflow-x: auto; }
+.temp-grid {
+    width: 100%; min-width: 660px; border-collapse: collapse; font-size: 12px;
+}
+.temp-grid th {
+    background: #f5f7fa; color: #475569; font-weight: 600; padding: 6px 4px;
+    border: 1px solid #eef2f7; text-align: center; white-space: nowrap;
+}
+.temp-grid td {
+    border: 1px solid #eef2f7; padding: 4px; text-align: center; color: #303133;
+}
+.temp-grid td.td-empty { color: #c0c4cc; }
+.temp-grid .td-time { background: #fafbfd; color: #64748b; font-weight: 600; }
+.temp-grid .td-act {
+    background: #f0fbfb; cursor: pointer; border-radius: 4px; transition: background .15s;
+}
+.temp-grid .td-act:hover { background: #d8f0f0; }
+.temp-grid td.td-val { font-weight: 600; }
+
+/* ===== 护理记录单 ===== */
+.nnote-form { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.nnote-form .colspan-2 { grid-column: span 2; }
+.nnote-list { max-height: 40vh; overflow-y: auto; }
+.nnote-row {
+    display: flex; gap: 12px; padding: 9px 6px; border-bottom: 1px solid #f0f2f5; font-size: 13px;
+}
+.nnote-row:last-child { border-bottom: none; }
+.nnote-time { color: #909399; white-space: nowrap; flex-shrink: 0; }
+.nnote-cat { flex-shrink: 0; }
+.nnote-content { flex: 1; min-width: 0; color: #303133; word-break: break-all; }
+.nnote-meta { color: #a8abb2; font-size: 11px; margin-top: 3px; }
+.nnote-row .nnote-del { color: #c0c4cc; cursor: pointer; align-self: flex-start; border: none; background: none; }
+.nnote-row .nnote-del:hover { color: #f56c6c; }
+
+/* ===== 常规护理文书 ===== */
+.ndoc-list { max-height: 42vh; overflow-y: auto; }
+.ndoc-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border: 1px solid #eef0f4; border-radius: 8px; margin-bottom: 6px; background: #fff;
+}
+.ndoc-item:hover { border-color: rgba(20,154,154,.4); }
+.ndoc-title { flex: 1; min-width: 0; font-size: 13px; color: #303133; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ndoc-meta { font-size: 11px; color: #909399; flex-shrink: 0; }
+.ndoc-type-tag { font-size: 11px; color: var(--primary); background: var(--primary-soft); border-radius: 4px; padding: 1px 6px; flex-shrink: 0; }
+.ndoc-content-view { white-space: pre-wrap; word-break: break-all; line-height: 1.8; font-size: 13px; color: #303133; }
+
+/* ===== 移动端 ===== */
+@media (max-width: 768px) {
+    .nurse-bed-grid { grid-template-columns: 1fr; }
+    .nurse-bed-scroll { padding: 10px; }
+    .nurse-board-head { padding: 8px 10px; }
+    .nurse-ward-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nurse-ward-tab { flex-shrink: 0; }
+    .nurse-batchbar { padding: 8px 10px; }
+    .nnote-form { grid-template-columns: 1fr; }
+    .nnote-form .colspan-2 { grid-column: span 1; }
+}
