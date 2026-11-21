@@ -165,6 +165,11 @@ const AjaxLoader = {
                 }
                 // 自定义下拉组件增强 (页面注入后)
                 if (window.SelectPicker && app) SelectPicker.initInputs(app);
+                // 窄屏病历画布缩放 (纸张注入后即时适配)
+                if (typeof App !== 'undefined' && App.emrPageZoomNow && window.matchMedia
+                    && window.matchMedia('(max-width: 900px)').matches) {
+                    setTimeout(App.emrPageZoomNow, 60);
+                }
                 // 执行页面初始化函数 (支持异步), 完成后标记侧边栏当前项
                 const initFn = window[module + '_' + page + '_init'];
                 const markActive = () => {

@@ -67,6 +67,76 @@ const App = {
                 }
             });
         }
+        // 病历画布：窄屏整体等比缩放（不重排版）——缩放只作用于纸张本身
+        if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) {
+            this.bindEmrPageZoom();
+        }
+        // 跨断点切换 (桌面↔窄屏) 时补绑 / 还原
+        const self = this;
+        window.addEventListener('resize', function () {
+            if (window.matchMedia && window.matchMedia('(max-width: 900px)').matches) {
+                if (!self._emrZoomBound) self.bindEmrPageZoom();
+                return;
+            }
+            // 回到桌面: 清除窄屏缩放内联样式, 恢复原生桌面表现
+            const wrap = document.querySelector('.emr-editor-scroll');
+            const page = wrap && wrap.querySelector('.emr-editor-page');
+            if (wrap) { wrap.style.display = ''; wrap.style.justifyContent = ''; }
+            if (page) { page.style.transform = ''; page.style.margin = ''; }
+        });
+    },
+
+    /**
+     * 病历 A4 画布窄屏缩放: 纸张按可视宽度等比缩小 (元素布局不变),
+     * 容器同步留白以容纳缩放后的纸张, 避免横向滚动条
+     */
+    bindEmrPageZoom() {
+        if (this._emrZoomBound) return;
+        this._emrZoomBound = true;
+        const apply = () => {
+            const wrap = document.querySelector('.emr-editor-scroll');
+            const page = wrap && wrap.querySelector('.emr-editor-page');
+            if (!wrap || !page) return;
+            const avail = wrap.clientWidth - 20;
+            const scale = Math.min(1, avail / 794);
+            page.style.transform = 'scale(' + scale + ')';
+            page.style.transformOrigin = 'top center';
+            page.style.margin = '0 auto';
+            wrap.style.display = 'flex';
+            wrap.style.justifyContent = 'center';
+        };
+        // 纸张在页面片段注入后才存在: 观察内容区子节点增减 (不逐字符重算)
+        let timer = null;
+        const schedule = () => {
+            clearTimeout(timer);
+            timer = setTimeout(apply, 80);
+        };
+        const target = document.getElementById('app-content') || document.body;
+        if (target) {
+            const obs = new MutationObserver((muts) => {
+                // 仅当新增/移除的是整块页面或画布时才重算
+                const hit = muts.some(m => m.type === 'childList'
+                    && (m.target === target
+                        || (m.target.classList && m.target.classList.contains('emr-editor-scroll'))));
+                if (hit) schedule();
+            });
+            obs.observe(target, { childList: true, subtree: true });
+        }
+        window.addEventListener('resize', schedule);
+    },
+
+    /** 窄屏病历画布缩放 (供 SPA 页面加载后调用, 避免重复绑定) */
+    emrPageZoomNow() {
+        const wrap = document.querySelector('.emr-editor-scroll');
+        const page = wrap && wrap.querySelector('.emr-editor-page');
+        if (!wrap || !page) return;
+        const avail = wrap.clientWidth - 20;
+        const scale = Math.min(1, avail / 794);
+        page.style.transform = 'scale(' + scale + ')';
+        page.style.transformOrigin = 'top center';
+        page.style.margin = '0 auto';
+        wrap.style.display = 'flex';
+        wrap.style.justifyContent = 'center';
     },
 
     // 侧边栏当前页高亮 (页面加载完成后调用)

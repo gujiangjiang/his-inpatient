@@ -8,6 +8,22 @@
   background: #e8eaee;
   padding: 10px;
 }
+/* 移动端: 画布整体等比缩放适配窄屏 (保留 A4 版式与元素布局, 禁止重排版) */
+@media (max-width: 900px) {
+  .emr-editor-scroll {
+    padding: 6px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-x: hidden; /* 缩放后视觉已收窄, 隐藏纸张布局盒的横向溢出 */
+    overflow-y: auto;
+  }
+  .emr-editor-scroll .emr-editor-page {
+    transform-origin: top center;
+    margin: 0 auto;
+    flex-shrink: 0;
+  }
+}
 .emr-editor-page {
   width: 794px; /* A4 @96dpi 固定纸张宽度 (不随窗口缩放) */
   flex-shrink: 0;
