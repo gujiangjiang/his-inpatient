@@ -4,6 +4,24 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.54.1] - 2026-11-21
+
+### 修复
+- **loadPage 脚本执行被 window.Dom 判断整体跳过（致命回归）**：Dom/Format 为 const
+  词法全局不挂 window，SPA 页面 script 提取执行整体失效——全站页面函数未定义、
+  内容空白、按钮报 is not defined；改 typeof 直接引用判断。emr_ui/emr_doc_render/
+  emr_doc_print 的 window.Format 同款问题一并修正
+- **防抖/轮询回调 SPA 竞态**：接口管理 catalog 搜索、日志中心（列表/服务器/实时轮询/
+  计数）、人员管理六处回调切页后操作已替换 DOM 报 null.textContent——开头判空返回
+- **防抖定时器变量未声明**：integrations `_itgCatTimer`、users `_userTimer` 首次
+  clearTimeout(未声明) 即抛 ReferenceError，搜索功能失效——补 var 声明
+
+### 验证（无头浏览器 @10.0.0.91:10023）
+- admin 12 页 + doctor 8 页 + pharmacy/nurse 抽查全部正常渲染
+- 报障按钮复测通过：admin_departments_new/admin_users_new/admin_syscfg_stab/
+  patients_wall_toggle/admin_integrations_load_config
+- doctor1 登录进入工作站、患者卡片墙 7 人渲染正常
+
 ## [0.54.0] - 2026-11-21
 
 大版本复盘重构：横向越权收口、并发竞态修复、公共逻辑下沉、巨石文件拆分。
