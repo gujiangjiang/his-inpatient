@@ -57,7 +57,7 @@
   };
 
   /** 转义文本 (标签等动态值写入 innerHTML 前必用); 统一走 Format.escape (含单引号) */
-  const esc = (s) => (window.Format ? Format.escape(s) : String(s == null ? '' : s)
+  const esc = (s) => (typeof Format !== 'undefined' ? Format.escape(s) : String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
 
   /**

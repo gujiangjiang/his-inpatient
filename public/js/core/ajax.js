@@ -160,7 +160,8 @@ const AjaxLoader = {
                 if (app) {
                     app.innerHTML = html;
                     // innerHTML 不会自动执行 <script>, 手动提取并按序执行
-                    if (window.Dom) Dom.execScripts(app);
+                    // (Dom 为 const 词法全局, 不挂 window, 必须直接引用/typeof 判断)
+                    if (typeof Dom !== 'undefined' && Dom.execScripts) Dom.execScripts(app);
                 }
                 // 自定义下拉组件增强 (页面注入后)
                 if (window.SelectPicker && app) SelectPicker.initInputs(app);
