@@ -8,7 +8,7 @@ $action = Validator::get('action', 'list');
 if ($action === 'list') {
     $user = Auth::user();
     $sql = "SELECT o.id, o.content, o.dosage, o.dosage_unit, o.freq_code, o.freq_detail, o.order_period,
-                   o.dispense_status, o.plan_time, o.execute_batch_no, o.charge_amount, o.status,
+                   o.dispense_status, o.plan_time, o.execute_batch_no, o.charge_amount, o.status, o.patient_id,
                    p.name AS patient_name, p.bed_no, p.ward_id, w.name AS ward_name,
                    u.name AS doctor_name
             FROM orders o

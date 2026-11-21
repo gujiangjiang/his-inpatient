@@ -102,6 +102,13 @@ function getRoutes() {
         'nurse/vitals-list' => ['nurse/vitals_list.php', ['admin', 'nurse']],
         // 护士站预摆药（申请/取消/列表）
         'nurse/prepare' => ['nurse/prepare.php', ['admin', 'nurse']],
+        // 护士站床位一览表 + 护理文书 (体温单/护理记录单/常规护理文书)
+        'nurse/bedboard' => ['nurse/bedboard.php', ['admin', 'nurse']],
+        'nurse/temperature' => ['nurse/temperature.php', ['admin', 'nurse']],
+        'nurse/nursing-notes' => ['nurse/nursing_notes.php', ['admin', 'nurse']],
+        'nurse/nursing-docs' => ['nurse/nursing_docs.php', ['admin', 'nurse']],
+        'nurse/transfer-bed' => ['nurse/transfer_bed.php', ['admin', 'nurse']],
+        'nurse/admit' => ['nurse/admit.php', ['admin', 'nurse']],
 
         // 医嘱
         'orders/save' => ['orders/order/order_save.php', ['admin', 'doctor']],
@@ -126,9 +133,9 @@ function getRoutes() {
         // 病历 (结构化)
         'emr/category-list' => ['emr/station/category_list.php', ['admin', 'doctor']],
         'emr/category-save' => ['emr/station/category_save.php', ['admin']],
-        'emr/document-list' => ['emr/document/document_list.php', ['admin', 'doctor']],
+        'emr/document-list' => ['emr/document/document_list.php', ['admin', 'doctor', 'nurse']],
         'emr/document-batch-print' => ['emr/document/document_batch_print.php', ['admin', 'doctor']],
-        'emr/document-get' => ['emr/document/document_get.php', ['admin', 'doctor']],
+        'emr/document-get' => ['emr/document/document_get.php', ['admin', 'doctor', 'nurse']],
         'emr/document-save' => ['emr/document/document_save.php', ['admin', 'doctor']],
         'emr/document-sign' => ['emr/document/document_sign.php', ['admin', 'doctor']],
         'emr/document-delete' => ['emr/document/document_delete.php', ['admin', 'doctor']],
