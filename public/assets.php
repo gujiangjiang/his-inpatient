@@ -47,6 +47,7 @@ class Asset {
         '/js/core/icd_picker.js',
         '/js/core/pdf_generator.js',
         '/js/core/print_document.js',
+        '/js/core/print_barcode.js',
         '/js/core/print_helper.js',
         '/js/core/print_preview.js',
         '/js/core/print_preview_content.js',

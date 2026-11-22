@@ -132,7 +132,7 @@ function clinic_rx_print(idx) {
     const html = `<div class="sheet a5">
         <div class="rx-head">
             <div class="rx-brand">${PrintHelper.brandHeaderHtml('')}</div>
-            <div class="rx-barcode">${PrintHelper.barcodeSvg(rxNo)}</div>
+            <div class="rx-barcode">${PrintBarcode.svg(rxNo)}</div>
         </div>
         <div class="rx-title">住院处方笺</div>
         <div class="rx-info">

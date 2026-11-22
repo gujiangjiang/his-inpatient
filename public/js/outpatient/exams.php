@@ -121,7 +121,7 @@ function outpatient_exams_printBlock(rep) {
                 ${PrintHelper.brandHeaderHtml('')}
                 <div class="sheet-docname">检查申请单</div>
             </div>
-            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
+            <div class="sheet-barcode">${PrintBarcode.svg(rep.report_no || '')}</div>
         </div>
         <div class="sheet-info-grid">
             <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
@@ -159,7 +159,7 @@ function outpatient_exams_reportBlock(rep) {
                 ${PrintHelper.brandHeaderHtml('')}
                 <div class="sheet-docname">检查报告单</div>
             </div>
-            <div class="sheet-barcode">${PrintHelper.barcodeSvg(rep.report_no || '')}</div>
+            <div class="sheet-barcode">${PrintBarcode.svg(rep.report_no || '')}</div>
         </div>
         <div class="sheet-info-grid">
             <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>

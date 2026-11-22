@@ -2,7 +2,7 @@
 (function () {
     'use strict';
     const PP = (window.PrintPreview = {});
-    const PAGE_SELECTOR = '.page, .sheet, .cf-page';
+    const PAGE_SELECTOR = '.page, .sheet, .cf-page, .print-page';
     const GAP = 24;
     let current = null;
 
@@ -13,21 +13,21 @@
   html, body { min-width: 0 !important; min-height: 0 !important; height: auto !important; background: #dfe3e8 !important; }
   html { margin: 0 !important; padding: 0 !important; }
   body { box-sizing: border-box !important; width: 100% !important; margin: 0 !important; padding: var(--pp-page-gap) !important; }
-  body > :where(.page, .sheet, .cf-page) { background-color: #fff; }
-  body > .page, body > .sheet, body > .cf-page {
+  body > :where(.page, .sheet, .cf-page, .print-page) { background-color: #fff; }
+  body > .page, body > .sheet, body > .cf-page, body > .print-page {
     margin: 0 auto var(--pp-page-gap) !important;
     box-shadow: 0 3px 14px rgba(15, 23, 42, .2);
   }
-  body > .page:last-of-type, body > .sheet:last-of-type, body > .cf-page:last-of-type { margin-bottom: 0 !important; }
+  body > .page:last-of-type, body > .sheet:last-of-type, body > .cf-page:last-of-type, body > .print-page:last-of-type { margin-bottom: 0 !important; }
   html.pp-standalone-root { overflow: auto !important; }
 }
 @media print {
   html, body { width: auto !important; min-width: 0 !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
-  body > .page, body > .sheet, body > .cf-page {
+  body > .page, body > .sheet, body > .cf-page, body > .print-page {
     margin: 0 auto !important; box-shadow: none !important;
     break-after: page; page-break-after: always;
   }
-  body > .page:last-of-type, body > .sheet:last-of-type, body > .cf-page:last-of-type {
+  body > .page:last-of-type, body > .sheet:last-of-type, body > .cf-page:last-of-type, body > .print-page:last-of-type {
     break-after: auto; page-break-after: auto;
   }
 }`;

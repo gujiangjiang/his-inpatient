@@ -36,6 +36,18 @@
         return PP.openBody(title, '<div class="sheet">' + clone.outerHTML + '</div>', opts);
     };
 
+    PP.openLabels = function (title, labels, paper, opts) {
+        const options = Object.assign({ canPrint: true, pageNumbers: false, paper: paper }, opts || {});
+        const spec = PrintDocument.paper('', options);
+        const contents = Array.isArray(labels) ? labels : [labels];
+        const pages = contents.filter(function (content) { return content !== null && content !== undefined && String(content).trim(); })
+            .map(function (content) {
+                return '<div class="print-page" data-paper="' + Format.escape(spec.id) + '">' + String(content) + '</div>';
+            }).join('');
+        if (!pages) { Dom.toast('暂无可打印的标签内容', 'info'); return null; }
+        return PP.openBody(title, pages, options);
+    };
+
     PP.patientInfo = function (patient, docName) {
         const data = patient || {};
         let age = data.age;
@@ -66,7 +78,7 @@
             });
             const holder = document.createElement('div');
             holder.innerHTML = parsed.body.innerHTML;
-            const pages = holder.querySelectorAll('.page, .sheet, .cf-page');
+            const pages = holder.querySelectorAll('.page, .sheet, .cf-page, .print-page');
             pages.forEach(function (page, index) {
                 const pageNo = page.querySelector('.emr-fp-page, .sheet-page-no');
                 if (pageNo) pageNo.textContent = '第 ' + (index + 1) + ' 页 / 共 ' + pages.length + ' 页';

@@ -197,7 +197,7 @@ function clinic_consult_print(id) {
                 ${PrintHelper.brandHeaderHtml('')}
                 <div class="sheet-docname">会诊申请单</div>
             </div>
-            <div class="sheet-barcode">${PrintHelper.barcodeSvg('CONSULT' + x.id)}</div>
+            <div class="sheet-barcode">${PrintBarcode.svg('CONSULT' + x.id)}</div>
         </div>
         <div class="patient-bar">
             <span>姓名：<b>${Format.escape(x.patient_name || '')}</b></span>

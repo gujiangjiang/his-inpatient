@@ -2,17 +2,47 @@
 (function () {
     'use strict';
     const PD = (window.PrintDocument = {});
+    const MM_TO_PX = 96 / 25.4;
+    const makePaper = function (id, widthMm, heightMm, pageSize) {
+        return {
+            id: id, widthMm: widthMm, heightMm: heightMm,
+            width: Math.round(widthMm * MM_TO_PX), height: Math.round(heightMm * MM_TO_PX),
+            pageSize: pageSize || (widthMm + 'mm ' + heightMm + 'mm')
+        };
+    };
     const PAPERS = {
-        A4: { id: 'A4', width: 794, height: 1123, pageSize: 'A4 portrait' },
-        A5: { id: 'A5', width: 559, height: 794, pageSize: 'A5 portrait' },
-        HALF_A4: { id: 'HALF_A4', width: 794, height: 559, pageSize: '210mm 148mm' }
+        A4: makePaper('A4', 210, 297, 'A4 portrait'),
+        A5: makePaper('A5', 148, 210, 'A5 portrait'),
+        HALF_A4: makePaper('HALF_A4', 210, 148),
+        WRISTBAND: makePaper('WRISTBAND', 250, 25),
+        LAB_LABEL: makePaper('LAB_LABEL', 50, 30),
+        MED_LABEL: makePaper('MED_LABEL', 60, 60)
+    };
+
+    PD.registerPaper = function (id, widthMm, heightMm) {
+        const key = String(id || '').toUpperCase().replace(/[- ]/g, '_');
+        const width = Number(widthMm), height = Number(heightMm);
+        if (!key || !Number.isFinite(width) || !Number.isFinite(height)
+            || width < 10 || height < 10 || width > 500 || height > 500) return null;
+        PAPERS[key] = makePaper(key, width, height);
+        return PAPERS[key];
     };
 
     PD.paper = function (bodyHtml, opts) {
-        const requested = String((opts && opts.paper) || '').toUpperCase().replace(/[- ]/g, '_');
+        const rawPaper = opts && opts.paper;
+        if (rawPaper && typeof rawPaper === 'object') {
+            const custom = PD.registerPaper(rawPaper.id || 'CUSTOM', rawPaper.widthMm, rawPaper.heightMm);
+            if (custom) return custom;
+        }
+        const requested = String(rawPaper || '').toUpperCase().replace(/[- ]/g, '_');
         if (PAPERS[requested]) return PAPERS[requested];
         const holder = document.createElement('div');
         holder.innerHTML = String(bodyHtml || '');
+        const customPage = holder.querySelector('.print-page[data-paper]');
+        if (customPage) {
+            const key = String(customPage.getAttribute('data-paper') || '').toUpperCase().replace(/[- ]/g, '_');
+            if (PAPERS[key]) return PAPERS[key];
+        }
         const sheet = holder.querySelector('.sheet');
         if (sheet && sheet.classList.contains('a5')) return PAPERS.A5;
         if (sheet && sheet.classList.contains('half-a4')) return PAPERS.HALF_A4;
@@ -55,6 +85,8 @@ table.doc-table th { background: #f2f2f2; }
 .sheet.a5 { width: 148mm; height: 210mm; padding: 10mm 12mm 20mm; }
 .sheet.half-a4 { width: 210mm; height: 148mm; padding: 10mm 14mm 20mm; }
 .sheet + .sheet { break-before: page; page-break-before: always; }
+.print-page { width: ${paper.widthMm}mm; height: ${paper.heightMm}mm; margin: 0 auto; position: relative; overflow: hidden; background: #fff; }
+.print-page + .print-page { break-before: page; page-break-before: always; }
 .sheet .sheet-head, .sheet .patient-bar, .sheet .rx-head, .sheet .rx-info,
 .sheet .rx-mark, .sheet table.rx-print, .sheet .sheet-table, .sheet .rx-foot,
 .sheet .sheet-note, .sheet .sheet-tip { flex-shrink: 0; }
