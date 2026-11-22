@@ -111,7 +111,7 @@
             + '<div class="mel-order-time">开单时间 ' + esc(String(data.created_at || data.start_date || '').slice(0, 16)) + '</div></div>'
             + '<div class="mel-stamp">执行护士盖章</div></div></div>';
         const css = `
-.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm minmax(0,1fr) 10mm 9mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
+.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm auto 10mm 9mm; align-content:space-between; row-gap:1mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
 .mel-head { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1mm; border-bottom:.6pt solid #000; font-size:7.2pt; white-space:nowrap; }
 .mel-head span { min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:700; }
 .mel-head strong { justify-self:end; font-size:10pt; }
@@ -123,7 +123,7 @@
 .mel-patient-sub span:last-child { text-align:right; }
 .mel-barcode { min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .mel-barcode-svg { display:block; width:100%; height:10mm; }
-.mel-drug { min-height:0; padding:1.4mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
+.mel-drug { min-height:0; max-height:19mm; align-self:start; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
 .mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:10pt; line-height:1.3; }
 .mel-note { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mel-foot { padding-top:.7mm; display:grid; grid-template-columns:minmax(0,1fr) 21mm; align-items:center; gap:1.5mm; font-size:6.5pt; line-height:1.2; }
