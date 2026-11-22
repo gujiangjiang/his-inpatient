@@ -54,6 +54,7 @@ class Asset {
         '/js/core/print_label_templates.js',
         '/js/lab/lab_barcode.js',
         '/js/nurse/nurse_print.js',
+        '/js/nurse/medication_label.js',
         '/js/emr_editor/emr_doc_model.js',
         '/js/emr_editor/emr_nursing_link.js',
         '/js/emr_editor/emr_doc_calc.js',

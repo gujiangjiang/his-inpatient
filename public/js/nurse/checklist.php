@@ -38,10 +38,15 @@ async function loadChecklist() {
             act = `<button class="btn btn-small btn-danger" onclick="nurse_checklist_confirm(${o.id}, 'stopped')">确认停止</button>`;
         } else if (o.status === 'pending') {
             act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_verify(${o.id})">核查</button>`;
+        } else if (o.status === 'executing') {
+            act = '<span class="fs-12 text-muted">执行中</span>';
         } else if (o.category === 'medication' && !o.dispensed_id) {
             act = '<span class="fs-12 text-muted">待发药后执行</span>';
         } else {
             act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_execute(${o.id})">执行</button>`;
+        }
+        if (o.category === 'medication' && o.dispensed_id && ['verified', 'executing', 'completed'].includes(o.status)) {
+            act = `<button class="btn btn-small" onclick="nurse_checklist_med_label(${o.id})">执行贴</button> ` + act;
         }
         const tr = document.createElement('tr');
         if (o.status === 'invalid') tr.className = 'os-txt-invalid';
@@ -82,6 +87,10 @@ async function nurse_checklist_execute(orderId) {
         data:{order_id: orderId, action: 'execute'}
     });
     loadChecklist();
+}
+
+function nurse_checklist_med_label(orderId) {
+    MedicationLabel.preview(orderId);
 }
 
 </script>

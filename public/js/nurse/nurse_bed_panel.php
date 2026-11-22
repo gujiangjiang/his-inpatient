@@ -174,14 +174,21 @@ var NurseBedPanel = {
             const pendingN = rows.filter(o => o.status === 'pending').length;
             const catLabel = c => c === 'medication' ? '药品' : '医嘱';
             const actHtml = o => {
-                if (o.status === 'invalid') return '<span class="fs-12 text-muted">已作废</span>';
-                if (o.status === 'invalid_pending') return `<button class="btn btn-small btn-danger" onclick="NurseBedPanel.confirmOrder(${o.id},'invalid')">确认作废</button>`;
-                if (o.status === 'stop_pending') return `<button class="btn btn-small btn-danger" onclick="NurseBedPanel.confirmOrder(${o.id},'stopped')">确认停止</button>`;
-                if (o.status === 'completed') return '<span class="fs-12 text-muted">已完成</span>';
-                if (o.status === 'stopped') return '<span class="fs-12 text-muted">已停止</span>';
-                if (o.status === 'pending') return `<button class="btn btn-small btn-success" onclick="NurseBedPanel.verifyOrder(${o.id})">核查</button>`;
-                if (o.category === 'medication' && !o.dispensed_id) return '<span class="fs-12 text-muted">待发药后执行</span>';
-                return `<button class="btn btn-small btn-success" onclick="NurseBedPanel.executeOrder(${o.id})">执行</button>`;
+                let action = '';
+                if (o.status === 'invalid') action = '<span class="fs-12 text-muted">已作废</span>';
+                else if (o.status === 'invalid_pending') action = `<button class="btn btn-small btn-danger" onclick="NurseBedPanel.confirmOrder(${o.id},'invalid')">确认作废</button>`;
+                else if (o.status === 'stop_pending') action = `<button class="btn btn-small btn-danger" onclick="NurseBedPanel.confirmOrder(${o.id},'stopped')">确认停止</button>`;
+                else if (o.status === 'completed') action = '<span class="fs-12 text-muted">已完成</span>';
+                else if (o.status === 'stopped') action = '<span class="fs-12 text-muted">已停止</span>';
+                else if (o.status === 'executing') action = '<span class="fs-12 text-muted">执行中</span>';
+                else if (o.status === 'pending') action = `<button class="btn btn-small btn-success" onclick="NurseBedPanel.verifyOrder(${o.id})">核查</button>`;
+                else if (o.category === 'medication' && !o.dispensed_id) action = '<span class="fs-12 text-muted">待发药后执行</span>';
+                else action = `<button class="btn btn-small btn-success" onclick="NurseBedPanel.executeOrder(${o.id})">执行</button>`;
+                const canPrint = o.category === 'medication' && o.dispensed_id
+                    && ['verified', 'executing', 'completed'].includes(o.status);
+                const label = canPrint
+                    ? `<button class="btn btn-small" onclick="NurseBedPanel.printMedicationLabel(${o.id})">执行贴</button>` : '';
+                return [label, action].filter(Boolean).join(' ');
             };
             const rowCls = o => o.status === 'invalid' ? 'os-txt-invalid'
                 : (o.status === 'invalid_pending' ? 'os-txt-invalid_pending' : (o.status === 'stop_pending' ? 'os-txt-stop_pending' : ''));
@@ -318,6 +325,9 @@ var NurseBedPanel = {
         Dom.toast('执行成功', 'success');
         this.refresh();
         if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+    },
+    printMedicationLabel(id) {
+        MedicationLabel.preview(id, { expectedPatientId: this.patient && this.patient.id });
     },
     async confirmOrder(id, status) {
         await AjaxLoader.api('orders/verify', { method: 'POST', data: { id, status } });

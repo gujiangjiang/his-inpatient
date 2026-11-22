@@ -63,4 +63,44 @@
 `;
         return { title: '检验条码 - ' + reportNo, paper: 'LAB_LABEL', html: html, css: css };
     };
+
+    PL.medicationExecution = function (order) {
+        const data = PrintPreview.patientInfo(order || {}, '药品医嘱执行贴');
+        const admissionNo = String(data.admission_no || '');
+        if (!admissionNo || !data.content) return null;
+        const brand = (typeof HospitalBranding !== 'undefined' && HospitalBranding.get)
+            ? HospitalBranding.get() : { hospital_name: '' };
+        const usage = [data.usage_name, data.freq_code, data.freq_detail, data.usage_rate].filter(Boolean).join(' · ');
+        const dose = data.dosage ? String(data.dosage) + (data.dosage_unit ? '/' + data.dosage_unit : '') : '';
+        const executed = data.executed_name
+            ? '<div>执行：' + esc(data.executed_name) + ' ' + esc(String(data.executed_at || '').slice(5, 16)) + '</div>' : '';
+        const html = '<div class="med-exec-label"><div class="mel-head"><span>' + esc(brand.hospital_name || '') + '</span>'
+            + '<b>药品医嘱执行贴</b><strong>' + esc(data.bed || '-') + '床</strong></div>'
+            + '<div class="mel-patient"><b>' + esc(data.name) + '</b><span>' + esc(data.gender) + ' ' + esc(data.age) + '</span>'
+            + '<span>住院号 ' + esc(admissionNo) + '</span></div><div class="mel-barcode">'
+            + PrintBarcode.svg(admissionNo, { height: 32, fontSize: 10, quietModules: 8, className: 'mel-barcode-svg' })
+            + '</div><div class="mel-drug"><b>' + esc(data.content) + '</b>'
+            + '<div>' + (dose ? '剂量：' + esc(dose) : '') + (usage ? '　' + esc(usage) : '') + '</div>'
+            + (data.notes ? '<div class="mel-note">备注：' + esc(data.notes) + '</div>' : '') + '</div>'
+            + '<div class="mel-foot"><div><div>开单：' + esc(data.doctor_name || '-') + '</div>'
+            + '<div>时间：' + esc(String(data.created_at || data.start_date || '').slice(0, 16)) + '</div>' + executed + '</div>'
+            + '<div class="mel-stamp">执行护士<br>盖章</div></div></div>';
+        const css = `
+.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 5mm 10.5mm minmax(0,1fr) 14mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
+.mel-head { min-width:0; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:1mm; border-bottom:.6pt solid #000; font-size:6.8pt; white-space:nowrap; }
+.mel-head span { overflow:hidden; text-overflow:ellipsis; }
+.mel-head b { font-size:9pt; }
+.mel-head strong { justify-self:end; font-size:10pt; }
+.mel-patient { display:flex; align-items:center; justify-content:space-between; gap:1mm; font-size:7.2pt; white-space:nowrap; }
+.mel-patient b { font-size:9pt; }
+.mel-barcode { min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.mel-barcode-svg { display:block; width:100%; height:10mm; }
+.mel-drug { min-height:0; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.3pt; line-height:1.35; overflow-wrap:anywhere; }
+.mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:10pt; line-height:1.3; }
+.mel-note { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mel-foot { padding-top:1mm; display:grid; grid-template-columns:minmax(0,1fr) 16mm; gap:1.5mm; font-size:6.8pt; line-height:1.35; }
+.mel-stamp { display:flex; align-items:center; justify-content:center; text-align:center; border:.7pt dashed #000; font-size:7pt; color:#555; }
+`;
+        return { title: '药品医嘱执行贴 - ' + data.name, paper: 'MED_LABEL', html: html, css: css };
+    };
 })();
