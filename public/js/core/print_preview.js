@@ -13,6 +13,7 @@
   html, body { min-width: 0 !important; min-height: 0 !important; height: auto !important; background: #dfe3e8 !important; }
   html { margin: 0 !important; padding: 0 !important; }
   body { box-sizing: border-box !important; width: 100% !important; margin: 0 !important; padding: var(--pp-page-gap) !important; }
+  body > :where(.page, .sheet, .cf-page) { background-color: #fff; }
   body > .page, body > .sheet, body > .cf-page {
     margin: 0 auto var(--pp-page-gap) !important;
     box-shadow: 0 3px 14px rgba(15, 23, 42, .2);
