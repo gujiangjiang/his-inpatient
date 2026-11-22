@@ -110,6 +110,9 @@ function getRoutes() {
         'nurse/transfer-bed' => ['nurse/transfer_bed.php', ['admin', 'nurse']],
         'nurse/admit' => ['nurse/admit.php', ['admin', 'nurse']],
         'nurse/verify-batch' => ['nurse/verify_batch.php', ['admin', 'nurse']],
+        'nurse/order-sheet' => ['nurse/order_sheet.php', ['admin', 'nurse']],
+        'nurse/nursing-link' => ['nurse/nursing_link.php', ['admin', 'nurse', 'doctor']],
+        'nurse/charges' => ['nurse/charges.php', ['admin', 'nurse']],
 
         // 医嘱
         'orders/save' => ['orders/order/order_save.php', ['admin', 'doctor']],
