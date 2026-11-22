@@ -223,6 +223,10 @@
 }
 .modal.modal-sm { max-width: 420px; }
 .modal.modal-lg { max-width: 980px; }
+/* 通用打印预览 (A4 iframe 等比缩放) */
+.modal.modal-cf-preview { max-width: 960px; width: 96%; }
+.pp-scale { position: relative; width: 100%; overflow: hidden; }
+.pp-frame { position: absolute; top: 0; left: 0; width: 794px; height: 2280px; border: 0; background: #e9edf2; }
 /* Toast */
 .toast {
     position: fixed;

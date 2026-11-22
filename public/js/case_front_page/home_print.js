@@ -19,27 +19,7 @@ Object.assign(CaseHome, {
        (不用 zoom 缩放排版, 避免边框按设备像素取整导致线条相对变粗) */
     preview() {
         this.collect();
-        const overlay = Dom.modal('住院病案首页 · 打印预览', '<div class="cf-preview-scale" id="cf-preview-scale"><iframe class="cf-preview-frame" id="cf-preview-frame" scrolling="no"></iframe></div>', [
-            { text: '打印', type: 'primary', onclick: () => this.print() },
-            { text: '关闭', type: 'default' },
-        ]);
-        overlay.querySelector('.modal').classList.add('modal-cf-preview');
-        const wrap = overlay.querySelector('#cf-preview-scale');
-        const frame = overlay.querySelector('#cf-preview-frame');
-        const fit = () => {
-            const avail = wrap.clientWidth || 820;
-            const s = Math.min(1, avail / 794);
-            const doc = frame.contentDocument;
-            const h = doc ? Math.max(doc.documentElement.scrollHeight, 2280) : 2280;
-            frame.style.width = '794px';
-            frame.style.height = h + 'px';
-            frame.style.transform = 'scale(' + s + ')';
-            frame.style.transformOrigin = 'top left';
-            wrap.style.height = Math.ceil(h * s) + 'px';
-        };
-        frame.addEventListener('load', fit);
-        frame.srcdoc = this.documentHtml('preview');
-        setTimeout(fit, 120);
+        PrintPreview.open('住院病案首页 · 打印预览', this.documentHtml('preview'), { canPrint: true });
     },
 
     /* 行内对齐表格 (底层全表格: 无边框, 定宽列, 内容长短不影响其它列) */
