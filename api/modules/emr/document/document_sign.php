@@ -127,7 +127,7 @@ try {
         $pdo->prepare("INSERT INTO emr_document_versions (doc_id, doc_json, content_html, action, created_by, created_at) VALUES (?,?,?, 'sign', ?, ?)")
             ->execute([$id, $docJsonStr, $contentHtml, $userId, $now]);
     }
-    print_snapshot_capture('emr_signed', $id, [
+    $signedSnapshot = print_snapshot_capture('emr_signed', $id . '@' . $now, [
         'id' => (int)$id,
         'patient_id' => (int)$doc['patient_id'],
         'admission_no' => (string)$doc['admission_no'],
@@ -140,6 +140,9 @@ try {
         'signer_id' => (int)$userId,
         'signer_name' => (string)$user['name'],
     ], $doc['patient_id'], $doc['admission_no'], $userId);
+    $meta['print_snapshot_key'] = $signedSnapshot['snapshot_key'];
+    $pdo->prepare("UPDATE emr_documents SET doc_meta = ? WHERE id = ?")
+        ->execute([json_encode($meta, JSON_UNESCAPED_UNICODE), $id]);
 
     $pdo->commit();
     Response::success([

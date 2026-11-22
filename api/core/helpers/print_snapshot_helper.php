@@ -42,12 +42,21 @@ function print_snapshot_capture($type, $businessId, array $payload, $patientId =
 }
 
 function print_snapshot_get($type, $businessId) {
-    $row = DB::selectOne("SELECT * FROM print_snapshots WHERE snapshot_key = ?", [print_snapshot_key($type, $businessId)]);
+    return print_snapshot_get_by_key(print_snapshot_key($type, $businessId));
+}
+
+function print_snapshot_get_by_key($key) {
+    $row = DB::selectOne("SELECT * FROM print_snapshots WHERE snapshot_key = ?", [(string)$key]);
     return $row ? print_snapshot_decode($row) : null;
 }
 
 function print_snapshot_decode(array $row) {
-    $value = json_decode((string)$row['snapshot_json'], true);
+    $json = (string)$row['snapshot_json'];
+    $actualHash = hash('sha256', $json);
+    if (!hash_equals((string)$row['content_hash'], $actualHash)) {
+        throw new RuntimeException('打印快照完整性校验失败：' . $row['snapshot_key']);
+    }
+    $value = json_decode($json, true);
     if (!is_array($value)) return null;
     $value['snapshot_key'] = $row['snapshot_key'];
     $value['content_hash'] = $row['content_hash'];
