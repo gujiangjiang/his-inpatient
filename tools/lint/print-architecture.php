@@ -20,6 +20,7 @@ $rules = [
     '/\bwindow\s*\.\s*print\s*\(/' => '业务代码不得直接调用 window.print()',
     '/\bdocument\s*\.\s*write\s*\(/' => '业务代码不得直接调用 document.write()',
     '/\bPrintHelper\s*\.\s*(?:print|printHtml|printDocument)\s*\(/' => '旧 PrintHelper 打印入口已移除',
+    '/\bPrintHelper\s*\.\s*barcodeSvg\s*\(/' => '条形码必须统一使用 PrintBarcode.svg()',
 ];
 
 $iterator = new RecursiveIteratorIterator(

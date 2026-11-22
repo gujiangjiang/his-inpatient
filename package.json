@@ -1,6 +1,6 @@
 {
   "name": "his-inpatient",
-  "version": "0.59.5",
+  "version": "0.59.6",
   "description": "Hospital Inpatient Information System",
   "scripts": {
     "setup": "php api/scripts/setup.php",
