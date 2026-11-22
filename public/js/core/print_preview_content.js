@@ -7,7 +7,8 @@
     PP.openBody = function (title, bodyHtml, opts) {
         const options = Object.assign({ canPrint: true }, opts || {});
         const html = PrintDocument.create(title, bodyHtml, options);
-        return PP.open(Format.escape(title || '打印文档') + ' · 打印预览', html, options);
+        const previewTitle = options.previewTitle || (Format.escape(title || '打印文档') + ' · 打印预览');
+        return PP.open(previewTitle, html, options);
     };
 
     PP.openElement = function (title, elementOrId, opts) {
