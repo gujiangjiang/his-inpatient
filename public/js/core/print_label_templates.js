@@ -116,7 +116,8 @@
             }
             const offset = chunkIndex * 4;
             const rows = chunk.map(function (item, index) {
-                return '<div class="mel-drug-item' + itemClass(item) + '"><span>' + (offset + index + 1) + '</span>'
+                const isChild = !!item.parent_id || (offset + index > 0);
+                return '<div class="mel-drug-item ' + (isChild ? 'is-child' : 'is-main') + itemClass(item) + '">'
                     + '<b title="' + esc(item.content || '') + '">' + esc(item.content || '-') + '</b>'
                     + '<em>' + esc(itemDose(item)) + '</em></div>';
             }).join('');
@@ -140,7 +141,7 @@
         };
         const pages = chunks.map(pageHtml);
         const css = `
-.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm auto 10mm 9mm; align-content:space-between; row-gap:1mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
+.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm 20mm 10mm 9mm; align-content:start; row-gap:.75mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
 .mel-head { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1mm; border-bottom:.6pt solid #000; font-size:7.2pt; white-space:nowrap; }
 .mel-head span { min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:700; }
 .mel-head strong { justify-self:end; font-size:10pt; }
@@ -152,13 +153,15 @@
 .mel-patient-sub span:last-child { text-align:right; }
 .mel-barcode { min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .mel-barcode-svg { display:block; width:100%; height:10mm; }
-.mel-drug { min-height:0; max-height:19mm; align-self:start; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
+.mel-drug { min-height:0; max-height:20mm; align-self:start; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
 .mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:10pt; line-height:1.3; }
 .mel-note { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mel-drug.is-group { width:100%; padding:.8mm 1mm .6mm; }
 .mel-drug-list { display:grid; gap:.2mm; }
-.mel-drug-item { min-width:0; display:grid; grid-template-columns:3mm minmax(0,1fr) auto; align-items:baseline; column-gap:.8mm; font-size:6.8pt; line-height:1.2; white-space:nowrap; }
-.mel-drug-item > span { color:#666; }
+.mel-drug-item { position:relative; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; column-gap:.8mm; font-size:6.8pt; line-height:1.2; white-space:nowrap; }
+.mel-drug-item.is-main { font-weight:700; }
+.mel-drug-item.is-child { padding-left:4mm; }
+.mel-drug-item.is-child::before { content:""; position:absolute; left:1mm; top:0; width:2mm; height:55%; border-left:.45pt solid #777; border-bottom:.45pt solid #777; }
 .mel-drug-item > b { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .mel-drug-item > em { max-width:13mm; overflow:hidden; text-overflow:ellipsis; font-size:6.2pt; font-style:normal; }
 .mel-drug-item.is-long { font-size:6.1pt; }
