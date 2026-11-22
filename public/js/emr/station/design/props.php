@@ -137,6 +137,46 @@ function emrPropOptsBlock(item) {
     };
 }
 
+/** 属性对话框·自动关联块 (slot.link): 关联护理记录生命体征数据源
+ *  模板编辑时勾选「自动关联护理记录」并选择字段; 新建文书时自动填入
+ *  该患者当前文书内容之前最新的记录为准 (护士可能提前预填) */
+function emrPropLinkBlock(item) {
+    const link = item.link || {};
+    const src = link.source || '';
+    const field = link.field || '';
+    const FIELDS = [
+        ['temperature', '体温(℃)'], ['pulse', '脉搏(次/分)'], ['respiratory_rate', '呼吸(次/分)'],
+        ['bp', '血压(mmHg)'], ['oxygen_saturation', '血氧(%)'], ['height', '身高(cm)'],
+        ['weight', '体重(kg)'], ['blood_glucose', '血糖(mmol/L)']
+    ];
+    const opts = FIELDS.map(function (f) {
+        return '<option value="' + f[0] + '"' + (field === f[0] ? ' selected' : '') + '>' + f[1] + '</option>';
+    }).join('');
+    const html = '<div class="form-group" style="border-top:1px dashed #e4e7ed;padding-top:10px">'
+        + '<label class="emr-prop-radio"><input type="checkbox" id="prop-link-on"' + (src === 'nursing_notes' ? ' checked' : '') + '> 自动关联护理记录（新建文书时自动填入该患者最新护理记录数据）</label>'
+        + '</div>'
+        + '<div class="form-group" id="prop-link-field"' + (src === 'nursing_notes' ? '' : ' style="display:none"') + '><label class="form-label">关联字段</label>'
+        + '<select id="prop-link-f" class="form-control">' + opts + '</select></div>';
+    return {
+        html: html,
+        bind: function (sub) {
+            const on = sub.querySelector('#prop-link-on');
+            const row = sub.querySelector('#prop-link-field');
+            if (on && row) {
+                on.addEventListener('change', function () {
+                    row.style.display = on.checked ? '' : 'none';
+                });
+            }
+        },
+        read: function (sub) {
+            const on = sub.querySelector('#prop-link-on');
+            if (!on || !on.checked) return null;
+            const f = sub.querySelector('#prop-link-f');
+            return { source: 'nursing_notes', field: f ? f.value : 'temperature' };
+        }
+    };
+}
+
 /** 元素属性对话框 (通用): 名称/内容/默认内容/默认占位符/是否必选 + 类型专属(日期/下拉选项)
  *  元素名称 = 系统识别用, 只读展示 (由元素内容/标签/键自动推导, 保证与模板结构一致);
  *  仅「自动计算项」的显示名称可改 (如 BMI) */
@@ -170,6 +210,9 @@ function emr_dsnShowProps(item, p, o) {
         parts.push('<div class="form-group"><label class="emr-prop-radio"><input type="checkbox" id="prop-req"' + (item.req ? ' checked' : '') + '> 是否必选（未完成时红色下划线标记，且无法签名）</label></div>');
         if (dtBlk) parts.push(dtBlk.html);
         if (optsBlk) parts.push(optsBlk.html);
+        /* 自动关联护理记录 (生命体征数据源): 体温/脉搏/呼吸/血压/血氧/身高/体重/血糖 */
+        const linkBlk = emrPropLinkBlock(item);
+        parts.push(linkBlk.html);
     }
     if (item.t === 'ref') {
         parts.push('<div class="form-group"><label class="form-label">默认占位符（取不到值时显示，打印不可见）</label>'
@@ -211,6 +254,8 @@ function emr_dsnShowProps(item, p, o) {
                     if (r0.multi) item.multi = true; else delete item.multi;
                     if (r0.defPick.length) item.defPick = r0.defPick; else delete item.defPick;
                 }
+                const lk = linkBlk.read(sub);
+                if (lk && lk.source) item.link = lk; else delete item.link;
             }
             if (item.t === 'ref') item.fb = (sub.querySelector('#prop-fb').value || '').trim() || '＿＿';
             if (calcBlk) {
@@ -226,5 +271,6 @@ function emr_dsnShowProps(item, p, o) {
     if (dtBlk) dtBlk.bind(sub);
     if (optsBlk) optsBlk.bind(sub);
     if (calcBlk) calcBlk.bind(sub);
+    if (linkBlk) linkBlk.bind(sub);
 }
 </script>

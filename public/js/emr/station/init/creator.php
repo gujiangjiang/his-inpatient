@@ -139,6 +139,17 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
         if (Array.isArray(slot.defPick) && slot.defPick.length) { EmrOps.setSlotValue(p, slot.key, slot.defPick.join('、')); return; }
         if (slot.def) EmrOps.setSlotValue(p, slot.key, slot.def);
     });
+    /* 自动关联: 元素属性勾选「自动关联护理记录」的槽位, 以当前文书内容之前最新记录取数 */
+    try {
+        const linkRows = await EmrNursingLink.load(_emrPatient.id);
+        const linkCutoff = opts.datetime || Format.nowStamp(); /* 新文书: 以创建时间之前为准 */
+        EmrOps.walkSlots(doc.body, function (p, slot) {
+            if (!slot.link || slot.link.source !== 'nursing_notes') return;
+            if (EmrOps.valueAfterSlot(p, slot.key).trim()) return;
+            const v = EmrNursingLink.slotValue(linkRows, slot.key, linkCutoff);
+            if (v) EmrOps.setSlotValue(p, slot.key, v);
+        });
+    } catch (e) { /* 关联失败不阻断创建 */ }
     /* 记录日期 = 模板选择时指定的日期时间 (默认当前时间; 可点击修改; 不参与首页同步) */
     EmrOps.setSlotValueByKey(doc.body, 'p_recorddate_val', opts.datetime || Format.nowStamp());
     /* 字段引用: 仅在首次创建时自动调用一次 (保存即固化, 之后打开不再变化) */
