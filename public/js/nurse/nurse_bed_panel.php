@@ -184,7 +184,7 @@ var NurseBedPanel = {
                 else if (o.status === 'pending') action = `<button class="btn btn-small btn-success" onclick="NurseBedPanel.verifyOrder(${o.id})">核查</button>`;
                 else if (o.category === 'medication' && !o.dispensed_id) action = '<span class="fs-12 text-muted">待发药后执行</span>';
                 else action = `<button class="btn btn-small btn-success" onclick="NurseBedPanel.executeOrder(${o.id})">执行</button>`;
-                const canPrint = o.category === 'medication' && o.dispensed_id
+                const canPrint = o.category === 'medication' && !o.parent_id && o.dispensed_id
                     && ['verified', 'executing', 'completed'].includes(o.status);
                 const label = canPrint
                     ? `<button class="btn btn-small" onclick="NurseBedPanel.printMedicationLabel(${o.id})">执行贴</button>` : '';

@@ -45,7 +45,7 @@ async function loadChecklist() {
         } else {
             act = `<button class="btn btn-small btn-success" onclick="nurse_checklist_execute(${o.id})">执行</button>`;
         }
-        if (o.category === 'medication' && o.dispensed_id && ['verified', 'executing', 'completed'].includes(o.status)) {
+        if (o.category === 'medication' && !o.parent_id && o.dispensed_id && ['verified', 'executing', 'completed'].includes(o.status)) {
             act = `<button class="btn btn-small" onclick="nurse_checklist_med_label(${o.id})">执行贴</button> ` + act;
         }
         const tr = document.createElement('tr');

@@ -5,8 +5,9 @@
     const esc = function (value) { return Format.escape(String(value == null ? '' : value)); };
 
     PL.open = function (template, opts) {
-        if (!template || !template.html) { Dom.toast('暂无可打印的标签内容', 'info'); return null; }
-        return PrintPreview.openLabels(template.title || '标签', template.html, template.paper,
+        const labels = template && template.pages && template.pages.length ? template.pages : (template && template.html);
+        if (!template || !labels) { Dom.toast('暂无可打印的标签内容', 'info'); return null; }
+        return PrintPreview.openLabels(template.title || '标签', labels, template.paper,
             Object.assign({ css: template.css || '', previewTitle: template.previewTitle }, opts || {}));
     };
 
@@ -97,19 +98,47 @@
         const birthDate = String(data.birth_date || '').slice(0, 10) || '-';
         const department = String(data.department || '-');
         const ward = String(data.ward || '-');
-        const html = '<div class="med-exec-label"><div class="mel-head"><span>' + esc(brand.hospital_name || '') + '</span>'
-            + '<strong>' + esc(data.bed || '-') + '床</strong></div>'
-            + '<div class="mel-patient"><div class="mel-patient-main"><b>' + esc(data.name) + '</b><span>' + esc(data.gender) + '</span>'
-            + '<span>' + esc(data.age) + '</span><span>出生 ' + esc(birthDate) + '</span></div>'
-            + '<div class="mel-patient-sub"><span title="' + esc(department) + '">科室 ' + esc(department) + '</span>'
-            + '<span title="' + esc(ward) + '">病区 ' + esc(ward) + '</span></div></div><div class="mel-drug"><b>' + esc(data.content) + '</b>'
-            + '<div>' + (dose ? '剂量：' + esc(dose) : '') + (usage ? '　' + esc(usage) : '') + '</div>'
-            + (data.notes ? '<div class="mel-note">备注：' + esc(data.notes) + '</div>' : '') + '</div><div class="mel-barcode">'
-            + PrintBarcode.svg(admissionNo, { height: 32, fontSize: 10, quietModules: 8, className: 'mel-barcode-svg' }) + '</div>'
-            + '<div class="mel-foot"><div class="mel-staff"><div><span>开单</span><b>' + esc(data.doctor_name || '-') + '</b></div>'
-            + '<div><span>核对</span><b>' + esc(data.verified_name || '-') + '</b></div>'
-            + '<div class="mel-order-time">开单时间 ' + esc(String(data.created_at || data.start_date || '').slice(0, 16)) + '</div></div>'
-            + '<div class="mel-stamp">执行护士盖章</div></div></div>';
+        const members = Array.isArray(data.group_items) && data.group_items.length ? data.group_items : [data];
+        const chunks = [];
+        for (let i = 0; i < members.length; i += 4) chunks.push(members.slice(i, i + 4));
+        const itemDose = function (item) {
+            return item.dosage ? String(item.dosage) + (item.dosage_unit ? '/' + item.dosage_unit : '') : '';
+        };
+        const itemClass = function (item) {
+            const length = String(item.content || '').length;
+            return length > 18 ? ' is-xlong' : (length > 12 ? ' is-long' : '');
+        };
+        const drugHtml = function (chunk, chunkIndex) {
+            if (members.length === 1) {
+                return '<div class="mel-drug"><b>' + esc(data.content) + '</b>'
+                    + '<div>' + (dose ? '剂量：' + esc(dose) : '') + (usage ? '　' + esc(usage) : '') + '</div>'
+                    + (data.notes ? '<div class="mel-note">备注：' + esc(data.notes) + '</div>' : '') + '</div>';
+            }
+            const offset = chunkIndex * 4;
+            const rows = chunk.map(function (item, index) {
+                return '<div class="mel-drug-item' + itemClass(item) + '"><span>' + (offset + index + 1) + '</span>'
+                    + '<b title="' + esc(item.content || '') + '">' + esc(item.content || '-') + '</b>'
+                    + '<em>' + esc(itemDose(item)) + '</em></div>';
+            }).join('');
+            return '<div class="mel-drug is-group"><div class="mel-drug-list">' + rows + '</div>'
+                + '<div class="mel-group-usage">组合 ' + members.length + ' 项' + (usage ? ' · ' + esc(usage) : '') + '</div></div>';
+        };
+        const pageHtml = function (chunk, index) {
+            const pageNo = chunks.length > 1 ? ' · ' + (index + 1) + '/' + chunks.length : '';
+            return '<div class="med-exec-label"><div class="mel-head"><span>' + esc(brand.hospital_name || '') + '</span>'
+                + '<strong>' + esc(data.bed || '-') + '床' + pageNo + '</strong></div>'
+                + '<div class="mel-patient"><div class="mel-patient-main"><b>' + esc(data.name) + '</b><span>' + esc(data.gender) + '</span>'
+                + '<span>' + esc(data.age) + '</span><span>出生 ' + esc(birthDate) + '</span></div>'
+                + '<div class="mel-patient-sub"><span title="' + esc(department) + '">科室 ' + esc(department) + '</span>'
+                + '<span title="' + esc(ward) + '">病区 ' + esc(ward) + '</span></div></div>'
+                + drugHtml(chunk, index) + '<div class="mel-barcode">'
+                + PrintBarcode.svg(admissionNo, { height: 32, fontSize: 10, quietModules: 8, className: 'mel-barcode-svg' }) + '</div>'
+                + '<div class="mel-foot"><div class="mel-staff"><div><span>开单</span><b>' + esc(data.doctor_name || '-') + '</b></div>'
+                + '<div><span>核对</span><b>' + esc(data.verified_name || '-') + '</b></div>'
+                + '<div class="mel-order-time">开单时间 ' + esc(String(data.created_at || data.start_date || '').slice(0, 16)) + '</div></div>'
+                + '<div class="mel-stamp">执行护士盖章</div></div></div>';
+        };
+        const pages = chunks.map(pageHtml);
         const css = `
 .med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm auto 10mm 9mm; align-content:space-between; row-gap:1mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
 .mel-head { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1mm; border-bottom:.6pt solid #000; font-size:7.2pt; white-space:nowrap; }
@@ -126,6 +155,15 @@
 .mel-drug { min-height:0; max-height:19mm; align-self:start; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
 .mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:10pt; line-height:1.3; }
 .mel-note { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mel-drug.is-group { width:100%; padding:.8mm 1mm .6mm; }
+.mel-drug-list { display:grid; gap:.2mm; }
+.mel-drug-item { min-width:0; display:grid; grid-template-columns:3mm minmax(0,1fr) auto; align-items:baseline; column-gap:.8mm; font-size:6.8pt; line-height:1.2; white-space:nowrap; }
+.mel-drug-item > span { color:#666; }
+.mel-drug-item > b { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.mel-drug-item > em { max-width:13mm; overflow:hidden; text-overflow:ellipsis; font-size:6.2pt; font-style:normal; }
+.mel-drug-item.is-long { font-size:6.1pt; }
+.mel-drug-item.is-xlong { font-size:5.5pt; }
+.mel-group-usage { margin-top:.5mm; padding-top:.4mm; border-top:.4pt solid #999; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:6.2pt; }
 .mel-foot { padding-top:.7mm; display:grid; grid-template-columns:minmax(0,1fr) 21mm; align-items:center; gap:1.5mm; font-size:6.5pt; line-height:1.2; }
 .mel-staff { min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:.5mm 1.5mm; }
 .mel-staff > div { min-width:0; display:flex; gap:1mm; white-space:nowrap; }
@@ -134,6 +172,6 @@
 .mel-order-time { grid-column:1 / span 2; }
 .mel-stamp { width:21mm; height:7mm; justify-self:end; display:flex; align-items:center; justify-content:center; text-align:center; border:.7pt dashed #888; font-size:6.5pt; color:#b8b8b8; white-space:nowrap; }
 `;
-        return { title: '医嘱执行单打印', previewTitle: '医嘱执行单打印', paper: 'MED_LABEL', html: html, css: css };
+        return { title: '医嘱执行单打印', previewTitle: '医嘱执行单打印', paper: 'MED_LABEL', html: pages[0], pages: pages, css: css };
     };
 })();
