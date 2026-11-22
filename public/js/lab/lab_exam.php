@@ -8,7 +8,7 @@
     <div class="card-header">检验单</div>
     <div style="overflow-x:auto">
     <table class="table">
-        <thead><tr><th>患者</th><th>床号</th><th>项目</th><th>标本</th><th>状态</th><th>操作</th></tr></thead>
+        <thead><tr><th>患者</th><th>床号</th><th>项目</th><th>标本</th><th>条码</th><th>状态</th><th>操作</th></tr></thead>
         <tbody id="lab-table-body"></tbody>
     </table>
     </div>
@@ -49,8 +49,10 @@ async function loadLabs() {
             <td>${Format.escape(l.bed_no||'')}</td>
             <td>${Format.escape(l.exam_name)}</td>
             <td>${Format.escape(l.specimen_type||'')}</td>
+            <td>${LabBarcode.statusHtml(l)}</td>
             <td><span class="badge ${badge}">${Format.escape(l.status)}</span>${isCritical}</td>
             <td>
+                <button class="btn btn-small" onclick="lab_barcode(${l.id})">${LabBarcode.buttonText(l)}</button>
                 ${l.status === 'pending' ? `<button class="btn btn-small" onclick="lab_collect(${l.id})">采集</button>` : ''}
                 ${l.status === 'collected' ? `<button class="btn btn-small btn-success" onclick="lab_result(${l.id})">录结果</button>` : ''}
                 ${l.status === 'reported' ? `<button class="btn btn-small" onclick="lab_detail(${l.id})">详情</button>` : ''}
@@ -88,6 +90,10 @@ async function loadExams() {
 async function lab_collect(id) {
     await AjaxLoader.api('lab/collect', {method:'POST',data:{id}});
     loadLabs();
+}
+
+function lab_barcode(id) {
+    LabBarcode.preview(id, { onPrinted: loadLabs });
 }
 
 async function lab_result(id) {

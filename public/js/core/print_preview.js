@@ -68,7 +68,7 @@
         const buttons = [];
         if (o.canPrint !== false) {
             buttons.push({ text: '打印', type: 'primary', onclick: function () {
-                PP.print(printableHtml); return false;
+                PP.print(printableHtml, { beforePrint: o.onPrint }); return false;
             } });
         }
         buttons.push({ text: '关闭', type: 'default' });
@@ -144,9 +144,10 @@
     };
 
     /* 独立打印页复用相同文档与纸张间距；打印介质下自动去掉灰底、阴影和页间距。 */
-    PP.print = function (html) {
+    PP.print = function (html, opts) {
         const win = window.open('', '_blank', 'width=900,height=900');
         if (!win) { Dom.toast('浏览器拦截了打印窗口，请允许弹出窗口', 'error'); return null; }
+        const options = opts || {};
         let doc = prepareDocument(html);
         const autoPrint = `<script>(function(){window.addEventListener('load',function(){
 document.documentElement.classList.add('pp-standalone-root');
@@ -155,8 +156,17 @@ if(p){try{var cw=Math.max(0,outerWidth-innerWidth),ch=Math.max(0,outerHeight-inn
 resizeTo(Math.min(screen.availWidth,p.offsetWidth+${GAP * 2}+cw),Math.min(screen.availHeight,p.offsetHeight+${GAP * 2}+ch));}catch(e){}}
 setTimeout(function(){window.print();},180);});})();<\/script>`;
         doc = /<\/body>/i.test(doc) ? doc.replace(/<\/body>/i, autoPrint + '</body>') : doc + autoPrint;
-        win.document.write(doc);
-        win.document.close();
+        const render = function () {
+            if (win.closed) return;
+            win.document.write(doc);
+            win.document.close();
+        };
+        if (typeof options.beforePrint === 'function') {
+            Promise.resolve().then(options.beforePrint).then(function (result) {
+                if (result === false) { if (!win.closed) win.close(); return; }
+                render();
+            }).catch(function () { if (!win.closed) win.close(); });
+        } else render();
         return win;
     };
 })();

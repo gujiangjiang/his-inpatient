@@ -52,6 +52,7 @@ class Asset {
         '/js/core/print_preview.js',
         '/js/core/print_preview_content.js',
         '/js/core/print_label_templates.js',
+        '/js/lab/lab_barcode.js',
         '/js/nurse/nurse_print.js',
         '/js/emr_editor/emr_doc_model.js',
         '/js/emr_editor/emr_nursing_link.js',

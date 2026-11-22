@@ -40,4 +40,27 @@
 `;
         return { title: '患者腕带 - ' + data.name, paper: 'WRISTBAND', html: html, css: css };
     };
+
+    PL.labBarcode = function (report) {
+        const data = PrintPreview.patientInfo(report || {}, '检验条码');
+        const reportNo = String(data.report_no || '');
+        if (!reportNo) return null;
+        const html = '<div class="lab-tube-label"><div class="lb-head"><b>' + esc(data.name) + '</b>'
+            + '<span>' + esc(data.gender) + ' ' + esc(data.age) + '</span><b>' + esc(data.bed || '-') + '床</b></div>'
+            + '<div class="lb-barcode">' + PrintBarcode.svg(reportNo, {
+                height: 38, fontSize: 11, quietModules: 8, className: 'lb-barcode-svg'
+            }) + '</div><div class="lb-foot"><b title="' + esc(data.exam_name || '') + '">' + esc(data.exam_name || '检验') + '</b>'
+            + '<span>' + esc(data.specimen_type || '标本') + ' · ' + esc(String(data.created_at || '').slice(5, 16)) + '</span></div></div>';
+        const css = `
+.lab-tube-label { width:100%; height:100%; padding:1.4mm 2mm 1.2mm; display:grid; grid-template-rows:4mm minmax(0,1fr) 4.5mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
+.lb-head { display:flex; align-items:center; justify-content:space-between; gap:1.5mm; min-width:0; font-size:7.5pt; line-height:1; white-space:nowrap; }
+.lb-head b:first-child { max-width:18mm; overflow:hidden; text-overflow:ellipsis; font-size:9pt; }
+.lb-barcode { min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.lb-barcode-svg { display:block; width:100%; height:16mm; }
+.lb-foot { min-width:0; display:flex; align-items:flex-end; justify-content:space-between; gap:1.5mm; font-size:6.8pt; line-height:1; white-space:nowrap; }
+.lb-foot b { max-width:26mm; overflow:hidden; text-overflow:ellipsis; }
+.lb-foot span { flex:0 0 auto; }
+`;
+        return { title: '检验条码 - ' + reportNo, paper: 'LAB_LABEL', html: html, css: css };
+    };
 })();

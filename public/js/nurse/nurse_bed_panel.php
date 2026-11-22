@@ -394,10 +394,12 @@ var NurseBedPanel = {
             const labRows = labs.length ? labs.map(x => `<tr>
                 <td>${Format.escape(x.report_no)}</td><td>${Format.escape(x.exam_name)}</td>
                 <td>${Format.escape(x.specimen_type || '')}</td>
+                <td>${LabBarcode.statusHtml(x)}</td>
                 <td><span class="badge ${x.status === 'reported' ? 'badge-success' : (x.status === 'pending' ? 'badge-pending' : 'badge-info')}">${LAB[x.status] || Format.escape(x.status)}</span></td>
-                <td>${x.status === 'pending' ? `<button class="btn btn-small btn-success" onclick="NurseBedPanel.collectLab(${x.id})">采集</button>` : '<span class="fs-12 text-muted">-</span>'}</td>
+                <td><button class="btn btn-small" onclick="NurseBedPanel.printLabBarcode(${x.id})">${LabBarcode.buttonText(x)}</button>
+                    ${x.status === 'pending' ? `<button class="btn btn-small btn-success" onclick="NurseBedPanel.collectLab(${x.id})">采集</button>` : ''}</td>
             </tr>`).join('')
-                : '<tr><td colspan="5"><div class="empty-state">暂无检验</div></td></tr>';
+                : '<tr><td colspan="6"><div class="empty-state">暂无检验</div></td></tr>';
             const examRows = exams.length ? exams.map(x => `<tr>
                 <td>${Format.escape(x.exam_no || x.id)}</td><td>${Format.escape(x.exam_type)}</td>
                 <td>${Format.escape(x.exec_dept || '')}</td>
@@ -407,7 +409,7 @@ var NurseBedPanel = {
                 : '<tr><td colspan="5"><div class="empty-state">暂无检查</div></td></tr>';
             box.innerHTML = `
                 <div class="card-header" style="border-bottom:1px solid #eef2f7">检验申请</div>
-                <div style="overflow-x:auto"><table class="table"><thead><tr><th>单号</th><th>项目</th><th>标本</th><th>状态</th><th>操作</th></tr></thead><tbody>${labRows}</tbody></table></div>
+                <div style="overflow-x:auto"><table class="table"><thead><tr><th>单号</th><th>项目</th><th>标本</th><th>条码</th><th>状态</th><th>操作</th></tr></thead><tbody>${labRows}</tbody></table></div>
                 <div class="card-header" style="border-bottom:1px solid #eef2f7;margin-top:14px">检查申请</div>
                 <div style="overflow-x:auto"><table class="table"><thead><tr><th>单号</th><th>项目</th><th>执行科室</th><th>状态</th><th>操作</th></tr></thead><tbody>${examRows}</tbody></table></div>`;
         });
@@ -417,6 +419,15 @@ var NurseBedPanel = {
         await AjaxLoader.api('lab/collect', { method: 'POST', data: { id } });
         Dom.toast('已采集', 'success');
         this.refresh();
+    },
+    printLabBarcode(id) {
+        const pid = this.patient && this.patient.id;
+        LabBarcode.preview(id, {
+            expectedPatientId: pid,
+            onPrinted: function () {
+                if (NurseBedPanel.patient && String(NurseBedPanel.patient.id) === String(pid)) NurseBedPanel.refresh();
+            }
+        });
     },
     viewExam(id) {
         AjaxLoader.api('exam/detail?id=' + id, { silent: true }).then(r => {
