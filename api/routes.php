@@ -113,6 +113,7 @@ function getRoutes() {
         'nurse/order-sheet' => ['nurse/order_sheet.php', ['admin', 'nurse']],
         'nurse/nursing-link' => ['nurse/nursing_link.php', ['admin', 'nurse', 'doctor']],
         'nurse/charges' => ['nurse/charges.php', ['admin', 'nurse']],
+        'nurse/patient-info' => ['nurse/patient_info.php', ['admin', 'nurse']],
 
         // 医嘱
         'orders/save' => ['orders/order/order_save.php', ['admin', 'doctor']],
