@@ -7,12 +7,14 @@ if (!$orderId) Response::error('请输入医嘱ID');
 $order = DB::selectOne(
     "SELECT o.*, p.name AS patient_name, p.gender, p.birth_date, p.patient_no,
             p.bed_no, p.admission_no AS patient_admission_no,
-            d.name AS department_name, w.name AS ward_name, u.name AS doctor_name
+            d.name AS department_name, w.name AS ward_name,
+            u.name AS doctor_name, vu.name AS verified_name
      FROM orders o
      LEFT JOIN patients p ON p.id = o.patient_id
      LEFT JOIN departments d ON d.id = p.department_id
      LEFT JOIN wards w ON w.id = p.ward_id
      LEFT JOIN users u ON u.id = o.created_by
+     LEFT JOIN users vu ON vu.id = o.verified_by
      WHERE o.id = ?", [$orderId]
 );
 if (!$order) Response::error('医嘱不存在', 404);
