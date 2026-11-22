@@ -104,12 +104,10 @@ var NurseBedPanel = {
                     <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
                     <td>${actHtml(o)}</td></tr>`).join('')
                 : '<tr><td colspan="5"><div class="empty-state">暂无医嘱</div></td></tr>';
-            const toolbar = pendingN > 0
-                ? `<div class="nurse-op-actions">
-                    <button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对（${pendingN} 条）</button>
-                    <span class="fs-12 text-muted">全部待核查医嘱一键核对</span>
-                  </div>`
-                : '';
+            const toolbar = `<div class="nurse-op-actions">
+                    ${pendingN > 0 ? `<button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对（${pendingN} 条）</button>` : ''}
+                    <button class="btn" onclick="NurseBedPanel.printOrderSheets()">医嘱单打印</button>
+                  </div>`;
             box.innerHTML = toolbar + `<table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table>`;
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
@@ -125,6 +123,94 @@ var NurseBedPanel = {
                     if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
                 } catch (e) { /* 已提示 */ }
             }, { okText: '一键核对' });
+    },
+
+    /* 医嘱单打印: 长期/临时两份独立 A4 文档 (各自计算页码, 忽略作废医嘱) */
+    printOrderSheets() {
+        const pid = this.patient.id;
+        const p = this.patient;
+        AjaxLoader.api('nurse/order-sheet?patient_id=' + pid, { silent: true }).then(r => {
+            const d = r.data || {};
+            const longRows = d.long || [], tempRows = d.temp || [];
+            if (!longRows.length && !tempRows.length) { Dom.toast('该患者暂无有效医嘱', 'info'); return; }
+            const info = {
+                name: p.patient_name || p.name || '', gender: Format.gender(p.gender),
+                age: p.age ? p.age + ' 岁' : '', department: p.department_name || '',
+                ward: p.ward_name || '', bed: p.bed_no || '', admission_no: p.admission_no || '',
+                hospital: ''
+            };
+            if (longRows.length) {
+                const html = NurseBedPanel.buildOrderSheetHtml('长期医嘱单', longRows, d.patient || info);
+                PrintPreview.open('长期医嘱单 · 打印预览', html, { canPrint: true });
+            }
+            if (tempRows.length) {
+                const html = NurseBedPanel.buildOrderSheetHtml('临时医嘱单', tempRows, d.patient || info);
+                PrintPreview.open('临时医嘱单 · 打印预览', html, { canPrint: true });
+            }
+        }).catch(() => { Dom.toast('医嘱单数据加载失败', 'error'); });
+    },
+
+    /* 组装医嘱单 A4 文档 (抬头与电子病历一致, 表格呈现, 独立页码) */
+    buildOrderSheetHtml(title, rows, patient) {
+        const esc = function (s) { return Format.escape(String(s == null ? '' : s)); };
+        const info = Object.assign({
+            name: patient.patient_name || patient.name || '', gender: Format.gender(patient.gender),
+            age: patient.age ? patient.age + ' 岁' : '', department: patient.department_name || '',
+            ward: patient.ward_name || '', bed: patient.bed_no || '', admission_no: patient.admission_no || '',
+            doc_name: title, hospital: ''
+        }, patient);
+        const header = PrintPreview.sheetHeader(info);
+        const body = rows.map(function (o) {
+            const content = esc(o.content) + (o.dosage ? ' ' + esc(o.dosage) + (o.dosage_unit ? esc(o.dosage_unit) : '') : '');
+            const usage = [o.usage_name, o.usage_rate].filter(Boolean).join(' ');
+            const freq = [o.freq_code, o.freq_detail].filter(Boolean).join(' ');
+            const start = o.start_date ? esc(String(o.start_date).slice(0, 16)) : '-';
+            const stop = o.stop_date ? esc(String(o.stop_date).slice(0, 16)) : (o.end_date ? esc(String(o.end_date).slice(0, 16)) : '');
+            const status = o.status === 'stopped' ? '（已停）' : (o.status === 'invalid' ? '（作废）' : '');
+            return '<tr>'
+                + '<td class="os-content">' + content + status + '</td>'
+                + '<td class="os-usage">' + esc(usage) + '</td>'
+                + '<td class="os-freq">' + esc(freq) + '</td>'
+                + '<td class="os-time">' + start + '<br>' + esc(stop || '') + '</td>'
+                + '<td class="os-sign">' + esc(o.doctor_name || '') + '</td>'
+                + '<td class="os-sign">' + esc(o.verified_name || '') + '</td>'
+                + '<td class="os-sign">' + esc(o.exec_name || '') + '</td>'
+                + '</tr>';
+        }).join('');
+        const sheet = '<div class="page">' + header
+            + '<div class="pg-body"><table class="os-table">'
+            + '<thead><tr><th style="width:34%">医嘱内容</th><th style="width:13%">用法</th><th style="width:10%">频次</th><th style="width:20%">开始 / 停止时间</th><th style="width:8%">开嘱医生</th><th style="width:8%">核对护士</th><th style="width:7%">执行护士</th></tr></thead>'
+            + '<tbody>' + body + '</tbody></table></div>'
+            + '<div class="pg-foot"><span class="emr-fp-left"></span><span class="emr-fp-page">第 1 页 / 共 1 页</span></div></div>';
+        return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(title) + '</title>'
+            + '<style>' + NurseBedPanel.orderSheetCss() + '</style></head><body>' + sheet + '</body></html>';
+    },
+
+    orderSheetCss() {
+        return [
+            '@page { size: A4; margin: 0; }',
+            'html, body { margin: 0; padding: 0; }',
+            '* { box-sizing: border-box; }',
+            'body { background: #e9edf2; }',
+            '.page { position: relative; width: 794px; height: 1123px; overflow: hidden; margin: 0 auto; background: #fff; }',
+            '.pg-head { position: absolute; left: 36px; right: 36px; top: 20px; text-align: center; }',
+            '.brand-name-lockup { display:inline-grid; grid-template-columns:minmax(0,1fr); width:max-content; max-width:100%; min-width:0; }',
+            '.brand-name-line { width:100%; min-width:0; text-align:justify; text-align-last:justify; text-justify:inter-character; }',
+            '.emr-brand-lockup { display:grid; margin:0 auto; }',
+            '.emr-hos { font-size: 20pt; font-weight: bold; letter-spacing: 4px; line-height: 1.4; }',
+            '.emr-docname { font-size: 16pt; font-weight: bold; letter-spacing: 3px; line-height: 1.5; }',
+            '.emr-infobar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 20px; margin-top: 8px; padding: 6px 4px 6px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 11pt; }',
+            '.pg-body { position: absolute; left: 36px; top: 128px; width: 722px; height: 940px; overflow: hidden; }',
+            '.os-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10pt; }',
+            '.os-table th, .os-table td { border: 0.5pt solid #000; padding: 4px 5px; vertical-align: top; text-align: left; }',
+            '.os-table th { background: #f2f2f2; text-align: center; font-weight: 600; }',
+            '.os-content { font-size: 10pt; line-height: 1.5; }',
+            '.os-usage, .os-freq { font-size: 9.5pt; }',
+            '.os-time { font-size: 9.5pt; line-height: 1.5; white-space: nowrap; }',
+            '.os-sign { text-align: center; font-size: 9.5pt; }',
+            '.pg-foot { position: absolute; left: 36px; right: 36px; bottom: 22px; height: 30px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',
+            '.pg-foot .emr-fp-page { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; }'
+        ].join('\n');
     },
 
     async verifyOrder(id) {
@@ -194,33 +280,8 @@ var NurseBedPanel = {
             // iframe 预览: 剥离脚本 (快照可能含自动打印 onload)
             html = String(html || '').replace(/<script[\s\S]*?<\/script>/gi, '');
             if (!html) { Dom.toast('该文书暂无内容可预览', 'info'); return; }
-            // 打印预览: iframe 以 100% 原尺寸渲染, transform 等比缩放显示
-            const overlay = Dom.modal('病历预览 - ' + Format.escape(d.title || ''), '<div class="cf-preview-scale" id="nbp-preview-scale"><iframe class="cf-preview-frame" id="nbp-preview-frame" scrolling="no"></iframe></div>', [
-                { text: '打印', type: 'primary', onclick: function () {
-                    const win = window.open('', '_blank', 'width=994,height=1323');
-                    if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
-                    win.document.write(html);
-                    win.document.close();
-                } },
-                { text: '关闭', type: 'default' }
-            ]);
-            overlay.querySelector('.modal').classList.add('modal-cf-preview');
-            const wrap = overlay.querySelector('#nbp-preview-scale');
-            const frame = overlay.querySelector('#nbp-preview-frame');
-            const fit = () => {
-                const avail = wrap.clientWidth || 820;
-                const s = Math.min(1, avail / 794);
-                const doc = frame.contentDocument;
-                const h = doc ? Math.max(doc.documentElement.scrollHeight, 2280) : 2280;
-                frame.style.width = '794px';
-                frame.style.height = h + 'px';
-                frame.style.transform = 'scale(' + s + ')';
-                frame.style.transformOrigin = 'top left';
-                wrap.style.height = Math.ceil(h * s) + 'px';
-            };
-            frame.addEventListener('load', fit);
-            frame.srcdoc = html;
-            setTimeout(fit, 120);
+            // 统一打印预览: 护士查看病历仅供预览, 不显示打印按钮
+            PrintPreview.open('病历预览 - ' + Format.escape(d.title || ''), html, { canPrint: false });
         }).catch(() => {});
     },
 
@@ -315,99 +376,73 @@ var NurseBedPanel = {
         this.refresh();
     },
 
-    /* ================= 体温单 ================= */
+    /* ================= 体温单 (从护理记录单派生, 只读) ================= */
     loadTemperature(box) {
         const pid = this.patient.id;
         box.innerHTML = `<div class="temp-date-nav">
             <span class="td-date">体温单</span>
-            <button class="btn btn-small btn-primary" onclick="NurseBedPanel.tempAdd()">录入</button>
+            <button class="btn btn-small btn-primary" onclick="NurseBedPanel.tempPreview()">打印预览</button>
         </div><div class="empty-state">加载中…</div>`;
         AjaxLoader.api('nurse/temperature?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
-            if (!rows.length) { box.querySelector('.empty-state').textContent = '暂无体温记录，点击「录入」添加'; return; }
-            // 按日期分组展示 (日期 + 各时点)
+            const e = box.querySelector('.empty-state');
+            if (!rows.length) { if (e) e.textContent = '暂无体温记录（护理记录单中填写生命体征后自动显示）'; return; }
+            if (e) e.outerHTML = '';
             const byDate = {};
-            rows.forEach(x => { (byDate[x.record_date] = byDate[x.record_date] || []).push(x); });
+            rows.forEach(x => { (byDate[(x.record_time || '').slice(0, 10)] = byDate[(x.record_time || '').slice(0, 10)] || []).push(x); });
             const dates = Object.keys(byDate).sort().reverse();
             const SLOTS = ['06:00', '10:00', '14:00', '18:00', '22:00'];
             const html = dates.map(d => {
                 const day = byDate[d];
                 const cells = SLOTS.map(s => {
-                    const hit = day.find(x => x.time_slot === s);
+                    const hit = day.find(x => (x.record_time || '').slice(11, 16) === s);
                     return hit
-                        ? `<td class="td-act td-val" onclick="NurseBedPanel.tempEdit(${hit.id})" title="点击修改">
+                        ? `<td class="td-val">
                              ${hit.temperature != null ? Format.escape(String(hit.temperature)) + '°' : ''}
                              ${hit.pulse != null ? '<br><span class="fs-11">脉 ' + Format.escape(String(hit.pulse)) + '</span>' : ''}
+                             ${hit.bp_systolic != null ? '<br><span class="fs-11">' + Format.escape(String(hit.bp_systolic)) + '/' + Format.escape(String(hit.bp_diastolic)) + '</span>' : ''}
+                             ${hit.oxygen_saturation != null ? '<br><span class="fs-11">SpO2 ' + Format.escape(String(hit.oxygen_saturation)) + '</span>' : ''}
                            </td>`
                         : `<td class="td-empty">-</td>`;
                 }).join('');
                 return `<tr><td class="td-time">${Format.escape(d)}</td>${cells}</tr>`;
             }).join('');
-            const container = box.querySelector('.empty-state');
-            if (container) container.outerHTML = '';
             box.insertAdjacentHTML('beforeend', `<div class="temp-grid-wrap">
                 <table class="temp-grid">
                     <thead><tr><th>日期</th><th>06:00</th><th>10:00</th><th>14:00</th><th>18:00</th><th>22:00</th></tr></thead>
                     <tbody>${html}</tbody></table></div>`);
-        }).catch(() => { const e = box.querySelector('.empty-state'); if (e) e.textContent = '加载失败'; });
+        }).catch(() => { const e2 = box.querySelector('.empty-state'); if (e2) e2.textContent = '加载失败'; });
     },
 
-    tempAdd() { this.tempForm(null); },
-    tempEdit(id) { this.tempForm(id); },
-    tempForm(id) {
+    tempPreview() {
         const pid = this.patient.id;
-        const content = `<form id="temp-form" class="form-grid">
-            ${Dom.formField({ name: 'record_date', label: '记录日期', type: 'date' }, '')}
-            ${Dom.formField({ name: 'time_slot', label: '时点', type: 'select', options: [
-                { label: '06:00', value: '06:00' }, { label: '10:00', value: '10:00' },
-                { label: '14:00', value: '14:00' }, { label: '18:00', value: '18:00' },
-                { label: '22:00', value: '22:00' }] }, '')}
-            ${Dom.formField({ name: 'temperature', label: '体温(℃)', type: 'text' }, '')}
-            ${Dom.formField({ name: 'pulse', label: '脉搏(次/分)', type: 'text' }, '')}
-            ${Dom.formField({ name: 'respiratory_rate', label: '呼吸(次/分)', type: 'text' }, '')}
-            ${Dom.formField({ name: 'bp_systolic', label: '收缩压', type: 'text' }, '')}
-            ${Dom.formField({ name: 'bp_diastolic', label: '舒张压', type: 'text' }, '')}
-            ${Dom.formField({ name: 'oxygen_saturation', label: '血氧(%)', type: 'text' }, '')}
-            ${Dom.formField({ name: 'intake_ml', label: '入量(ml)', type: 'text' }, '')}
-            ${Dom.formField({ name: 'output_ml', label: '出量(ml)', type: 'text' }, '')}
-            <div class="form-group colspan-2"><label class="form-label">备注</label>
-                <textarea name="notes" class="form-control" rows="2"></textarea></div>
-            <input type="hidden" name="patient_id" value="${pid}">
-            ${id ? '<input type="hidden" name="id" value="' + id + '">' : ''}
-        </form>`;
-        const overlay = Dom.modal(id ? '修改体温记录' : '录入体温单', content, [
-            { text: '保存', type: 'primary', onclick: async function () {
-                const form = document.getElementById('temp-form');
-                const data = {};
-                new FormData(form).forEach((v, k) => data[k] = v);
-                try {
-                    await AjaxLoader.api('nurse/temperature', { method: 'POST', data: Object.assign(data, { action: 'save' }) });
-                    Dom.toast('已保存', 'success');
-                    overlay.remove();
-                    NurseBedPanel.refresh();
-                } catch (e) { /* 已提示 */ }
-            } },
-            { text: '取消', type: 'default' }
-        ]);
+        const p = this.patient;
+        AjaxLoader.api('nurse/temperature?action=list&patient_id=' + pid, { silent: true }).then(r => {
+            const rows = r.data || [];
+            if (!rows.length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
+            const html = NursePrint.tempHtml(rows, { patient_name: p.patient_name || p.name || '' });
+            PrintPreview.open('体温单 · 打印预览', html, { canPrint: true });
+        }).catch(() => {});
     },
 
-    /* ================= 护理记录单 ================= */
+    /* ================= 护理记录单 (扩展字段: 生命体征/管路/引流/意识/血糖/瞳孔/GCS) ================= */
     loadNotes(box) {
         const pid = this.patient.id;
         box.innerHTML = `<div class="nurse-op-actions">
             <button class="btn btn-primary" onclick="NurseBedPanel.noteAdd()">新增记录</button>
+            <button class="btn" onclick="NurseBedPanel.notePreview()">打印预览</button>
         </div><div class="empty-state">加载中…</div>`;
         AjaxLoader.api('nurse/nursing-notes?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
             const e = box.querySelector('.empty-state');
             if (!rows.length) { if (e) e.textContent = '暂无护理记录'; return; }
             if (e) e.outerHTML = '';
-            const CAT = { observation: '病情观察', measure: '测量', care: '护理措施', medication: '给药', transfer: '转科', other: '其他' };
+            const CAT = { first: '首次', observation: '病情观察', measure: '测量', care: '护理措施', medication: '给药', transfer: '转科', other: '其他' };
             const html = rows.map(x => `<div class="nnote-row">
                 <span class="nnote-time">${Format.escape((x.record_time || '').slice(0, 16))}</span>
-                <span class="nnote-cat"><span class="badge badge-info">${Format.escape(CAT[x.category] || x.category)}</span></span>
-                <span class="nnote-content">${Format.escape(x.content)}
-                    <div class="nnote-meta">${x.temperature != null ? '体温 ' + Format.escape(String(x.temperature)) + '° ' : ''}${x.pulse != null ? '脉搏 ' + Format.escape(String(x.pulse)) + ' ' : ''}${x.bp_systolic != null ? '血压 ' + Format.escape(String(x.bp_systolic)) + '/' + Format.escape(String(x.bp_diastolic)) + ' ' : ''}${x.intake_ml != null ? '入量 ' + Format.escape(String(x.intake_ml)) + 'ml ' : ''}${x.output_ml != null ? '出量 ' + Format.escape(String(x.output_ml)) + 'ml ' : ''}记录人：${Format.escape(x.recorder_name || '')}</div>
+                <span class="nnote-cat"><span class="badge ${x.is_first == 1 ? 'badge-primary' : 'badge-info'}">${Format.escape(CAT[x.category] || x.category)}</span></span>
+                <span class="nnote-content">${Format.escape(x.note || x.content || '')}
+                    <div class="nnote-meta">${NurseBedPanel.noteMeta(x)}记录人：${Format.escape(x.recorder_name || '')}</div>
                 </span>
                 <button type="button" class="nnote-del" title="删除" onclick="NurseBedPanel.noteDel(${x.id})">×</button>
             </div>`).join('');
@@ -415,11 +450,41 @@ var NurseBedPanel = {
         }).catch(() => { const e = box.querySelector('.empty-state'); if (e) e.textContent = '加载失败'; });
     },
 
+    noteMeta(x) {
+        const m = [];
+        if (x.temperature != null) m.push('体温 ' + Format.escape(String(x.temperature)) + '°');
+        if (x.pulse != null) m.push('脉搏 ' + Format.escape(String(x.pulse)));
+        if (x.respiratory_rate != null) m.push('呼吸 ' + Format.escape(String(x.respiratory_rate)));
+        if (x.bp_systolic != null) m.push('血压 ' + Format.escape(String(x.bp_systolic)) + '/' + Format.escape(String(x.bp_diastolic)));
+        if (x.oxygen_saturation != null) m.push('血氧 ' + Format.escape(String(x.oxygen_saturation)) + '%');
+        if (x.intake_ml != null) m.push('入量 ' + Format.escape(String(x.intake_ml)) + 'ml');
+        if (x.output_ml != null) m.push('出量 ' + Format.escape(String(x.output_ml)) + 'ml');
+        if (x.has_pipeline) m.push('管路 ' + Format.escape(x.has_pipeline) + (x.pipeline_desc ? '(' + Format.escape(x.pipeline_desc) + ')' : ''));
+        if (x.drainage_ml != null) m.push('引流 ' + Format.escape(String(x.drainage_ml)) + 'ml');
+        if (x.consciousness) m.push('意识 ' + Format.escape(x.consciousness));
+        if (x.blood_glucose != null) m.push('血糖 ' + Format.escape(String(x.blood_glucose)));
+        if (x.pupil) m.push('瞳孔 ' + Format.escape(x.pupil));
+        if (x.gcs_eye != null) m.push('GCS ' + Format.escape(String(x.gcs_eye)) + '/' + Format.escape(String(x.gcs_verbal)) + '/' + Format.escape(String(x.gcs_motor)));
+        if (x.is_first == 1) { if (x.height != null) m.push('身高 ' + Format.escape(String(x.height)) + 'cm'); if (x.weight != null) m.push('体重 ' + Format.escape(String(x.weight)) + 'kg'); }
+        return m.length ? m.join('　') + '　' : '';
+    },
+
+    notePreview() {
+        const pid = this.patient.id;
+        const p = this.patient;
+        AjaxLoader.api('nurse/nursing-notes?action=list&patient_id=' + pid, { silent: true }).then(r => {
+            const rows = r.data || [];
+            if (!rows.length) { Dom.toast('暂无护理记录可预览', 'info'); return; }
+            const html = NursePrint.notesHtml(rows, { patient_name: p.patient_name || p.name || '' });
+            PrintPreview.open('护理记录单 · 打印预览', html, { canPrint: true });
+        }).catch(() => {});
+    },
+
     noteAdd() { this.noteForm(null); },
     noteForm(id) {
         const pid = this.patient.id;
         const content = `<form id="note-form" class="nnote-form">
-            <div class="form-group"><label class="form-label">记录时间</label>
+            <div class="form-group"><label class="form-label">记录时间 <span class="text-danger">*</span></label>
                 <input type="text" name="record_time" class="form-control" data-dtpicker="datetime" value="${Format.nowStamp()}"></div>
             <div class="form-group"><label class="form-label">类别</label>
                 <select name="category" class="form-control">
@@ -429,12 +494,24 @@ var NurseBedPanel = {
                 </select></div>
             <div class="form-group"><label class="form-label">体温(℃)</label><input name="temperature" class="form-control"></div>
             <div class="form-group"><label class="form-label">脉搏(次/分)</label><input name="pulse" class="form-control"></div>
-            <div class="form-group"><label class="form-label">收缩压</label><input name="bp_systolic" class="form-control"></div>
-            <div class="form-group"><label class="form-label">舒张压</label><input name="bp_diastolic" class="form-control"></div>
+            <div class="form-group"><label class="form-label">呼吸(次/分)</label><input name="respiratory_rate" class="form-control"></div>
+            <div class="form-group"><label class="form-label">血压</label><span class="bp-pair"><input name="bp_systolic" class="form-control" placeholder="收缩压" style="width:60%"><span class="fs-12 text-muted">/</span><input name="bp_diastolic" class="form-control" placeholder="舒张压" style="width:35%"></span></div>
+            <div class="form-group"><label class="form-label">血氧(%)</label><input name="oxygen_saturation" class="form-control"></div>
             <div class="form-group"><label class="form-label">入量(ml)</label><input name="intake_ml" class="form-control"></div>
             <div class="form-group"><label class="form-label">出量(ml)</label><input name="output_ml" class="form-control"></div>
-            <div class="form-group colspan-2"><label class="form-label">记录内容 <span class="text-danger">*</span></label>
-                <textarea name="content" class="form-control" rows="3" required></textarea></div>
+            <div class="form-group"><label class="form-label">意识情况</label>
+                <select name="consciousness" class="form-control"><option value="">选填</option><option>清醒</option><option>嗜睡</option><option>昏睡</option><option>昏迷</option><option>模糊</option></select></div>
+            <div class="form-group"><label class="form-label">管路</label>
+                <select name="has_pipeline" class="form-control"><option value="">无</option><option>胃管</option><option>尿管</option><option>深静脉</option><option>引流管</option><option>其他</option></select></div>
+            <div class="form-group"><label class="form-label">管路描述</label><input name="pipeline_desc" class="form-control" placeholder="如: 胃管留置中"></div>
+            <div class="form-group"><label class="form-label">引流量(ml)</label><input name="drainage_ml" class="form-control"></div>
+            <div class="form-group"><label class="form-label">血糖(mmol/L)</label><input name="blood_glucose" class="form-control"></div>
+            <div class="form-group"><label class="form-label">瞳孔情况</label><input name="pupil" class="form-control" placeholder="如: 等大等圆 对光反射灵敏"></div>
+            <div class="form-group"><label class="form-label">GCS 睁眼</label><select name="gcs_eye" class="form-control"><option value="">-</option><option value="4">4 自发</option><option value="3">3 呼唤</option><option value="2">2 疼痛</option><option value="1">1 无</option></select></div>
+            <div class="form-group"><label class="form-label">GCS 语言</label><select name="gcs_verbal" class="form-control"><option value="">-</option><option value="5">5 正常</option><option value="4">4 混乱</option><option value="3">3 词语</option><option value="2">2 声音</option><option value="1">1 无</option></select></div>
+            <div class="form-group"><label class="form-label">GCS 运动</label><select name="gcs_motor" class="form-control"><option value="">-</option><option value="6">6 遵嘱</option><option value="5">5 定位</option><option value="4">4 回缩</option><option value="3">3 屈曲</option><option value="2">2 过伸</option><option value="1">1 无</option></select></div>
+            <div class="form-group colspan-2"><label class="form-label">护理记录 <span class="text-danger">*</span></label>
+                <textarea name="note" class="form-control" rows="3" required></textarea></div>
             <input type="hidden" name="patient_id" value="${pid}">
             ${id ? '<input type="hidden" name="id" value="' + id + '">' : ''}
         </form>`;
@@ -443,7 +520,7 @@ var NurseBedPanel = {
                 const form = document.getElementById('note-form');
                 const data = {};
                 new FormData(form).forEach((v, k) => data[k] = v);
-                if (!data.content.trim()) { Dom.toast('请输入记录内容', 'error'); return; }
+                if (!data.note.trim()) { Dom.toast('请输入护理记录内容', 'error'); return; }
                 try {
                     await AjaxLoader.api('nurse/nursing-notes', { method: 'POST', data: Object.assign(data, { action: 'save' }) });
                     Dom.toast('已保存', 'success');
@@ -551,6 +628,8 @@ var NurseBedPanel = {
         box.innerHTML = `<div class="nurse-op-actions">
             <button class="btn btn-primary" onclick="NurseBedPanel.transferBed()">转床</button>
             <button class="btn btn-danger" onclick="NurseBedPanel.doDischarge()">办理出院</button>
+            <button class="btn" onclick="NurseBedPanel.chargeCheck()">费用核对</button>
+            <button class="btn" onclick="NurseBedPanel.chargeAdd()">费用补录</button>
         </div>
         <div class="kv-grid">
             <div class="kv-item"><b>当前床位</b><span>${Format.escape((p.bed_no || '') + ' 床')}</span></div>
@@ -586,11 +665,15 @@ var NurseBedPanel = {
                     const bed = beds.find(b => Number(b.id) === Number(bedId));
                     if (!bed || bed.status === 'occupied') { Dom.toast('该床位已被占用', 'error'); return; }
                     try {
-                        const r = await AjaxLoader.api('nurse/transfer-bed', { method: 'POST', data: { patient_id: pid, target_bed_id: bedId } });
-                        Dom.toast(r.message || '已转床', 'success');
-                        overlay.remove();
-                        self.close();
-                        if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+                        // 先费用核对, 确认后再转床
+                        self.chargeCheckBefore(function () {
+                            return AjaxLoader.api('nurse/transfer-bed', { method: 'POST', data: { patient_id: pid, target_bed_id: bedId } }).then(function (r) {
+                                Dom.toast(r.message || '已转床', 'success');
+                                overlay.remove();
+                                self.close();
+                                if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+                            });
+                        });
                     } catch (e) { /* 已提示 */ }
                 } },
                 { text: '取消', type: 'default' }
@@ -608,8 +691,9 @@ var NurseBedPanel = {
     },
 
     doDischarge() {
-        // 复用医生出院办理弹窗逻辑不可行 (需医嘱上下文); 护士端简单出院: 提示由医生开具出院医嘱
-        Dom.modal('办理出院', `
+        // 出院前先费用核对, 确认后再提示出院办理
+        this.chargeCheckBefore(function () {
+            Dom.modal('办理出院', `
             <p class="fs-13" style="line-height:1.9">
                 出院需由主管医生开具「出院医嘱」并完成病案首页填写。<br>
                 护士确认床位是否已由医生标记今日出院；办理完成后本床位将自动释放。
@@ -618,6 +702,111 @@ var NurseBedPanel = {
                 当前为护士工作站：出院办理请在医嘱工作站由医生完成，或联系主管医生。
             </div>`,
             [{ text: '知道了', type: 'primary' }]);
+        });
+    },
+
+    /* ================= 费用核对/补录 ================= */
+    /* 费用核对弹窗 (转科/出院前调用; onConfirm 在确认后执行) */
+    chargeCheckBefore(onConfirm) {
+        const pid = this.patient.id;
+        const p = this.patient;
+        AjaxLoader.api('nurse/charges?action=list&patient_id=' + pid, { silent: true }).then(r => {
+            const d = r.data || {};
+            const groups = d.groups || {};
+            const TYPE_KEYS = ['care', 'medical', 'drug', 'material', 'other'];
+            const TABS = [];
+            const PANES = [];
+            let totalAmount = 0;
+            TYPE_KEYS.forEach(function (tk, ti) {
+                const g = groups[tk] || { label: tk, items: [], amount: 0 };
+                totalAmount += g.amount || 0;
+                TABS.push(`<button type="button" class="nurse-op-tab${ti === 0 ? ' active' : ''}" data-ctab="${tk}" onclick="NurseBedPanel.chargeTab('${tk}')">${Format.escape(g.label)}（${(g.items || []).length}）</button>`);
+                const rows = (g.items || []).map(function (it) {
+                    return `<tr>
+                        <td>${Format.escape(it.item_name)}</td>
+                        <td>${Format.escape(String(it.qty))}</td>
+                        <td>¥${Format.escape(Number(it.price).toFixed(2))}</td>
+                        <td>¥${Format.escape(Number(it.amount).toFixed(2))}</td>
+                        <td>${it.source === 'manual' ? '<span class="badge badge-info">补录</span>' : '<span class="fs-12 text-muted">自动</span>'}</td>
+                        <td>${it.source === 'manual' ? `<button class="btn btn-small btn-danger" onclick="NurseBedPanel.chargeDel(${it.id})">删除</button>` : ''}</td>
+                    </tr>`;
+                }).join('');
+                PANES.push(`<div class="charge-pane${ti === 0 ? '' : ' hidden'}" data-cpane="${tk}">
+                    <div style="overflow-x:auto"><table class="table"><thead><tr><th>项目</th><th>数量</th><th>单价</th><th>金额</th><th>来源</th><th>操作</th></tr></thead><tbody>${rows || '<tr><td colspan="6"><div class="empty-state">暂无费用</div></td></tr>'}</tbody></table></div>
+                </div>`);
+            });
+            const content = `<div class="charge-check">
+                <div class="charge-sum">费用合计：<b>¥${Number(d.total || totalAmount).toFixed(2)}</b><span class="fs-12 text-muted">（预交 ¥${Format.escape(Number(p.prepay_fee || 0).toFixed(2))}）</span></div>
+                <div class="nurse-op-tabs" id="nbp-charge-tabs">${TABS.join('')}</div>
+                ${PANES.join('')}
+            </div>`;
+            const overlay = Dom.modal('费用核对 - ' + Format.escape(p.patient_name || ''), content, [
+                { text: '确认无误，继续', type: 'primary', onclick: function () {
+                    overlay.remove();
+                    if (typeof onConfirm === 'function') onConfirm();
+                } },
+                { text: '返回', type: 'default' }
+            ]);
+        }).catch(() => { Dom.toast('费用加载失败', 'error'); });
+    },
+
+    /* 费用核对 tab 切换 */
+    chargeTab(tk) {
+        const tabs = document.querySelectorAll('#nbp-charge-tabs .nurse-op-tab');
+        tabs.forEach(function (t) { t.classList.toggle('active', t.dataset.ctab === tk); });
+        document.querySelectorAll('.charge-pane').forEach(function (pn) {
+            pn.classList.toggle('hidden', pn.dataset.cpane !== tk);
+        });
+    },
+
+    /* 费用补录弹窗 */
+    chargeAdd() {
+        const pid = this.patient.id;
+        const p = this.patient;
+        const content = `<form id="charge-form" class="form-grid">
+            <div class="form-group"><label class="form-label">费用类型</label>
+                <select name="charge_type" class="form-control">
+                    <option value="material">耗材</option><option value="care">护理</option>
+                    <option value="medical">医疗</option><option value="drug">药品</option><option value="other">其他</option>
+                </select></div>
+            <div class="form-group"><label class="form-label">项目名称 <span class="text-danger">*</span></label>
+                <input name="item_name" class="form-control" placeholder="如: 一次性注射器 / 纱布"></div>
+            <div class="form-group"><label class="form-label">数量</label><input name="qty" type="number" class="form-control" value="1"></div>
+            <div class="form-group"><label class="form-label">单价(元)</label><input name="price" type="number" step="0.01" class="form-control"></div>
+            <div class="form-group colspan-2"><label class="form-label">备注</label>
+                <input name="remark" class="form-control" placeholder="选填"></div>
+            <input type="hidden" name="patient_id" value="${pid}">
+        </form>`;
+        const overlay = Dom.modal('费用补录 - ' + Format.escape(p.patient_name || ''), content, [
+            { text: '保存', type: 'primary', onclick: async function () {
+                const form = document.getElementById('charge-form');
+                const data = {};
+                new FormData(form).forEach((v, k) => data[k] = v);
+                if (!data.item_name.trim()) { Dom.toast('请填写费用项目名称', 'error'); return; }
+                try {
+                    await AjaxLoader.api('nurse/charges', { method: 'POST', data: Object.assign(data, { action: 'add' }) });
+                    Dom.toast('费用已补录', 'success');
+                    overlay.remove();
+                    NurseBedPanel.refresh();
+                } catch (e) { /* 已提示 */ }
+            } },
+            { text: '取消', type: 'default' }
+        ]);
+    },
+
+    async chargeDel(id) {
+        Dom.confirm('删除补录费用', '确认删除该条补录费用？', async function () {
+                await AjaxLoader.api('nurse/charges', { method: 'POST', data: { action: 'delete', id } });
+                Dom.toast('已删除', 'success');
+                NurseBedPanel.refresh();
+            }, { danger: true, okText: '删除' });
+    },
+
+    /* 费用核对按钮 (出科出院 tab 内) */
+    chargeCheck() {
+        this.chargeCheckBefore(function () {
+            Dom.toast('费用已核对', 'success');
+        });
     }
 };
 </script>

@@ -225,6 +225,8 @@ var NurseStation = {
                     Dom.toast(r.message || '已收住', 'success');
                     overlay.remove();
                     NurseStation.refresh();
+                    // 收住后引导填写首次护理记录
+                    NurseStation.openFirstNote(r.data.id, data.name, bedNo);
                 } catch (e) { /* 已提示 */ }
             } },
             { text: '取消', type: 'default' }
@@ -232,6 +234,51 @@ var NurseStation = {
         setTimeout(function () {
             if (window.IcdPicker) IcdPicker.bind(document.getElementById('nurse-admit-diag'), { codeEl: document.getElementById('nurse-admit-icd') });
         }, 100);
+    },
+
+    /* 首次护理记录: 新患者收住后填写 (含身高体重, 电子病历首次获取) */
+    openFirstNote(patientId, name, bedNo) {
+        const content = `<form id="first-note-form" class="form-grid">
+            <div class="form-group colspan-2"><label class="form-label">记录时间 <span class="text-danger">*</span></label>
+                <input type="text" name="record_time" class="form-control" data-dtpicker="datetime" value="${Format.nowStamp()}"></div>
+            <div class="form-group"><label class="form-label">身高(cm)</label><input name="height" class="form-control" placeholder="选填"></div>
+            <div class="form-group"><label class="form-label">体重(kg)</label><input name="weight" class="form-control" placeholder="选填"></div>
+            <div class="form-group"><label class="form-label">体温(℃)</label><input name="temperature" class="form-control"></div>
+            <div class="form-group"><label class="form-label">脉搏(次/分)</label><input name="pulse" class="form-control"></div>
+            <div class="form-group"><label class="form-label">呼吸(次/分)</label><input name="respiratory_rate" class="form-control"></div>
+            <div class="form-group"><label class="form-label">血压</label><span class="bp-pair"><input name="bp_systolic" class="form-control" placeholder="收缩压" style="width:60%"><span class="fs-12 text-muted">/</span><input name="bp_diastolic" class="form-control" placeholder="舒张压" style="width:35%"></span></div>
+            <div class="form-group"><label class="form-label">血氧(%)</label><input name="oxygen_saturation" class="form-control"></div>
+            <div class="form-group"><label class="form-label">意识情况</label>
+                <select name="consciousness" class="form-control"><option value="">选填</option><option>清醒</option><option>嗜睡</option><option>昏睡</option><option>昏迷</option><option>模糊</option></select></div>
+            <div class="form-group"><label class="form-label">管路</label>
+                <select name="has_pipeline" class="form-control"><option value="">无</option><option>胃管</option><option>尿管</option><option>深静脉</option><option>引流管</option><option>其他</option></select></div>
+            <div class="form-group"><label class="form-label">引流量(ml)</label><input name="drainage_ml" class="form-control"></div>
+            <div class="form-group"><label class="form-label">血糖(mmol/L)</label><input name="blood_glucose" class="form-control"></div>
+            <div class="form-group"><label class="form-label">瞳孔情况</label><input name="pupil" class="form-control" placeholder="如: 等大等圆 对光反射灵敏"></div>
+            <div class="form-group"><label class="form-label">GCS 睁眼</label><select name="gcs_eye" class="form-control"><option value="">-</option><option value="4">4 自发</option><option value="3">3 呼唤</option><option value="2">2 疼痛</option><option value="1">1 无</option></select></div>
+            <div class="form-group"><label class="form-label">GCS 语言</label><select name="gcs_verbal" class="form-control"><option value="">-</option><option value="5">5 正常</option><option value="4">4 混乱</option><option value="3">3 词语</option><option value="2">2 声音</option><option value="1">1 无</option></select></div>
+            <div class="form-group"><label class="form-label">GCS 运动</label><select name="gcs_motor" class="form-control"><option value="">-</option><option value="6">6 遵嘱</option><option value="5">5 定位</option><option value="4">4 回缩</option><option value="3">3 屈曲</option><option value="2">2 过伸</option><option value="1">1 无</option></select></div>
+            <div class="form-group colspan-2"><label class="form-label">首次护理记录 <span class="text-danger">*</span></label>
+                <textarea name="note" class="form-control" rows="4" placeholder="记录患者入科时的护理评估、健康宣教等内容"></textarea></div>
+            <input type="hidden" name="patient_id" value="${patientId}">
+            <input type="hidden" name="is_first" value="1">
+            <input type="hidden" name="category" value="first">
+        </form>`;
+        const overlay = Dom.modal('首次护理记录 - ' + Format.escape(name || '') + '（' + bedNo + ' 床）', content, [
+            { text: '保存', type: 'primary', onclick: async function () {
+                const form = document.getElementById('first-note-form');
+                const data = {};
+                new FormData(form).forEach((v, k) => data[k] = v);
+                if (!data.note.trim()) { Dom.toast('请填写首次护理记录内容', 'error'); return; }
+                try {
+                    await AjaxLoader.api('nurse/nursing-notes', { method: 'POST', data: Object.assign(data, { action: 'save' }) });
+                    Dom.toast('首次护理记录已保存', 'success');
+                    overlay.remove();
+                } catch (e) { /* 已提示 */ }
+            } },
+            { text: '稍后填写', type: 'default', onclick: function () { overlay.remove(); } }
+        ]);
+        if (window.DateTimePicker) DateTimePicker.initInputs(overlay);
     }
 };
 
