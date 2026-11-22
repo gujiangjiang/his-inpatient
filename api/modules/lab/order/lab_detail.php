@@ -6,7 +6,8 @@ $id = Validator::get('id');
 if (!$id) Response::error('请输入检验单ID');
 
 $report = DB::selectOne("SELECT lr.*, p.name as patient_name, p.gender, p.birth_date, p.bed_no, p.patient_no, p.admission_no,
-        d.name AS department_name, w.name AS ward_name, u.name as creator_name, pu.name AS barcode_printed_name
+        d.name AS department_name, w.name AS ward_name, u.name as creator_name, pu.name AS barcode_printed_name,
+        (SELECT lc.category FROM lab_catalog lc WHERE lc.name = lr.exam_name ORDER BY lc.id LIMIT 1) AS lab_category
     FROM lab_reports lr
     LEFT JOIN patients p ON lr.patient_id = p.id
     LEFT JOIN departments d ON p.department_id = d.id
