@@ -1,151 +1,154 @@
-// public/js/core/print_preview.js - 通用 A4 打印预览模块
-// 统一所有「打印预览」入口: 病历 / 护理记录单 / 体温单 / 医嘱单 / 病案首页
-// 底层约束: 同一时间只允许一个预览弹窗 (打开新预览自动关闭旧预览);
-// PrintPreview.combine(title, htmlList): 多份文档按顺序拼接为一份打印文档, 各文档页码独立计算
-// 预览以 iframe 等比缩放显示; opts.canPrint=false 隐藏打印按钮; 预览内禁止右键/复制/选择
+// public/js/core/print_preview.js - 通用打印预览与打印运行时
 (function () {
     'use strict';
     const PP = (window.PrintPreview = {});
-    PP._overlay = null;   // 当前预览弹窗 (单例)
-    PP._html = '';        // 当前预览的打印文档
+    const PAGE_SELECTOR = '.page, .sheet, .cf-page';
+    const GAP = 24;
+    let current = null;
 
-    /* 预览样式: 注入到文档样式之前 (默认纸张白底, 文档自身设计色可覆盖), 灰底容器 + 等宽边距 + 纸张分隔 + 禁选择 */
-    const PREVIEW_CSS = [
-        'html, body { margin: 0; padding: 28px !important; background: #dfe3e8 !important;',
-        '  -webkit-user-select: none !important; user-select: none !important; }',
-        '.page { background-color: #fff; margin: 0 auto 28px !important; box-shadow: 0 2px 12px rgba(0,0,0,.18); }',
-        '.page:last-child { margin-bottom: 0 !important; }',
-        '.sheet { background-color: #fff; margin: 0 auto 28px !important; box-shadow: 0 2px 12px rgba(0,0,0,.18); }',
-        '.sheet + .sheet { margin-top: 28px !important; }'
-    ].join('\n');
+    /* 只改变纸张外部呈现；纸张尺寸与内部排版始终保持文档原样。 */
+    const RUNTIME_CSS = `
+:root { --pp-page-gap: ${GAP}px; color-scheme: light; }
+@media screen {
+  html, body { min-width: 0 !important; min-height: 0 !important; height: auto !important; background: #dfe3e8 !important; }
+  html { margin: 0 !important; padding: 0 !important; }
+  body { box-sizing: border-box !important; width: 100% !important; margin: 0 !important; padding: var(--pp-page-gap) !important; }
+  body > .page, body > .sheet, body > .cf-page {
+    display: block; flex: none; margin: 0 auto var(--pp-page-gap) !important;
+    box-shadow: 0 3px 14px rgba(15, 23, 42, .2); transform: none !important;
+  }
+  body > .page:last-of-type, body > .sheet:last-of-type, body > .cf-page:last-of-type { margin-bottom: 0 !important; }
+  html.pp-standalone-root { overflow: auto !important; }
+}
+@media print {
+  html, body { width: auto !important; min-width: 0 !important; height: auto !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  body > .page, body > .sheet, body > .cf-page {
+    margin: 0 auto !important; box-shadow: none !important; transform: none !important;
+    break-after: page; page-break-after: always;
+  }
+  body > .page:last-of-type, body > .sheet:last-of-type, body > .cf-page:last-of-type {
+    break-after: auto; page-break-after: auto;
+  }
+}`;
 
-    /* 注入到 <head> 之后 (先于文档样式, 设计色优先) */
-    const injectPreviewCss = function (docHtml) {
-        return String(docHtml || '').replace(/<head[^>]*>/i, function (m) { return m + '<style>' + PREVIEW_CSS + '</style>'; });
+    const stripScripts = function (html) {
+        return String(html || '').replace(/<script[\s\S]*?<\/script>/gi, '');
     };
 
-    /* 预览内禁止右键/复制/选择/剪切 */
+    const prepareDocument = function (html) {
+        let doc = stripScripts(html).replace(/<style[^>]*id=["']pp-runtime-style["'][^>]*>[\s\S]*?<\/style>/gi, '');
+        if (!/<html[\s>]/i.test(doc)) doc = PrintDocument.create('打印文档', doc);
+        const style = '<style id="pp-runtime-style">' + RUNTIME_CSS + '</style>';
+        if (/<\/head>/i.test(doc)) return doc.replace(/<\/head>/i, style + '</head>');
+        return doc.replace(/<html([^>]*)>/i, '<html$1><head>' + style + '</head>');
+    };
+
     const guardEvents = function (doc) {
-        if (!doc) return;
-        ['contextmenu', 'copy', 'cut', 'selectstart'].forEach(function (ev) {
-            doc.addEventListener(ev, function (e) { e.preventDefault(); });
+        ['contextmenu', 'copy', 'cut', 'selectstart'].forEach(function (name) {
+            doc.addEventListener(name, function (event) { event.preventDefault(); });
         });
     };
 
-    /* 打开预览弹窗 (iframe 等比缩放, 灰底容器内纸张完整显示并居中) */
+    const closeCurrent = function () {
+        if (!current || !current.overlay || !current.overlay.parentNode) return;
+        const close = current.overlay.querySelector('.modal-close');
+        if (close) close.click();
+        else current.overlay.remove();
+    };
+
     PP.open = function (title, html, opts) {
         const o = opts || {};
-        const canPrint = o.canPrint !== false;   // 默认可打印
-        /* 单例: 同一时间只允许一个预览弹窗 */
-        if (PP._overlay && PP._overlay.parentNode) PP._overlay.remove();
-        PP._html = html;
-
+        closeCurrent();
+        const printableHtml = prepareDocument(html);
         const buttons = [];
-        if (canPrint) {
-            buttons.push({ text: '打印', type: 'primary', onclick: function () { PP.print(PP._html); } });
+        if (o.canPrint !== false) {
+            buttons.push({ text: '打印', type: 'primary', onclick: function () {
+                PP.print(printableHtml); return false;
+            } });
         }
         buttons.push({ text: '关闭', type: 'default' });
 
+        const state = { overlay: null, observers: [], raf: 0 };
+        const dispose = function () {
+            state.observers.forEach(function (observer) { observer.disconnect(); });
+            state.observers = [];
+            if (state.raf) cancelAnimationFrame(state.raf);
+            if (current === state) current = null;
+            if (PP._overlay === overlay) PP._overlay = null;
+        };
         const overlay = Dom.modal(title || '打印预览',
-            '<div class="pp-scale" id="pp-scale"><iframe class="pp-frame" id="pp-frame" scrolling="no"></iframe></div>',
-            buttons);
-        overlay.querySelector('.modal').classList.add('modal-cf-preview');
+            '<div class="pp-viewport"><div class="pp-stage"><iframe class="pp-frame" title="打印内容" scrolling="no" sandbox="allow-same-origin"></iframe></div></div>',
+            buttons, { onClose: dispose });
+        const modal = overlay.querySelector('.modal');
+        const viewport = overlay.querySelector('.pp-viewport');
+        const stage = overlay.querySelector('.pp-stage');
+        const frame = overlay.querySelector('.pp-frame');
+        modal.classList.add('modal-print-preview');
+        state.overlay = overlay;
+        current = state;
         PP._overlay = overlay;
-        const wrap = overlay.querySelector('#pp-scale');
-        const frame = overlay.querySelector('#pp-frame');
-        wrap.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        PP._html = printableHtml;
 
-        /* 缩放适配: iframe 内容宽 = 纸张宽 + 左右边距; 缩放后水平居中, 灰底铺满容器 */
         const fit = function () {
+            if (current !== state || !frame.contentDocument) return;
+            state.raf = 0;
+            const doc = frame.contentDocument;
+            const pages = Array.from(doc.querySelectorAll(PAGE_SELECTOR));
+            const paperWidth = pages.length
+                ? pages.reduce(function (width, page) { return Math.max(width, page.offsetWidth); }, 1)
+                : 794;
+            const naturalWidth = Math.ceil(paperWidth + GAP * 2);
+            frame.style.width = naturalWidth + 'px';
+            modal.style.setProperty('--pp-preview-width', naturalWidth + 'px');
+            const contentHeight = Math.ceil(Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight, 1));
+            const scale = Math.min(1, (viewport.clientWidth || naturalWidth) / naturalWidth);
+            frame.style.height = contentHeight + 'px';
+            frame.style.transform = 'scale(' + scale + ')';
+            stage.style.width = Math.ceil(naturalWidth * scale) + 'px';
+            stage.style.height = Math.ceil(contentHeight * scale) + 'px';
+        };
+        const scheduleFit = function () {
+            if (state.raf) cancelAnimationFrame(state.raf);
+            state.raf = requestAnimationFrame(fit);
+        };
+        frame.addEventListener('load', function () {
             const doc = frame.contentDocument;
             if (!doc) return;
             guardEvents(doc);
-            const pageEl = doc.querySelector('.page, .sheet, .cf-page');
-            const paperW = pageEl ? pageEl.offsetWidth : 794;
-            const PAD = 28;
-            const frameW = paperW + PAD * 2;
-            const avail = wrap.clientWidth || 850;
-            const s = Math.min(1, avail / frameW);
-            const h = Math.max(doc.documentElement.scrollHeight, 2280);
-            frame.style.width = frameW + 'px';
-            frame.style.height = h + 'px';
-            frame.style.transform = 'scale(' + s + ')';
-            frame.style.transformOrigin = 'top left';
-            /* 水平居中: 缩放后视觉宽度 frameW*s, 左偏移 (avail - frameW*s)/2, 灰底铺满整个容器 */
-            frame.style.left = Math.max(0, Math.floor((avail - frameW * s) / 2)) + 'px';
-            wrap.style.height = Math.ceil(h * s) + 'px';
-        };
-        frame.addEventListener('load', fit);
-        frame.srcdoc = injectPreviewCss(html);
-        setTimeout(fit, 120);
+            fit();
+            if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(scheduleFit);
+            if (window.ResizeObserver) {
+                const contentObserver = new ResizeObserver(scheduleFit);
+                contentObserver.observe(doc.body);
+                state.observers.push(contentObserver);
+            }
+        });
+        if (window.ResizeObserver) {
+            const viewportObserver = new ResizeObserver(scheduleFit);
+            viewportObserver.observe(viewport);
+            state.observers.push(viewportObserver);
+        } else {
+            window.addEventListener('resize', scheduleFit, { once: true });
+        }
+        viewport.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+        frame.srcdoc = printableHtml;
         return overlay;
     };
 
-    /* 多份文档拼接为一份打印文档: 样式合并(去重) + 各文档页码独立计算 + 一次预览 */
-    PP.combine = function (title, htmlList, opts) {
-        const docs = (htmlList || []).filter(function (h) { return h && String(h).trim(); });
-        if (!docs.length) { Dom.toast('暂无可预览的打印内容', 'info'); return; }
-        if (docs.length === 1) { PP.open(title, docs[0], opts); return; }
-        const styles = [];
-        const frags = [];
-        docs.forEach(function (h) {
-            const d = new DOMParser().parseFromString(h, 'text/html');
-            d.querySelectorAll('script').forEach(function (sc) { sc.remove(); });
-            d.querySelectorAll('style').forEach(function (st) {
-                if (styles.indexOf(st.textContent) < 0) styles.push(st.textContent);
-            });
-            /* 各文档页码独立计算: 组内纸张连续编页 (组间互不影响) */
-            const holder = document.createElement('div');
-            holder.innerHTML = d.body.innerHTML;
-            const pages = holder.querySelectorAll('.page, .sheet, .cf-page');
-            const total = pages.length;
-            let idx = 0;
-            pages.forEach(function (pg) {
-                idx++;
-                const pn = pg.querySelector('.emr-fp-page') || pg.querySelector('.sheet-page-no');
-                if (pn) pn.textContent = '第 ' + idx + ' 页 / 共 ' + total + ' 页';
-            });
-            Array.prototype.forEach.call(holder.childNodes, function (n) {
-                if (n.nodeType === 1) frags.push(n.outerHTML);
-                else if (n.nodeType === 3 && n.textContent.trim()) frags.push(n.textContent);
-            });
-        });
-        const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + Format.escape(title || '打印文档') + '</title>'
-            + '<style>' + styles.join('\n') + '</style></head><body>' + frags.join('') + '</body></html>';
-        PP.open(title, html, opts);
-    };
-
-    /* 打开系统打印窗口: 剥离脚本后统一注入自动打印 (保证任何文档都能弹出系统打印组件) */
+    /* 独立打印页复用相同文档与纸张间距；打印介质下自动去掉灰底、阴影和页间距。 */
     PP.print = function (html) {
-        let doc = String(html || '').replace(/<script[\s\S]*?<\/script>/gi, '');
-        doc = doc.replace(/<\/body>/i, '<script>window.onload=function(){setTimeout(function(){window.print();},120);};<\/script></body>');
-        const win = window.open('', '_blank', 'width=994,height=1323');
-        if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
+        const win = window.open('', '_blank', 'width=900,height=900');
+        if (!win) { Dom.toast('浏览器拦截了打印窗口，请允许弹出窗口', 'error'); return null; }
+        let doc = prepareDocument(html);
+        const autoPrint = `<script>(function(){window.addEventListener('load',function(){
+document.documentElement.classList.add('pp-standalone-root');
+var p=document.querySelector('${PAGE_SELECTOR}');
+if(p){try{var cw=Math.max(0,outerWidth-innerWidth),ch=Math.max(0,outerHeight-innerHeight);
+resizeTo(Math.min(screen.availWidth,p.offsetWidth+${GAP * 2}+cw),Math.min(screen.availHeight,p.offsetHeight+${GAP * 2}+ch));}catch(e){}}
+setTimeout(function(){window.print();},180);});})();<\/script>`;
+        doc = /<\/body>/i.test(doc) ? doc.replace(/<\/body>/i, autoPrint + '</body>') : doc + autoPrint;
         win.document.write(doc);
         win.document.close();
-    };
-
-    /* 组装 A4 标准页眉 — 与电子病历打印抬头完全一致 (同结构同字号):
-     * 医院名 20pt 加粗 + 副名 12pt + 文书名 16pt 加粗居中 + 患者信息栏上下双线 */
-    PP.sheetHeader = function (info) {
-        const esc = function (s) { return Format.escape(String(s == null ? '' : s)); };
-        const i = info || {};
-        const brand = (HospitalBranding && HospitalBranding.get) ? HospitalBranding.get()
-            : { hospital_name: i.hospital || '', hospital_name2: '' };
-        const fields = [
-            ['姓名', i.name], ['性别', i.gender], ['年龄', i.age], ['科别', i.department],
-            ['病区', i.ward], ['床号', i.bed], ['住院号', i.admission_no]
-        ].filter(function (f) { return f[1] !== undefined && f[1] !== null; });
-        const bar = fields.map(function (f) {
-            return '<span class="emr-hf"><b>' + esc(f[0]) + '</b><span class="emr-hf-val">' + esc(f[1]) + '</span></span>';
-        }).join('');
-        return '<div class="pg-head">'
-            + '<div class="brand-name-lockup emr-brand-lockup">'
-            + '<div class="brand-name-line emr-hos">' + esc(brand.hospital_name || '') + '</div>'
-            + (brand.hospital_name2 ? '<div class="brand-name-line emr-hos2">' + esc(brand.hospital_name2) + '</div>' : '')
-            + '</div>'
-            + '<div class="emr-docname">' + esc(i.doc_name || '') + '</div>'
-            + '<div class="emr-infobar">' + bar + '</div>'
-            + '</div>';
+        return win;
     };
 })();
