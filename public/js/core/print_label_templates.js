@@ -110,7 +110,7 @@
         };
         const drugHtml = function (chunk, chunkIndex) {
             if (members.length === 1) {
-                return '<div class="mel-drug"><b>' + esc(data.content) + '</b>'
+                return '<div class="mel-drug is-single"><b>' + esc(data.content) + '</b>'
                     + '<div>' + (dose ? '剂量：' + esc(dose) : '') + (usage ? '　' + esc(usage) : '') + '</div>'
                     + (data.notes ? '<div class="mel-note">备注：' + esc(data.notes) + '</div>' : '') + '</div>';
             }
@@ -141,19 +141,20 @@
         };
         const pages = chunks.map(pageHtml);
         const css = `
-.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm 20mm 10mm 9mm; align-content:start; row-gap:.75mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
-.mel-head { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1mm; border-bottom:.6pt solid #000; font-size:7.2pt; white-space:nowrap; }
+.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm .5mm 10mm .5mm 20mm 1mm 9mm 1mm 9mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
+.mel-head { grid-row:1; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1mm; border-bottom:.6pt solid #000; font-size:7.2pt; white-space:nowrap; }
 .mel-head span { min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:700; }
 .mel-head strong { justify-self:end; font-size:10pt; }
-.mel-patient { min-width:0; display:grid; grid-template-rows:1fr 1fr; align-items:center; font-size:6.6pt; line-height:1; white-space:nowrap; }
+.mel-patient { grid-row:3; min-width:0; display:grid; grid-template-rows:1fr 1fr; align-items:center; font-size:6.6pt; line-height:1; white-space:nowrap; }
 .mel-patient-main { min-width:0; display:flex; align-items:center; justify-content:space-between; gap:1mm; }
 .mel-patient-main b { font-size:9pt; }
 .mel-patient-sub { width:100%; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:1.5mm; }
 .mel-patient-sub span { min-width:0; overflow:hidden; text-overflow:ellipsis; }
 .mel-patient-sub span:last-child { text-align:right; }
-.mel-barcode { min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
-.mel-barcode-svg { display:block; width:100%; height:10mm; }
-.mel-drug { min-height:0; max-height:20mm; align-self:start; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
+.mel-barcode { grid-row:7; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.mel-barcode-svg { display:block; width:100%; height:9mm; }
+.mel-drug { grid-row:5; min-height:0; max-height:20mm; align-self:end; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
+.mel-drug.is-single { min-height:18mm; display:flex; flex-direction:column; justify-content:center; }
 .mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:10pt; line-height:1.3; }
 .mel-note { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .mel-drug.is-group { width:100%; padding:.8mm 1mm .6mm; }
@@ -167,7 +168,7 @@
 .mel-drug-item.is-long { font-size:6.1pt; }
 .mel-drug-item.is-xlong { font-size:5.5pt; }
 .mel-group-usage { margin-top:.5mm; padding-top:.4mm; border-top:.4pt solid #999; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:6.2pt; }
-.mel-foot { padding-top:.7mm; display:grid; grid-template-columns:minmax(0,1fr) 21mm; align-items:center; gap:1.5mm; font-size:6.5pt; line-height:1.2; }
+.mel-foot { grid-row:9; display:grid; grid-template-columns:minmax(0,1fr) 21mm; align-items:center; gap:1.5mm; font-size:6.5pt; line-height:1.2; }
 .mel-staff { min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:.5mm 1.5mm; }
 .mel-staff > div { min-width:0; display:flex; gap:1mm; white-space:nowrap; }
 .mel-staff span { color:#555; }
