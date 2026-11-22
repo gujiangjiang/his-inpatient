@@ -150,7 +150,7 @@ async function doctor_emr_admission_save() {
 }
 
 function doctor_emr_admission_print() {
-    PrintHelper.print('editor-container');
+    PrintPreview.openElement('入院记录', 'editor-container');
 }
 
 function doctor_emr_admission_pdf() {

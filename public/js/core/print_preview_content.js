@@ -10,6 +10,32 @@
         return PP.open(Format.escape(title || '打印文档') + ' · 打印预览', html, options);
     };
 
+    PP.openElement = function (title, elementOrId, opts) {
+        const element = typeof elementOrId === 'string' ? document.getElementById(elementOrId) : elementOrId;
+        if (!element) { Dom.toast('未找到可打印内容', 'error'); return null; }
+        const clone = element.cloneNode(true);
+        const sourceFields = element.querySelectorAll('input, textarea, select');
+        const cloneFields = clone.querySelectorAll('input, textarea, select');
+        sourceFields.forEach(function (field, index) {
+            const copy = cloneFields[index];
+            if (!copy) return;
+            if (field.tagName === 'TEXTAREA') copy.textContent = field.value;
+            else if (field.tagName === 'SELECT') {
+                Array.from(copy.options).forEach(function (option, optionIndex) {
+                    const selected = field.options[optionIndex] && field.options[optionIndex].selected;
+                    option.selected = selected;
+                    if (selected) option.setAttribute('selected', 'selected');
+                    else option.removeAttribute('selected');
+                });
+            } else {
+                copy.setAttribute('value', field.value || '');
+                if (field.checked) copy.setAttribute('checked', 'checked');
+                else copy.removeAttribute('checked');
+            }
+        });
+        return PP.openBody(title, '<div class="sheet">' + clone.outerHTML + '</div>', opts);
+    };
+
     PP.combine = function (title, htmlList, opts) {
         const docs = (htmlList || []).filter(function (html) { return html && String(html).trim(); });
         if (!docs.length) { Dom.toast('暂无可预览的打印内容', 'info'); return null; }

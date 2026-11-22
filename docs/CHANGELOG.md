@@ -4,6 +4,20 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.58.1] - 2026-11-22
+
+### 重构
+- **移除旧打印流程 API**：删除 `PrintHelper.print/printHtml/printDocument`，`PrintHelper` 仅保留品牌抬头与条形码模板能力；全项目开窗、写文档和 `window.print()` 只允许存在于 `PrintPreview`
+- **元素打印统一入口**：新增 `PrintPreview.openElement`，旧版入院记录及 PDF 库缺失时的降级流程也先进入标准 A4 预览
+
+### 修复
+- **动态表单打印值丢失**：元素转打印文档时同步 input 当前值、勾选状态、textarea 内容和 select 选项，不再只复制初始 HTML 属性
+- **PDF 降级误打印整页**：未加载 html2pdf 时不再直接 `window.print()` 当前 HIS 页面，改为仅预览目标内容，并提示用户在系统打印面板另存 PDF
+
+### 测试
+- 全项目检索确认：业务代码不存在旧 `PrintHelper` 打印调用、直接 `window.print()`、带尺寸打印窗口或 `document.write()`；上述能力仅保留在通用核心
+- Chrome Headless 表单回归通过：文本值、复选框、文本域、下拉选项与单一 A4 纸张均正确复制
+
 ## [0.58.0] - 2026-11-22
 
 ### 重构

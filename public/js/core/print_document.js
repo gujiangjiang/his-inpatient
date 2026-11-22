@@ -122,9 +122,4 @@ table.rx-print td.rx-qty { width: 16%; text-align: right; white-space: nowrap; }
         return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + safeTitle + '</title>'
             + '<style>' + PD.baseCss(paper) + String(o.css || '') + '</style></head><body>' + body + '</body></html>';
     };
-
-    PD.titleOf = function (html, fallback) {
-        const match = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-        return match ? match[1].replace(/<[^>]+>/g, '').trim() : (fallback || '打印文档');
-    };
 })();

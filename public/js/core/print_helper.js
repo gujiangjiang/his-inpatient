@@ -1,30 +1,7 @@
-// public/js/core/print_helper.js - 品牌与条形码打印模板助手（打印流程统一交给 PrintPreview）
+// public/js/core/print_helper.js - 品牌与条形码模板助手（不承载预览或打印流程）
 const PrintHelper = {
     brandHeaderHtml(extraClass) {
         return HospitalBranding.headerHtml(extraClass || '');
-    },
-
-    /* 旧入口兼容：页面内元素先构造成标准 A4 文档，再进入统一预览。 */
-    print(elementId) {
-        const el = document.getElementById(elementId);
-        if (!el) { Dom.toast('未找到可打印内容', 'error'); return null; }
-        const title = document.title || '打印文档';
-        return PrintPreview.open(Format.escape(title) + ' · 打印预览',
-            PrintDocument.create(title, '<div class="sheet">' + el.innerHTML + '</div>'),
-            { canPrint: true });
-    },
-
-    /* 旧入口兼容：单据片段统一构建文档并先显示预览，不再各自直接开打印窗口。 */
-    printHtml(title, bodyHtml, opts) {
-        return PrintPreview.open(Format.escape(title || '打印文档') + ' · 打印预览',
-            PrintDocument.create(title, bodyHtml, opts), { canPrint: true });
-    },
-
-    /* 旧入口兼容：完整 HTML 文档直接进入统一预览。 */
-    printDocument(docHtml, title) {
-        const name = title || PrintDocument.titleOf(docHtml, '打印文档');
-        const cleanHtml = String(docHtml || '').replace(/<script[\s\S]*?<\/script>/gi, '');
-        return PrintPreview.open(Format.escape(name) + ' · 打印预览', cleanHtml, { canPrint: true });
     },
 
     /* 前端 Code 128 条形码（SVG，供打印模板右上角用） */

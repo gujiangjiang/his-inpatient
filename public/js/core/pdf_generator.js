@@ -8,8 +8,8 @@ const PdfGenerator = {
             return;
         }
         if (typeof html2pdf === 'undefined') {
-            // 降级为浏览器打印
-            window.print();
+            // 未加载 PDF 库时进入统一预览，用户可在系统打印面板中选择“另存为 PDF”。
+            PrintPreview.openElement(String(filename || '报告').replace(/\.pdf$/i, ''), el);
             return;
         }
         const opt = {
