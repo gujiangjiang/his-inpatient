@@ -6,15 +6,16 @@
     display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px;
     padding: 8px 14px; border-bottom: 1px solid #e4e7ed; background: #fff; flex-shrink: 0;
 }
-.nurse-board-head .nb-title { font-size: 15px; font-weight: 700; color: #1f2d3d; }
+.nurse-board-head .nb-title { font-size: 15px; font-weight: 700; color: #1f2d3d; flex-shrink: 0; }
 .nurse-board-head .nb-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
-/* 病区 Tabs */
-.nurse-ward-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+/* 病区 Tabs (标题行内胶囊) */
+.nurse-ward-tabs { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
 .nurse-ward-tab {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 14px; border: 1px solid var(--border); border-radius: 16px;
-    background: #fff; color: #606266; font-size: 13px; cursor: pointer; transition: all .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border: 1px solid var(--border); border-radius: 14px;
+    background: #fff; color: #606266; font-size: 12.5px; cursor: pointer; transition: all .15s;
+    white-space: nowrap;
 }
 .nurse-ward-tab:hover { border-color: var(--primary); color: var(--primary); }
 .nurse-ward-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
@@ -82,15 +83,6 @@
 }
 .nbc-days { margin-left: auto; }
 .nbc-days b { color: #f56c6c; }
-
-/* 批量摆药条 */
-.nurse-batchbar {
-    flex-shrink: 0;
-    display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
-    padding: 8px 14px; border-top: 1px solid #e4e7ed; background: #fff;
-}
-.nurse-batchbar .nbb-hint { font-size: 12px; color: #64748b; }
-.nurse-batchbar .nbb-count { font-size: 12px; font-weight: 600; color: var(--primary); }
 
 /* 床位卡片操作面板 */
 .nurse-op-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #e4e7ed; margin-bottom: 12px; }
@@ -168,7 +160,6 @@
     .nurse-board-head { padding: 8px 10px; }
     .nurse-ward-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .nurse-ward-tab { flex-shrink: 0; }
-    .nurse-batchbar { padding: 8px 10px; }
     .nnote-form { grid-template-columns: 1fr; }
     .nnote-form .colspan-2 { grid-column: span 1; }
 }

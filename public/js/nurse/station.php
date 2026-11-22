@@ -3,7 +3,7 @@
 <div class="nurse-board">
     <div class="nurse-board-head">
         <span class="nb-title">床位一览表</span>
-        <span class="fs-12 text-muted" id="nb-board-hint"></span>
+        <div class="nurse-ward-tabs" id="nb-ward-tabs"></div>
         <div class="nb-tools">
             <button class="btn btn-small" onclick="NurseStation.batchPrepare()"><?= icon('common/nav', 'dispensing', 13) ?> 批量预摆药</button>
             <button class="btn btn-small" onclick="NurseStation.preparePage()">预摆药清单</button>
@@ -17,17 +17,10 @@
         <span class="ns-item">在院患者：<b id="nb-patient-cnt">0</b></span>
         <span class="ns-item">待核查医嘱：<b id="nb-pending-cnt">0</b></span>
         <span class="ns-item">未发药：<b id="nb-undisp-cnt">0</b></span>
+        <span class="fs-12 text-muted" id="nb-board-hint"></span>
     </div>
-    <div class="nurse-ward-tabs" id="nb-ward-tabs"></div>
     <div class="nurse-bed-scroll" id="nb-bed-scroll">
         <div class="nurse-bed-grid" id="nb-bed-grid"></div>
-    </div>
-    <div class="nurse-batchbar" id="nb-batchbar" style="display:none">
-        <span class="nbb-hint">批量预摆药：</span>
-        <span class="nbb-count" id="nb-batch-count">已选 0 条</span>
-        <span class="text-muted">计划时间：<input type="datetime-local" id="nb-plan-time" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px"></span>
-        <button class="btn btn-small btn-primary" onclick="NurseStation.batchPrepareApply()">申请预摆药（勾选）</button>
-        <span class="text-muted" id="nb-batch-hint"></span>
     </div>
 </div>
 
@@ -35,8 +28,6 @@
 var NurseStation = {
     data: [],           // bedboard 数据 [{ward, beds}]
     activeWardId: null,
-    batchSel: new Set(),
-    batchRows: [],
 
     async init() {
         await App.mountShell('nurse');
@@ -56,8 +47,6 @@ var NurseStation = {
     /* 病区选择 */
     selectWard(wardId) {
         this.activeWardId = wardId;
-        this.batchSel.clear();
-        this.batchRows = [];
         this.render();
     },
 
@@ -87,8 +76,6 @@ var NurseStation = {
         document.getElementById('nb-board-hint').textContent = '空闲 ' + freeCnt + ' 床 · 点击床位卡片进行操作';
         if (!ward.beds.length) { grid.innerHTML = '<div class="empty-state">该病区暂无床位</div>'; return; }
         grid.innerHTML = ward.beds.map(b => this.bedCard(b)).join('');
-        // 批量摆药条: 聚合该病区待摆药医嘱
-        this.renderBatchBar(ward);
     },
 
     bedCard(b) {
@@ -126,29 +113,19 @@ var NurseStation = {
         </div>`;
     },
 
-    /* 批量摆药: 聚合当前病区所有待摆药医嘱 (patient_id 精确) */
-    renderBatchBar(ward) {
-        const bar = document.getElementById('nb-batchbar');
-        const hint = document.getElementById('nb-batch-hint');
-        const patients = ward.beds.filter(b => b.patient_id).map(b => Number(b.patient_id));
-        if (!patients.length) { bar.style.display = 'none'; return; }
-        AjaxLoader.api('nurse/prepare?action=list', { silent: true }).then(r => {
-            const rows = (r.data || []).filter(x => patients.indexOf(Number(x.patient_id)) >= 0);
-            this.batchRows = rows;
-            bar.style.display = 'flex';
-            hint.textContent = '当前病区待摆药 ' + rows.length + ' 条（未预摆 ' + rows.filter(x => x.dispense_status !== 'prepared').length + '）';
-            this.updateBatchCount();
-        }).catch(() => { bar.style.display = 'none'; });
-    },
-
-    batchPrepare() {
-        const bar = document.getElementById('nb-batchbar');
-        if (bar.style.display === 'none') { Dom.toast('当前病区暂无待摆药药品', 'info'); return; }
-        // 当前病区名
+    /* 批量预摆药: 拉取当前病区待摆药医嘱并打开勾选弹窗 */
+    async batchPrepare() {
         const ward = this.data.find(x => String(x.ward.id) === String(this.activeWardId));
         const wardName = ward ? (ward.ward.name || '') : '';
+        const patients = ward ? ward.beds.filter(b => b.patient_id).map(b => Number(b.patient_id)) : [];
+        if (!patients.length) { Dom.toast('当前病区暂无在院患者', 'info'); return; }
+        let all = [];
+        try {
+            const r = await AjaxLoader.api('nurse/prepare?action=list', { silent: true });
+            all = (r.data || []).filter(x => patients.indexOf(Number(x.patient_id)) >= 0);
+        } catch (e) { Dom.toast('待摆药数据加载失败', 'error'); return; }
         // 打开批量选择弹窗
-        const rows = this.batchRows.filter(x => x.dispense_status !== 'prepared');
+        const rows = all.filter(x => x.dispense_status !== 'prepared');
         if (!rows.length) { Dom.toast('当前病区待摆药医嘱均已预摆', 'info'); return; }
         const content = `<div class="nnote-list" style="max-height:40vh">
             <table class="table">
@@ -181,21 +158,6 @@ var NurseStation = {
             } },
             { text: '取消', type: 'default' }
         ]);
-    },
-
-    updateBatchCount() {
-        const el = document.getElementById('nb-batch-count');
-        if (el) el.textContent = '待摆药 ' + this.batchRows.length + ' 条';
-    },
-
-    batchPrepareApply() {
-        const ids = this.batchRows.filter(x => x.dispense_status !== 'prepared').map(x => x.id);
-        if (!ids.length) { Dom.toast('当前病区待摆药医嘱均已预摆', 'info'); return; }
-        const plan = document.getElementById('nb-plan-time');
-        AjaxLoader.api('nurse/prepare', { method: 'POST', data: { action: 'apply', ids, plan_time: plan ? plan.value : '' } }).then(() => {
-            Dom.toast('已批量申请预摆药 ' + ids.length + ' 条', 'success');
-            this.refresh();
-        }).catch(() => {});
     },
 
     preparePage() { window.navigateTo('nurse', 'prepare'); },
