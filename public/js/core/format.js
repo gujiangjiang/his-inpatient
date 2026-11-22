@@ -15,20 +15,9 @@ const Format = {
         return map[g] || g || '未知';
     },
 
-    /* 按出生日期计算年龄（YYYY-MM-DD → X岁 / X月 / X天） */
+    /* 兼容旧入口：统一委托临床年龄口径。 */
     age(birth, at) {
-        if (!birth) return '';
-        const b = new Date(birth);
-        if (isNaN(b.getTime())) return '';
-        const n = at ? new Date(at) : new Date();
-        let y = n.getFullYear() - b.getFullYear();
-        let m = n.getMonth() - b.getMonth();
-        let d = n.getDate() - b.getDate();
-        if (d < 0) { m--; d = new Date(n.getFullYear(), n.getMonth(), 0).getDate() + d; }
-        if (m < 0) { y--; m += 12; }
-        if (y >= 1) return y + '岁' + (m > 0 ? m + '月' : '');
-        if (m >= 1) return m + '月' + d + '天';
-        return Math.max(0, d) + '天';
+        return this.ageClinical(birth, at);
     },
 
     /* 病案首页年龄口径：满1周岁只显示整岁；不足1周岁显示月；新生儿≤28天显示天。 */
@@ -145,11 +134,8 @@ const Format = {
         return m[4] != null ? d + ' ' + m[4].padStart(2, '0') + ':' + m[5].padStart(2, '0') : d;
     },
 
-    /** 简化年龄 (年差法, 各页内联实现的统一入口; 与 age() 精确到天的语义区分) */
-    ageSimple(birth) {
-        if (!birth) return '';
-        const b = new Date(birth);
-        if (isNaN(b.getTime())) return '';
-        return Math.max(0, new Date().getFullYear() - b.getFullYear());
+    /** 兼容旧入口：统一委托临床年龄口径。 */
+    ageSimple(birth, at) {
+        return this.ageClinical(birth, at);
     }
 };

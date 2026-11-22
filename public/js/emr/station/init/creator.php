@@ -174,7 +174,7 @@ async function emr_createFromTemplate(templateId, categoryId, opts) {
 function buildPatientInfo() {
     const p = _emrPatient || PatientContext.current();
     if (!p) return {};
-    const age = Format.ageSimple(p.birth_date);
+    const age = Format.ageClinical(p.birth_date);
     return {
         name: p.name || '', gender: Format.gender(p.gender), age: String(age),
         department: p.department_name || '', ward_name: p.ward_name || '',

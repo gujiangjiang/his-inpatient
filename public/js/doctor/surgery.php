@@ -68,8 +68,8 @@ async function surgery_refresh() {
         if (info) info.textContent = ' · 请先选择患者';
         return;
     }
-    const age = Format.ageSimple(p.birth_date);
-    if (info) info.textContent = ' · ' + p.name + ' ' + Format.gender(p.gender) + ' ' + age + '岁 · 诊断：' + (p.admission_diagnosis || '-');
+    const age = Format.ageClinical(p.birth_date);
+    if (info) info.textContent = ' · ' + p.name + ' ' + Format.gender(p.gender) + ' ' + age + ' · 诊断：' + (p.admission_diagnosis || '-');
     try {
         const r = await AjaxLoader.api('emr/dept-doctors', { silent: true });
         const docs = r.data || [];

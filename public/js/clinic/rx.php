@@ -127,7 +127,7 @@ function clinic_rx_print(idx) {
     const doctorName = (g.items[0] || {}).creator_name || '';
     // 参照门诊标准处方笺：顶部医院名 + 右上条码 + 文书名，随后患者信息（姓名/性别/出生日期/年龄、
     // 患者ID/住院号/床号/科室 + 临床诊断），℞ 标记 + 药品表，底部取药提示/金额/签名/调配/时间。
-    const age = p.age || (p.birth_date ? Format.age(p.birth_date) : '');
+    const age = p.birth_date ? Format.ageClinical(p.birth_date) : (p.age || '');
     const diag = p.admission_diagnosis || '';
     const html = `<div class="sheet a5">
         <div class="rx-head">

@@ -31,13 +31,13 @@ const AdmitPanel = {
 
     html() {
         const i = this.info;
-        const age = this.calcAge(i.birth_date);
+        const age = Format.ageClinical(i.birth_date);
         return `
         <div class="kv-grid mb-10">
             <div class="kv-item"><b>姓名</b><span>${Format.escape(i.name || '')}</span></div>
             <div class="kv-item"><b>性别</b><span>${Format.gender(i.gender)}</span></div>
             <div class="kv-item"><b>出生日期</b><span>${Format.escape(i.birth_date || '')}</span></div>
-            <div class="kv-item"><b>年龄</b><span>${age ? age + ' 岁' : '-'}</span></div>
+            <div class="kv-item"><b>年龄</b><span>${age || '-'}</span></div>
             <div class="kv-item"><b>身份证号</b><span>${Format.escape(i.id_card || '-')}</span></div>
             <div class="kv-item"><b>初步诊断</b><span>${Format.escape(i.admission_diagnosis || '-')}</span></div>
         </div>
@@ -56,13 +56,6 @@ const AdmitPanel = {
             <label class="form-label">床位 <span class="fs-12 text-muted" id="admit-bed-hint"></span></label>
             <div class="bed-grid" id="admit-bed-grid"></div>
         </div>`;
-    },
-
-    calcAge(birth) {
-        if (!birth) return '';
-        const d = new Date(String(birth).replace(/-/g, '/'));
-        if (isNaN(d.getTime())) return '';
-        return Math.max(0, new Date().getFullYear() - d.getFullYear());
     },
 
     onDept(id) {
@@ -143,8 +136,8 @@ const AdmitPanel = {
         const dept = this.depts.find(d => String(d.id) === String(this.deptId)) || {};
         const ward = this.wards.find(w => Number(w.id) === Number(this.pickedWard)) || {};
         const bed = this.beds.find(b => Number(b.id) === Number(this.pickedBed)) || {};
-        const age = this.calcAge(i.birth_date);
-        const summary = '患者 ' + (i.name || '') + '（' + Format.gender(i.gender) + (age ? ' · ' + age + '岁' : '') + '）'
+        const age = Format.ageClinical(i.birth_date);
+        const summary = '患者 ' + (i.name || '') + '（' + Format.gender(i.gender) + (age ? ' · ' + age : '') + '）'
             + '，诊断 ' + (i.admission_diagnosis || '-')
             + '，收住 ' + (dept.name || '') + ' ' + (ward.name || '') + ' ' + (bed.bed_no || '') + ' 床。';
         Dom.modal('确认收住院', '<p style="font-size:14px;line-height:1.9">' + Format.escape(summary) + '</p>' +

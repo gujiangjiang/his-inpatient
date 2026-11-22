@@ -130,7 +130,7 @@ function outpatient_labs_printBlock(rep) {
         <div class="sheet-info-grid">
             <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
             <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
-            <span class="sic"><b>年龄：</b>${Format.age(rep.birth_date)}</span>
+            <span class="sic"><b>年龄：</b>${Format.ageClinical(rep.birth_date)}</span>
             <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
             <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
             <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>
@@ -173,7 +173,7 @@ function outpatient_labs_reportBlock(rep) {
         <div class="sheet-info-grid">
             <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
             <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
-            <span class="sic"><b>年龄：</b>${Format.age(rep.birth_date)}</span>
+            <span class="sic"><b>年龄：</b>${Format.ageClinical(rep.birth_date)}</span>
             <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
             <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
             <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>

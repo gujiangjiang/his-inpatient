@@ -20,6 +20,7 @@ require_once $CORE . '/setup_guard.php';
 /* ---------- 时间/基础数据 helpers ---------- */
 require_once $CORE . '/helpers/time_helper.php';
 require_once $CORE . '/helpers/date_helper.php';
+require_once $CORE . '/helpers/age_helper.php';
 require_once $CORE . '/helpers/string_helper.php';
 require_once $CORE . '/helpers/id_generator_helper.php';
 

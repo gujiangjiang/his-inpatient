@@ -6,7 +6,6 @@ Object.assign(OrderStation, {
         const body = document.getElementById('os-assist-body');
         if (!nameEl || !body) return;
         nameEl.textContent = p.name || '';
-        const age = Format.ageSimple(p.birth_date);
         let html = '';
         if (p.allergy_history) {
             html += '<div class="os-assist-warn">' + svgIcon('common/status/warning', 14) + ' 过敏史：' + Format.escape(p.allergy_history) + '</div>';

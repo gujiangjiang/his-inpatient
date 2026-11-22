@@ -116,7 +116,7 @@ async function loadPatientInfo(patientId) {
     const p = result.data;
     document.getElementById('patient_name').value = p.name;
     document.getElementById('patient_gender').value = Format.gender(p.gender);
-    document.getElementById('patient_age').value = Format.ageSimple(p.birth_date);
+    document.getElementById('patient_age').value = Format.ageClinical(p.birth_date);
     document.getElementById('admission_no').value = p.admission_no;
     document.getElementById('patient_ward').value = p.ward_name || '';
     document.getElementById('patient_bed').value = p.bed_no || '';

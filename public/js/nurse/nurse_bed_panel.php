@@ -27,7 +27,7 @@ var NurseBedPanel = {
                 <div class="kv-item"><b>床号</b><span>${Format.escape(roman + ' | ' + (p.bed_no || '-'))}</span></div>
                 <div class="kv-item"><b>姓名</b><span>${Format.escape(p.patient_name || p.name || '')}</span></div>
                 <div class="kv-item"><b>性别</b><span>${Format.gender(p.gender)}</span></div>
-                <div class="kv-item"><b>年龄</b><span>${p.age ? p.age + ' 岁' : '-'}</span></div>
+                <div class="kv-item"><b>年龄</b><span>${Format.ageClinical(p.birth_date) || p.age || '-'}</span></div>
                 <div class="kv-item"><b>住院号</b><span>${Format.escape(p.admission_no || '-')}</span></div>
                 <div class="kv-item"><b>入院</b><span>${Format.escape((p.admission_date || '').slice(0, 10) || '-')}</span></div>
                 <div class="kv-item"><b>费别</b><span>${Format.escape(p.fee_type || '-')}</span></div>
@@ -89,7 +89,7 @@ var NurseBedPanel = {
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/patient-info?action=get&patient_id=' + pid, { silent: true }).then(r => {
             const d = r.data || {};
-            const age = d.birth_date ? Math.max(0, new Date().getFullYear() - new Date(String(d.birth_date).replace(/-/g, '/')).getFullYear()) : '';
+            const age = Format.ageClinical(d.birth_date);
             const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[String(d.nursing_level || '3')] || 'Ⅲ';
             const infoHtml = `<div class="nurse-op-actions">
                 <button class="btn btn-small" onclick="NurseBedPanel.infoEdit()">修改个人信息</button>
@@ -98,7 +98,7 @@ var NurseBedPanel = {
             <div class="kv-grid">
                 <div class="kv-item"><b>姓名</b><span>${Format.escape(d.name || '')}</span></div>
                 <div class="kv-item"><b>性别</b><span>${Format.gender(d.gender)}</span></div>
-                <div class="kv-item"><b>年龄</b><span>${age ? age + ' 岁' : '-'}</span></div>
+                <div class="kv-item"><b>年龄</b><span>${age || '-'}</span></div>
                 <div class="kv-item"><b>出生日期</b><span>${Format.escape(d.birth_date || '-')}</span></div>
                 <div class="kv-item"><b>身份证号</b><span>${Format.escape(d.id_card || '-')}</span></div>
                 <div class="kv-item"><b>联系电话</b><span>${Format.escape(d.phone || '-')}</span></div>
@@ -238,7 +238,7 @@ var NurseBedPanel = {
             if (!longRows.length && !tempRows.length) { Dom.toast('该患者暂无有效医嘱', 'info'); return; }
             const info = {
                 name: p.patient_name || p.name || '', gender: Format.gender(p.gender),
-                age: p.age ? p.age + ' 岁' : '', department: p.department_name || '',
+                age: Format.ageClinical(p.birth_date) || p.age || '', department: p.department_name || '',
                 ward: p.ward_name || '', bed: p.bed_no || '', admission_no: p.admission_no || '',
                 hospital: ''
             };
@@ -367,7 +367,7 @@ var NurseBedPanel = {
             const info = {
                 name: p.patient_name || p.name || '',
                 gender: Format.gender(p.gender),
-                age: p.age ? p.age + ' 岁' : '',
+                age: Format.ageClinical(p.birth_date) || p.age || '',
                 department: p.department_name || '',
                 ward_name: p.ward_name || '',
                 bed_no: p.bed_no || '',

@@ -85,12 +85,7 @@ foreach ($wards as $w) {
         $b['lab_collect_cnt'] = $labCollect[$pid] ?? 0;
         $b['exam_pending_cnt'] = $examPending[$pid] ?? 0;
         $b['nursing_doc_cnt'] = $docCount[$pid] ?? 0;
-        // 患者年龄
-        $b['age'] = '';
-        if (!empty($b['birth_date'])) {
-            $bd = strtotime($b['birth_date']);
-            if ($bd !== false) $b['age'] = (string)max(0, (int)date('Y') - (int)date('Y', $bd));
-        }
+        $b['age'] = AgeHelper::display($b['birth_date'] ?? '');
     }
     unset($b);
 

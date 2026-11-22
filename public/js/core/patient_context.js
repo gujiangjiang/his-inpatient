@@ -128,7 +128,7 @@ window.refreshWorkstationLayout = async function() {
  */
 PatientContext.fillInfoBar = function(p) {
     if (!p) return;
-    const age = Format.ageSimple(p.birth_date);
+    const age = Format.ageClinical(p.birth_date);
     const set = (id, v) => {
         const el = document.getElementById(id);
         if (el) el.textContent = v;
@@ -145,7 +145,7 @@ PatientContext.fillInfoBar = function(p) {
 
     set('pib-name', p.name || '-');
     const ward = p.ward_name || (p.department_name || '');
-    set('pib-sub', [Format.gender(p.gender), age ? age + '岁' : '', p.admission_no || '', p.fee_type || '', ward]
+    set('pib-sub', [Format.gender(p.gender), age, p.admission_no || '', p.fee_type || '', ward]
         .filter(Boolean).join(' / '));
 
     // 入院天数

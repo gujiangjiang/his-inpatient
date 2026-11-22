@@ -154,10 +154,7 @@ function patients_wall_days(p) {
 }
 
 function patients_wall_age(p) {
-    if (!p.birth_date) return '';
-    var b = new Date(p.birth_date);
-    if (isNaN(b.getTime())) return '';
-    return (new Date().getFullYear() - b.getFullYear()) + '岁';
+    return Format.ageClinical(p.birth_date);
 }
 
 function patients_wall_vte(label, value) {

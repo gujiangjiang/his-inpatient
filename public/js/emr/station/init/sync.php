@@ -6,8 +6,10 @@ var CASE_DYN = {
     p_name: (c, p) => c.name || (p && p.name) || '',
     p_gender: (c, p) => ({ '1': '男', '2': '女' }[c.gender]) || (p && p.gender === 'male' ? '男' : p && p.gender === 'female' ? '女' : (p && (p.gender === '男' || p.gender === '女') ? p.gender : '')),
     p_age: (c, p) => {
-        if (c.age_y) return String(c.age_y);
-        if (p && p.birth_date) { const a = new Date().getFullYear() - new Date(p.birth_date).getFullYear(); return a > 0 ? String(a) : ''; }
+        if (p && p.birth_date) return Format.ageClinical(p.birth_date);
+        if (c.age_y) return String(c.age_y) + '岁';
+        if (c.age_m) return String(c.age_m) + '月';
+        if (c.age_d !== '' && c.age_d != null) return String(c.age_d) + '天';
         return '';
     },
 };

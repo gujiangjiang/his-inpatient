@@ -103,7 +103,7 @@ var NurseStation = {
                 <span class="nbc-name">${Format.escape(b.patient_name || '')}</span>
                 ${b.is_critical == 1 ? '<span class="badge badge-critical">危重</span>' : ''}
             </div>
-            <div class="nbc-sub">${Format.gender(b.gender)} / ${b.age ? b.age + '岁' : '-'} / ${Format.escape(b.admission_no || '')}</div>
+            <div class="nbc-sub">${Format.gender(b.gender)} / ${Format.escape(b.age || '-')} / ${Format.escape(b.admission_no || '')}</div>
             <div class="nbc-sub nbc-diag"><span class="nbc-label">诊断:</span> ${Format.escape(b.admission_diagnosis || '-')}</div>
             <div class="nbc-badges">${badges.join('')}</div>
             <div class="nbc-foot">

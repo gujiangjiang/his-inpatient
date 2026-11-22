@@ -54,22 +54,8 @@ if (!empty($patient['admission_date'])) {
     if ($st && $en) $stayDays = max(1, (int)ceil(($en - $st) / 86400));
 }
 
-// 年龄 (岁/月/天)
-$age = ['y' => '', 'm' => '', 'd' => ''];
-if (!empty($patient['birth_date'])) {
-    $b = strtotime((string)$patient['birth_date']);
-    if ($b) {
-        $now = time();
-        $days = (int)floor(($now - $b) / 86400);
-        if ($days >= 365) {
-            $age['y'] = (int)floor($days / 365.25);
-        } elseif ($days > 28) {
-            $age['m'] = max(1, (int)floor($days / 30.44));
-        } else {
-            $age['d'] = max(0, $days);
-        }
-    }
-}
+// 年龄 (全项目统一病案首页口径: 整岁 / 月 / 天)
+$age = AgeHelper::parts($patient['birth_date'] ?? '');
 
 // 第几次住院 (按身份证计次)
 $admitTimes = 1;
