@@ -4,6 +4,15 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.58.2] - 2026-11-22
+
+### 新增
+- **打印架构自动守卫**：新增 `tools/lint/print-architecture.php` 并接入 `npm run lint`，自动阻止业务页面重新直接调用 `window.print()`、`document.write()` 或已移除的 `PrintHelper` 打印入口
+- **资源顺序校验**：自动检查 `PrintDocument → PrintHelper → PrintPreview → 预览内容扩展` 的注册与加载顺序，避免因脚本依赖顺序导致运行时未定义
+
+### 测试
+- 守卫同时验证系统打印与文档写入能力在 `print_preview.js` 中各保留唯一一处；现有 418 个 PHP 文件语法检查与打印架构检查全部通过
+
 ## [0.58.1] - 2026-11-22
 
 ### 重构
