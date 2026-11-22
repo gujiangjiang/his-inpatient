@@ -1,15 +1,15 @@
 // public/js/core/print_preview.js - 通用 A4 打印预览模块
 // 统一所有「打印预览」入口: 病历 / 护理记录单 / 体温单 / 医嘱单 / 病案首页
 // 底层约束: 同一时间只允许一个预览弹窗 (打开新预览自动关闭旧预览);
-// PrintPreview.combine(title, htmlList): 多份文档按顺序拼接为一份打印文档, 页码连续重编
-// 预览以 iframe 100% 原尺寸渲染 + transform 等比缩放; opts.canPrint=false 隐藏打印按钮
-// 预览内禁止右键/复制/选择/剪切 (仅预览, 不影响打印窗口)
+// PrintPreview.combine(title, htmlList): 多份文档按顺序拼接为一份打印文档, 各文档页码独立计算
+// 预览以 iframe 等比缩放显示; opts.canPrint=false 隐藏打印按钮; 预览内禁止右键/复制/选择
 (function () {
     'use strict';
     const PP = (window.PrintPreview = {});
     PP._overlay = null;   // 当前预览弹窗 (单例)
+    PP._html = '';        // 当前预览的打印文档
 
-    /* 预览样式: 注入到文档样式之前 (默认纸张白底, 文档自身设计色可覆盖), 灰底容器 + 等宽边距 + 纸张分隔 */
+    /* 预览样式: 注入到文档样式之前 (默认纸张白底, 文档自身设计色可覆盖), 灰底容器 + 等宽边距 + 纸张分隔 + 禁选择 */
     const PREVIEW_CSS = [
         'html, body { margin: 0; padding: 28px !important; background: #dfe3e8 !important;',
         '  -webkit-user-select: none !important; user-select: none !important; }',
@@ -32,21 +32,17 @@
         });
     };
 
-    /* 弹窗内 iframe 预览: 纸张宽 + 左右等宽边距完整显示, 等比缩放 */
+    /* 打开预览弹窗 (iframe 等比缩放, 灰底容器内纸张完整显示并居中) */
     PP.open = function (title, html, opts) {
         const o = opts || {};
         const canPrint = o.canPrint !== false;   // 默认可打印
         /* 单例: 同一时间只允许一个预览弹窗 */
         if (PP._overlay && PP._overlay.parentNode) PP._overlay.remove();
-        PP._html = html;   // 供打印按钮使用
+        PP._html = html;
 
         const buttons = [];
         if (canPrint) {
-            buttons.push({
-                text: '打印', type: 'primary', onclick: function () {
-                    PP.print(PP._html);
-                }
-            });
+            buttons.push({ text: '打印', type: 'primary', onclick: function () { PP.print(PP._html); } });
         }
         buttons.push({ text: '关闭', type: 'default' });
 
@@ -58,6 +54,8 @@
         const wrap = overlay.querySelector('#pp-scale');
         const frame = overlay.querySelector('#pp-frame');
         wrap.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+        /* 缩放适配: iframe 内容宽 = 纸张宽 + 左右边距; 缩放后水平居中, 灰底铺满容器 */
         const fit = function () {
             const doc = frame.contentDocument;
             if (!doc) return;
@@ -73,6 +71,8 @@
             frame.style.height = h + 'px';
             frame.style.transform = 'scale(' + s + ')';
             frame.style.transformOrigin = 'top left';
+            /* 水平居中: 缩放后视觉宽度 frameW*s, 左偏移 (avail - frameW*s)/2, 灰底铺满整个容器 */
+            frame.style.left = Math.max(0, Math.floor((avail - frameW * s) / 2)) + 'px';
             wrap.style.height = Math.ceil(h * s) + 'px';
         };
         frame.addEventListener('load', fit);
@@ -81,7 +81,7 @@
         return overlay;
     };
 
-    /* 多份文档拼接为一份打印文档: 样式合并(去重) + 纸张顺序连续重编页码 + 一次预览 */
+    /* 多份文档拼接为一份打印文档: 样式合并(去重) + 各文档页码独立计算 + 一次预览 */
     PP.combine = function (title, htmlList, opts) {
         const docs = (htmlList || []).filter(function (h) { return h && String(h).trim(); });
         if (!docs.length) { Dom.toast('暂无可预览的打印内容', 'info'); return; }
@@ -94,32 +94,34 @@
             d.querySelectorAll('style').forEach(function (st) {
                 if (styles.indexOf(st.textContent) < 0) styles.push(st.textContent);
             });
-            Array.prototype.forEach.call(d.body.childNodes, function (n) {
+            /* 各文档页码独立计算: 组内纸张连续编页 (组间互不影响) */
+            const holder = document.createElement('div');
+            holder.innerHTML = d.body.innerHTML;
+            const pages = holder.querySelectorAll('.page, .sheet, .cf-page');
+            const total = pages.length;
+            let idx = 0;
+            pages.forEach(function (pg) {
+                idx++;
+                const pn = pg.querySelector('.emr-fp-page') || pg.querySelector('.sheet-page-no');
+                if (pn) pn.textContent = '第 ' + idx + ' 页 / 共 ' + total + ' 页';
+            });
+            Array.prototype.forEach.call(holder.childNodes, function (n) {
                 if (n.nodeType === 1) frags.push(n.outerHTML);
                 else if (n.nodeType === 3 && n.textContent.trim()) frags.push(n.textContent);
             });
         });
-        /* 页码连续重编 (长期在前临时在后, 由调用方顺序决定) */
-        const holder = document.createElement('div');
-        holder.innerHTML = frags.join('');
-        const pages = holder.querySelectorAll('.page, .sheet, .cf-page');
-        const total = pages.length;
-        let idx = 0;
-        pages.forEach(function (pg) {
-            idx++;
-            const pn = pg.querySelector('.emr-fp-page') || pg.querySelector('.sheet-page-no');
-            if (pn) pn.textContent = '第 ' + idx + ' 页 / 共 ' + total + ' 页';
-        });
         const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + Format.escape(title || '打印文档') + '</title>'
-            + '<style>' + styles.join('\n') + '</style></head><body>' + holder.innerHTML + '</body></html>';
+            + '<style>' + styles.join('\n') + '</style></head><body>' + frags.join('') + '</body></html>';
         PP.open(title, html, opts);
     };
 
-    /* 便捷: 打开打印窗口 (自动打印) */
+    /* 打开系统打印窗口: 剥离脚本后统一注入自动打印 (保证任何文档都能弹出系统打印组件) */
     PP.print = function (html) {
+        let doc = String(html || '').replace(/<script[\s\S]*?<\/script>/gi, '');
+        doc = doc.replace(/<\/body>/i, '<script>window.onload=function(){setTimeout(function(){window.print();},120);};<\/script></body>');
         const win = window.open('', '_blank', 'width=994,height=1323');
         if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
-        win.document.write(html);
+        win.document.write(doc);
         win.document.close();
     };
 

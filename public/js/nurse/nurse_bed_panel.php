@@ -283,11 +283,11 @@ var NurseBedPanel = {
             '.emr-infobar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 20px; margin-top: 8px; padding: 6px 4px 6px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 11pt; }',
             '.pg-body { position: absolute; left: 36px; top: 158px; width: 722px; height: 906px; overflow: hidden; }',
             '.os-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10pt; }',
-            '.os-table th, .os-table td { border: 0.5pt solid #000; padding: 4px 5px; vertical-align: top; text-align: left; }',
+            '.os-table th, .os-table td { border: 0.5pt solid #000; padding: 4px 5px; vertical-align: top; text-align: left; overflow-wrap: anywhere; word-break: break-all; }',
             '.os-table th { background: #f2f2f2; text-align: center; font-weight: 600; }',
             '.os-content { font-size: 10pt; line-height: 1.5; }',
             '.os-usage, .os-freq { font-size: 9.5pt; }',
-            '.os-time { font-size: 9.5pt; line-height: 1.5; white-space: nowrap; }',
+            '.os-time { font-size: 9.5pt; line-height: 1.5; }',
             '.os-sign { text-align: center; font-size: 9.5pt; }',
             '.pg-foot { position: absolute; left: 36px; right: 36px; bottom: 22px; height: 30px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 10pt; color: #000; }',
             '.pg-foot .emr-fp-page { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; }'
