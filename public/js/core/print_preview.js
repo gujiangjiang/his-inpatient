@@ -50,7 +50,11 @@
     };
 
     const closeCurrent = function () {
-        if (!current || !current.overlay || !current.overlay.parentNode) return;
+        if (!current) return;
+        if (!current.overlay || !current.overlay.parentNode) {
+            if (current.dispose) current.dispose();
+            return;
+        }
         const close = current.overlay.querySelector('.modal-close');
         if (close) close.click();
         else current.overlay.remove();
@@ -68,7 +72,7 @@
         }
         buttons.push({ text: '关闭', type: 'default' });
 
-        const state = { overlay: null, observers: [], raf: 0 };
+        const state = { overlay: null, observers: [], raf: 0, dispose: null };
         const dispose = function () {
             state.observers.forEach(function (observer) { observer.disconnect(); });
             state.observers = [];
@@ -76,6 +80,7 @@
             if (current === state) current = null;
             if (PP._overlay === overlay) PP._overlay = null;
         };
+        state.dispose = dispose;
         const overlay = Dom.modal(title || '打印预览',
             '<div class="pp-viewport"><div class="pp-stage"><iframe class="pp-frame" title="打印内容" scrolling="no" sandbox="allow-same-origin"></iframe></div></div>',
             buttons, { onClose: dispose });
@@ -84,6 +89,8 @@
         const stage = overlay.querySelector('.pp-stage');
         const frame = overlay.querySelector('.pp-frame');
         modal.classList.add('modal-print-preview');
+        const paperHint = PrintDocument.paper(printableHtml, o);
+        modal.style.setProperty('--pp-preview-width', (paperHint.width + GAP * 2) + 'px');
         state.overlay = overlay;
         current = state;
         PP._overlay = overlay;
