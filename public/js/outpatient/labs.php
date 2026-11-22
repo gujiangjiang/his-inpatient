@@ -147,9 +147,9 @@ function outpatient_labs_printBlock(rep) {
 function outpatient_labs_print(id, isReport) {
     AjaxLoader.api('lab/detail?id=' + id, { silent: true }).then(r => {
         if (isReport) {
-            PrintHelper.printHtml('检验报告单', outpatient_labs_reportBlock(r.data));
+            PrintPreview.openBody('检验报告单', outpatient_labs_reportBlock(r.data));
         } else {
-            PrintHelper.printHtml('检验申请单', outpatient_labs_printBlock(r.data));
+            PrintPreview.openBody('检验申请单', outpatient_labs_printBlock(r.data));
         }
     }).catch(() => {});
 }
@@ -190,8 +190,8 @@ function outpatient_labs_printAll() {
     if (!_labApplyRows.length) { Dom.toast('暂无检验申请', 'info'); return; }
     Promise.all(_labApplyRows.map(x => AjaxLoader.api('lab/detail?id=' + x.id, { silent: true })))
         .then(rs => {
-            const html = rs.map(r => outpatient_labs_printBlock(r.data)).join('<div style="page-break-after: always;"></div>');
-            PrintHelper.printHtml('检验申请单（全部）', html);
+            const html = rs.map(r => outpatient_labs_printBlock(r.data)).join('');
+            PrintPreview.openBody('检验申请单（全部）', html);
         }).catch(() => {});
 }
 

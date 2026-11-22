@@ -217,7 +217,7 @@ function clinic_consult_print(id) {
             <span>会诊医生：${Format.escape(x.replied_by_name || '')} ${Format.escape(x.replied_at || '')}</span>
         </div>
     </div>`;
-    PrintHelper.printHtml('会诊申请单', html);
+    PrintPreview.openBody('会诊申请单', html);
 }
 
 function clinic_consult_reply(id) {

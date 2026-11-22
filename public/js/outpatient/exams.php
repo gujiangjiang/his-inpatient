@@ -144,9 +144,9 @@ function outpatient_exams_printBlock(rep) {
 function outpatient_exams_applyPrint(id, isReport) {
     AjaxLoader.api('exam/detail?id=' + id, { silent: true }).then(r => {
         if (isReport) {
-            PrintHelper.printHtml('检查报告单', outpatient_exams_reportBlock(r.data));
+            PrintPreview.openBody('检查报告单', outpatient_exams_reportBlock(r.data));
         } else {
-            PrintHelper.printHtml('检查申请单', outpatient_exams_printBlock(r.data));
+            PrintPreview.openBody('检查申请单', outpatient_exams_printBlock(r.data));
         }
     }).catch(() => {});
 }
@@ -182,8 +182,8 @@ function outpatient_exams_printAll() {
     if (!_examApplyRows.length) { Dom.toast('暂无检查申请', 'info'); return; }
     Promise.all(_examApplyRows.map(x => AjaxLoader.api('exam/detail?id=' + x.id, { silent: true })))
         .then(rs => {
-            const html = rs.map(r => outpatient_exams_printBlock(r.data)).join('<div style="page-break-after: always;"></div>');
-            PrintHelper.printHtml('检查申请单（全部）', html);
+            const html = rs.map(r => outpatient_exams_printBlock(r.data)).join('');
+            PrintPreview.openBody('检查申请单（全部）', html);
         }).catch(() => {});
 }
 

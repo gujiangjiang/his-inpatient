@@ -166,7 +166,7 @@ function clinic_rx_print(idx) {
             <div class="rx-valid">（本处方当日内有效）</div>
         </div>
     </div>`;
-    PrintHelper.printHtml('住院处方笺', html);
+    PrintPreview.openBody('住院处方笺', html);
 }
 
 /* 毁方: 整方作废 (护士未核对也可毁方), 作废后同步护士站 */

@@ -3,6 +3,13 @@
     'use strict';
     const PP = window.PrintPreview;
 
+    /* 标准单据片段入口：统一构建完整文档后进入同一预览，不允许业务页自行开打印窗口。 */
+    PP.openBody = function (title, bodyHtml, opts) {
+        const options = Object.assign({ canPrint: true }, opts || {});
+        const html = PrintDocument.create(title, bodyHtml, options);
+        return PP.open(Format.escape(title || '打印文档') + ' · 打印预览', html, options);
+    };
+
     PP.combine = function (title, htmlList, opts) {
         const docs = (htmlList || []).filter(function (html) { return html && String(html).trim(); });
         if (!docs.length) { Dom.toast('暂无可预览的打印内容', 'info'); return null; }
