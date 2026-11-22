@@ -20,6 +20,7 @@ $centerName = (string)(ConfigDB::get('pharmacy_center_name', '') ?: '中心药�
 $outpatientName = (string)(ConfigDB::get('pharmacy_outpatient_name', '') ?: '门诊药房');
 foreach ($rows as &$r) {
     $r['pharmacy_name'] = $r['pharmacy_type'] === 'outpatient' ? $outpatientName : $centerName;
+    $r['print_snapshot'] = !empty($r['rx_no']) ? print_snapshot_get('prescription', $r['rx_no']) : null;
 }
 unset($r);
 Response::success($rows);

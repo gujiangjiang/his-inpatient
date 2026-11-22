@@ -127,6 +127,19 @@ try {
         $pdo->prepare("INSERT INTO emr_document_versions (doc_id, doc_json, content_html, action, created_by, created_at) VALUES (?,?,?, 'sign', ?, ?)")
             ->execute([$id, $docJsonStr, $contentHtml, $userId, $now]);
     }
+    print_snapshot_capture('emr_signed', $id, [
+        'id' => (int)$id,
+        'patient_id' => (int)$doc['patient_id'],
+        'admission_no' => (string)$doc['admission_no'],
+        'title' => (string)$doc['title'],
+        'status' => 'signed',
+        'doc_json' => $docJsonStr !== '' ? json_decode($docJsonStr, true) : null,
+        'content_html' => $contentHtml,
+        'doc_meta' => $meta,
+        'signed_at' => $now,
+        'signer_id' => (int)$userId,
+        'signer_name' => (string)$user['name'],
+    ], $doc['patient_id'], $doc['admission_no'], $userId);
 
     $pdo->commit();
     Response::success([

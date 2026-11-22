@@ -22,4 +22,10 @@ if ($box === 'received') {
     $params[] = $user['id'];
 }
 $sql .= " ORDER BY c.id DESC LIMIT 100";
-Response::success(DB::select($sql, $params));
+$rows = DB::select($sql, $params);
+foreach ($rows as &$row) {
+    $row['application_snapshot'] = print_snapshot_get('consult_application', $row['id']);
+    $row['report_snapshot'] = print_snapshot_get('consult_report', $row['id']);
+}
+unset($row);
+Response::success($rows);

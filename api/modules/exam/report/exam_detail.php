@@ -9,4 +9,6 @@ $report = DB::selectOne("SELECT er.*, p.name as patient_name, p.gender, p.birth_
     LEFT JOIN users u ON er.created_by = u.id
     WHERE er.id = ?", [$id]);
 if (!$report) Response::error('检查单不存在', 404);
+$report['application_snapshot'] = print_snapshot_get('exam_application', $id);
+$report['report_snapshot'] = print_snapshot_get('exam_report', $id);
 Response::success($report);

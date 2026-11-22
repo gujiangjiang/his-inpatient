@@ -25,5 +25,7 @@ if (in_array($user['role'], ['nurse', 'doctor'], true)
 
 $items = DB::select("SELECT * FROM lab_report_items WHERE report_id = ? ORDER BY id ASC", [$id]);
 $report['items'] = $items;
+$report['application_snapshot'] = print_snapshot_get('lab_application', $id);
+$report['report_snapshot'] = print_snapshot_get('lab_report', $id);
 
 Response::success($report);

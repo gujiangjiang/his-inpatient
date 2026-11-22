@@ -12,6 +12,13 @@ if (!can_access_patient(Auth::user(), $patientId)) Response::error('权限不足
 
 $pdo = DB::getPDO();
 $now = DateHelper::now();
+$rxParams = [$patientId];
+$rxWhere = "patient_id = ? AND status = 'draft' AND notes = '处方' AND rx_no IS NOT NULL AND rx_no <> ''";
+if ($ids && is_array($ids)) {
+    $rxWhere .= " AND id IN (" . implode(',', array_fill(0, count($ids), '?')) . ")";
+    $rxParams = array_merge($rxParams, $ids);
+}
+$rxRows = DB::select("SELECT DISTINCT rx_no FROM orders WHERE $rxWhere", $rxParams);
 
 $pdo->beginTransaction();
 try {
@@ -23,6 +30,11 @@ try {
         // 提交所有草稿
         $stmt = $pdo->prepare("UPDATE orders SET status = 'pending', updated_at = ? WHERE patient_id = ? AND status = 'draft'");
         $stmt->execute([$now, $patientId]);
+    }
+    foreach ($rxRows as $rxRow) {
+        $rxNo = (string)$rxRow['rx_no'];
+        $snapshot = print_snapshot_rx_payload($rxNo);
+        print_snapshot_capture('prescription', $rxNo, $snapshot, $patientId, '', Auth::user()['id']);
     }
     $pdo->commit();
     /* 推送: 病区护士「新医嘱待核对」通知 (按患者重建; 处理完自动消失) */

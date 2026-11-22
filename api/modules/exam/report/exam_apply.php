@@ -59,6 +59,8 @@ try {
             'updated_at' => $now,
         ]);
         DB::execute("UPDATE exam_reports SET order_ids = ? WHERE id = ?", [json_encode([$orderId]), $reportId]);
+        $snapshot = print_snapshot_exam_payload($reportId);
+        print_snapshot_capture('exam_application', $reportId, $snapshot, $patientId, $patient['admission_no'], $user['id']);
         $reportIds[] = $reportId;
         $orderIds[] = $orderId;
     }

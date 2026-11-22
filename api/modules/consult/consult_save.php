@@ -74,6 +74,8 @@ try {
         'order_id' => $orderId,
         'created_at' => $now,
     ]);
+    $snapshot = print_snapshot_consult_payload($consultId);
+    print_snapshot_capture('consult_application', $consultId, $snapshot, $patientId, $patient['admission_no'], $user['id']);
     $pdo->commit();
 } catch (Exception $e) {
     $pdo->rollBack();

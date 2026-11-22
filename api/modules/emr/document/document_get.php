@@ -20,5 +20,6 @@ if (!can_access_patient(Auth::user(), (int)$doc['patient_id'])) Response::error(
 $doc['doc_meta'] = json_decode($doc['doc_meta'] ?? '{}', true) ?: [];
 $doc['sections'] = json_decode($doc['sections'] ?? '[]', true) ?: [];
 $doc['doc_json'] = !empty($doc['doc_json']) ? (json_decode($doc['doc_json'], true) ?: null) : null;
+$doc['signed_snapshot'] = $doc['status'] === 'signed' ? print_snapshot_get('emr_signed', $id) : null;
 
 Response::success($doc);

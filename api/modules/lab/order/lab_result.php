@@ -33,6 +33,10 @@ try {
             $stmt->execute([$reportId, $item['item_name'], $item['result'] ?? null, $item['unit'] ?? '', $item['reference_range'] ?? '', $item['flag'] ?? null]);
         }
     }
+    if ($status === 'reported') {
+        $snapshot = print_snapshot_lab_payload($reportId);
+        print_snapshot_capture('lab_report', $reportId, $snapshot, $report['patient_id'], $report['admission_no'], Auth::user()['id']);
+    }
 
     $pdo->commit();
     Response::success();

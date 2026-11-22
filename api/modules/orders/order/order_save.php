@@ -107,6 +107,10 @@ try {
         $ids[] = $id;
         if ($i === 0) $mainId = $id;
     }
+    if ($submit && $rxNo !== '' && $notes === '处方') {
+        $snapshot = print_snapshot_rx_payload($rxNo);
+        print_snapshot_capture('prescription', $rxNo, $snapshot, $patientId, $patient['admission_no'], $userId);
+    }
 
     $pdo->commit();
     log_write('operation', 'order', '开医嘱：' . count($items) . ' 条', $patient['name'], 'info',

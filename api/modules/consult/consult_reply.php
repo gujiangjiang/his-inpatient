@@ -26,6 +26,8 @@ try {
     if ($consult['order_id']) {
         DB::execute("UPDATE orders SET consult_status = 'replied', updated_at = ? WHERE id = ?", [$now, $consult['order_id']]);
     }
+    $snapshot = print_snapshot_consult_payload($id);
+    print_snapshot_capture('consult_report', $id, $snapshot, $consult['patient_id'], $consult['admission_no'], $user['id']);
     $pdo->commit();
 } catch (Exception $e) {
     $pdo->rollBack();
