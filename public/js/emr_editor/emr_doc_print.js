@@ -82,18 +82,15 @@
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(doc.title || '病历') + '</title>'
       + '<style>' + style + '</style></head><body>'
       + pages.map((b, i) => pageHTML(d, doc.header || {}, b, i, pages.length, info)).join('')
-      + (o.noPrint ? '' : '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>')
       + '</body></html>';
     return html;
   };
 
-  /** 打开打印窗口并自动打印（opts: 页码范围/内容选择透传 buildHTML） */
+  /** 电子病历进入统一预览（opts: 页码范围/内容选择透传 buildHTML） */
   P.print = (doc, patientInfo, opts) => {
-    const win = window.open('', '_blank', 'width=994,height=1323'); // A4 210×297mm ≈ 794×1123px + 窗口装饰/边距
-    if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
-    win.document.write(P.buildHTML(doc, patientInfo, opts));
-    win.document.close();
-    return win;
+    const title = (doc && doc.title) || '电子病历';
+    return PrintPreview.open(Format.escape(title) + ' · 打印预览',
+      P.buildHTML(doc, patientInfo, opts), { canPrint: true });
   };
 
   /**
@@ -168,18 +165,14 @@
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc('病历批量打印') + '</title>'
       + '<style>' + style + '</style></head><body>'
       + pages.map(p => p).join('')
-      + '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>'
       + '</body></html>';
     return html;
   };
 
-  /** 批量打印开窗 */
+  /** 批量病历进入统一预览 */
   P.printBatch = (items, patientInfo) => {
-    const win = window.open('', '_blank', 'width=994,height=1323'); // A4 210×297mm ≈ 794×1123px + 窗口装饰/边距
-    if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
-    win.document.write(P.buildBatch(items, patientInfo));
-    win.document.close();
-    return win;
+    return PrintPreview.open('病历批量打印 · 打印预览',
+      P.buildBatch(items, patientInfo), { canPrint: true });
   };
 
   /**
@@ -348,17 +341,13 @@
     const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc('病历批量打印') + '</title>'
       + '<style>' + style + '</style></head><body>'
       + pageEls.map(pg => pg.outerHTML).join('')
-      + '<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 120); };<\/script>'
       + '</body></html>';
     return html;
   };
 
-  /** 合并批量打印开窗（一个窗口一个打印文档） */
+  /** 合并批量病历进入统一预览（一个预览、一份打印文档） */
   P.printCombined = (items, patientInfo) => {
-    const win = window.open('', '_blank', 'width=994,height=1323'); // A4 210×297mm ≈ 794×1123px + 窗口装饰/边距
-    if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return null; }
-    win.document.write(P.buildCombined(items, patientInfo));
-    win.document.close();
-    return win;
+    return PrintPreview.open('病历批量打印 · 打印预览',
+      P.buildCombined(items, patientInfo), { canPrint: true });
   };
 })();

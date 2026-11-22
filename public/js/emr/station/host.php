@@ -58,8 +58,9 @@ function emr_printDoc() {
             const toPage = toVal ? (parseInt(toVal, 10) || 0) : 0;
             const opts = { contentMode: mode, fromPage: fromPage, toPage: toPage };
             if (doc.status === 'signed' && doc.content_html) {
-                // 签名固化快照：重新分页提取范围（快照 HTML 已含页头，直接按页切片）
-                PrintHelper.printDocument(doc.content_html);
+                // 签名固化快照直接复用原文档，并进入与草稿一致的统一预览。
+                PrintPreview.open(Format.escape(doc.title || '电子病历') + ' · 打印预览',
+                    doc.content_html, { canPrint: true });
                 return;
             }
             if (_emrEditor) _emrEditor.print(opts);

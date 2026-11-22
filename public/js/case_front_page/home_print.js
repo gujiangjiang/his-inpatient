@@ -1,25 +1,20 @@
 // public/js/case_front_page/home_print.js - 病案首页打印: 版式 CSS / 预览 / 打印 (预览与打印同一份文档)
 Object.assign(CaseHome, {
-    /* 打印文档 (预览 iframe 与打印窗口使用同一份, 保证一模一样)
-       mode: 'print' 自动打印 | 'preview'/'' 仅渲染 */
-    documentHtml(mode) {
-        const script = mode === 'print'
-            ? '<script>window.addEventListener("load", function () { window.print(); });<\/script>'
-            : '';
+    /* 只生成纯打印文档；预览与打印动作均由 PrintPreview 统一处理。 */
+    documentHtml() {
         return `<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>住院病案首页</title>
-<style>${this.printCss()}</style></head><body>${this.buildPage1()}${this.buildPage2()}${script}</body></html>`;
+<style>${this.printCss()}</style></head><body>${this.buildPage1()}${this.buildPage2()}</body></html>`;
     },
 
     print() {
-        this.collect();
-        PrintHelper.printDocument(this.documentHtml('print'));
+        this.preview();
     },
 
     /* 打印预览: iframe 以 100% 原尺寸渲染 (与打印一致), 再用 transform 整体等比缩小显示
        (不用 zoom 缩放排版, 避免边框按设备像素取整导致线条相对变粗) */
     preview() {
         this.collect();
-        PrintPreview.open('住院病案首页 · 打印预览', this.documentHtml('preview'), { canPrint: true });
+        PrintPreview.open('住院病案首页 · 打印预览', this.documentHtml(), { canPrint: true });
     },
 
     /* 行内对齐表格 (底层全表格: 无边框, 定宽列, 内容长短不影响其它列) */
@@ -157,10 +152,6 @@ table.cf-op th { font-size: 8.6pt; line-height: 1.25; }
 .cf-fee-line .cf-indent { display: inline-block; width: 7mm; }
 .cf-foot-note { font-size: 7.8pt; line-height: 1.5; margin-top: .8mm; padding: 0 1mm; }
 .cf-tc { text-align: center; }
-/* ===== 预览 ===== */
-.modal-cf-preview { max-width: 960px; width: 96%; }
-.cf-preview-scale { position: relative; width: 100%; overflow: hidden; }
-.cf-preview-frame { position: absolute; top: 0; left: 0; width: 794px; height: 2280px; border: 0; background: #e9edf2; }
 `;
     },
 });
