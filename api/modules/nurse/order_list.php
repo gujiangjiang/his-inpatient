@@ -9,7 +9,10 @@ $patientId = (int)Validator::get('patient_id', 0);
 // 打印接口在该完整留痕基础上再排除作废，避免列表与纸质医嘱单语义混淆。
 $sql = "SELECT o.*, u.name AS doctor_name, su.name AS stopped_name,
         p.name AS patient_name, p.bed_no AS bed_no, d.name AS department_name,
-        (SELECT MAX(dr.id) FROM dispensing_records dr WHERE dr.order_id = o.id AND dr.status IN ('dispensed', 'delivered')) AS dispensed_id
+        (SELECT MAX(dr.id) FROM dispensing_records dr
+         WHERE dr.status IN ('dispensed', 'delivered')
+           AND (dr.order_id = o.id OR (o.parent_id IS NULL AND dr.order_id IN
+                (SELECT co.id FROM orders co WHERE co.parent_id = o.id)))) AS dispensed_id
         FROM orders o
         LEFT JOIN users u ON o.created_by = u.id
         LEFT JOIN users su ON o.stopped_by = su.id
