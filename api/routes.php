@@ -108,7 +108,7 @@ function getRoutes() {
         'nurse/nursing-notes' => ['nurse/nursing_notes.php', ['admin', 'nurse', 'doctor']],
         'nurse/nursing-docs' => ['nurse/nursing_docs.php', ['admin', 'nurse', 'doctor']],
         'nurse/transfer-bed' => ['nurse/transfer_bed.php', ['admin', 'nurse']],
-        'nurse/transfer-ward' => ['nurse/transfer_ward.php', ['admin', 'nurse']],
+        'nurse/leave-ward' => ['nurse/leave_ward.php', ['admin', 'nurse']],
         'nurse/admit' => ['nurse/admit.php', ['admin', 'nurse']],
         'nurse/verify-batch' => ['nurse/verify_batch.php', ['admin', 'nurse']],
         'nurse/order-sheet' => ['nurse/order_sheet.php', ['admin', 'nurse']],

@@ -24,10 +24,10 @@ if ($user['role'] === 'nurse' && (int)$target['ward_id'] !== (int)$user['ward_id
 $pdo->beginTransaction();
 try {
     $now = DateHelper::now();
-    // 释放原床位 (若患者当前有床位)
+    // 释放原床位 (仅释放自己占用的床, 防并发误释放他人)
     if (!empty($patient['bed_no']) && !empty($patient['ward_id'])) {
-        DB::execute("UPDATE beds SET status = 'free', patient_id = NULL WHERE ward_id = ? AND bed_no = ?",
-            [$patient['ward_id'], $patient['bed_no']]);
+        DB::execute("UPDATE beds SET status = 'free', patient_id = NULL WHERE ward_id = ? AND bed_no = ? AND patient_id = ?",
+            [$patient['ward_id'], $patient['bed_no'], $patientId]);
     }
     // 占用目标床位 (原子条件, 防并发)
     $aff = DB::execute("UPDATE beds SET status = 'occupied', patient_id = ? WHERE id = ? AND status = 'free'",
