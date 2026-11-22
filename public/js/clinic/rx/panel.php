@@ -198,6 +198,7 @@ var RxPanel = {
                 order_period: 'temp',
                 drug_id: i.source === 'center' ? (i.id || null) : null,  // 中心药房关联本地药品；门诊药房不关联
                 pharmacy_type: i.source === 'outpatient' || this.pharmacyType === 'outpatient' ? 'outpatient' : 'center',
+                price: Number(i.price || 0), spec: i.spec || '', vendor_short: i.vendor_short || '', unit: i.unit || '',
                 qty: i.stock != null ? Number(i.stock) : 0,   // 门诊实时库存快照（供 UI 展示，摆药时以实时接口为准）
             };
         });

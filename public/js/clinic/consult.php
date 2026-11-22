@@ -189,12 +189,15 @@ function clinic_consult_detail(id) {
 }
 
 function clinic_consult_print(id) {
-    const x = _consultRows.find(r2 => r2.id == id);
-    if (!x) return;
+    const live = _consultRows.find(r2 => r2.id == id);
+    if (!live) return;
+    const snapshot = live.status === 'replied' && PrintSnapshot.exists(live.report_snapshot)
+        ? live.report_snapshot : live.application_snapshot;
+    const x = PrintSnapshot.data(snapshot, live);
     const html = `<div class="sheet">
         <div class="sheet-head">
             <div class="sheet-brand">
-                ${PrintHelper.brandHeaderHtml('')}
+                ${PrintHelper.brandHeaderHtml('', x)}
                 <div class="sheet-docname">会诊申请单</div>
             </div>
             <div class="sheet-barcode">${PrintBarcode.svg('CONSULT' + x.id)}</div>
@@ -213,8 +216,8 @@ function clinic_consult_print(id) {
             <tr><th>会诊意见</th><td style="white-space:pre-wrap">${x.status === 'replied' ? Format.escape(x.reply_text || '') : '（待回复）'}</td></tr>
         </tbody></table>
         <div class="sheet-foot">
-            <span>申请医生：${Format.escape(x.created_by_name || '')} ${Format.escape(x.created_at || '')}</span>
-            <span>会诊医生：${Format.escape(x.replied_by_name || '')} ${Format.escape(x.replied_at || '')}</span>
+            <span>申请医生：${Format.escape(x.created_by_name || '')} ${Format.escape(x.created_time_text || x.created_at || '')}</span>
+            <span>会诊医生：${Format.escape(x.replied_by_name || '')} ${Format.escape(x.replied_time_text || x.replied_at || '')}</span>
         </div>
     </div>`;
     PrintPreview.openBody('会诊申请单', html);

@@ -5,6 +5,7 @@ $root = dirname(__DIR__, 2);
 $jsRoot = $root . '/public/js';
 $runtime = realpath($jsRoot . '/core/print_preview.js');
 $required = [
+    $jsRoot . '/core/print_snapshot.js',
     $jsRoot . '/core/print_document.js',
     $jsRoot . '/core/print_barcode.js',
     $jsRoot . '/core/print_preview.js',
@@ -50,6 +51,7 @@ if ($runtime && is_file($runtime)) {
 
 $assets = file_get_contents($root . '/public/assets.php');
 $order = [
+    '/js/core/print_snapshot.js',
     '/js/core/print_document.js',
     '/js/core/print_barcode.js',
     '/js/core/print_helper.js',

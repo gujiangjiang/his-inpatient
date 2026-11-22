@@ -12,6 +12,8 @@ function print_snapshot_lab_payload($id) {
          WHERE lr.id = ?", [(int)$id]
     );
     if (!$row) throw new RuntimeException('检验单不存在');
+    $row['created_time_text'] = TimeHelper::local($row['created_at'] ?? '');
+    $row['reported_time_text'] = TimeHelper::local($row['reported_at'] ?? '');
     $row['items'] = DB::select("SELECT item_name, result, unit, reference_range, flag FROM lab_report_items WHERE report_id = ? ORDER BY id", [(int)$id]);
     return print_snapshot_with_context($row, $row['patient_id'], TimeHelper::nowLocal());
 }
@@ -27,12 +29,16 @@ function print_snapshot_exam_payload($id) {
          WHERE er.id = ?", [(int)$id]
     );
     if (!$row) throw new RuntimeException('检查单不存在');
+    $row['created_time_text'] = TimeHelper::local($row['created_at'] ?? '');
+    $row['reported_time_text'] = TimeHelper::local($row['reported_at'] ?? '');
     return print_snapshot_with_context($row, $row['patient_id'], TimeHelper::nowLocal());
 }
 
 function print_snapshot_consult_payload($id) {
     $row = DB::selectOne("SELECT * FROM consultations WHERE id = ?", [(int)$id]);
     if (!$row) throw new RuntimeException('会诊申请不存在');
+    $row['created_time_text'] = TimeHelper::local($row['created_at'] ?? '');
+    $row['replied_time_text'] = TimeHelper::local($row['replied_at'] ?? '');
     return print_snapshot_with_context($row, $row['patient_id'], TimeHelper::nowLocal());
 }
 
@@ -66,6 +72,7 @@ function print_snapshot_rx_payload($rxNo) {
         'patient_id' => (int)$first['patient_id'],
         'admission_no' => (string)$first['admission_no'],
         'created_at' => (string)$first['created_at'],
+        'created_time_text' => TimeHelper::local($first['created_at'] ?? ''),
         'doctor_name' => (string)($first['creator_name'] ?? ''),
         'pharmacy_type' => $pharmacyType,
         'pharmacy_name' => $pharmacyName,

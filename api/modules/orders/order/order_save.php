@@ -109,6 +109,18 @@ try {
     }
     if ($submit && $rxNo !== '' && $notes === '处方') {
         $snapshot = print_snapshot_rx_payload($rxNo);
+        $snapshot['total_amount'] = 0.0;
+        foreach ($snapshot['items'] as $index => &$snapshotItem) {
+            $source = $items[$index] ?? [];
+            if (array_key_exists('price', $source)) $snapshotItem['unit_price'] = (float)$source['price'];
+            if (array_key_exists('spec', $source)) $snapshotItem['spec'] = (string)$source['spec'];
+            if (array_key_exists('vendor_short', $source)) $snapshotItem['vendor_short'] = (string)$source['vendor_short'];
+            if (array_key_exists('unit', $source)) $snapshotItem['unit'] = (string)$source['unit'];
+            $snapshotItem['quantity'] = max(1, (float)($snapshotItem['quantity'] ?? 1));
+            $snapshotItem['line_amount'] = (float)($snapshotItem['unit_price'] ?? 0) * $snapshotItem['quantity'];
+            $snapshot['total_amount'] += $snapshotItem['line_amount'];
+        }
+        unset($snapshotItem);
         print_snapshot_capture('prescription', $rxNo, $snapshot, $patientId, $patient['admission_no'], $userId);
     }
 

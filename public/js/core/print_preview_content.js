@@ -52,7 +52,8 @@
     PP.patientInfo = function (patient, docName) {
         const data = patient || {};
         let age = data.age;
-        if (data.birth_date) age = Format.ageClinical(data.birth_date);
+        if (data.age_snapshot) age = data.age_snapshot;
+        else if (data.birth_date) age = Format.ageClinical(data.birth_date);
         else if (age !== undefined && age !== null && age !== '' && /^\d+$/.test(String(age))) age += ' 岁';
         return Object.assign({}, data, {
             name: data.patient_name || data.name || '',

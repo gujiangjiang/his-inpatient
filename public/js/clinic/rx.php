@@ -64,7 +64,7 @@ function clinic_rx_load() {
         const map = {};
         (or.data || []).forEach(o => {
             const key = o.rx_no || ('L' + (o.created_at || '') + '|' + (o.start_date || ''));
-            if (!map[key]) map[key] = { rx_no: o.rx_no || '', created_at: o.created_at || o.start_date || '', pharmacy_type: o.pharmacy_type || 'center', pharmacy_name: o.pharmacy_name || '中心药房', items: [] };
+            if (!map[key]) map[key] = { rx_no: o.rx_no || '', created_at: o.created_at || o.start_date || '', pharmacy_type: o.pharmacy_type || 'center', pharmacy_name: o.pharmacy_name || '中心药房', print_snapshot: o.print_snapshot || null, items: [] };
             map[key].items.push(o);
         });
         _rxGroups = Object.keys(map).map(k => map[k]);
@@ -101,11 +101,15 @@ function clinic_rx_load() {
 
 function clinic_rx_print(idx) {
     const g = _rxGroups[idx];
-    const p = PatientContext.current();
-    if (!g || !p) return;
+    const currentPatient = PatientContext.current();
+    if (!g || !currentPatient) return;
+    const frozen = PrintSnapshot.exists(g.print_snapshot) ? PrintSnapshot.data(g.print_snapshot, null) : null;
+    const p = frozen ? (frozen.patient || {}) : currentPatient;
+    const items = frozen ? (frozen.items || []) : g.items;
     let total = 0;
-    g.items.forEach((it) => { total += Number(_rxPriceMap[it.content] || 0); });
-    const rxNo = g.rx_no || '处方草稿';
+    if (frozen) total = Number(frozen.total_amount || 0);
+    else items.forEach((it) => { total += Number(_rxPriceMap[it.content] || 0); });
+    const rxNo = (frozen && frozen.rx_no) || g.rx_no || '处方草稿';
     // 门诊标准处方样式：℞ 标记 + 无边框药品表（名称/剂量/途径/频次/数量）
     const nameTxt = (it) => {
         let s = Format.escape(it.content || '');
@@ -114,7 +118,7 @@ function clinic_rx_print(idx) {
         return s;
     };
     const unitOf = (it) => it.unit || '盒';
-    const rxRows = g.items.map((it) => {
+    const rxRows = items.map((it) => {
         const dose = [it.dosage || '', it.dosage_unit || ''].join('');
         return `<tr>
             <td class="rx-name">${nameTxt(it)}</td>
@@ -124,14 +128,14 @@ function clinic_rx_print(idx) {
             <td class="rx-qty">×${it.quantity || 1} ${Format.escape(unitOf(it))}</td>
         </tr>`;
     }).join('');
-    const doctorName = (g.items[0] || {}).creator_name || '';
+    const doctorName = (frozen && frozen.doctor_name) || (items[0] || {}).creator_name || '';
     // 参照门诊标准处方笺：顶部医院名 + 右上条码 + 文书名，随后患者信息（姓名/性别/出生日期/年龄、
     // 患者ID/住院号/床号/科室 + 临床诊断），℞ 标记 + 药品表，底部取药提示/金额/签名/调配/时间。
-    const age = p.birth_date ? Format.ageClinical(p.birth_date) : (p.age || '');
+    const age = p.age_snapshot || p.age || (p.birth_date ? Format.ageClinical(p.birth_date) : '');
     const diag = p.admission_diagnosis || '';
     const html = `<div class="sheet a5">
         <div class="rx-head">
-            <div class="rx-brand">${PrintHelper.brandHeaderHtml('')}</div>
+            <div class="rx-brand">${PrintHelper.brandHeaderHtml('', frozen || p)}</div>
             <div class="rx-barcode">${PrintBarcode.svg(rxNo)}</div>
         </div>
         <div class="rx-title">住院处方笺</div>
@@ -157,12 +161,12 @@ function clinic_rx_print(idx) {
         </table>
         <div class="rx-end">—————— 处方完毕 ——————</div>
         <div class="rx-foot">
-            <div class="rx-take">请凭本处方单至${Format.escape(g.pharmacy_name || '药房')}取药</div>
+            <div class="rx-take">请凭本处方单至${Format.escape((frozen && frozen.pharmacy_name) || g.pharmacy_name || '药房')}取药</div>
             <div class="rx-amount-row"><span>金额：¥${total.toFixed(2)}</span><span class="rx-doctor">医师签名：${Format.escape(doctorName)}</span></div>
             <div class="rx-line"></div>
             <div class="rx-disp-row"><span>调配：</span><span>复核、发药：</span></div>
             <div class="rx-line"></div>
-            <div class="rx-time-row"><span>开单时间：${Format.escape(g.created_at || '')}</span><span>打印时间：${Format.datetime(new Date().toISOString())}</span></div>
+            <div class="rx-time-row"><span>开单时间：${Format.escape((frozen && frozen.created_time_text) || (frozen && frozen.created_at) || g.created_at || '')}</span><span>打印时间：${Format.datetime(new Date().toISOString())}</span></div>
             <div class="rx-valid">（本处方当日内有效）</div>
         </div>
     </div>`;

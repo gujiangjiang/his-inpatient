@@ -118,7 +118,7 @@ function outpatient_exams_printBlock(rep) {
     return `<div class="sheet">
         <div class="sheet-head">
             <div class="sheet-brand">
-                ${PrintHelper.brandHeaderHtml('')}
+                ${PrintHelper.brandHeaderHtml('', rep)}
                 <div class="sheet-docname">检查申请单</div>
             </div>
             <div class="sheet-barcode">${PrintBarcode.svg(rep.report_no || '')}</div>
@@ -126,12 +126,12 @@ function outpatient_exams_printBlock(rep) {
         <div class="sheet-info-grid">
             <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
             <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
-            <span class="sic"><b>年龄：</b>${Format.ageClinical(rep.birth_date)}</span>
+            <span class="sic"><b>年龄：</b>${Format.escape(rep.age_snapshot || rep.age || Format.ageClinical(rep.birth_date))}</span>
             <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
             <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
             <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>
             <span class="sic"><b>床号：</b>${Format.escape(rep.bed_no || '-')}</span>
-            <span class="sic"><b>开单时间：</b>${Format.escape(rep.created_at || '')}</span>
+            <span class="sic"><b>开单时间：</b>${Format.escape(rep.created_time_text || rep.created_at || '')}</span>
         </div>
         <table class="sheet-table"><thead><tr><th>检查项目</th><th>检查部位</th><th>所见</th><th>结论</th></tr></thead>
         <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
@@ -143,10 +143,12 @@ function outpatient_exams_printBlock(rep) {
 
 function outpatient_exams_applyPrint(id, isReport) {
     AjaxLoader.api('exam/detail?id=' + id, { silent: true }).then(r => {
+        const live = r.data || {};
+        const rep = PrintSnapshot.data(isReport ? live.report_snapshot : live.application_snapshot, live);
         if (isReport) {
-            PrintPreview.openBody('检查报告单', outpatient_exams_reportBlock(r.data));
+            PrintPreview.openBody('检查报告单', outpatient_exams_reportBlock(rep));
         } else {
-            PrintPreview.openBody('检查申请单', outpatient_exams_printBlock(r.data));
+            PrintPreview.openBody('检查申请单', outpatient_exams_printBlock(rep));
         }
     }).catch(() => {});
 }
@@ -156,7 +158,7 @@ function outpatient_exams_reportBlock(rep) {
     return `<div class="sheet">
         <div class="sheet-head">
             <div class="sheet-brand">
-                ${PrintHelper.brandHeaderHtml('')}
+                ${PrintHelper.brandHeaderHtml('', rep)}
                 <div class="sheet-docname">检查报告单</div>
             </div>
             <div class="sheet-barcode">${PrintBarcode.svg(rep.report_no || '')}</div>
@@ -164,7 +166,7 @@ function outpatient_exams_reportBlock(rep) {
         <div class="sheet-info-grid">
             <span class="sic"><b>姓名：</b>${Format.escape(rep.patient_name || '')}</span>
             <span class="sic"><b>性别：</b>${Format.gender(rep.gender)}</span>
-            <span class="sic"><b>年龄：</b>${Format.ageClinical(rep.birth_date)}</span>
+            <span class="sic"><b>年龄：</b>${Format.escape(rep.age_snapshot || rep.age || Format.ageClinical(rep.birth_date))}</span>
             <span class="sic"><b>出生日期：</b>${Format.escape(rep.birth_date || '')}</span>
             <span class="sic"><b>患者ID：</b>${Format.escape(rep.patient_no || '-')}</span>
             <span class="sic"><b>住院号：</b>${Format.escape(rep.admission_no || '-')}</span>
@@ -174,7 +176,7 @@ function outpatient_exams_reportBlock(rep) {
         <table class="sheet-table"><thead><tr><th style="width:140px">检查项目</th><th style="width:120px">检查部位</th><th>影像所见</th><th style="width:180px">影像诊断</th></tr></thead>
         <tbody><tr><td>${Format.escape(rep.exam_type || '')}</td><td>${Format.escape(rep.body_part || '')}</td><td>${Format.escape(rep.findings || '')}</td><td>${Format.escape(rep.conclusion || '')}</td></tr></tbody></table>
         <div class="sheet-note">仅供医师诊断参考，不做其他用途</div>
-        <div class="sheet-foot"><span>报告医生：${Format.escape(rep.creator_name || '')}</span><span>报告时间：${Format.escape(rep.updated_at || rep.created_at || '')}</span></div>
+        <div class="sheet-foot"><span>报告医生：${Format.escape(rep.reported_name || rep.creator_name || '')}</span><span>报告时间：${Format.escape(rep.reported_time_text || rep.reported_at || rep.updated_at || rep.created_at || '')}</span></div>
     </div>`;
 }
 
@@ -182,7 +184,7 @@ function outpatient_exams_printAll() {
     if (!_examApplyRows.length) { Dom.toast('暂无检查申请', 'info'); return; }
     Promise.all(_examApplyRows.map(x => AjaxLoader.api('exam/detail?id=' + x.id, { silent: true })))
         .then(rs => {
-            const html = rs.map(r => outpatient_exams_printBlock(r.data)).join('');
+            const html = rs.map(r => outpatient_exams_printBlock(PrintSnapshot.data(r.data.application_snapshot, r.data))).join('');
             PrintPreview.openBody('检查申请单（全部）', html);
         }).catch(() => {});
 }
