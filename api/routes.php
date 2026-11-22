@@ -61,7 +61,7 @@ function getRoutes() {
         'patients/get' => ['patients/patient/patient_get.php', ['admin', 'doctor', 'nurse']],
         'patients/save' => ['patients/patient/patient_save.php', ['admin', 'doctor']],
         'patients/discharge' => ['patients/patient/patient_discharge.php', ['admin', 'doctor']],
-        'patients/beds' => ['patients/bed/bed_list.php', ['admin', 'doctor']],
+        'patients/beds' => ['patients/bed/bed_list.php', ['admin', 'doctor', 'nurse']],
 
         // 病历
         'emr/save' => ['emr/station/save.php', ['admin', 'doctor']],
@@ -108,6 +108,7 @@ function getRoutes() {
         'nurse/nursing-notes' => ['nurse/nursing_notes.php', ['admin', 'nurse', 'doctor']],
         'nurse/nursing-docs' => ['nurse/nursing_docs.php', ['admin', 'nurse', 'doctor']],
         'nurse/transfer-bed' => ['nurse/transfer_bed.php', ['admin', 'nurse']],
+        'nurse/transfer-ward' => ['nurse/transfer_ward.php', ['admin', 'nurse']],
         'nurse/admit' => ['nurse/admit.php', ['admin', 'nurse']],
         'nurse/verify-batch' => ['nurse/verify_batch.php', ['admin', 'nurse']],
         'nurse/order-sheet' => ['nurse/order_sheet.php', ['admin', 'nurse']],

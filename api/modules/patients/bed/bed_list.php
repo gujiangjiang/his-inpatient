@@ -2,8 +2,14 @@
 // api/modules/patients/bed_list.php - 床位列表 (按病区; summary=1 返回病区占用汇总)
 Auth::requireRole(['admin', 'doctor', 'nurse']);
 $pdo = DB::getPDO();
+$user = Auth::user();
 
-$wardId = Validator::get('ward_id');
+// 护士仅可查本人病区床位 (防越权)
+if (($user['role'] ?? '') === 'nurse') {
+    $wardId = (int)($user['ward_id'] ?? 0);
+} else {
+    $wardId = Validator::get('ward_id');
+}
 
 if (Validator::get('summary')) {
     $rows = DB::select(

@@ -19,7 +19,7 @@ if (!$patient) Response::error('患者不存在');
 // 核对护士 = orders.verified_by; 执行护士 = nursing_records.executed_by (最近一次)
 $rows = DB::select(
     "SELECT o.*, u.name AS doctor_name,
-            vu.name AS verified_name, vu.verified_at AS verified_at_raw
+            vu.name AS verified_name
      FROM orders o
      LEFT JOIN users u ON o.created_by = u.id
      LEFT JOIN users vu ON o.verified_by = vu.id

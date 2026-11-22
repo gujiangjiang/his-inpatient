@@ -1,5 +1,5 @@
 <?php
-// api/modules/nurse/transfer_bed.php - 护士转床 (床位一览表内操作)
+// api/modules/nurse/transfer_bed.php - 护士迁床 (床位一览表内操作, 同病区换床 + 自动生成迁床医嘱)
 // 护士仅可转本病区患者到病区内床位; 目标床位必须空闲
 Auth::requireRole(['admin', 'nurse']);
 $user = Auth::user();
@@ -39,15 +39,25 @@ try {
     // 更新患者床位
     DB::execute("UPDATE patients SET ward_id = ?, bed_no = ? WHERE id = ?",
         [$target['ward_id'], $target['bed_no'], $patientId]);
-    // 转科记录流水 (护理记录单: 转科)
+    // 迁床护理记录流水 (护理记录单: 转床)
     $wardName = DB::selectOne("SELECT name FROM wards WHERE id = ?", [$target['ward_id']])['name'] ?? '';
     DB::execute("INSERT INTO nursing_notes (patient_id, admission_no, record_time, category, content, recorded_by, created_at)
                  VALUES (?,?,?, 'transfer', ?, ?, ?)",
         [$patientId, (string)($patient['admission_no'] ?? ''), $now,
-         '护士转床：' . ($patient['bed_no'] ? $patient['bed_no'] . '床 → ' : '') . $target['bed_no'] . '床（' . $wardName . '）',
+         '护士迁床：' . ($patient['bed_no'] ? $patient['bed_no'] . '床 → ' : '') . $target['bed_no'] . '床（' . $wardName . '）',
          $user['id'], $now]);
+
+    // 自动生成临时「迁床」医嘱
+    $orderNo = doc_no('O');
+    $stmt = $pdo->prepare("INSERT INTO orders (patient_id, admission_no, parent_id, is_group_main, order_type, order_period,
+                order_no, content, category, status, billing_flags, group_seq, sort_no, start_date, end_date, notes,
+                created_by, created_at, updated_at)
+            VALUES (?,?,NULL,0,'general','temp',?,?,'general','pending','',0,0,?,'', '迁床', ?,?,?)");
+    $stmt->execute([$patientId, (string)($patient['admission_no'] ?? ''), $orderNo,
+        '迁床：' . ($patient['bed_no'] ? $patient['bed_no'] . '床 → ' : '') . $target['bed_no'] . '床',
+        $now, $user['id'], $now, $now]);
     $pdo->commit();
-    Response::success([], '已转床至 ' . $target['bed_no'] . ' 床');
+    Response::success([], '已迁床至 ' . $target['bed_no'] . ' 床');
 } catch (Exception $e) {
     if ($pdo->inTransaction()) $pdo->rollback();
     Response::error('转床失败：' . $e->getMessage());
