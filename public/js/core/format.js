@@ -31,6 +31,27 @@ const Format = {
         return Math.max(0, d) + '天';
     },
 
+    /* 病案首页年龄口径：满1周岁只显示整岁；不足1周岁显示月；新生儿≤28天显示天。 */
+    ageClinical(birth, at) {
+        if (!birth) return '';
+        const parseDate = value => {
+            const m = String(value || '').match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+            if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+            const date = new Date(value);
+            return isNaN(date.getTime()) ? null : date;
+        };
+        const b = parseDate(birth);
+        const n = at ? parseDate(at) : new Date();
+        if (!b || !n) return '';
+        const start = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+        const end = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+        const days = Math.floor((end.getTime() - start.getTime()) / 86400000);
+        if (days < 0) return '';
+        if (days >= 365) return Math.max(1, Math.floor(days / 365.25)) + '岁';
+        if (days > 28) return Math.max(1, Math.floor(days / 30.44)) + '月';
+        return days + '天';
+    },
+
     role(role) {
         const map = {
             admin: '管理员',
