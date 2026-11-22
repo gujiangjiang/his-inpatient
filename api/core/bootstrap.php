@@ -21,6 +21,8 @@ require_once $CORE . '/setup_guard.php';
 require_once $CORE . '/helpers/time_helper.php';
 require_once $CORE . '/helpers/date_helper.php';
 require_once $CORE . '/helpers/age_helper.php';
+require_once $CORE . '/helpers/print_snapshot_helper.php';
+require_once $CORE . '/helpers/print_snapshot_builders.php';
 require_once $CORE . '/helpers/string_helper.php';
 require_once $CORE . '/helpers/id_generator_helper.php';
 
