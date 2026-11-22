@@ -16,7 +16,7 @@ var NurseBedPanel = {
 
     open(patient) {
         this.patient = patient;
-        this.activeTab = 'orders';
+        this.activeTab = 'info';
         const p = patient;
         const level = String(p.nursing_level || '3');
         const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[level] || 'Ⅲ';
@@ -32,7 +32,8 @@ var NurseBedPanel = {
                 <div class="kv-item"><b>诊断</b><span>${Format.escape(p.admission_diagnosis || '-')}</span></div>
             </div>
             <div class="nurse-op-tabs" id="nbp-tabs">
-                <button type="button" class="nurse-op-tab active" data-tab="orders" onclick="NurseBedPanel.switch('orders')">医嘱</button>
+                <button type="button" class="nurse-op-tab active" data-tab="info" onclick="NurseBedPanel.switch('info')">患者信息</button>
+                <button type="button" class="nurse-op-tab" data-tab="orders" onclick="NurseBedPanel.switch('orders')">医嘱</button>
                 <button type="button" class="nurse-op-tab" data-tab="records" onclick="NurseBedPanel.switch('records')">病历</button>
                 <button type="button" class="nurse-op-tab" data-tab="lab" onclick="NurseBedPanel.switch('lab')">检验检查</button>
                 <button type="button" class="nurse-op-tab" data-tab="medicine" onclick="NurseBedPanel.switch('medicine')">摆药</button>
@@ -47,7 +48,7 @@ var NurseBedPanel = {
         ]);
         overlay.querySelector('.modal').classList.add('modal-lg');
         this._overlay = overlay;
-        this.loadTab('orders');
+        this.loadTab('info');
     },
 
     switch(tab) {
@@ -60,7 +61,8 @@ var NurseBedPanel = {
     loadTab(tab) {
         const box = document.getElementById('nbp-body');
         if (!box) return;
-        if (tab === 'orders') this.loadOrders(box);
+        if (tab === 'info') this.loadInfo(box);
+        else if (tab === 'orders') this.loadOrders(box);
         else if (tab === 'records') this.loadRecords(box);
         else if (tab === 'lab') this.loadLabExam(box);
         else if (tab === 'medicine') this.loadMedicine(box);
@@ -76,6 +78,83 @@ var NurseBedPanel = {
 
     refresh() {
         this.loadTab(this.activeTab);
+    },
+
+    /* ================= 患者信息 (基本信息 + 身高体重补填 + 腕带预留) ================= */
+    loadInfo(box) {
+        const pid = this.patient.id;
+        const p = this.patient;
+        box.innerHTML = '<div class="empty-state">加载中…</div>';
+        AjaxLoader.api('nurse/patient-info?action=get&patient_id=' + pid, { silent: true }).then(r => {
+            const d = r.data || {};
+            const age = d.birth_date ? Math.max(0, new Date().getFullYear() - new Date(String(d.birth_date).replace(/-/g, '/')).getFullYear()) : '';
+            const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[String(d.nursing_level || '3')] || 'Ⅲ';
+            const infoHtml = `<div class="nurse-op-actions">
+                <button class="btn btn-small" onclick="NurseBedPanel.infoEdit()">补填/修改身高体重</button>
+                <button class="btn btn-small" onclick="NurseBedPanel.wristbandPreview()">腕带打印</button>
+            </div>
+            <div class="kv-grid">
+                <div class="kv-item"><b>姓名</b><span>${Format.escape(d.name || '')}</span></div>
+                <div class="kv-item"><b>性别</b><span>${Format.gender(d.gender)}</span></div>
+                <div class="kv-item"><b>年龄</b><span>${age ? age + ' 岁' : '-'}</span></div>
+                <div class="kv-item"><b>出生日期</b><span>${Format.escape(d.birth_date || '-')}</span></div>
+                <div class="kv-item"><b>身份证号</b><span>${Format.escape(d.id_card || '-')}</span></div>
+                <div class="kv-item"><b>联系电话</b><span>${Format.escape(d.phone || '-')}</span></div>
+                <div class="kv-item"><b>住院号</b><span>${Format.escape(d.admission_no || '-')}</span></div>
+                <div class="kv-item"><b>床号</b><span>${Format.escape(d.bed_no || '-')} 床</span></div>
+                <div class="kv-item"><b>病区</b><span>${Format.escape(d.ward_name || '-')}</span></div>
+                <div class="kv-item"><b>科室</b><span>${Format.escape(d.department_name || '-')}</span></div>
+                <div class="kv-item"><b>护理级别</b><span>${roman}</span></div>
+                <div class="kv-item"><b>费别</b><span>${Format.escape(d.fee_type || '-')}</span></div>
+                <div class="kv-item"><b>入院日期</b><span>${Format.escape((d.admission_date || '').slice(0, 10))}</span></div>
+                <div class="kv-item"><b>入院诊断</b><span>${Format.escape(d.admission_diagnosis || '-')}</span></div>
+                <div class="kv-item"><b>过敏史</b><span>${Format.escape(d.allergy_history || '无')}</span></div>
+                <div class="kv-item"><b>身高</b><span>${d.height != null ? Format.escape(String(d.height)) + ' cm' : '<span class="text-muted">未登记</span>'}</span></div>
+                <div class="kv-item"><b>体重</b><span>${d.weight != null ? Format.escape(String(d.weight)) + ' kg' : '<span class="text-muted">未登记</span>'}</span></div>
+            </div>
+            <p class="fs-12 text-muted" style="margin-top:10px">提示：身高体重可补填；病历文书中引用身高体重的元素，只要在创建文书前已登记即可自动引用。</p>`;
+            box.innerHTML = infoHtml;
+        }).catch(() => { box.innerHTML = '<div class="empty-state">患者信息加载失败</div>'; });
+    },
+
+    /* 补填/修改身高体重 (写入首次护理记录) */
+    infoEdit() {
+        const self = this;
+        const pid = this.patient.id;
+        AjaxLoader.api('nurse/patient-info?action=get&patient_id=' + pid, { silent: true }).then(r => {
+            const d = r.data || {};
+            const content = `<form id="info-form" class="form-grid">
+                <div class="form-group"><label class="form-label">联系电话</label><input name="phone" class="form-control" value="${Format.escape(d.phone || '')}"></div>
+                <div class="form-group"><label class="form-label">身高(cm)</label><input name="height" type="number" step="0.1" class="form-control" value="${d.height != null ? d.height : ''}"></div>
+                <div class="form-group"><label class="form-label">体重(kg)</label><input name="weight" type="number" step="0.1" class="form-control" value="${d.weight != null ? d.weight : ''}"></div>
+                <input type="hidden" name="patient_id" value="${pid}">
+            </form>`;
+            const overlay = Dom.modal('补填/修改身高体重', content, [
+                { text: '保存', type: 'primary', onclick: async function () {
+                    const form = document.getElementById('info-form');
+                    const data = {};
+                    new FormData(form).forEach((v, k) => data[k] = v);
+                    try {
+                        await AjaxLoader.api('nurse/patient-info', { method: 'POST', data: Object.assign(data, { action: 'save' }) });
+                        Dom.toast('已保存', 'success');
+                        overlay.remove();
+                        self.refresh();
+                    } catch (e) { /* 已提示 */ }
+                } },
+                { text: '取消', type: 'default' }
+            ]);
+        }).catch(() => {});
+    },
+
+    /* 腕带打印 (预留: 展示占位, 后续设计腕带样式) */
+    wristbandPreview() {
+        const p = this.patient;
+        Dom.modal('患者腕带 · 打印', `
+            <div class="empty-state" style="padding:22px 0">
+                腕带打印功能预留中。
+                <p class="fs-12 text-muted" style="margin-top:8px">将包含：患者姓名、住院号、床号、性别、年龄、过敏史、条形码等信息（待设计）。</p>
+            </div>`,
+            [{ text: '知道了', type: 'primary' }]);
     },
 
     /* ================= 医嘱 ================= */
