@@ -186,14 +186,16 @@ var NurseBedPanel = {
                     <td>${Format.escape(o.content)}</td>
                     <td>${catLabel(o.category)}</td>
                     <td>${Format.escape([o.usage_name, o.freq_code].filter(Boolean).join(' · '))}</td>
+                    <td>${Format.escape(o.doctor_name || '-')}</td>
+                    <td>${Format.escape(o.stopped_name || '-')}</td>
                     <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
                     <td>${actHtml(o)}</td></tr>`).join('')
-                : '<tr><td colspan="5"><div class="empty-state">暂无医嘱</div></td></tr>';
+                : '<tr><td colspan="7"><div class="empty-state">暂无医嘱</div></td></tr>';
             const toolbar = `<div class="nurse-op-actions">
                     ${pendingN > 0 ? `<button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对（${pendingN} 条）</button>` : ''}
                     <button class="btn" onclick="NurseBedPanel.printOrderSheets()">医嘱单打印</button>
                   </div>`;
-            box.innerHTML = toolbar + `<table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table>`;
+            box.innerHTML = toolbar + `<div style="overflow-x:auto"><table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>开嘱医生</th><th>停嘱医生</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table></div>`;
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
@@ -261,12 +263,13 @@ var NurseBedPanel = {
                 + '<td class="os-usage">' + esc(usage) + '</td>'
                 + '<td class="os-freq">' + esc(freq) + '</td>'
                 + '<td class="os-sign">' + esc(o.doctor_name || '') + '</td>'
+                + (hasStop ? '<td class="os-sign">' + esc(o.stopped_name || '') + '</td>' : '')
                 + '<td class="os-sign">' + esc(o.verified_name || '') + '</td>'
                 + '<td class="os-sign">' + esc(o.exec_name || '') + '</td>'
                 + '</tr>';
         }).join('');
         const headCells = hasStop
-            ? '<th style="width:12%">开始时间</th><th style="width:12%">停止时间</th><th style="width:30%">医嘱内容</th><th style="width:11%">用法</th><th style="width:9%">频次</th><th style="width:9%">开嘱医生</th><th style="width:9%">核对护士</th><th style="width:8%">执行护士</th>'
+            ? '<th style="width:10%">开始时间</th><th style="width:10%">停止时间</th><th style="width:26%">医嘱内容</th><th style="width:10%">用法</th><th style="width:8%">频次</th><th style="width:9%">开嘱医生</th><th style="width:9%">停嘱医生</th><th style="width:9%">核对护士</th><th style="width:9%">执行护士</th>'
             : '<th style="width:14%">开始时间</th><th style="width:36%">医嘱内容</th><th style="width:13%">用法</th><th style="width:10%">频次</th><th style="width:9%">开嘱医生</th><th style="width:10%">核对护士</th><th style="width:8%">执行护士</th>';
         const sheet = '<div class="page">' + header
             + '<div class="pg-body"><table class="os-table">'

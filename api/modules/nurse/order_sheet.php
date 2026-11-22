@@ -20,12 +20,13 @@ if (!$patient) Response::error('患者不存在');
 // 核对护士 = orders.verified_by; 执行护士 = nursing_records.executed_by (最近一次)
 $rows = DB::select(
     "SELECT o.*, u.name AS doctor_name,
-            vu.name AS verified_name
+            vu.name AS verified_name, su.name AS stopped_name
      FROM orders o
      LEFT JOIN users u ON o.created_by = u.id
      LEFT JOIN users vu ON o.verified_by = vu.id
+     LEFT JOIN users su ON o.stopped_by = su.id
       WHERE o.patient_id = ?
-        AND o.status IN ('pending', 'invalid_pending', 'stop_pending', 'verified', 'executing', 'completed', 'stopped')
+        AND o.status NOT IN ('draft', 'invalid')
       ORDER BY o.order_period ASC, COALESCE(o.parent_id, o.id) ASC,
                CASE WHEN o.parent_id IS NULL THEN 0 ELSE 1 END ASC, o.group_seq ASC, o.id ASC", [$patientId]);
 
@@ -62,6 +63,7 @@ foreach ($rows as $r) {
         'stop_date' => $r['stop_date'],
         'status' => $r['status'],
         'doctor_name' => $r['doctor_name'],
+        'stopped_name' => $r['stopped_name'],
         'verified_name' => $r['verified_name'],
         'exec_name' => $execMap[(int)$r['id']] ?? '',
         'billing_flags' => $r['billing_flags'],

@@ -1,16 +1,18 @@
 <?php
-// api/modules/nurse/order_list.php - 护士站/核查清单医嘱 (待核查/已核对/执行中 + 发药标记 + 作废处方留痕)
+// api/modules/nurse/order_list.php - 护士站医嘱（患者详情全量留痕；核查清单仅返回可处理项）
 Auth::requireRole(['admin', 'nurse']);
 $user = Auth::user();
 $patientId = (int)Validator::get('patient_id', 0);
 
 // 无 patient_id 时供「核查清单」使用，只返回当前可处理医嘱。
-// 有 patient_id 时供床位患者详情使用，必须与医嘱单打印采用同一有效状态口径，
-// 避免已完成/已停止医嘱只出现在打印单、列表却不可见；已作废处方仍额外留痕展示。
-$sql = "SELECT o.*, u.name as doctor_name, p.name as patient_name, p.bed_no as bed_no, d.name as department_name,
+// 有 patient_id 时供床位患者详情使用，显示除草稿外的全部状态（包括所有作废来源）；
+// 打印接口在该完整留痕基础上再排除作废，避免列表与纸质医嘱单语义混淆。
+$sql = "SELECT o.*, u.name AS doctor_name, su.name AS stopped_name,
+        p.name AS patient_name, p.bed_no AS bed_no, d.name AS department_name,
         (SELECT MAX(dr.id) FROM dispensing_records dr WHERE dr.order_id = o.id AND dr.status = 'dispensed') AS dispensed_id
         FROM orders o
         LEFT JOIN users u ON o.created_by = u.id
+        LEFT JOIN users su ON o.stopped_by = su.id
         LEFT JOIN patients p ON o.patient_id = p.id
         LEFT JOIN departments d ON p.department_id = d.id
         WHERE ";
@@ -18,9 +20,8 @@ $params = [];
 
 if ($patientId) {
     if (!can_access_patient($user, $patientId)) Response::error('无权访问该患者', 403);
-    $sql .= "(o.status IN ('pending', 'invalid_pending', 'stop_pending', 'verified', 'executing', 'completed', 'stopped')
-              OR (o.status = 'invalid' AND o.notes = '处方'))
-             AND o.patient_id = ?";
+    // 患者详情展示全部已提交医嘱（含所有来源的作废医嘱），唯一排除从未提交的草稿。
+    $sql .= "o.status <> 'draft' AND o.patient_id = ?";
     $params[] = $patientId;
 } else {
     $sql .= "(o.status IN ('pending', 'invalid_pending', 'stop_pending', 'verified', 'executing')
