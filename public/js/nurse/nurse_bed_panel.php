@@ -15,6 +15,8 @@ var NurseBedPanel = {
     },
 
     open(patient) {
+        /* 单例患者面板：禁止旧面板残留后继续操作新患者，避免患者上下文串用。 */
+        if (this._overlay && this._overlay.parentNode) this._overlay.remove();
         this.patient = patient;
         this.activeTab = 'info';
         const p = patient;
@@ -162,6 +164,8 @@ var NurseBedPanel = {
         const pid = this.patient.id;
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/order-list?patient_id=' + pid, { silent: true }).then(r => {
+            /* 请求返回期间若已切换患者，丢弃旧响应，不能写入当前患者面板。 */
+            if (!this.patient || String(this.patient.id) !== String(pid) || !box.isConnected) return;
             const rows = r.data || [];
             const pendingN = rows.filter(o => o.status === 'pending').length;
             const catLabel = c => c === 'medication' ? '药品' : '医嘱';
@@ -169,6 +173,8 @@ var NurseBedPanel = {
                 if (o.status === 'invalid') return '<span class="fs-12 text-muted">已作废</span>';
                 if (o.status === 'invalid_pending') return `<button class="btn btn-small btn-danger" onclick="NurseBedPanel.confirmOrder(${o.id},'invalid')">确认作废</button>`;
                 if (o.status === 'stop_pending') return `<button class="btn btn-small btn-danger" onclick="NurseBedPanel.confirmOrder(${o.id},'stopped')">确认停止</button>`;
+                if (o.status === 'completed') return '<span class="fs-12 text-muted">已完成</span>';
+                if (o.status === 'stopped') return '<span class="fs-12 text-muted">已停止</span>';
                 if (o.status === 'pending') return `<button class="btn btn-small btn-success" onclick="NurseBedPanel.verifyOrder(${o.id})">核查</button>`;
                 if (o.category === 'medication' && !o.dispensed_id) return '<span class="fs-12 text-muted">待发药后执行</span>';
                 return `<button class="btn btn-small btn-success" onclick="NurseBedPanel.executeOrder(${o.id})">执行</button>`;
@@ -210,6 +216,11 @@ var NurseBedPanel = {
         const p = this.patient;
         AjaxLoader.api('nurse/order-sheet?patient_id=' + pid, { silent: true }).then(r => {
             const d = r.data || {};
+            const responsePid = d.patient && d.patient.id;
+            if (!this.patient || String(this.patient.id) !== String(pid) || String(responsePid) !== String(pid)) {
+                Dom.toast('患者已切换，已取消本次医嘱单预览，请重新操作', 'info');
+                return;
+            }
             const longRows = d.long || [], tempRows = d.temp || [];
             if (!longRows.length && !tempRows.length) { Dom.toast('该患者暂无有效医嘱', 'info'); return; }
             const info = {
