@@ -1,171 +1,30 @@
-// public/js/core/print_helper.js - 打印助手
-// print(elementId): 打印页面内元素 (旧用法)
-// printHtml(title, bodyHtml): 打开新窗口打印任意 HTML (申请单等, 不破坏当前页面上下文)
+// public/js/core/print_helper.js - 品牌与条形码打印模板助手（打印流程统一交给 PrintPreview）
 const PrintHelper = {
     brandHeaderHtml(extraClass) {
         return HospitalBranding.headerHtml(extraClass || '');
     },
 
+    /* 旧入口兼容：页面内元素先构造成标准 A4 文档，再进入统一预览。 */
     print(elementId) {
         const el = document.getElementById(elementId);
-        if (!el) { window.print(); return; }
-        const printContents = el.innerHTML;
-        const originalBody = document.body.innerHTML;
-        document.body.innerHTML = '<style>@media print {body{font-size:12pt}} .no-print{display:none}</style>' + printContents;
-        window.print();
-        document.body.innerHTML = originalBody;
-        window.location.reload();
+        if (!el) { Dom.toast('未找到可打印内容', 'error'); return null; }
+        const title = document.title || '打印文档';
+        return PrintPreview.open(Format.escape(title) + ' · 打印预览',
+            PrintDocument.create(title, '<div class="sheet">' + el.innerHTML + '</div>'),
+            { canPrint: true });
     },
 
-    printHtml(title, bodyHtml) {
-        // 纸张尺寸：按单据类型注入 @page（A5 / 半张A4横 / A4），
-        // 避免 A5 内容被默认 A4 画布拉伸缩放
-        const hasA5 = bodyHtml.indexOf('sheet a5') !== -1;
-        const hasHalf = bodyHtml.indexOf('sheet half-a4') !== -1;
-        const pageSize = hasA5 ? 'A5 portrait'
-            : (hasHalf ? '210mm 148mm' : 'A4 portrait');
-        // 纸张在 96dpi 下的像素尺寸（1mm ≈ 3.7795px），用于精确匹配预览窗口画布
-        const paperW = hasA5 ? 559 : 794;   // 148mm / 210mm
-        const paperH = hasA5 ? 794 : (hasHalf ? 559 : 1123); // 210mm / 148mm / 297mm
-        const win = window.open('', '_blank', 'width=' + (paperW + 200) + ',height=' + (paperH + 200));
-        if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
-        // 页码注入：给每个 .sheet 底部加「第 x 页 / 共 x 页」（A4/A5/半A4 通用）
-        bodyHtml = PrintHelper.withPageNumbers(bodyHtml);
-        win.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>${title}</title>
-<style>
-    @page { size: ${pageSize}; margin: 0; }
-    html, body { margin: 0; padding: 0; }
-    .sheet, .sheet.a5, .sheet.half-a4 { box-shadow: none; }
-    body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; margin: 12px; }
-    @media screen { body { background: #e8eaed; } .sheet { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18); } }
-    @media print { body { background: #fff; margin: 0; } .sheet { box-shadow: none; } }
-    .brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0,1fr); width: max-content; max-width: 100%; min-width: 0; }
-    .brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }
-    .print-brand-lockup { display: grid; margin: 0 auto 8px; }
-    .print-hospital { font-size: 18pt; font-weight: 700; letter-spacing: 2px; line-height: 1.35; }
-    .print-hospital2 { font-size: 11pt; font-weight: 400; line-height: 1.35; }
-    h2.doc-title { text-align: center; font-size: 16pt; margin: 0 0 4px; letter-spacing: 2px; }
-    .doc-sub { text-align: center; font-size: 9pt; color: #666; margin-bottom: 16px; }
-    table.doc-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    table.doc-table th, table.doc-table td { border: 1px solid #333; padding: 6px 8px; font-size: 10.5pt; text-align: left; }
-    table.doc-table th { background: #f2f2f2; }
-    .doc-meta { display: flex; flex-wrap: wrap; gap: 6px 28px; font-size: 10.5pt; margin: 10px 0; }
-    .doc-foot { margin-top: 32px; display: flex; justify-content: space-between; font-size: 10.5pt; }
-    /* ===== 门诊式打印公共样式（A4/A5 纸张 + 右上条形码 + 患者信息栏）===== */
-    .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 12mm 14mm 22mm; box-sizing: border-box; position: relative; display: flex; flex-direction: column; }
-    .sheet.a5 { width: 148mm; height: 210mm; padding: 10mm 12mm 20mm; }
-    .sheet.half-a4 { width: 210mm; height: 148mm; padding: 10mm 14mm 20mm; }
-    .sheet + .sheet { page-break-before: always; }
-    .sheet .sheet-head, .sheet .patient-bar, .sheet .rx-head, .sheet .rx-info { flex-shrink: 0; }
-    .sheet .rx-mark, .sheet table.rx-print, .sheet .sheet-table, .sheet .rx-foot { flex-shrink: 0; }
-    .sheet .sheet-note, .sheet .sheet-tip { flex-shrink: 0; }
-    .sheet-foot { margin-top: auto; }
-    .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
-    .sheet-brand { text-align: center; flex: 1; }
-    .sheet-brand .print-hospital { font-size: 16pt; }
-    .sheet-docname { font-size: 15pt; font-weight: 700; letter-spacing: 2px; margin-top: 2px; }
-    .sheet-barcode { position: absolute; top: 0; right: 0; text-align: right; }
-    .sheet-barcode svg { width: 150px; height: auto; }
-    .sheet-barcode .barcode-no { font-size: 8.5pt; letter-spacing: 1px; margin-top: 2px; }
-    .patient-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 10pt; padding: 5px 0; margin-bottom: 8px; }
-    /* 门诊式患者信息栏：隐形 grid（报告单用，姓名/性别/年龄/出生日期 + ID/住院号/科室/诊断） */
-    .sheet-info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 2px 14px; font-size: 10.5pt; padding: 6px 0; margin-bottom: 6px; }
-    .sheet-info-grid .sic { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sheet-info-grid .sic b { font-weight: 600; }
-    .sheet-info-grid .sic-diag { grid-column: span 4; white-space: normal; }
-    @media (max-width: 720px) { .sheet-info-grid { grid-template-columns: 1fr 1fr; } }
-    .patient-bar span { white-space: nowrap; }
-    .patient-bar b { font-weight: 600; }
-    .sheet-table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-    .sheet-table th, .sheet-table td { border: 0.5pt solid #000; padding: 4px 6px; text-align: left; }
-    .sheet-table th { background: #f5f5f5; font-weight: 600; }
-    .sheet-foot { display: flex; justify-content: space-between; font-size: 10pt; }
-    .sheet-page-no { position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; font-size: 9pt; color: #333; }
-    .sheet-note { margin-top: 10px; font-size: 10.5pt; color: #333; }
-    .sheet-tip { margin-top: 2px; font-size: 9.5pt; color: #666; }
-    /* ===== 住院处方笺（参照门诊标准处方笺版式，A5 无边框） ===== */
-    .rx-head { position: relative; text-align: center; padding: 2px 0 2px; }
-    .rx-brand { display: inline-block; text-align: center; }
-    .rx-brand .print-hospital { font-size: 20pt; font-weight: 700; letter-spacing: 3px; line-height: 1.3; }
-    .rx-brand .print-hospital2 { font-size: 11.5pt; letter-spacing: 1px; line-height: 1.3; }
-    .rx-barcode { position: absolute; top: 0; right: 0; text-align: right; }
-    .rx-barcode svg { width: 150px; height: auto; }
-    .rx-title { text-align: center; font-size: 17pt; font-weight: 700; letter-spacing: 4px; margin: 8px 0 6px; }
-    .rx-info { font-size: 10.5pt; line-height: 1.85; margin-bottom: 4px; }
-    .rx-info-row { display: flex; flex-wrap: wrap; gap: 3px 16px; }
-    .rx-info-row span { white-space: nowrap; }
-    .rx-info-row b { font-weight: 600; }
-    .rx-info .rx-diag { flex: 1 1 100%; white-space: normal; }
-    .rx-rule { border-top: 2px solid #111; margin: 6px 0 8px; }
-    .rx-mark { font-size: 28pt; font-weight: 700; line-height: 1; margin: 2px 0 8px; color: #111; }
-    table.rx-print { width: 100%; border-collapse: collapse; font-size: 11.5pt; }
-    table.rx-print td { border: none; padding: 7px 6px; vertical-align: middle; text-align: left; }
-    table.rx-print td.rx-name { font-weight: 600; }
-    table.rx-print td.rx-dose { width: 17%; text-align: center; }
-    table.rx-print td.rx-route { width: 11%; text-align: center; }
-    table.rx-print td.rx-freq { width: 15%; text-align: center; }
-    table.rx-print td.rx-qty { width: 16%; text-align: right; white-space: nowrap; }
-    table.rx-print col.rx-c-name { width: 41%; }
-    .rx-end { text-align: center; letter-spacing: 2px; color: #333; margin: 18px 0 10px; font-size: 11.5pt; }
-    .rx-foot { margin-top: auto; }
-    .rx-take { font-size: 10.5pt; margin-bottom: 4px; }
-    .rx-amount-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 11.5pt; font-weight: 600; }
-    .rx-amount-row .rx-doctor { white-space: nowrap; }
-    .rx-line { border-bottom: 1px solid #111; margin: 3px 0; }
-    .rx-disp-row { display: flex; font-size: 10.5pt; line-height: 1.9; }
-    .rx-disp-row span { flex: 1; text-align: left; }
-    .rx-time-row { display: flex; font-size: 10pt; color: #333; line-height: 1.9; }
-    .rx-time-row span:first-child { flex: 1; }
-    .rx-valid { text-align: center; font-size: 10.5pt; margin-top: 6px; }
-    @media print {
-        body { margin: 0; }
-        .sheet { box-shadow: none; }
-        .no-print { display: none; }
-    }
-</style></head><body>${bodyHtml}
-<script>
-(function () {
-    var targetW = ${paperW}, targetH = ${paperH};
-    var margin = 12;
-    function fit() {
-        try {
-            var cw = Math.max(0, window.outerWidth - window.innerWidth);
-            var ch = Math.max(0, window.outerHeight - window.innerHeight);
-            window.resizeTo(targetW + margin * 2 + cw, targetH + margin * 2 + ch);
-        } catch (e) {}
-    }
-    window.onload = function () {
-        setTimeout(function () { fit(); window.print(); }, 60);
-    };
-})();
-<\/script>
-</body></html>`);
-        win.document.close();
+    /* 旧入口兼容：单据片段统一构建文档并先显示预览，不再各自直接开打印窗口。 */
+    printHtml(title, bodyHtml, opts) {
+        return PrintPreview.open(Format.escape(title || '打印文档') + ' · 打印预览',
+            PrintDocument.create(title, bodyHtml, opts), { canPrint: true });
     },
 
-    /* 打印完整 HTML 文档 (与预览 iframe 使用同一份文档, 保证一模一样) */
-    printDocument(docHtml) {
-        // EMR 文档均为 A4（210×297mm ≈ 794×1123px），窗口尺寸按纸张匹配
-        const win = window.open('', '_blank', 'width=994,height=1323');
-        if (!win) { Dom.toast('浏览器拦截了打印窗口, 请允许弹出窗口', 'error'); return; }
-        win.document.write(docHtml);
-        win.document.close();
-    },
-
-    /* 给打印 bodyHtml 的每个 .sheet 注入页码「第 x 页 / 共 x 页」（底部居中） */
-    withPageNumbers(bodyHtml) {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = bodyHtml;
-        const sheets = tmp.querySelectorAll('.sheet');
-        const total = sheets.length;
-        sheets.forEach((s, i) => {
-            if (s.querySelector('.sheet-page-no')) return;
-            const pg = document.createElement('div');
-            pg.className = 'sheet-page-no';
-            pg.textContent = '第 ' + (i + 1) + ' 页 / 共 ' + total + ' 页';
-            s.appendChild(pg);
-        });
-        return tmp.innerHTML;
+    /* 旧入口兼容：完整 HTML 文档直接进入统一预览。 */
+    printDocument(docHtml, title) {
+        const name = title || PrintDocument.titleOf(docHtml, '打印文档');
+        const cleanHtml = String(docHtml || '').replace(/<script[\s\S]*?<\/script>/gi, '');
+        return PrintPreview.open(Format.escape(name) + ' · 打印预览', cleanHtml, { canPrint: true });
     },
 
     /* 前端 Code 128 条形码（SVG，供打印模板右上角用） */
@@ -187,38 +46,34 @@ const PrintHelper = {
         if (!text) return '';
         const seq = [104]; let check = 104; let n = 0;
         for (let i = 0; i < text.length; i++) {
-            const v = text.charCodeAt(i) - 32;
-            if (v < 0 || v > 94) continue;
-            seq.push(v); check += v * (++n);
+            const value = text.charCodeAt(i) - 32;
+            if (value < 0 || value > 94) continue;
+            seq.push(value); check += value * (++n);
         }
         if (!n) return '';
         seq.push(check % 103);
-        const stop = '2331112';
         const total = 20 + seq.length * 11 + 13;
-        const w = total * scale;
+        const width = total * scale;
         let x = 10 * scale, isBar = true, rects = '';
-        const draw = (pat) => {
-            for (let k = 0; k < pat.length; k++) {
-                const mw = parseInt(pat[k], 10) * scale;
-                if (isBar) rects += '<rect x="' + x + '" y="0" width="' + mw + '" height="' + height + '"/>';
-                x += mw; isBar = !isBar;
+        const draw = function (pattern) {
+            for (let k = 0; k < pattern.length; k++) {
+                const moduleWidth = parseInt(pattern[k], 10) * scale;
+                if (isBar) rects += '<rect x="' + x + '" y="0" width="' + moduleWidth + '" height="' + height + '"/>';
+                x += moduleWidth; isBar = !isBar;
             }
         };
-        seq.forEach(v => draw(P[v] || '212222'));
-        draw(stop);
-        let textEl = '', h = height;
+        seq.forEach(function (value) { draw(P[value] || '212222'); });
+        draw('2331112');
+        let textEl = '', svgHeight = height;
         if (withText) {
-            const barLeft = 10 * scale;
-            const barW = x - barLeft;
-            if (barW > 0) {
-                const textH = Math.max(14, Math.round(height * 0.4));
-                textEl = '<text x="' + barLeft + '" y="' + (height + textH) + '" textLength="' + barW + '" lengthAdjust="spacing"' +
-                    ' font-size="' + textH + '" text-anchor="start" fill="#111" font-family="Menlo, Consolas, Courier New, monospace">' +
-                    Format.escape(text) + '</text>';
-                h = height + textH + 6;
-            }
+            const left = 10 * scale, barWidth = x - left;
+            const textHeight = Math.max(14, Math.round(height * .4));
+            textEl = '<text x="' + left + '" y="' + (height + textHeight) + '" textLength="' + barWidth + '" lengthAdjust="spacing"'
+                + ' font-size="' + textHeight + '" text-anchor="start" fill="#111" font-family="Menlo, Consolas, Courier New, monospace">'
+                + Format.escape(text) + '</text>';
+            svgHeight = height + textHeight + 6;
         }
-        return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + Format.escape(text) + '">' +
-            '<rect width="' + w + '" height="' + h + '" fill="#ffffff"/>' + rects + textEl + '</svg>';
+        return '<svg viewBox="0 0 ' + width + ' ' + svgHeight + '" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="' + Format.escape(text) + '">'
+            + '<rect width="' + width + '" height="' + svgHeight + '" fill="#fff"/>' + rects + textEl + '</svg>';
     }
 };
