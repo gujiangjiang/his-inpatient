@@ -36,6 +36,23 @@
         return PP.openBody(title, '<div class="sheet">' + clone.outerHTML + '</div>', opts);
     };
 
+    PP.patientInfo = function (patient, docName) {
+        const data = patient || {};
+        let age = data.age;
+        if (age !== undefined && age !== null && age !== '' && /^\d+$/.test(String(age))) age += ' 岁';
+        else if (!age && data.birth_date) age = Format.age(data.birth_date);
+        return Object.assign({}, data, {
+            name: data.patient_name || data.name || '',
+            gender: Format.gender(data.gender),
+            age: age || '',
+            department: data.department_name || data.department || '',
+            ward: data.ward_name || data.ward || '',
+            bed: data.bed_no || data.bed || '',
+            admission_no: data.admission_no || '',
+            doc_name: docName || data.doc_name || ''
+        });
+    };
+
     PP.combine = function (title, htmlList, opts) {
         const docs = (htmlList || []).filter(function (html) { return html && String(html).trim(); });
         if (!docs.length) { Dom.toast('暂无可预览的打印内容', 'info'); return null; }

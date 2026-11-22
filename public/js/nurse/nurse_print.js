@@ -9,12 +9,7 @@
 
   /* 护理记录单 A4: 一行一个时间段 (时间 / 生命体征 / 护理记录内容) */
   NP.notesHtml = function (rows, patient) {
-    const info = Object.assign({
-      name: patient.patient_name || patient.name || '', gender: Format.gender(patient.gender),
-      age: patient.age ? patient.age + ' 岁' : '', department: patient.department_name || '',
-      ward: patient.ward_name || '', bed: patient.bed_no || '', admission_no: patient.admission_no || '',
-      doc_name: '护理记录单', hospital: patient.hospital || ''
-    }, patient);
+    const info = PrintPreview.patientInfo(patient, '护理记录单');
     const header = PrintPreview.sheetHeader(info);
     const body = rows.map(function (r) {
       const time = (r.record_time || '').slice(0, 16);
@@ -51,12 +46,7 @@
 
   /* 体温单 A4: 日期×时点网格 (体温/脉搏/呼吸/血压/血氧) */
   NP.tempHtml = function (rows, patient) {
-    const info = Object.assign({
-      name: patient.patient_name || patient.name || '', gender: Format.gender(patient.gender),
-      age: patient.age ? patient.age + ' 岁' : '', department: patient.department_name || '',
-      ward: patient.ward_name || '', bed: patient.bed_no || '', admission_no: patient.admission_no || '',
-      doc_name: '体温单', hospital: patient.hospital || ''
-    }, patient);
+    const info = PrintPreview.patientInfo(patient, '体温单');
     const header = PrintPreview.sheetHeader(info);
     const SLOTS = ['06:00', '10:00', '14:00', '18:00', '22:00'];
     const byDate = {};

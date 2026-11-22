@@ -242,12 +242,7 @@ var NurseBedPanel = {
     /* 组装医嘱单 A4 文档 (抬头与电子病历一致; hasStop: 长期单含停止时间列, 临时单无) */
     buildOrderSheetHtml(title, rows, patient, hasStop) {
         const esc = function (s) { return Format.escape(String(s == null ? '' : s)); };
-        const info = Object.assign({
-            name: patient.patient_name || patient.name || '', gender: Format.gender(patient.gender),
-            age: patient.age ? patient.age + ' 岁' : '', department: patient.department_name || '',
-            ward: patient.ward_name || '', bed: patient.bed_no || '', admission_no: patient.admission_no || '',
-            doc_name: title, hospital: ''
-        }, patient);
+        const info = PrintPreview.patientInfo(patient, title);
         const header = PrintPreview.sheetHeader(info);
         const body = rows.map(function (o) {
             const content = esc(o.content) + (o.dosage ? ' ' + esc(o.dosage) + (o.dosage_unit ? esc(o.dosage_unit) : '') : '');
