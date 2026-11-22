@@ -148,15 +148,19 @@ var NurseBedPanel = {
         }).catch(() => {});
     },
 
-    /* 腕带打印 (预留: 展示占位, 后续设计腕带样式) */
+    /* 患者腕带：打印前重新读取完整患者资料，避免卡片摘要缺少过敏史等字段。 */
     wristbandPreview() {
-        const p = this.patient;
-        Dom.modal('患者腕带 · 打印', `
-            <div class="empty-state" style="padding:22px 0">
-                腕带打印功能预留中。
-                <p class="fs-12 text-muted" style="margin-top:8px">将包含：患者姓名、住院号、床号、性别、年龄、过敏史、条形码等信息（待设计）。</p>
-            </div>`,
-            [{ text: '知道了', type: 'primary' }]);
+        const pid = this.patient && this.patient.id;
+        if (!pid) { Dom.toast('未选择患者', 'error'); return; }
+        AjaxLoader.api('nurse/patient-info?action=get&patient_id=' + pid, { silent: true }).then(r => {
+            if (!this.patient || String(this.patient.id) !== String(pid)) {
+                Dom.toast('患者已切换，已取消腕带预览', 'info');
+                return;
+            }
+            const template = PrintLabels.wristband(r.data || {});
+            if (!template) { Dom.toast('患者缺少住院号，无法生成腕带', 'error'); return; }
+            PrintLabels.open(template);
+        }).catch(() => { Dom.toast('患者腕带信息加载失败', 'error'); });
     },
 
     /* ================= 医嘱 ================= */
