@@ -113,7 +113,7 @@
       '.emr-hos2 { font-size:12pt; font-weight:normal; line-height:1.35; }',
       '.emr-docname { font-size: 16pt; font-weight: bold; letter-spacing: 3px; line-height: 1.5; }',
       '.emr-infobar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 20px; margin-top: 8px; padding: 6px 4px 6px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 11pt; }',
-      '.pg-body { position: absolute; left: 36px; top: 128px; width: 722px; height: 940px; overflow: hidden; }',
+      '.pg-body { position: absolute; left: 36px; top: 158px; width: 722px; height: 906px; overflow: hidden; }',
       '.np-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10.5pt; }',
       '.np-table th, .np-table td { border: 0.5pt solid #000; padding: 5px 6px; vertical-align: top; text-align: left; }',
       '.np-table th { background: #f2f2f2; text-align: center; font-weight: 600; }',

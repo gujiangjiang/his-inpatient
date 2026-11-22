@@ -218,19 +218,16 @@ var NurseBedPanel = {
                 ward: p.ward_name || '', bed: p.bed_no || '', admission_no: p.admission_no || '',
                 hospital: ''
             };
-            if (longRows.length) {
-                const html = NurseBedPanel.buildOrderSheetHtml('长期医嘱单', longRows, d.patient || info);
-                PrintPreview.open('长期医嘱单 · 打印预览', html, { canPrint: true });
-            }
-            if (tempRows.length) {
-                const html = NurseBedPanel.buildOrderSheetHtml('临时医嘱单', tempRows, d.patient || info);
-                PrintPreview.open('临时医嘱单 · 打印预览', html, { canPrint: true });
-            }
+            /* 长期在前、临时在后, 拼接为一份打印文档 (页码连续), 单一预览框 */
+            const htmls = [];
+            if (longRows.length) htmls.push(NurseBedPanel.buildOrderSheetHtml('长期医嘱单', longRows, d.patient || info, true));
+            if (tempRows.length) htmls.push(NurseBedPanel.buildOrderSheetHtml('临时医嘱单', tempRows, d.patient || info, false));
+            PrintPreview.combine('医嘱单 · 打印预览', htmls, { canPrint: true });
         }).catch(() => { Dom.toast('医嘱单数据加载失败', 'error'); });
     },
 
-    /* 组装医嘱单 A4 文档 (抬头与电子病历一致, 表格呈现, 独立页码) */
-    buildOrderSheetHtml(title, rows, patient) {
+    /* 组装医嘱单 A4 文档 (抬头与电子病历一致; hasStop: 长期单含停止时间列, 临时单无) */
+    buildOrderSheetHtml(title, rows, patient, hasStop) {
         const esc = function (s) { return Format.escape(String(s == null ? '' : s)); };
         const info = Object.assign({
             name: patient.patient_name || patient.name || '', gender: Format.gender(patient.gender),
@@ -243,22 +240,26 @@ var NurseBedPanel = {
             const content = esc(o.content) + (o.dosage ? ' ' + esc(o.dosage) + (o.dosage_unit ? esc(o.dosage_unit) : '') : '');
             const usage = [o.usage_name, o.usage_rate].filter(Boolean).join(' ');
             const freq = [o.freq_code, o.freq_detail].filter(Boolean).join(' ');
-            const start = o.start_date ? esc(String(o.start_date).slice(0, 16)) : '-';
-            const stop = o.stop_date ? esc(String(o.stop_date).slice(0, 16)) : (o.end_date ? esc(String(o.end_date).slice(0, 16)) : '');
-            const status = o.status === 'stopped' ? '（已停）' : (o.status === 'invalid' ? '（作废）' : '');
-            return '<tr>'
+            const start = o.start_date ? esc(String(o.start_date).slice(0, 16)) : '';
+            const status = o.status === 'stopped' ? '（已停）' : '';
+            const cells = hasStop
+                ? '<td class="os-time">' + start + '</td><td class="os-time">' + esc(o.stop_date ? String(o.stop_date).slice(0, 16) : (o.end_date ? String(o.end_date).slice(0, 16) : '')) + '</td>'
+                : '<td class="os-time">' + start + '</td>';
+            return '<tr>' + cells
                 + '<td class="os-content">' + content + status + '</td>'
                 + '<td class="os-usage">' + esc(usage) + '</td>'
                 + '<td class="os-freq">' + esc(freq) + '</td>'
-                + '<td class="os-time">' + start + '<br>' + esc(stop || '') + '</td>'
                 + '<td class="os-sign">' + esc(o.doctor_name || '') + '</td>'
                 + '<td class="os-sign">' + esc(o.verified_name || '') + '</td>'
                 + '<td class="os-sign">' + esc(o.exec_name || '') + '</td>'
                 + '</tr>';
         }).join('');
+        const headCells = hasStop
+            ? '<th style="width:12%">开始时间</th><th style="width:12%">停止时间</th><th style="width:30%">医嘱内容</th><th style="width:11%">用法</th><th style="width:9%">频次</th><th style="width:9%">开嘱医生</th><th style="width:9%">核对护士</th><th style="width:8%">执行护士</th>'
+            : '<th style="width:14%">开始时间</th><th style="width:36%">医嘱内容</th><th style="width:13%">用法</th><th style="width:10%">频次</th><th style="width:9%">开嘱医生</th><th style="width:10%">核对护士</th><th style="width:8%">执行护士</th>';
         const sheet = '<div class="page">' + header
             + '<div class="pg-body"><table class="os-table">'
-            + '<thead><tr><th style="width:34%">医嘱内容</th><th style="width:13%">用法</th><th style="width:10%">频次</th><th style="width:20%">开始 / 停止时间</th><th style="width:8%">开嘱医生</th><th style="width:8%">核对护士</th><th style="width:7%">执行护士</th></tr></thead>'
+            + '<thead><tr>' + headCells + '</tr></thead>'
             + '<tbody>' + body + '</tbody></table></div>'
             + '<div class="pg-foot"><span class="emr-fp-left"></span><span class="emr-fp-page">第 1 页 / 共 1 页</span></div></div>';
         return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(title) + '</title>'
@@ -277,9 +278,10 @@ var NurseBedPanel = {
             '.brand-name-line { width:100%; min-width:0; text-align:justify; text-align-last:justify; text-justify:inter-character; }',
             '.emr-brand-lockup { display:grid; margin:0 auto; }',
             '.emr-hos { font-size: 20pt; font-weight: bold; letter-spacing: 4px; line-height: 1.4; }',
+            '.emr-hos2 { font-size: 12pt; font-weight: normal; line-height: 1.35; }',
             '.emr-docname { font-size: 16pt; font-weight: bold; letter-spacing: 3px; line-height: 1.5; }',
             '.emr-infobar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 20px; margin-top: 8px; padding: 6px 4px 6px; border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; font-size: 11pt; }',
-            '.pg-body { position: absolute; left: 36px; top: 128px; width: 722px; height: 940px; overflow: hidden; }',
+            '.pg-body { position: absolute; left: 36px; top: 158px; width: 722px; height: 906px; overflow: hidden; }',
             '.os-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10pt; }',
             '.os-table th, .os-table td { border: 0.5pt solid #000; padding: 4px 5px; vertical-align: top; text-align: left; }',
             '.os-table th { background: #f2f2f2; text-align: center; font-weight: 600; }',
