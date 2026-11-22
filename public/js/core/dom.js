@@ -48,6 +48,7 @@ const Dom = {
         const closeOverlay = () => {
             if (onKey) document.removeEventListener('keydown', onKey);
             if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+            if (typeof opts.onClose === 'function') opts.onClose();
         };
         modal.innerHTML = `
             <div class="modal-header"><span class="modal-title">${title}</span>${closeHtml}</div>

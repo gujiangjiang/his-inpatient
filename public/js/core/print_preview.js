@@ -30,6 +30,17 @@
         overlay.querySelector('.modal').classList.add('modal-cf-preview');
         const wrap = overlay.querySelector('#pp-scale');
         const frame = overlay.querySelector('#pp-frame');
+        /* 预览专用样式注入: 灰底容器 + 纸张白底 + 四周等宽边距 + 纸张间分隔 (仅预览, 打印窗口仍走原文档 @page) */
+        const previewCss = [
+            'html, body { background: #dfe3e8 !important; margin: 0; padding: 28px !important; }',
+            '.page { background: #fff !important; margin: 0 auto 28px !important; box-shadow: 0 2px 12px rgba(0,0,0,.18); }',
+            '.page:last-child { margin-bottom: 0 !important; }',
+            '.sheet { background: #fff !important; margin: 0 auto 28px !important; box-shadow: 0 2px 12px rgba(0,0,0,.18); }',
+            '.sheet + .sheet { margin-top: 28px !important; }'
+        ].join('\n');
+        const injectPreviewCss = function (docHtml) {
+            return String(docHtml || '').replace(/<\/head>/i, '<style>' + previewCss + '</style></head>');
+        };
         const fit = function () {
             const avail = wrap.clientWidth || 820;
             const s = Math.min(1, avail / 794);
@@ -42,7 +53,7 @@
             wrap.style.height = Math.ceil(h * s) + 'px';
         };
         frame.addEventListener('load', fit);
-        frame.srcdoc = html;
+        frame.srcdoc = injectPreviewCss(html);
         setTimeout(fit, 120);
         return overlay;
     };

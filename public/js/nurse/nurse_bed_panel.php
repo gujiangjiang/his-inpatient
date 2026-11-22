@@ -90,7 +90,7 @@ var NurseBedPanel = {
             const age = d.birth_date ? Math.max(0, new Date().getFullYear() - new Date(String(d.birth_date).replace(/-/g, '/')).getFullYear()) : '';
             const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[String(d.nursing_level || '3')] || 'Ⅲ';
             const infoHtml = `<div class="nurse-op-actions">
-                <button class="btn btn-small" onclick="NurseBedPanel.infoEdit()">补填/修改身高体重</button>
+                <button class="btn btn-small" onclick="NurseBedPanel.infoEdit()">修改个人信息</button>
                 <button class="btn btn-small" onclick="NurseBedPanel.wristbandPreview()">腕带打印</button>
             </div>
             <div class="kv-grid">
@@ -705,8 +705,9 @@ var NurseBedPanel = {
     loadWard(box) {
         const p = this.patient;
         box.innerHTML = `<div class="nurse-op-actions">
-            <button class="btn btn-primary" onclick="NurseBedPanel.transferBed()">转床</button>
+            <button class="btn btn-primary" onclick="NurseBedPanel.transferWard()">转科</button>
             <button class="btn btn-danger" onclick="NurseBedPanel.doDischarge()">办理出院</button>
+            <button class="btn" onclick="NurseBedPanel.changeBed()">迁床</button>
             <button class="btn" onclick="NurseBedPanel.chargeCheck()">费用核对</button>
             <button class="btn" onclick="NurseBedPanel.chargeAdd()">费用补录</button>
         </div>
@@ -718,55 +719,67 @@ var NurseBedPanel = {
         </div>`;
     },
 
-    /* 转床: 选择目标病区/床位, 更新患者床位与床位占用 */
-    transferBed() {
+    /* 迁床: 本病区换床 (选择空闲床位, 自动生成临时迁床医嘱) */
+    changeBed() {
         const self = this;
         const pid = this.patient.id;
-        Promise.all([
-            AjaxLoader.api('admin/ward-list', { silent: true }),
-            AjaxLoader.api('patients/beds', { silent: true })
-        ]).then(([wr, br]) => {
-            const wards = (wr.data || []).filter(w => w.is_active == 1);
+        AjaxLoader.api('patients/beds?ward_id=' + (self.patient.ward_id || ''), { silent: true }).then(br => {
             const beds = br.data || [];
-            const wardOpts = wards.map(w => `<option value="${w.id}">${Format.escape(w.name)}</option>`).join('');
-            const content = `<form id="transfer-form" class="form-grid">
-                <div class="form-group"><label class="form-label">目标病区</label>
-                    <select id="trans-ward" class="form-control">
-                        <option value="">请选择病区</option>${wardOpts}</select></div>
+            const freeBeds = beds.filter(b => !b.patient_id && b.status !== 'occupied');
+            if (!freeBeds.length) { Dom.toast('本病区暂无空闲床位', 'error'); return; }
+            const bedOpts = freeBeds.map(b => `<option value="${b.id}">${Format.escape(b.bed_no)} 床</option>`).join('');
+            const content = `<form id="change-bed-form" class="form-grid">
                 <div class="form-group"><label class="form-label">目标床位</label>
-                    <select id="trans-bed" class="form-control"><option value="">请先选择病区</option></select></div>
+                    <select id="cb-bed" class="form-control"><option value="">请选择空闲床位</option>${bedOpts}</select></div>
+                <div class="form-group colspan-2"><p class="fs-12 text-muted">迁床后将自动生成一条临时「迁床」医嘱。</p></div>
             </form>`;
-            const overlay = Dom.modal('转床 - ' + Format.escape(self.patient.patient_name || ''), content, [
-                { text: '确认转床', type: 'primary', onclick: async function () {
-                    const wardId = document.getElementById('trans-ward').value;
-                    const bedId = document.getElementById('trans-bed').value;
-                    if (!wardId || !bedId) { Dom.toast('请选择目标病区和床位', 'error'); return; }
-                    const bed = beds.find(b => Number(b.id) === Number(bedId));
-                    if (!bed || bed.status === 'occupied') { Dom.toast('该床位已被占用', 'error'); return; }
+            const overlay = Dom.modal('迁床 - ' + Format.escape(self.patient.patient_name || ''), content, [
+                { text: '确认迁床', type: 'primary', onclick: async function () {
+                    const bedId = document.getElementById('cb-bed').value;
+                    if (!bedId) { Dom.toast('请选择目标床位', 'error'); return; }
                     try {
-                        // 先费用核对, 确认后再转床
-                        self.chargeCheckBefore(function () {
-                            return AjaxLoader.api('nurse/transfer-bed', { method: 'POST', data: { patient_id: pid, target_bed_id: bedId } }).then(function (r) {
-                                Dom.toast(r.message || '已转床', 'success');
-                                overlay.remove();
-                                self.close();
-                                if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
-                            });
-                        });
+                        const r = await AjaxLoader.api('nurse/transfer-bed', { method: 'POST', data: { patient_id: pid, target_bed_id: bedId } });
+                        Dom.toast(r.message || '已迁床', 'success');
+                        overlay.remove();
+                        self.close();
+                        if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
                     } catch (e) { /* 已提示 */ }
                 } },
                 { text: '取消', type: 'default' }
             ]);
-            // 病区-床位联动
-            window._nurseTransBeds = beds;
-            window._nurseTransWards = wards;
-            overlay.querySelector('#trans-ward').addEventListener('change', function () {
-                const wId = this.value;
-                const sel = overlay.querySelector('#trans-bed');
-                const list = (window._nurseTransBeds || []).filter(b => String(b.ward_id) === String(wId) && b.status !== 'occupied');
-                sel.innerHTML = '<option value="">请选择床位</option>' + list.map(b => `<option value="${b.id}">${Format.escape(b.bed_no)} 床</option>`).join('');
-            });
-        }).catch(() => {});
+        }).catch(() => { Dom.toast('床位加载失败', 'error'); });
+    },
+
+    /* 转科: 从本科室转出到其他科室 (医嘱全停 + 费用核对 + 患者离科) */
+    transferWard() {
+        const self = this;
+        const pid = this.patient.id;
+        AjaxLoader.api('admin/ward-list', { silent: true }).then(wr => {
+            const wards = (wr.data || []).filter(w => w.is_active == 1 && String(w.id) !== String(self.patient.ward_id));
+            if (!wards.length) { Dom.toast('暂无其他科室可转', 'error'); return; }
+            const wardOpts = wards.map(w => `<option value="${w.id}">${Format.escape(w.name)}</option>`).join('');
+            const content = `<form id="trans-ward-form" class="form-grid">
+                <div class="form-group"><label class="form-label">目标科室 <span class="text-danger">*</span></label>
+                    <select id="tw-ward" class="form-control"><option value="">请选择目标科室</option>${wardOpts}</select></div>
+                <div class="form-group colspan-2"><p class="fs-12 text-muted">转科将从本科室离开：全部医嘱停止、费用核对、释放床位。</p></div>
+            </form>`;
+            const overlay = Dom.modal('转科 - ' + Format.escape(self.patient.patient_name || ''), content, [
+                { text: '下一步', type: 'primary', onclick: async function () {
+                    const wardId = document.getElementById('tw-ward').value;
+                    if (!wardId) { Dom.toast('请选择目标科室', 'error'); return; }
+                    overlay.remove();
+                    // 费用核对, 确认后转科
+                    self.chargeCheckBefore(function () {
+                        AjaxLoader.api('nurse/transfer-ward', { method: 'POST', data: { patient_id: pid, target_ward_id: wardId } }).then(function (r) {
+                            Dom.toast(r.message || '已转科', 'success');
+                            self.close();
+                            if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+                        }).catch(function () { /* 已提示 */ });
+                    });
+                } },
+                { text: '取消', type: 'default' }
+            ]);
+        }).catch(() => { Dom.toast('科室加载失败', 'error'); });
     },
 
     doDischarge() {
@@ -793,11 +806,12 @@ var NurseBedPanel = {
             const d = r.data || {};
             const groups = d.groups || {};
             const TYPE_KEYS = ['care', 'medical', 'drug', 'material', 'other'];
+            const TYPE_LABEL = { care: '护理', medical: '医疗', drug: '药品', material: '耗材', other: '其他' };
             const TABS = [];
             const PANES = [];
             let totalAmount = 0;
             TYPE_KEYS.forEach(function (tk, ti) {
-                const g = groups[tk] || { label: tk, items: [], amount: 0 };
+                const g = groups[tk] || { label: TYPE_LABEL[tk] || tk, items: [], amount: 0 };
                 totalAmount += g.amount || 0;
                 TABS.push(`<button type="button" class="nurse-op-tab${ti === 0 ? ' active' : ''}" data-ctab="${tk}" onclick="NurseBedPanel.chargeTab('${tk}')">${Format.escape(g.label)}（${(g.items || []).length}）</button>`);
                 const rows = (g.items || []).map(function (it) {

@@ -230,7 +230,7 @@ var NurseStation = {
                 } catch (e) { /* 已提示 */ }
             } },
             { text: '取消', type: 'default' }
-        ]);
+        ], { onClose: function () { if (window.IcdPicker) IcdPicker.close(); } });
         setTimeout(function () {
             if (window.IcdPicker) IcdPicker.bind(document.getElementById('nurse-admit-diag'), { codeEl: document.getElementById('nurse-admit-icd') });
         }, 100);
