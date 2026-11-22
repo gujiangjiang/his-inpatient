@@ -48,32 +48,40 @@
         const department = String(data.department || '-');
         const ward = String(data.ward || '-');
         const examName = String(data.exam_name || '检验');
+        const labCategory = String(data.lab_category || '-');
+        const orderTime = String(data.created_at || '').replace('T', ' ').slice(0, 19) || '-';
         const lengthClass = function (value) { return value.length > 16 ? ' is-xlong' : (value.length > 10 ? ' is-long' : ''); };
         const html = '<div class="lab-tube-label"><div class="lb-patient"><b class="lb-name">' + esc(data.name) + '</b>'
-            + '<span>' + esc(data.gender) + ' ' + esc(data.age) + '</span><b>' + esc(data.bed || '-') + '床</b></div>'
+            + '<span class="lb-gender">' + esc(data.gender) + '</span><span class="lb-age">' + esc(data.age) + '</span>'
+            + '<b class="lb-bed">' + esc(data.bed || '-') + '床</b></div>'
             + '<div class="lb-location-row"><span class="lb-dept' + lengthClass(department) + '" title="' + esc(department) + '">科室：' + esc(department) + '</span>'
             + '<span class="lb-ward' + lengthClass(ward) + '" title="' + esc(ward) + '">病区：' + esc(ward) + '</span></div>'
             + '<div class="lb-barcode">' + PrintBarcode.svg(reportNo, {
                 height: 38, fontSize: 11, quietModules: 8, className: 'lb-barcode-svg'
-            }) + '</div><div class="lb-exam' + lengthClass(examName) + '" title="' + esc(examName) + '">' + esc(examName) + '</div>'
-            + '<div class="lb-meta"><span>' + esc(data.specimen_type || '标本') + '</span>'
-            + '<span>' + esc(String(data.created_at || '').slice(5, 16)) + '</span></div></div>';
+            }) + '</div><div class="lb-exam-row"><b class="lb-exam' + lengthClass(examName) + '" title="' + esc(examName) + '">' + esc(examName) + '</b>'
+            + '<span class="lb-category' + lengthClass(labCategory) + '" title="' + esc(labCategory) + '">' + esc(labCategory) + '</span></div>'
+            + '<div class="lb-order-meta"><span class="lb-doctor">开单：' + esc(data.creator_name || '-') + '</span>'
+            + '<span class="lb-time">' + esc(orderTime) + '</span></div></div>';
         const css = `
 .lab-tube-label { width:100%; height:100%; padding:1mm 1.5mm; display:grid; grid-template-rows:3.5mm 3.5mm 14mm 3.5mm 3.5mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
-.lb-patient { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto auto; align-items:center; gap:1.2mm; font-size:6.8pt; line-height:1; white-space:nowrap; }
+.lb-patient { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto auto minmax(0,1fr); align-items:center; gap:1.2mm; font-size:6.8pt; line-height:1; white-space:nowrap; }
 .lb-name { min-width:0; overflow:hidden; text-overflow:ellipsis; font-size:8.5pt; }
+.lb-gender, .lb-age { justify-self:center; }
+.lb-bed { min-width:0; justify-self:end; overflow:hidden; text-overflow:ellipsis; }
 .lb-location-row { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:center; gap:1.5mm; white-space:nowrap; }
-.lb-dept, .lb-ward, .lb-exam { display:block; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:3.5mm; }
+.lb-dept, .lb-ward, .lb-exam, .lb-category { display:block; width:100%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:3.5mm; }
 .lb-dept, .lb-ward { font-size:6.5pt; }
 .lb-ward { text-align:right; }
+.lb-exam-row { min-width:0; display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,.8fr); align-items:center; gap:1.5mm; }
 .lb-exam { font-size:6.8pt; font-weight:700; }
-.lb-dept.is-long, .lb-ward.is-long, .lb-exam.is-long { font-size:5.9pt; }
-.lb-dept.is-xlong, .lb-ward.is-xlong, .lb-exam.is-xlong { font-size:5.3pt; }
+.lb-category { text-align:right; font-size:6.5pt; }
+.lb-dept.is-long, .lb-ward.is-long, .lb-exam.is-long, .lb-category.is-long { font-size:5.9pt; }
+.lb-dept.is-xlong, .lb-ward.is-xlong, .lb-exam.is-xlong, .lb-category.is-xlong { font-size:5.3pt; }
 .lb-barcode { min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .lb-barcode-svg { display:block; width:100%; height:13.5mm; }
-.lb-meta { min-width:0; display:flex; align-items:flex-end; justify-content:space-between; gap:1.5mm; overflow:hidden; font-size:6.2pt; line-height:1; white-space:nowrap; }
-.lb-meta span { min-width:0; overflow:hidden; text-overflow:ellipsis; }
-.lb-meta span:last-child { flex:0 0 auto; }
+.lb-order-meta { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:1.5mm; overflow:hidden; font-size:5.8pt; line-height:1; white-space:nowrap; }
+.lb-doctor { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.lb-time { justify-self:end; font-variant-numeric:tabular-nums; }
 `;
         return { title: '检验条码打印', previewTitle: '检验条码打印', paper: 'LAB_LABEL', html: html, css: css };
     };
@@ -94,18 +102,16 @@
             + '<div class="mel-patient"><div class="mel-patient-main"><b>' + esc(data.name) + '</b><span>' + esc(data.gender) + '</span>'
             + '<span>' + esc(data.age) + '</span><span>出生 ' + esc(birthDate) + '</span></div>'
             + '<div class="mel-patient-sub"><span title="' + esc(department) + '">科室 ' + esc(department) + '</span>'
-            + '<span title="' + esc(ward) + '">病区 ' + esc(ward) + '</span></div></div><div class="mel-barcode">'
-            + PrintBarcode.svg(admissionNo, { height: 32, fontSize: 10, quietModules: 8, className: 'mel-barcode-svg' })
-            + '</div><div class="mel-drug"><b>' + esc(data.content) + '</b>'
+            + '<span title="' + esc(ward) + '">病区 ' + esc(ward) + '</span></div></div><div class="mel-drug"><b>' + esc(data.content) + '</b>'
             + '<div>' + (dose ? '剂量：' + esc(dose) : '') + (usage ? '　' + esc(usage) : '') + '</div>'
-            + (data.notes ? '<div class="mel-note">备注：' + esc(data.notes) + '</div>' : '') + '</div>'
+            + (data.notes ? '<div class="mel-note">备注：' + esc(data.notes) + '</div>' : '') + '</div><div class="mel-barcode">'
+            + PrintBarcode.svg(admissionNo, { height: 32, fontSize: 10, quietModules: 8, className: 'mel-barcode-svg' }) + '</div>'
             + '<div class="mel-foot"><div class="mel-staff"><div><span>开单</span><b>' + esc(data.doctor_name || '-') + '</b></div>'
             + '<div><span>核对</span><b>' + esc(data.verified_name || '-') + '</b></div>'
-            + '<div><span>执行</span><b>' + esc(data.executed_name || '　') + '</b></div>'
             + '<div class="mel-order-time">开单时间 ' + esc(String(data.created_at || data.start_date || '').slice(0, 16)) + '</div></div>'
-            + '<div class="mel-stamp">执行护士<br>盖章</div></div></div>';
+            + '<div class="mel-stamp">执行护士盖章</div></div></div>';
         const css = `
-.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm 10mm minmax(0,1fr) 14mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
+.med-exec-label { width:100%; height:100%; padding:2mm; display:grid; grid-template-rows:5mm 9mm minmax(0,1fr) 10mm 9mm; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:#000; }
 .mel-head { min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1mm; border-bottom:.6pt solid #000; font-size:7.2pt; white-space:nowrap; }
 .mel-head span { min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:700; }
 .mel-head strong { justify-self:end; font-size:10pt; }
@@ -117,16 +123,16 @@
 .mel-patient-sub span:last-child { text-align:right; }
 .mel-barcode { min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .mel-barcode-svg { display:block; width:100%; height:10mm; }
-.mel-drug { min-height:0; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.3pt; line-height:1.35; overflow-wrap:anywhere; }
-.mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:10pt; line-height:1.3; }
+.mel-drug { min-height:0; padding:1.4mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
+.mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:10pt; line-height:1.3; }
 .mel-note { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.mel-foot { padding-top:1mm; display:grid; grid-template-columns:minmax(0,1fr) 16mm; gap:1.5mm; font-size:6.5pt; line-height:1.2; }
+.mel-foot { padding-top:.7mm; display:grid; grid-template-columns:minmax(0,1fr) 21mm; align-items:center; gap:1.5mm; font-size:6.5pt; line-height:1.2; }
 .mel-staff { min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:.5mm 1.5mm; }
 .mel-staff > div { min-width:0; display:flex; gap:1mm; white-space:nowrap; }
 .mel-staff span { color:#555; }
 .mel-staff b { min-width:0; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
 .mel-order-time { grid-column:1 / span 2; }
-.mel-stamp { display:flex; align-items:center; justify-content:center; text-align:center; border:.7pt dashed #000; font-size:7pt; color:#555; }
+.mel-stamp { width:21mm; height:7mm; justify-self:end; display:flex; align-items:center; justify-content:center; text-align:center; border:.7pt dashed #888; font-size:6.5pt; color:#b8b8b8; white-space:nowrap; }
 `;
         return { title: '医嘱执行单打印', previewTitle: '医嘱执行单打印', paper: 'MED_LABEL', html: html, css: css };
     };
