@@ -761,7 +761,7 @@ var NurseBedPanel = {
             const content = `<form id="trans-ward-form" class="form-grid">
                 <div class="form-group"><label class="form-label">目标科室 <span class="text-danger">*</span></label>
                     <select id="tw-ward" class="form-control"><option value="">请选择目标科室</option>${wardOpts}</select></div>
-                <div class="form-group colspan-2"><p class="fs-12 text-muted">转科将从本科室离开：全部医嘱停止、费用核对、释放床位。</p></div>
+                <div class="form-group colspan-2"><p class="fs-12 text-muted">转科将从本科室离开：需医嘱已全部停止、费用核对后办理。</p></div>
             </form>`;
             const overlay = Dom.modal('转科 - ' + Format.escape(self.patient.patient_name || ''), content, [
                 { text: '下一步', type: 'primary', onclick: async function () {
@@ -770,7 +770,7 @@ var NurseBedPanel = {
                     overlay.remove();
                     // 费用核对, 确认后转科
                     self.chargeCheckBefore(function () {
-                        AjaxLoader.api('nurse/transfer-ward', { method: 'POST', data: { patient_id: pid, target_ward_id: wardId } }).then(function (r) {
+                        AjaxLoader.api('nurse/leave-ward', { method: 'POST', data: { patient_id: pid, mode: 'transfer', target_ward_id: wardId } }).then(function (r) {
                             Dom.toast(r.message || '已转科', 'success');
                             self.close();
                             if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
@@ -783,18 +783,30 @@ var NurseBedPanel = {
     },
 
     doDischarge() {
-        // 出院前先费用核对, 确认后再提示出院办理
-        this.chargeCheckBefore(function () {
-            Dom.modal('办理出院', `
-            <p class="fs-13" style="line-height:1.9">
-                出院需由主管医生开具「出院医嘱」并完成病案首页填写。<br>
-                护士确认床位是否已由医生标记今日出院；办理完成后本床位将自动释放。
-            </p>
-            <div class="empty-state" style="padding:14px 0">
-                当前为护士工作站：出院办理请在医嘱工作站由医生完成，或联系主管医生。
-            </div>`,
-            [{ text: '知道了', type: 'primary' }]);
-        });
+        // 出院 = 移出科室: 医嘱须已全停 + 费用核对 → 确认后办理离科
+        const self = this;
+        const pid = this.patient.id;
+        const p = this.patient;
+        const content = `<div class="kv-grid mb-10">
+            <div class="kv-item"><b>患者</b><span>${Format.escape(p.patient_name || '')}</span></div>
+            <div class="kv-item"><b>床号</b><span>${Format.escape(p.bed_no || '-')} 床</span></div>
+            <div class="kv-item"><b>办理方式</b><span>出院</span></div>
+        </div>
+        <p class="fs-12 text-muted" style="line-height:1.8">出院将从本科室离开：需医嘱已全部停止、费用核对后办理；办理完成后本床位将自动释放。</p>`;
+        const overlay = Dom.modal('办理出院 - ' + Format.escape(p.patient_name || ''), content, [
+            { text: '费用核对并出院', type: 'primary', onclick: async function () {
+                overlay.remove();
+                // 费用核对, 确认后办理出院
+                self.chargeCheckBefore(function () {
+                    AjaxLoader.api('nurse/leave-ward', { method: 'POST', data: { patient_id: pid, mode: 'discharge' } }).then(function (r) {
+                        Dom.toast(r.message || '已办理出院', 'success');
+                        self.close();
+                        if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+                    }).catch(function (e) { /* 已提示: 未停医嘱/未核对等 */ });
+                });
+            } },
+            { text: '取消', type: 'default' }
+        ]);
     },
 
     /* ================= 费用核对/补录 ================= */
