@@ -3,10 +3,12 @@
 Auth::requireRole(['admin', 'doctor', 'nurse', 'lab_tech']);
 $patientId = Validator::get('patient_id');
 $sql = "SELECT lr.*, p.name as patient_name, p.bed_no, u.name as creator_name,
+        pu.name AS barcode_printed_name,
         (SELECT dept FROM lab_catalog WHERE name = lr.exam_name AND opd_id IS NOT NULL LIMIT 1) AS exec_dept
         FROM lab_reports lr
         LEFT JOIN patients p ON lr.patient_id = p.id
-        LEFT JOIN users u ON lr.created_by = u.id";
+        LEFT JOIN users u ON lr.created_by = u.id
+        LEFT JOIN users pu ON lr.barcode_printed_by = pu.id";
 $params = [];
 if ($patientId) {
     $sql .= " WHERE lr.patient_id = ?";
