@@ -4,6 +4,21 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.63.0] - 2026-11-24
+
+### 重构
+- **全项目目录体系重构**（对外接口 URL 与前端调用仅 2 处美化，其余零感知）：
+  - 后端 `api/core/` 按技术分层子目录（`http/ auth/ db/ cache/ schema/ site/ dict/ emr/ print/`），根级仅保留装配器 `bootstrap.php`；`core/helpers/` 按业务域子目录化（`time/ string/ id/ patient/ org/ fee/ order/ pharmacy/ emr/ notify/ audit/ cache/ opd/`，门诊互通客户端独立 `opd/client/`）
+  - 后端 `api/modules/` 二级目录化：护士站 21 个混杂接口拆分为 `admission/ bed/ patient/ order/ vitals/ docs/ print/ charge/` 八个特性目录；管理端补齐 `audit/ system/ query/ catalog/`；认证拆 `session/ setup/`；病案首页拆 `record/ surgery/`；门诊互通拆 `interop/ dev/`；特性目录内文件去除冗余前缀
+  - CLI 脚本按用途归类 `api/scripts/{schema,seed,dictionary,jobs,diag}/`
+  - 前端 `js/core/` 分层：根级仅应用外壳，其余归 `ui/ picker/ patient/ print/ pdf/ dict/`；打印体系七模块整体迁入 `core/print/`；模块内组件归位（`orders/{set,picker,actions}`、`nurse/{station,print}`、`emr_editor/doc/` 文档引擎与外壳分离等）
+  - 页面路由同步精简（hash 路由变更）：`patients/patient_list→patients/list`、`lab/lab_exam→lab/station`、`orders/order_station→orders/station`、`admin/sys_configs→admin/settings`、`case_front_page/main→case_front_page/home`
+  - 接口 URL 美化：`pharmacy/dispense2→pharmacy/dispense`、`doctors/doctor-list→doctors/list`
+  - 目录组织铁律写入 AGENT.md，后续维护必须遵守
+
+### 变更
+- 版本号递增强制刷新静态资源缓存
+
 ## [0.62.2] - 2026-11-24
 
 ### 修复
