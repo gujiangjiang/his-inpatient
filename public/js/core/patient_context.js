@@ -72,12 +72,18 @@ window.refreshWorkstationLayout = async function() {
     const placeholder = document.getElementById('patient-placeholder');
     const content = document.getElementById('app-content');
     const infoBar = document.getElementById('patient-info-bar');
+    const toggleBtn = document.getElementById('sidebar-toggle');
 
     if (!sidebar || !placeholder || !content) return;
 
     const ctx = PatientContext.current();
     const hash = window.location.hash.replace('#', '');
     const browsePage = ['patients/patient_list', 'patients/beds'].includes(hash);
+
+    /* 侧边栏开关按钮跟随侧边栏显隐: 侧边栏隐藏时 (浏览页/未选患者) 按钮无作用, 一并隐藏 */
+    const syncToggle = () => {
+        if (toggleBtn) toggleBtn.style.display = (sidebar.style.display === 'none') ? 'none' : '';
+    };
 
     const loadSidebarIfEmpty = async () => {
         if (sidebar.children.length === 0 && Auth.user) {
@@ -91,6 +97,7 @@ window.refreshWorkstationLayout = async function() {
         placeholder.style.display = 'none';
         content.style.display = 'block';
         if (infoBar) infoBar.style.display = 'none';
+        syncToggle();
         return;
     }
 
@@ -100,6 +107,7 @@ window.refreshWorkstationLayout = async function() {
         placeholder.style.display = 'none';
         content.style.display = 'block';
         if (infoBar) infoBar.style.display = 'none';
+        syncToggle();
         return;
     }
 
@@ -109,6 +117,7 @@ window.refreshWorkstationLayout = async function() {
         placeholder.style.display = 'flex';
         content.style.display = 'none';
         if (infoBar) infoBar.style.display = 'none';
+        syncToggle();
         return;
     }
 
@@ -121,6 +130,7 @@ window.refreshWorkstationLayout = async function() {
         PatientContext.fillInfoBar(ctx);
     }
     await loadSidebarIfEmpty();
+    syncToggle();
 };
 
 /**
