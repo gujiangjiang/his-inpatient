@@ -151,5 +151,7 @@ async function openWordDoc(doc, signed) {
         sig.style.display = 'none';
         sig.innerHTML = '';
     }
+    /* 内容渲染完成后再次重算窄屏画布缩放 (兜底: 任何路径打开文书都保证缩放正确) */
+    if (typeof emr_fitEditorZoom === 'function') emr_fitEditorZoom();
 }
 </script>
