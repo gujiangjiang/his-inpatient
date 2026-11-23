@@ -309,17 +309,16 @@
     .page-title { font-size: 17px; }
     /* 顶部导航栏: 收紧间距, 窄屏不挤压 */
     .topbar { padding: 0 10px; gap: 8px; }
-    .topbar-left { gap: 8px; min-width: 0; }
-    .topbar-right { gap: 8px; }
+    .topbar-left { gap: 8px; min-width: 0; flex: 1; }
+    .topbar-right { gap: 8px; flex-shrink: 0; }
     .hospital-brand { gap: 6px; }
     .hospital-logo { max-width: 64px; height: 28px; }
-    .hospital-title-wrap { max-width: 34vw; }
-    .hospital-name { font-size: 13px; }
-    .hospital-name2 { font-size: 9px; }
-    #user-info { max-width: 22vw; overflow: hidden; text-overflow: ellipsis; }
-    #user-info, .topbar-right .btn { font-size: 12px; padding: 4px 10px; }
-    /* 患者上下文切换器: 面板贴边全宽 */
-    .patient-switcher-trigger { max-width: 42vw; padding: 5px 10px; font-size: 12px; }
+    /* 窄屏隐藏院名文字与当前用户名: 顶栏仅保留 抽屉开关/Logo/选择患者/铃铛/退出, 杜绝溢出 */
+    .hospital-title-wrap { display: none; }
+    #user-info { display: none; }
+    .topbar-right .btn { font-size: 12px; padding: 4px 10px; }
+    /* 患者上下文切换器: 固定「选择患者」短文案, 不再随患者切换加长 */
+    .patient-switcher-trigger { max-width: 46vw; padding: 5px 12px; font-size: 12px; }
     .patient-switcher-panel {
         position: fixed;
         left: 0; right: 0; top: 52px; bottom: 0;
