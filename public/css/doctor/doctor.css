@@ -346,9 +346,11 @@
     .patient-switcher-panel .switcher-tab-content { max-height: calc(100vh - 132px); }
     /* 患者信息栏: 两行紧凑布局, 切换患者按钮不独占一行 (跟随诊断行右侧) */
     .patient-info-bar { gap: 4px 10px; padding: 6px 10px; }
-    .patient-info-bar .pib-actions { width: auto; padding-top: 0; }
+    .patient-info-bar .pib-actions { width: auto; padding-top: 0; flex-shrink: 0; }
     .pib-diagnosis { flex: 1 1 140px; min-width: 110px; max-width: 100%; }
-    .pib-sub { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* 床徽/姓名不收缩, 副信息行弹性收缩省略: 保证第一行恒容纳 */
+    .pib-bed, .pib-name { flex-shrink: 0; }
+    .pib-sub { flex: 1 1 auto; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .pib-name { font-size: 15px; }
     /* 页头操作按钮组: 换行不溢出 */
     .page-head.flex-between { flex-wrap: wrap; gap: 8px; }
