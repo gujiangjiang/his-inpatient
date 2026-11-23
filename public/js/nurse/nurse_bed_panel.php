@@ -266,8 +266,8 @@ var NurseBedPanel = {
         const p = this.patient;
         const self = this;
         AjaxLoader.api('nurse/execution-sheet-list?patient_id=' + pid, { silent: true }).then(r => {
-            const items = (r.data || []).filter(x => x.dispensed);
-            if (!items.length) { Dom.toast('暂无已发药的药品医嘱可打印执行单', 'info'); return; }
+            const items = r.data || [];
+            if (!items.length) { Dom.toast('暂无已核对的药品医嘱可打印执行单', 'info'); return; }
             /* 行: 复选框 + 医嘱内容(含子医嘱) + 打印状态; 已打印灰显 */
             const rows = items.map(o => {
                 const subs = (o.sub_orders || []).map(s =>

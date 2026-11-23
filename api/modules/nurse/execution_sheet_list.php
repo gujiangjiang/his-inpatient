@@ -7,7 +7,7 @@ if (!can_access_patient(Auth::user(), $patientId)) Response::error('无权访问
 
 $pdo = DB::getPDO();
 
-// 已核对/执行中/已完成的药品根医嘱 (含发药标记: 打印执行单需已发药)
+// 已核对/执行中/已完成的药品根医嘱 (执行单打印对象)
 $rows = DB::select(
     "SELECT o.id, o.parent_id, o.is_group_main, o.group_seq, o.content, o.dosage, o.dosage_unit,
             o.usage_name, o.usage_rate, o.freq_code, o.freq_detail, o.status, o.order_period,
