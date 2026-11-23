@@ -12,6 +12,15 @@
 /* ===== 移动端: 病历站左栏抽屉化 + 编辑区全宽 ===== */
 @media (max-width: 768px) {
     .emr-station { min-height: 0; }
+    /* 病历空态: 纵向排列 (提示文案在上, 打开病历树按钮在下), 摆脱桌面端同行挤在一起的观感 */
+    .emr-editor-empty {
+        flex-direction: column;
+        gap: 14px;
+        padding: 0 24px;
+        text-align: center;
+    }
+    .emr-editor-empty p { margin: 0; line-height: 1.9; }
+    .emr-editor-empty .emr-tree-openbtn { padding: 10px 22px; font-size: 14px; }
     .emr-tree {
         position: absolute;
         left: 0; top: 0; bottom: 0;

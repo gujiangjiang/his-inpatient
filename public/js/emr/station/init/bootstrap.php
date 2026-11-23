@@ -38,6 +38,13 @@ function emr_treeFitMobile() {
         if (closeBtn) closeBtn.style.display = 'none';
         if (tree) tree.classList.remove('open');
     }
+    /* 空态提示按端差异化: 移动端病历树为抽屉, 不存在"左侧" */
+    const hint = document.getElementById('emr-empty-hint');
+    if (hint) {
+        hint.innerHTML = isMobile
+            ? '点击下方按钮打开病历目录，选择或新建病历文书'
+            : '请从左侧选择病历文书，或点击分类后的 <b>＋</b> 从模板新建';
+    }
 }
 
 /* ================= 初始化 / 树 ================= */
