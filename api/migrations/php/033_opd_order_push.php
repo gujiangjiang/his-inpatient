@@ -1,7 +1,7 @@
 <?php
 // api/migrations/php/033_opd_order_push.php - 住院检验检查单推送门诊队列
 // 说明: 住院开单即计费（HIS 侧收费口径），检验/检查申请提交后自动推送门诊
-// 一体化系统登记出报告；推送失败入队重试，由 api/scripts/push_opd_orders.php
+// 一体化系统登记出报告；推送失败入队重试，由 api/scripts/jobs/push_opd_orders.php
 // （定时任务）或接口管理页「重推失败单据」补偿，同一单据幂等（biz_type+biz_id）。
 return [
     'version' => '033',

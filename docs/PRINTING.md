@@ -2,12 +2,12 @@
 
 ## 分层
 
-- `public/js/core/print_document.js`：识别 A4、A5、半 A4，构建完整 HTML，集中维护通用单据样式与页码。
-- `public/js/core/print_preview.js`：唯一允许创建打印窗口、写入文档和调用 `window.print()` 的位置；负责 iframe 原尺寸渲染、整体缩放、真实高度和打印介质规则。
-- `public/js/core/print_preview_content.js`：业务入口（片段、页面元素、多文档拼接）及标准病历页眉。
-- `public/js/core/print_barcode.js`：统一生成 Code 128B 矢量条形码。
-- `public/js/core/print_label_templates.js`：腕带、试管条码、药品执行贴模板。
-- `public/js/core/print_helper.js`：仅提供医院品牌抬头，不承载打印或条形码流程。
+- `public/js/core/print/print_document.js`：识别 A4、A5、半 A4，构建完整 HTML，集中维护通用单据样式与页码。
+- `public/js/core/print/print_preview.js`：唯一允许创建打印窗口、写入文档和调用 `window.print()` 的位置；负责 iframe 原尺寸渲染、整体缩放、真实高度和打印介质规则。
+- `public/js/core/print/print_preview_content.js`：业务入口（片段、页面元素、多文档拼接）及标准病历页眉。
+- `public/js/core/print/print_barcode.js`：统一生成 Code 128B 矢量条形码。
+- `public/js/core/print/print_label_templates.js`：腕带、试管条码、药品执行贴模板。
+- `public/js/core/print/print_helper.js`：仅提供医院品牌抬头，不承载打印或条形码流程。
 
 ## 调用方式
 

@@ -1,7 +1,7 @@
 <?php
 // api/modules/admin/config/branding_save.php - 上传/更新/删除医院 Logo 与 PWA PNG 图标
 Auth::requireRole(['admin']);
-require_once __DIR__ . '/../../../core/branding.php';
+require_once __DIR__ . '/../../../core/site/branding.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') Response::error('仅支持 POST 请求', 405);
 if (strtolower((string)($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) !== 'xmlhttprequest') {

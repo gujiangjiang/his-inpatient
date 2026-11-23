@@ -3,10 +3,10 @@ const App = {
     version: window.HIS_APP_VERSION || '1',
     roleRoutes: {
         admin: { module: 'admin', page: 'departments' },
-        doctor: { module: 'patients', page: 'patient_list' },
+        doctor: { module: 'patients', page: 'list' },
         nurse: { module: 'nurse', page: 'station' },
         pharmacist: { module: 'pharmacy', page: 'inventory' },
-        lab_tech: { module: 'lab', page: 'lab_exam' }
+        lab_tech: { module: 'lab', page: 'station' }
     },
 
     init() {

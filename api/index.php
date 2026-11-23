@@ -30,7 +30,7 @@ SetupGuard::guard();
 SchemaGuard::ensure();
 
 // 部署自愈: 自动生成/更新内置病历模板 (免 CLI/npm; 定义变更后自动重新落库)
-require_once __DIR__ . '/core/emr_templates_guard.php';
+require_once __DIR__ . '/core/emr/emr_templates_guard.php';
 EmrTemplatesGuard::ensure();
 
 // 路由分发

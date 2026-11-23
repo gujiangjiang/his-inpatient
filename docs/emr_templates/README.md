@@ -3,7 +3,7 @@
 本目录为系统内置住院病历模板的 **JSON 导出文件**（参考/备份/分发用）。
 
 - 真源：`api/scripts/emr_template_defs.php`（种子脚本 seed_emr_templates.php 使用同一份定义建库）
-- 重新导出：`php api/scripts/export_emr_templates.php`
+- 重新导出：`php api/scripts/dictionary/export_emr_templates.php`
 - 说明：模板中的 `header.hospital` 导出时取站点配置的医院名称；`slot` 可携带 `opts`
   选项列表（下拉选择）；`dyn` 为动态只读项（BMI 自动计算 / 初步诊断同步 / 医师签名）。
 

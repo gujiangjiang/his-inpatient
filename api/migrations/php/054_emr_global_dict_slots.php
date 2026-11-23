@@ -1,8 +1,8 @@
 <?php
-require_once __DIR__ . '/../../core/emr_dicts.php';
+require_once __DIR__ . '/../../core/dict/emr_dicts.php';
 // 054_emr_global_dict_slots.php - 已知字段选项迁移为全局字典 (slot.dict)
 // 民族/婚姻/职业/病史陈述者/有无等: 模板与文书 schema/doc 中的内嵌 opts 列表移除,
-// 改为引用全院统一字典键 (api/core/emr_dicts.php); 字典更新即时生效, 导出 JSON 不再携带大列表
+// 改为引用全院统一字典键 (api/core/dict/emr_dicts.php); 字典更新即时生效, 导出 JSON 不再携带大列表
 return [
     'version' => '054',
     'description' => '民族/婚姻/职业/病史陈述者/有无等选项迁移为全局字典 (模板与文书)',

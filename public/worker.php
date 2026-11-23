@@ -5,17 +5,17 @@
 
 // 加载应用核心
 require_once __DIR__ . '/../api/config.php';
-require_once __DIR__ . '/../api/core/db.php';
-require_once __DIR__ . '/../api/core/auth.php';
-require_once __DIR__ . '/../api/core/response.php';
-require_once __DIR__ . '/../api/core/validator.php';
-require_once __DIR__ . '/../api/core/setup_guard.php';
-require_once __DIR__ . '/../api/core/helpers/time_helper.php';
-require_once __DIR__ . '/../api/core/helpers/date_helper.php';
-require_once __DIR__ . '/../api/core/helpers/string_helper.php';
-require_once __DIR__ . '/../api/core/helpers/id_generator_helper.php';
-require_once __DIR__ . '/../api/core/migration.php';
-require_once __DIR__ . '/../api/core/schema_guard.php';
+require_once __DIR__ . '/../api/core/db/db.php';
+require_once __DIR__ . '/../api/core/auth/auth.php';
+require_once __DIR__ . '/../api/core/http/response.php';
+require_once __DIR__ . '/../api/core/http/validator.php';
+require_once __DIR__ . '/../api/core/schema/setup_guard.php';
+require_once __DIR__ . '/../api/core/helpers/time/time_helper.php';
+require_once __DIR__ . '/../api/core/helpers/time/date_helper.php';
+require_once __DIR__ . '/../api/core/helpers/string/string_helper.php';
+require_once __DIR__ . '/../api/core/helpers/id/id_generator_helper.php';
+require_once __DIR__ . '/../api/core/schema/migration.php';
+require_once __DIR__ . '/../api/core/schema/schema_guard.php';
 
 // 路由分发
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
@@ -47,7 +47,7 @@ if (strpos($uri, '/api/') === 0) {
     Auth::init();
     SetupGuard::guard();
     SchemaGuard::ensure();
-    require_once __DIR__ . '/../api/core/emr_templates_guard.php';
+    require_once __DIR__ . '/../api/core/emr/emr_templates_guard.php';
     EmrTemplatesGuard::ensure();
     
     $apiUri = preg_replace('#^/api/#', '', $uri);

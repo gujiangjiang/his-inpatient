@@ -92,7 +92,7 @@ server {
 
 - 首个 API 请求自动补齐数据库迁移（SchemaGuard）；
 - 首个 API 请求自动生成/更新内置病历模板并清理旧测试模板（EmrTemplatesGuard）；
-- 兜底：也可手动执行一次 `php api/scripts/migrate.php`（模板会随下次请求自动落库）。
+- 兜底：也可手动执行一次 `php api/scripts/schema/migrate.php`（模板会随下次请求自动落库）。
 
 ### 内网（无外网）部署
 
@@ -136,8 +136,8 @@ RewriteRule ^ /index.php [L,QSA]
 **诊断**：在部署机上执行（容器内执行更准）：
 
 ```bash
-php api/scripts/net_check.php                                  # 诊断接口管理已配置的地址
-php api/scripts/net_check.php http://<域名>:端口 http://10.0.0.91:端口   # 诊断指定地址
+php api/scripts/diag/net_check.php                                  # 诊断接口管理已配置的地址
+php api/scripts/diag/net_check.php http://<域名>:端口 http://10.0.0.91:端口   # 诊断指定地址
 ```
 
 **修复（三选一，按运维成本排序）**：

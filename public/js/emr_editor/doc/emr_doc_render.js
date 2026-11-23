@@ -1,0 +1,231 @@
+// public/js/emr_editor/doc/emr_doc_render.js - 病历渲染: 模型→DOM (编辑画布与打印共用)
+// 段落: <div class="p" data-pid><div class="pc">…</div></div>
+// 文本 run: <span data-o data-n>…</span>; 保护项: <span class="emr-fx|emr-slot" data-item data-o data-n contenteditable=false>
+// tab/br: <span class="emr-tab">\t</span> / <br data-o data-n>
+// 抬头顶部固定: 医院名 + 文书名 + 患者信息栏 (info_fields 与 patientInfo 绑定)
+(function () {
+  'use strict';
+  const M = window.EmrDoc;
+  const R = (window.EmrRender = {});
+  /* 统一走 Format.escape (含单引号); 加载序 format.js 先于本文件, fallback 防御 */
+  const esc = (s) => (typeof Format !== 'undefined' ? Format.escape(s) : String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
+
+  const PX = 96 / 72;
+  const pt = (v) => v ? (Math.round(v * PX * 100) / 100) + 'px' : '';
+
+  /* ---------- run 样式 ---------- */
+  R.rPrStyle = (rPr) => {
+    const r = rPr || {};
+    const s = [];
+    if (r.b) s.push('font-weight:bold');
+    if (r.i) s.push('font-style:italic');
+    if (r.u) s.push('text-decoration:underline');
+    if (r.strike) s.push('text-decoration:line-through');
+    if (r.font) s.push('font-family:' + r.font);
+    if (r.sz) s.push('font-size:' + pt(r.sz));
+    if (r.color) s.push('color:' + r.color);
+    return s.join(';');
+  };
+  R.pPrStyle = (pPr) => {
+    const p = pPr || {};
+    const s = [];
+    if (p.align) s.push('text-align:' + p.align);
+    if (p.ind) s.push('text-indent:' + pt(p.ind));
+    if (p.sp) s.push('line-height:' + p.sp);
+    /* flex: 'between' = 弹性行: 字段居中且两侧对齐 (体征行等) */
+    if (p.flex === 'between') s.push('display:flex', 'justify-content:space-between', 'align-items:baseline', 'gap:10px', 'padding:0 2px');
+    if (p.flex === 'center') s.push('display:flex', 'justify-content:center', 'align-items:baseline', 'gap:0', 'padding:0 2px');
+    if (p.borders) {
+      if (p.borders.top) s.push('border-top:1px solid #000');
+      if (p.borders.bottom) s.push('border-bottom:1px solid #000');
+      if (p.borders.top || p.borders.bottom) s.push('padding:4px 0', 'margin:10px 0 6px');
+    }
+    return s.join(';');
+  };
+
+  /* ---------- 段内 run → HTML ---------- */
+  /** 下拉/日期可选项: opts 自定义 或 dict 全局字典 (全院统一) */
+  const optsOf = (it) => {
+    if (Array.isArray(it.opts) && it.opts.length) return it.opts;
+    if (it.dict && window.EmrDictsOf) return window.EmrDictsOf(it.dict);
+    return [];
+  };
+  const isSelect = (it) => optsOf(it).length > 0 || !!it.dt;
+  /** 槽位是否已填写: 紧邻其后的 val 值 run 存在 (普通正文紧邻不影响, 支持混排; 留痕删除不计) */
+  const paraHasTextAfter = (p, idx) => {
+    for (let k = idx + 1; k < p.runs.length; k++) {
+      const it = p.runs[k];
+      if (it.t === 'text') {
+        if (it.del) continue;
+        return !!it.val;
+      }
+      if (it.t === 'br') continue;
+      return false;
+    }
+    return false;
+  };
+  /** dyn 元素的占位文案 (设计模式显示用途, 不引用实际数据) */
+  const DYN_PH = {
+    vital_bmi_value: 'BMI自动计算', sign_names: '医师签名', initial_diagnosis_value: '初步诊断(点此同步)',
+    diag_admission: '入院诊断', diag_discharge: '出院诊断',
+    p_name: '姓名', p_gender: '性别', p_age: '年龄',
+  };
+  /** 已填写下拉/日期槽: 值文本序列最后一 run 的下标 (箭头跟在值后面, 与未选时「占位+箭头」一致) */
+  const valArrowIndex = (p) => {
+    let last = -1;
+    const runs = p.runs || [];
+    for (let i = 0; i < runs.length; i++) {
+      const it = runs[i];
+      if (it.t !== 'slot' || !isSelect(it)) continue;
+      let j = i + 1;
+      while (j < runs.length && runs[j].t === 'br') j++;
+      let tail = -1;
+      while (j < runs.length && runs[j].t === 'text' && runs[j].val && !runs[j].del) { tail = j; j++; }
+      if (tail >= 0) last = tail;
+    }
+    return last;
+  };
+  const runsToHTML = (p, design, opts) => {
+    const out = [];
+    const hideDel = !!(opts && opts.hideDel); /* 打印/快照: 隐藏修改留痕 */
+    const arrowAt = valArrowIndex(p);
+    const pRuns = p.runs || []; /* 兼容旧数据段落缺 runs */
+    let pos = 0;
+    for (let ri = 0; ri < pRuns.length; ri++) {
+      const it = pRuns[ri];
+      const n = M.itemLen(it);
+      const o = pos; pos += n;
+      if (it.t === 'text') {
+        if (it.del && hideDel) continue;
+        if (it.text) {
+          /* val 文本 = 槽位值: 编辑状态带下划线提示可编辑; 其余为普通正文
+             值尾 run 加 emr-val-sel: 尾部呈现下拉箭头; 留痕删除: emr-del (红删除线) */
+          let cls = it.val ? 'emr-val' + (ri === arrowAt ? ' emr-val-sel' : '') : '';
+          if (it.del) cls += (cls ? ' ' : '') + 'emr-del';
+          const clsAttr = cls ? ' class="' + cls + '"' : '';
+          const st = it.rPr && Object.keys(it.rPr).length ? ' style="' + R.rPrStyle(it.rPr) + '"' : '';
+          out.push('<span' + clsAttr + ' data-o="' + o + '" data-n="' + n + '"' + st + '>' + esc(it.text) + '</span>');
+        }
+        continue;
+      }
+      if (it.t === 'fx') {
+        const unitCls = /_unit$/.test(it.key || '') ? ' emr-vital-unit' : '';
+        out.push('<span class="emr-fx' + unitCls + '" data-item="fx" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false">' + esc(it.text) + '</span>');
+        continue;
+      }
+      if (it.t === 'slot') {
+        const filled = paraHasTextAfter(p, p.runs.indexOf(it));
+        const vital = /^vital_(temp|pulse|resp|bp|height|weight)_val$/.test(it.key || '');
+        const cls = 'emr-slot' + (isSelect(it) ? ' emr-slot-sel' : '') + (it.dt ? ' emr-slot-dt' : '') + (it.multi ? ' emr-slot-multi' : '')
+          + (it.req ? ' emr-req' : '') + (vital ? ' emr-vital-slot' : '') + (filled ? ' emr-slot-filled' : ' emr-slot-empty');
+        out.push('<span class="' + cls + '" data-item="slot" data-key="' + esc(it.key) + '" data-o="' + o + '" data-n="1" contenteditable="false"></span>');
+        if (!filled) {
+          /* 未填写: 占位文字独立渲染 (零模型宽度 data-n=0), 光标可落在框内左侧;
+             点击激活后占位透明化 (保留下划线宽度), 输入首个字符即消失 */
+          const phCls = 'emr-ph' + (isSelect(it) ? ' emr-ph-sel' : '') + (it.dt ? ' emr-ph-dt' : '') + (it.multi ? ' emr-ph-multi' : '')
+            + (it.req ? ' emr-req' : '') + (vital ? ' emr-vital-ph' : '');
+          /* 注意: 占位 span 必须保持可编辑 (不可 contenteditable=false) —
+             否则浏览器在输入时会把选区"回收"到编辑宿主, 光标跳走且打不进字 (实测确认) */
+          out.push('<span class="' + phCls + '" data-n="0" data-o="' + (o + 1) + '" data-slot="' + esc(it.key) + '">' + esc(it.ph || '填写') + '</span>');
+        }
+        continue;
+      }
+      if (it.t === 'ref') {
+        /* 字段引用 (自动调用其他文书的字段值); 设计模式仅显示默认占位符, 不引用 */
+        const txt = design ? (it.fb || '＿＿') : (it.text || it.fb || '');
+        out.push('<span class="emr-ref' + (design ? ' emr-ref-des' : '') + '" data-item="ref" data-key="' + esc(it.key) + '"'
+          + ' data-o="' + o + '" data-n="1" contenteditable="false">' + esc(txt) + '</span>');
+        continue;
+      }
+      if (it.t === 'dyn') {
+        const sync = it.key === 'initial_diagnosis_value' || it.key === 'diag_admission' || it.key === 'diag_discharge';
+        const syncTitle = it.key === 'diag_discharge' ? '点击同步出院诊断（来源：左侧诊断 → 出院诊断）'
+          : '点击同步诊断（来源：左侧诊断；按优先级 修正诊断 > 入院诊断 > 初步诊断）';
+        /* 自动计算项: 设计模式仅虚线占位 (不显示名称描述; 悬停说明), 书写模式显示计算结果 */
+        const txt = design ? (it.calc ? '' : ('（' + (DYN_PH[it.key] || it.key) + '）')) : it.text;
+        const calcTitle = it.calc ? (' title="自动计算' + (it.name ? '：' + esc(it.name) : '') + '（' + esc(it.calc.expr || '') + '）'
+          + (design ? '，书写时此处自动显示结果' : '') + '"') : '';
+        out.push('<span class="emr-dyn' + (sync ? ' emr-dyn-sync' : '') + (design ? ' emr-dyn-des' : '') + (it.calc ? ' emr-dyn-calc' : '') + '" data-item="dyn" data-key="' + esc(it.key) + '"'
+          + ' data-o="' + o + '" data-n="1" contenteditable="false"'
+          + (sync && !design ? ' title="' + syncTitle + '"' : '') + calcTitle + '>' + esc(txt) + '</span>');
+        continue;
+      }
+      if (it.t === 'tab') {
+        out.push('<span class="emr-tab" data-item="tab" data-o="' + o + '" data-n="1">\t</span>');
+        continue;
+      }
+      if (it.t === 'br') {
+        out.push('<br data-item="br" data-o="' + o + '" data-n="1">');
+        continue;
+      }
+      /* 未知项: 空占位 */
+      out.push('<span class="emr-unknown" data-item="unk" data-o="' + o + '" data-n="1">\uFFFC</span>');
+    }
+    return out.join('');
+  };
+
+  /** 段落 → HTML */
+  R.paraToHTML = (p, design, opts) => {
+    const inner = runsToHTML(p, design, opts);
+    const ps = R.pPrStyle(p.pPr);
+    /* emr-flx: 弹性行标记 (标签/槽位不压缩换行) */
+    const flex = p.pPr && p.pPr.flex;
+    const fm = flex ? (' emr-flx' + (flex === 'center' ? ' emr-flx-center' : '')) : '';
+    return '<div class="p" data-pid="' + p.id + '"><div class="pc' + fm + '"' + (ps ? ' style="' + ps + '"' : '') + '>'
+      + (inner || '<br data-n="0" data-o="0">') + '</div></div>';
+  };
+
+  /** 块列表 → HTML (表格递归) */
+  R.blocksToHTML = (blocks, design, opts) => {
+    const out = [];
+    for (const b of blocks || []) {
+      if (b.t === 'p') out.push(R.paraToHTML(b, design, opts));
+      else if (b.t === 'tbl') {
+        const grid = b.grid || [];
+        const cells = b.rows.map((r) => {
+          const trh = r.trPr && r.trPr.h ? ' style="height:' + pt(r.trPr.h) + '"' : '';
+          return '<tr' + trh + '>' + r.cells.map((c) => {
+            const st = [];
+            if (c.tcPr) {
+              if (c.tcPr.w) st.push('width:' + pt(c.tcPr.w));
+              if (c.tcPr.shd) st.push('background:' + c.tcPr.shd);
+            }
+            return '<td' + (st.length ? ' style="' + st.join(';') + '"' : '') + '>' + R.blocksToHTML(c.blocks, design, opts) + '</td>';
+          }).join('') + '</tr>';
+        }).join('');
+        const cls = 'emr-tbl' + (b.tblPr && b.tblPr.plain ? ' emr-tbl-plain' : '') + (b.tblPr && b.tblPr.bd === 0 ? ' emr-tbl-none' : b.tblPr && b.tblPr.bd === 2 ? ' emr-tbl-bold' : '');
+        const st = [];
+        st.push('width:' + (grid.length ? pt(grid.reduce((a, x) => a + x, 0)) : '100%'));
+        if (b.tblPr && b.tblPr.center) st.push('margin-left:auto', 'margin-right:auto'); /* 整表居中, 内部单元格左对齐 */
+        out.push('<table class="' + cls + '" data-tblid="' + b.id + '" style="' + st.join(';') + '">' + cells + '</table>');
+      }
+    }
+    return out.join('');
+  };
+
+  /* ---------- 抬头 ---------- */
+  R.brandToHTML = (header) => {
+    if (!header || !header.hospital) return '';
+    return '<div class="brand-name-lockup emr-brand-lockup">'
+      + '<div class="brand-name-line emr-hos">' + esc(header.hospital) + '</div>'
+      + (header.hospital2 ? '<div class="brand-name-line emr-hos2">' + esc(header.hospital2) + '</div>' : '')
+      + '</div>';
+  };
+  /** 固定抬头 HTML: 医院名/文书名/患者信息栏; patientInfo 键: name/gender/age/admission_no/ward_name/bed_no
+   *  design=true (设计模板) 时信息栏以占位符呈现, 不显示真实患者 */
+  R.headerToHTML = (header, patientInfo, design) => {
+    header = header || {}; /* 兼容旧文档缺 header */
+    const info = patientInfo || {};
+    const fields = (header.info_fields || []).map((f) => {
+      const [label, key] = f;
+      const val = design ? '＿＿＿＿' : (info[key] || '');
+      return '<span class="emr-hf"><b>' + esc(label) + '</b><span class="emr-hf-val' + (design ? ' emr-ph-des' : '') + '">' + esc(val) + '</span></span>';
+    }).join('');
+    return '<div class="emr-page-head">'
+      + R.brandToHTML(header)
+      + (header.doc_name ? '<div class="emr-docname">' + esc(header.doc_name) + '</div>' : '')
+      + (fields ? '<div class="emr-infobar">' + fields + '</div>' : '')
+      + '</div>';
+  };
+})();

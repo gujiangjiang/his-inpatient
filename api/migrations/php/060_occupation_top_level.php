@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../core/dict_db.php';
+require_once __DIR__ . '/../../core/db/dict_db.php';
 // 060_occupation_top_level.php - 首页/病历职业统一为职业分类大典 2022 八个大类
 return [
     'version' => '060',

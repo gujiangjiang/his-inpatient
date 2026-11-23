@@ -25,8 +25,8 @@ if (pathinfo($uri, PATHINFO_EXTENSION) !== '' && !is_file(__DIR__ . $uri)) {
 }
 
 require_once __DIR__ . '/../api/config.php';
-require_once __DIR__ . '/../api/core/db.php';
-require_once __DIR__ . '/../api/core/branding.php';
+require_once __DIR__ . '/../api/core/db/db.php';
+require_once __DIR__ . '/../api/core/site/branding.php';
 require_once __DIR__ . '/icons/icon.php';
 require_once __DIR__ . '/assets.php';
 $brand = branding_public();
@@ -221,7 +221,7 @@ header('Cache-Control: no-store');
 
         <!-- 患者信息栏 (选择患者后显示, 顶部栏下横向条) -->
         <div id="patient-info-bar" class="patient-info-bar" style="display:none">
-            <span class="pib-bed level-3" id="pib-bed" title="返回患者列表" onclick="navigateTo('patients','patient_list')">-</span>
+            <span class="pib-bed level-3" id="pib-bed" title="返回患者列表" onclick="navigateTo('patients','list')">-</span>
             <span class="pib-name" id="pib-name" title="查看住院/门诊记录" style="cursor:pointer" onclick="navigateTo('outpatient','records')">-</span>
             <span class="pib-sub" id="pib-sub">-</span>
             <span class="pib-item"><b>入院</b><i id="pib-days">-</i></span>

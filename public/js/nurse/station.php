@@ -1,5 +1,5 @@
 <?php header("Content-Type: text/html; charset=utf-8"); require_once __DIR__ . '/../../icons/icon.php'; ?>
-<?php include __DIR__ . '/nurse_bed_panel.php'; ?>
+<?php include __DIR__ . '/station/bed_panel.php'; ?>
 <div class="nurse-board">
     <div class="nurse-board-head">
         <span class="nb-title">床位一览表</span>

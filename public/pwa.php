@@ -1,8 +1,8 @@
 <?php
 // public/pwa.php - 动态 Manifest / Service Worker / PWA 图标（不进入认证 API）
 require_once __DIR__ . '/../api/config.php';
-require_once __DIR__ . '/../api/core/db.php';
-require_once __DIR__ . '/../api/core/branding.php';
+require_once __DIR__ . '/../api/core/db/db.php';
+require_once __DIR__ . '/../api/core/site/branding.php';
 
 function pwa_manifest()
 {

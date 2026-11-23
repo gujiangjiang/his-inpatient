@@ -1,7 +1,7 @@
 <?php
 // api/modules/admin/sys_config_save.php - 保存配置 (未提供的分组/描述保留原值, 避免编辑值清空元数据)
 Auth::requireRole(['admin']);
-require_once __DIR__ . '/../../../core/branding.php';
+require_once __DIR__ . '/../../../core/site/branding.php';
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') Response::error('仅支持 POST 请求', 405);
 $key = Validator::get('config_key');
 $value = Validator::get('config_value');

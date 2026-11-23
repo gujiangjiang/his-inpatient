@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../../core/branding.php';
+require_once __DIR__ . '/../../core/site/branding.php';
 // 063_emr_dual_hospital_names.php - 模板与未签名病历同步医院主/第二名称
 return [
     'version' => '063',

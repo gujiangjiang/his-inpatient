@@ -970,7 +970,7 @@
 
 ### 新增
 - **打印模板复刻门诊**（尺寸按用户指定调整）：
-  - 条形码：复刻门诊纯 PHP Code 128 SVG 生成器（api/core/barcode.php）；
+  - 条形码：复刻门诊纯 PHP Code 128 SVG 生成器（api/core/print/barcode.php）；
     前端版 PrintHelper.barcodeSvg（打印模板右上角用）。
   - 打印公共样式：print_helper.js 加 .sheet（A4 210×297mm）/ .sheet.a5
     （148×210mm 处方）/ .sheet.half-a4（210×148mm 半张 A4 报告）/
@@ -1188,7 +1188,7 @@
 ## [0.43.2] - 2026-11-18
 
 ### 修复
-- **连通性测试纳入「门诊接口启用开关」**（`api/modules/admin/integration/integration_test.php`）：
+- **连通性测试纳入「门诊接口启用开关」**（`api/modules/admin/integration/test.php`）：
   测试首项展示开关状态，未启用时提示在「连接配置」勾选启用并保存，且跳过链路探针
   （总开关关闭时测链路无意义）。此前测试只测链路不测总开关，而开单项目目录同步、
   住院医生门诊记录查看均受该开关控制——出现「连通性测试全绿，开单面板却提示
@@ -1199,7 +1199,7 @@
 ## [0.43.1] - 2026-11-18
 
 ### 修复
-- **开检验/检查误报「门诊接口不可用」回退内置目录**（`api/core/helpers/catalog_sync.php`
+- **开检验/检查误报「门诊接口不可用」回退内置目录**（`api/core/helpers/opd/catalog_sync.php`
   + `opd_helper.php`）：全量目录（含组合成员）响应体较大，容器/低配服务器构建耗时
   可能超过默认 8 秒——HIS 超时放弃判定失败，而门诊侧仍完成并记录「成功」入向日志，
   形成「门诊日志正常、HIS 却提示不通」的假性不通。`opd_his_read` 新增可选超时参数，
@@ -1214,11 +1214,11 @@
 ## [0.43.0] - 2026-11-18
 
 ### 新增
-- **出站网络栈双栈诊断**（`api/core/helpers/net_diag_helper.php`）：对目标地址做 DNS
+- **出站网络栈双栈诊断**（`api/core/helpers/opd/net_diag_helper.php`）：对目标地址做 DNS
   A/AAAA 解析与 IPv4/IPv6 双栈 TCP 连通探测，静默容错不影响主流程；定位「填 IP 通、
   填域名不通」类问题（典型：域名仅 AAAA 而运行环境无 IPv6 出口，如 Docker bridge 容器）。
 - 接口测试页首项新增「网络栈诊断（门诊服务地址）」：直接展示解析矩阵与双栈连通结论。
-- 新增网络诊断脚本 `api/scripts/net_check.php`：无参诊断接口管理已配置的门诊/PACS 地址，
+- 新增网络诊断脚本 `api/scripts/diag/net_check.php`：无参诊断接口管理已配置的门诊/PACS 地址，
   传参可诊断任意地址；输出解析矩阵、双栈连通明细、结论与三选一修复建议，退出码可巡检。
 - 部署文档 `docs/DEPLOY.md` 新增《IPv6 域名与系统间互调》：现象/根因/诊断/三种修复
   （容器 extra_hosts 内网映射、内网 DNS 分离解析、容器启用 IPv6 出口）。
@@ -1474,7 +1474,7 @@
 
 ### 新增
 - **全院统一字典（模板不再内嵌选项）**：民族/婚姻/职业/病史陈述者/有无(不详) 等选项
-  迁移为全局字典（单一数据源 `api/core/emr_dicts.php` → 前端 `window.EmrDicts`），
+  迁移为全局字典（单一数据源 `api/core/dict/emr_dicts.php` → 前端 `window.EmrDicts`），
   模板槽位以 `"dict":"nation"` 引用字典键——导出 JSON 不再携带完整选项列表，字典
   更新全院模板即时生效；元素属性新增「选项来源：自定义选项 / 全局字典」；迁移 054
   转换存量模板与文书；内置模板定义同步（新增全局字典下拉助手）。
@@ -1841,7 +1841,7 @@
 
 ### 变更
 - **三级医师改为模态框**：原独立页面（clinic/team.php）删除，改为全局组件
-  `public/js/core/team_modal.js`——侧边栏点击即弹出（不打断当前任务），含住院/主治/主任/
+  `public/js/core/patient/team_modal.js`——侧边栏点击即弹出（不打断当前任务），含住院/主治/主任/
   诊疗组四项、当前指派回填、保存。
 - **出院菜单位置调整**：移至左侧「临床工作」栏「三级医师」与「提交」之间。
 - 左栏文书标题过长省略时，**悬停显示完整名称**。
@@ -1858,7 +1858,7 @@
 
 ### 变更
 - **出院入口移至 HIS 左侧「临床工作」栏**（出院属医嘱系统组成部分，非病历）：登录后全页面
-  可用（全局组件 `public/js/core/discharge_modal.js`）；病历站左栏仅保留「模板」按钮。
+  可用（全局组件 `public/js/core/patient/discharge_modal.js`）；病历站左栏仅保留「模板」按钮。
 
 ## [0.25.1] - 2026-11-10
 
@@ -1944,7 +1944,7 @@
   4/3/1/1 个模板。
 
 ### 变更
-- 内置模板定义移至 `api/core/emr_template_defs.php`（运行时自动落库、种子、JSON 导出共用一份）。
+- 内置模板定义移至 `api/core/emr/emr_template_defs.php`（运行时自动落库、种子、JSON 导出共用一份）。
 
 ## [0.24.6] - 2026-11-09
 
@@ -1952,7 +1952,7 @@
 - **内置模板新增**：首次病程记录（病例特点/诊断依据/鉴别诊断/诊疗计划）、医患沟通记录
   （沟通时间地点/参加人员/沟通内容/患者意见/医患双方签名）。
 - **内置模板 JSON 文件导出**：`docs/emr_templates/`（9 个模板 + 说明），与种子同一份定义，
-  供参考/备份/分发；重新导出 `php api/scripts/export_emr_templates.php`。
+  供参考/备份/分发；重新导出 `php api/scripts/dictionary/export_emr_templates.php`。
 
 ### 修复
 - **已输入文字无法再次点击编辑（深入修复）**：
@@ -2069,7 +2069,7 @@
 ### 修复
 - **新版本部署后未执行数据库迁移导致病历模块报错**（点击文书无响应 / 模板新建
   `table emr_documents has no column named doc_json`）：
-  1. 新增请求级自动迁移守卫 `api/core/schema_guard.php`：系统初始化完成后，
+  1. 新增请求级自动迁移守卫 `api/core/schema/schema_guard.php`：系统初始化完成后，
      首个 API 请求自动比对迁移目录最大版本与 `migrations` 表已应用版本，落后则
      加锁执行 `Migration::runAll()`（`api/index.php` 与 `public/worker.php` 均已接入），
      升级部署无需再手动执行迁移脚本，验证：035 旧库首个请求即自动补齐到 037；
@@ -2151,7 +2151,7 @@
   （`patient_admissions.created_at` 收治时间、`discharged_at` 出院时间）比较处
   统一经 `TimeHelper::ts()` 模式感知换算（order_save/order_update 开嘱校验、
   首页住院天数计算）——utc 模式下不再出现 8 小时边界错位
-- **存量库 UTC 迁移工具 `api/scripts/tz_migrate.php`**：`plan`（只读预演：逐列
+- **存量库 UTC 迁移工具 `api/scripts/schema/tz_migrate.php`**：`plan`（只读预演：逐列
   行数与抽样对照）/ `convert`（整库自动备份 → 逐列转换 → JSON 清单 →
   `time.storage` 置 utc）/ `rollback`（按清单精确还原 + 回切 local）；
   转换列以实库 PRAGMA 扫描（`_at/_time` 结尾）；排除业务语义列
@@ -2334,7 +2334,7 @@
   申请单（单号/项目/单价/时间）与「已缴费」标志；门诊侧按住院号复用住院就诊、
   按申请单号幂等落单（`biz_type+biz_id` 队列同样幂等）。
 - 新增 `integration_order_pushes` 待发队列（迁移 033）：推送失败自动累计重试，
-  最多 5 次；新增 CLI `api/scripts/push_opd_orders.php`（定时补偿）与接口管理页
+  最多 5 次；新增 CLI `api/scripts/jobs/push_opd_orders.php`（定时补偿）与接口管理页
   「重推失败单据」（忽略上限强制重推），队列状态（待推送/失败/已推送）在
   连接状态卡实时展示；开单结果在医生端提示失败条数。
 
@@ -2485,7 +2485,7 @@
 
 ### 新增
 - **集成连接配置与门诊客户端**: 迁移 020 `integration_settings` 集成连接配置表 (门诊服务地址 / FHIR Token / 业务 Token / PACS 阅片地址模板)
-- `api/core/helpers/opd_helper.php`: 门诊 FHIR R4 + 业务接口客户端 (cURL 优先、流式兜底、Token 双头发送、超时与错误兜底, 兼容 PHP 8.5)
+- `api/core/helpers/opd/opd_helper.php`: 门诊 FHIR R4 + 业务接口客户端 (cURL 优先、流式兜底、Token 双头发送、超时与错误兜底, 兼容 PHP 8.5)
 - 管理端接口 `admin/integration-config` / `integration-config-save` (URL 与 {study_uid} 模板校验) / `integration-test` (FHIR 服务 / FHIR 令牌 / 业务接口 / PACS 阅片 四项连通性测试)
 
 ## [0.13.47] - 2026-10-11

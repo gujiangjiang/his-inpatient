@@ -116,7 +116,7 @@ const Dom = {
 
     /**
      * 容器内 <script> 手动提取执行 (innerHTML 注入不会自动跑 script)。
-     * 收敛 loadPage 与 sys_configs 懒加载面板的两份同实现。
+     * 收敛 loadPage 与 系统设置懒加载面板的两份同实现。
      */
     execScripts(container) {
         if (!container) return;

@@ -27,12 +27,12 @@ async function handleHashChange() {
     if (window.Notify) Notify.init(); /* 全局消息推送 (幂等; 覆盖所有进入主界面的路径) */
 
     const key = route.module + '/' + route.page;
-    const browsePages = ['patients/patient_list', 'patients/beds'];
+    const browsePages = ['patients/list', 'patients/beds'];
 
     // 工作站模式 (医生): 浏览页无需患者上下文; 其他页未选患者时跳回患者卡片墙
     if (window.WorkstationMode === true && !PatientContext.isActive() && !browsePages.includes(key)) {
         Dom.toast('请先在患者卡片墙选择患者', 'info');
-        window.location.hash = 'patients/patient_list';
+        window.location.hash = 'patients/list';
         return;
     }
 
@@ -122,8 +122,8 @@ Auth.check({ silent: true }).then(loggedIn => {
             document.getElementById('login-container').style.display = 'none';
             document.getElementById('main-app').style.display = 'flex';
             updateUserInfo();
-            if (window.location.hash !== '#patients/patient_list') {
-                window.location.hash = 'patients/patient_list';
+            if (window.location.hash !== '#patients/list') {
+                window.location.hash = 'patients/list';
             } else {
                 handleHashChange();
             }

@@ -49,7 +49,7 @@ function pharmacy_dispensing_scope(s) {
 }
 
 async function loadQueue() {
-    const result = await AjaxLoader.api('pharmacy/dispense2?action=queue&scope=' + _dispensingScope, { silent: true });
+    const result = await AjaxLoader.api('pharmacy/dispense?action=queue&scope=' + _dispensingScope, { silent: true });
     _dispensingQueue = result.data || [];
     const tbody = document.getElementById('dispensing-queue-body');
     tbody.innerHTML = '';
@@ -79,7 +79,7 @@ async function loadQueue() {
 }
 
 async function pharmacy_dispense_one(id) {
-    const r = await AjaxLoader.api('pharmacy/dispense2', { method: 'POST', data: { action: 'dispense', ids: [id] } });
+    const r = await AjaxLoader.api('pharmacy/dispense', { method: 'POST', data: { action: 'dispense', ids: [id] } });
     Dom.toast(r.message || '已处理', r.data && r.data.fail && r.data.fail.length ? 'error' : 'success');
     loadQueue(); loadRecords();
 }
@@ -87,7 +87,7 @@ async function pharmacy_dispense_one(id) {
 async function pharmacy_dispense_selected() {
     const ids = [...document.querySelectorAll('.dispense-row-check:checked')].map(c => Number(c.value));
     if (!ids.length) { Dom.toast('请先勾选要摆药的医嘱', 'error'); return; }
-    const r = await AjaxLoader.api('pharmacy/dispense2', { method: 'POST', data: { action: 'dispense', ids } });
+    const r = await AjaxLoader.api('pharmacy/dispense', { method: 'POST', data: { action: 'dispense', ids } });
     Dom.toast(r.message || '已处理', r.data && r.data.fail && r.data.fail.length ? 'error' : 'success');
     loadQueue(); loadRecords();
 }
@@ -120,7 +120,7 @@ async function loadRecords() {
 }
 
 async function pharmacy_deliver(recId) {
-    const r = await AjaxLoader.api('pharmacy/dispense2', { method: 'POST', data: { action: 'deliver', id: recId } });
+    const r = await AjaxLoader.api('pharmacy/dispense', { method: 'POST', data: { action: 'deliver', id: recId } });
     if (r.status === 'success') Dom.toast(r.message || '已送达', 'success');
     else Dom.toast(r.message || '送达失败', 'error');
     loadRecords();

@@ -7,7 +7,7 @@ return [
     'version' => '057',
     'description' => '基础字典迁移至独立字典库 (省市县邮编/职业大典/院级字典)',
     'up' => function ($m) {
-        require_once __DIR__ . '/../../core/emr_dicts.php';
+        require_once __DIR__ . '/../../core/dict/emr_dicts.php';
 
         /* 1) 建库导入种子 */
         dict_db_ensure();

@@ -1,0 +1,242 @@
+// public/js/emr_editor/doc/emr_doc_model.js - 病历文档模型
+// 文档 = {v(模型版本), title, page(排版), header(固定抬头), body(正文块)}
+// 正文块: {t:'p',pPr,rPr,runs} 段落 | {t:'tbl',grid,rows} 表格
+// run 项: text(文本)/tab/br + fx(固定标签,原子不可删) + slot(填写槽) + dyn(动态只读项) + ref(字段引用)
+// 存储词汇速查 (与 Word 术语对齐; 为兼容存量 doc_json/schema_json, 键名不轻易更名):
+//   pPr = 段落属性 (align/ind/sp/flex/borders)   rPr = 字符属性 (b/i/u/strike/font/sz/color)
+//   val = 槽位值文本   del = 修订留痕删除 (红删除线, 打印不输出)   manual = 已手动修改(停止首页同步)
+//   ph = 占位描述   def = 默认内容(旧)   defPick = 默认选中(下拉/复选)   req = 必选
+//   opts/multi = 下拉选项/多选   dt = 日期元素(mode/fmt)   calc = 自动计算项(expr/dec)   fb = 引用无值占位
+// 固定元素保护: 模型层 ops 禁止删除/越过 fx/slot; 每次事务后 assertGuard 校验键集合与模板一致
+(function () {
+  'use strict';
+  const M = (window.EmrDoc = {});
+  let NID = 1;
+  M.nid = () => NID++;
+
+  /* ---------- 构造器 ---------- */
+  M.para = (runs, pPr, rPr) => ({ t: 'p', id: M.nid(), pPr: pPr || {}, rPr: rPr || {}, runs: runs || [] });
+  /* val=true: 该文本 run 是紧邻其前槽位的「值」(非普通正文; 支持【下拉框】文字 混排) */
+  M.text = (text, rPr, val) => {
+    const it = { t: 'text', text: String(text), rPr: rPr || {} };
+    if (val) it.val = true;
+    return it;
+  };
+  M.fx = (key, text) => ({ t: 'fx', key, text: String(text || ''), rPr: {} });
+  M.slot = (key, ph) => ({ t: 'slot', key, ph: String(ph || ''), rPr: {} });
+  M.item = (t, extra) => Object.assign({ t, rPr: {} }, extra || {});
+  M.cell = (blocks, tcPr) => ({ id: M.nid(), tcPr: tcPr || {}, blocks: blocks && blocks.length ? blocks : [M.para()] });
+  M.row = (cells, trPr) => ({ id: M.nid(), trPr: trPr || {}, cells });
+  M.table = (rows, grid, tblPr) => ({ t: 'tbl', id: M.nid(), tblPr: tblPr || {}, grid: grid || [], rows: rows || [] });
+
+  /* ---------- 长度与定位 ---------- */
+  /** 项占字符位: 文本=字符数; 固定标签/填写槽/制表符等=1 占位(光标可停在两侧, 不可删除) */
+  M.itemLen = (it) => {
+    if (it.t === 'text') return it.text.length;
+    return 1;
+  };
+  /* dyn = 动态只读项 (BMI 自动计算/签名自动填入/诊断同步), 与 fx 同为不可删除原子 */
+  M.isProtected = (it) => it.t === 'fx' || it.t === 'slot' || it.t === 'dyn' || it.t === 'ref';
+  M.paraLen = (p) => { let n = 0; for (const it of p.runs) n += M.itemLen(it); return n; };
+
+  /** 定位 offset o 到项: {i(项下标), off(项内偏移), start(项起始)} */
+  M.locate = (p, o) => {
+    let pos = 0;
+    const runs = p.runs;
+    for (let i = 0; i < runs.length; i++) {
+      const n = M.itemLen(runs[i]);
+      if (o < pos + n) return { i, off: o - pos, start: pos };
+      pos += n;
+    }
+    return { i: runs.length, off: 0, start: pos };
+  };
+
+  /** 分裂 runs, 使 offset o 处成为项边界; 返回 o 后第一个项下标 */
+  M.splitAt = (p, o) => {
+    let pos = 0;
+    for (let i = 0; i < p.runs.length; i++) {
+      const it = p.runs[i];
+      const n = M.itemLen(it);
+      if (o === pos) return i;
+      if (o < pos + n) {
+        if (it.t !== 'text') return i; /* 保护项/特殊项不可内部切开 */
+        const k = o - pos;
+        p.runs.splice(i, 1,
+          Object.assign({}, it, { text: it.text.slice(0, k) }),
+          Object.assign({}, it, { text: it.text.slice(k), rPr: M.cloneR(it.rPr) }));
+        return i + 1;
+      }
+      pos += n;
+    }
+    return p.runs.length;
+  };
+
+  /** 插入点: 分裂到项边界, 返回首个可插入项下标 */
+  M.insertIndex = (p, o) => M.splitAt(p, o);
+
+  /* ---------- 规范化 ---------- */
+  M.sameRPr = (a, b) => JSON.stringify(a || {}) === JSON.stringify(b || {});
+  M.cloneR = (r) => r ? JSON.parse(JSON.stringify(r)) : {};
+
+  /** 合并相邻同格式文本 run, 丢弃空文本 (值/正文/留痕属性不同不合并, 保留边界) */
+  M.normalize = (p) => {
+    const out = [];
+    for (const it of p.runs) {
+      if (it.t === 'text' && !it.text) continue;
+      const last = out[out.length - 1];
+      if (last && it.t === 'text' && last.t === 'text' && M.sameRPr(last.rPr, it.rPr)
+        && !!last.val === !!it.val && !!last.del === !!it.del) {
+        out[out.length - 1] = Object.assign({}, last, { text: last.text + it.text });
+        continue;
+      }
+      out.push(it);
+    }
+    p.runs = out;
+    return p;
+  };
+
+  /* ---------- 固定元素守卫 ---------- */
+  /** 递归收集正文中 fx/slot 键: {fx:[...], slot:[...]} (排序去重) */
+  M.collectGuard = (blocks) => {
+    const guard = { fx: [], slot: [] };
+    const walk = (bl) => {
+      for (const b of bl) {
+        if (!b) continue;
+        if (b.t === 'p') {
+          for (const it of b.runs || []) {
+            if ((it.t === 'fx' || it.t === 'dyn' || it.t === 'ref') && it.key) guard.fx.push(it.key);
+            if (it.t === 'slot' && it.key) guard.slot.push(it.key);
+          }
+        } else if (b.t === 'tbl') {
+          for (const r of b.rows || []) for (const c of r.cells || []) walk(c.blocks || []);
+        }
+      }
+    };
+    walk(blocks);
+    guard.fx = Array.from(new Set(guard.fx)).sort();
+    guard.slot = Array.from(new Set(guard.slot)).sort();
+    return guard;
+  };
+  /** 两守卫集合是否完全一致 (不可增/删/改键) */
+  M.guardEqual = (a, b) =>
+    JSON.stringify(a && a.fx) === JSON.stringify(b && b.fx) &&
+    JSON.stringify(a && a.slot) === JSON.stringify(b && b.slot);
+
+  /* ---------- 页面与默认文档 ---------- */
+  M.DEFAULT_PAGE = {
+    paper: 'A4', mt: 40, mb: 36, ml: 36, mr: 36,   /* Word「窄」边距 ≈1.27cm */
+    header_h: 16, footer_h: 40,                     /* header_h = 页眉与正文间隔 */
+    font: '仿宋_GB2312, FangSong, SimSun, serif', sz: 12, line: 1.5,
+  };
+  /** 标准患者信息栏 (与页眉同排展示) */
+  M.DEFAULT_INFO_FIELDS = [['姓名', 'name'], ['性别', 'gender'], ['科别', 'department'], ['病区', 'ward_name'], ['年龄', 'age'], ['床号', 'bed_no'], ['住院号', 'admission_no']];
+  /* 模型版本: v2 起文本 run 以 val 标记「槽位值」(混排不误判); mv 为模板 schema 的模型版本 */
+  M.MODEL_V = 2;
+  /** 旧模型(无 val 标记)迁移: 紧邻槽位后的文本视为该槽位的值 (旧版语义如此, 混排模板带 mv≥2 不再迁移) */
+  M.legacyValMigrate = (blocks) => {
+    const walk = (bl) => {
+      for (const b of bl || []) {
+        if (!b) continue;
+        if (b.t === 'p') {
+          const runs = b.runs || [];
+          for (let i = 0; i < runs.length; i++) {
+            if (runs[i].t !== 'slot') continue;
+            for (let k = i + 1; k < runs.length; k++) {
+              const it = runs[k];
+              if (it.t === 'text') { if (it.text) it.val = true; continue; }
+              break;
+            }
+          }
+        } else if (b.t === 'tbl') {
+          for (const r of b.rows || []) for (const c of r.cells || []) walk(c.blocks || []);
+        }
+      }
+    };
+    walk(blocks);
+    return blocks;
+  };
+  /* 已知日期/时间字段 (内置模板键): 旧模板缺失 dt 时按此补齐 → 右击属性可完整配置日期元素 */
+  M.KNOWN_DATE_KEYS = {
+    p_recorddate_val: 'datetime', p_admitdate_val: 'datetime',
+    round_date_val: 'date', round_time_val: 'time',
+    comm_date_val: 'datetime', admission_date_val: 'date', discharge_date_val: 'date',
+  };
+  /** 为已知日期字段补齐 dt 属性 (升级为日期元素; 已有 dt 不覆盖; 打开旧模板/文档时调用) */
+  M.upgradeDateSlots = (blocks) => {
+    M.walk(blocks || [], (b) => {
+      if (b.t !== 'p') return;
+      for (const it of b.runs || []) {
+        if (it.t === 'slot' && !it.dt && M.KNOWN_DATE_KEYS[it.key]) {
+          it.dt = { mode: M.KNOWN_DATE_KEYS[it.key], fmt: '' };
+        }
+      }
+    });
+    return blocks;
+  };
+  /** 由模板 schema (word 模式) 生成空白文档 (补齐块 id; 旧模型 schema 迁移值标记 + 日期字段升级) */
+  M.fromSchema = (schema) => {
+    const body = M.ensureIds(JSON.parse(JSON.stringify(schema.body && schema.body.length ? schema.body : [M.para()])));
+    if (Number(schema.mv || 0) < M.MODEL_V) M.legacyValMigrate(body);
+    M.upgradeDateSlots(body);
+    return {
+      v: M.MODEL_V,
+      title: schema.title || '',
+      page: Object.assign({}, M.DEFAULT_PAGE, schema.page || {}),
+      header: Object.assign({}, { hospital: '', hospital2: '', doc_name: '', info_fields: M.DEFAULT_INFO_FIELDS }, schema.header || {}),
+      body,
+    };
+  };
+  /** 为缺失 id 的块/行/单元格补齐 id (模板 JSON / 迁移数据可能未带 id; 编辑器渲染映射必需) */
+  M.ensureIds = (blocks) => {
+    for (const b of blocks) {
+      if (!b || typeof b !== 'object') continue;
+      if (b.id == null) b.id = M.nid();
+      if (b.t === 'tbl') {
+        for (const r of (b.rows || [])) {
+          if (r.id == null) r.id = M.nid();
+          for (const c of (r.cells || [])) {
+            if (c.id == null) c.id = M.nid();
+            M.ensureIds(c.blocks || []);
+          }
+        }
+      }
+    }
+    return blocks;
+  };
+  /** 旧结构化 sections → word 文档 (兜底转换; 算法与服务端迁移 038 一致) */
+  M.fromSections = (sections, title) => {
+    const body = [];
+    (sections || []).forEach((s) => {
+      if (!s || !s.title) return;
+      const key = s.key || ('sec_' + body.length);
+      const ph = s.slot || ('请输入' + s.title);
+      const runs = [M.fx(key, s.title + '：'), M.slot(key + '_val', ph)];
+      if (s.content) runs.push(M.text(String(s.content)));
+      body.push(M.para(runs));
+    });
+    if (!body.length) body.push(M.para());
+    M.legacyValMigrate(body); /* 旧结构化 content 即槽位值 */
+    return {
+      v: M.MODEL_V,
+      title: title || '',
+      page: Object.assign({}, M.DEFAULT_PAGE),
+      header: { hospital: '', hospital2: '', doc_name: title || '', info_fields: M.DEFAULT_INFO_FIELDS },
+      body: body,
+    };
+  };
+
+  /* ---------- 遍历 ---------- */
+  /** 深度遍历正文块: fn(block, container, index) 返回 false 可中断 */
+  M.walk = (blocks, fn) => {
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (fn(b, blocks, i) === false) return false;
+      if (b.t === 'tbl') {
+        for (const r of b.rows) for (const c of r.cells) {
+          if (M.walk(c.blocks, fn) === false) return false;
+        }
+      }
+    }
+    return true;
+  };
+})();
