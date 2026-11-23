@@ -153,12 +153,12 @@
 .mel-patient-sub span:last-child { text-align:right; }
 .mel-barcode { grid-row:7; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
 .mel-barcode-svg { display:block; width:100%; height:9mm; }
-.mel-drug { grid-row:5; min-height:0; max-height:20mm; align-self:end; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; }
-.mel-drug.is-single { min-height:18mm; display:flex; flex-direction:column; justify-content:center; }
+.mel-drug { grid-row:5; height:20mm; min-height:0; padding:1.2mm 1mm; border:.7pt solid #000; overflow:hidden; font-size:7.5pt; line-height:1.35; overflow-wrap:anywhere; box-sizing:border-box; }
+.mel-drug.is-single { display:flex; flex-direction:column; justify-content:center; }
 .mel-drug > b { display:-webkit-box; overflow:hidden; -webkit-box-orient:vertical; -webkit-line-clamp:3; font-size:10pt; line-height:1.3; }
 .mel-note { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.mel-drug.is-group { width:100%; padding:.8mm 1mm .6mm; }
-.mel-drug-list { display:grid; gap:.2mm; }
+.mel-drug.is-group { display:flex; flex-direction:column; width:100%; padding:.8mm 1mm .6mm; }
+.mel-drug-list { display:grid; gap:.2mm; flex:1; align-content:start; overflow:hidden; }
 .mel-drug-item { position:relative; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:baseline; column-gap:.8mm; font-size:6.8pt; line-height:1.2; white-space:nowrap; }
 .mel-drug-item.is-main { font-weight:700; }
 .mel-drug-item.is-child { padding-left:4mm; }
@@ -167,7 +167,7 @@
 .mel-drug-item > em { max-width:13mm; overflow:hidden; text-overflow:ellipsis; font-size:6.2pt; font-style:normal; }
 .mel-drug-item.is-long { font-size:6.1pt; }
 .mel-drug-item.is-xlong { font-size:5.5pt; }
-.mel-group-usage { margin-top:.5mm; padding-top:.4mm; border-top:.4pt solid #999; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:6.2pt; }
+.mel-group-usage { margin-top:auto; padding-top:.4mm; border-top:.4pt solid #999; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:6.2pt; }
 .mel-foot { grid-row:9; display:grid; grid-template-columns:minmax(0,1fr) 21mm; align-items:center; gap:1.5mm; font-size:6.5pt; line-height:1.2; }
 .mel-staff { min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:.5mm 1.5mm; }
 .mel-staff > div { min-width:0; display:flex; gap:1mm; white-space:nowrap; }
