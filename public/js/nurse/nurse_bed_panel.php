@@ -184,7 +184,17 @@ var NurseBedPanel = {
             /* 请求返回期间若已切换患者，丢弃旧响应，不能写入当前患者面板。 */
             if (!this.patient || String(this.patient.id) !== String(pid) || !box.isConnected) return;
             const rows = r.data || [];
-            const pendingN = rows.filter(o => o.status === 'pending').length;
+            /* 组合医嘱按组展示: 根医嘱 + 子医嘱合并为一行(组), 整组一起核查/停止/作废;
+               单条医嘱(无 parent_id)自成一组。 */
+            const groups = [];
+            const subsByParent = {};
+            rows.forEach(o => {
+                if (o.parent_id) (subsByParent[o.parent_id] = subsByParent[o.parent_id] || []).push(o);
+                else groups.push(o);
+            });
+            groups.forEach(g => { g.sub_orders = subsByParent[g.id] || []; });
+            /* 待核查组数 = 状态为 pending 的根医嘱数 (子医嘱随根级联, 不单独计) */
+            const pendingN = groups.filter(o => o.status === 'pending').length;
             const catLabel = c => c === 'medication' ? '药品' : '医嘱';
             const actHtml = o => {
                 let action = '';
@@ -205,15 +215,21 @@ var NurseBedPanel = {
             };
             const rowCls = o => o.status === 'invalid' ? 'os-txt-invalid'
                 : (o.status === 'invalid_pending' ? 'os-txt-invalid_pending' : (o.status === 'stop_pending' ? 'os-txt-stop_pending' : ''));
-            const body = rows.length
-                ? rows.map(o => `<tr class="${rowCls(o)}">
-                    <td>${Format.escape(o.content)}</td>
-                    <td>${catLabel(o.category)}</td>
-                    <td>${Format.escape([o.usage_name, o.freq_code].filter(Boolean).join(' · '))}</td>
-                    <td>${Format.escape(o.doctor_name || '-')}</td>
-                    <td>${Format.escape(o.stopped_name || '-')}</td>
-                    <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
-                    <td>${actHtml(o)}</td></tr>`).join('')
+            const groupHtml = g => {
+                const root = g;
+                const subs = (g.sub_orders || []).map(s => `<div class="nbp-sub-order">${Format.escape(s.content)}${s.dosage ? ' ' + Format.escape(s.dosage) : ''}</div>`).join('');
+                const content = `${Format.escape(root.content)}${root.dosage ? ' ' + Format.escape(root.dosage) : ''}${subs ? `<div class="nbp-sub-wrap">${subs}</div>` : ''}`;
+                return `<tr class="${rowCls(root)}">
+                    <td>${content}</td>
+                    <td>${catLabel(root.category)}</td>
+                    <td>${Format.escape([root.usage_name, root.freq_code].filter(Boolean).join(' · '))}</td>
+                    <td>${Format.escape(root.doctor_name || '-')}</td>
+                    <td>${Format.escape(root.stopped_name || '-')}</td>
+                    <td><span class="badge ${Format.orderStatusClass(root.status)}">${Format.orderStatus(root.status)}</span></td>
+                    <td>${actHtml(root)}</td></tr>`;
+            };
+            const body = groups.length
+                ? groups.map(groupHtml).join('')
                 : '<tr><td colspan="7"><div class="empty-state">暂无医嘱</div></td></tr>';
             /* 底部按钮栏: 一键核对常显 (数量角标), 医嘱单打印 */
             this.setBottomBar(`
@@ -223,11 +239,14 @@ var NurseBedPanel = {
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
-    /* 一键核对: 批量核查该患者全部待核查医嘱 */
+    /* 一键核对: 批量核查该患者全部待核查医嘱(按组) */
     verifyAll() {
         const pid = this.patient.id;
         AjaxLoader.api('nurse/order-list?patient_id=' + pid, { silent: true }).then(r => {
-            const pendingN = (r.data || []).filter(o => o.status === 'pending').length;
+            const rows = r.data || [];
+            const subsByParent = {};
+            rows.forEach(o => { if (o.parent_id) (subsByParent[o.parent_id] = subsByParent[o.parent_id] || []).push(o); });
+            const pendingN = rows.filter(o => !o.parent_id && o.status === 'pending').length;
             if (!pendingN) { Dom.toast('没有待核医嘱', 'info'); return; }
             Dom.confirm('一键核对', `将核查该患者全部待核查医嘱（${pendingN} 条），确认继续？`, function () {
                 return AjaxLoader.api('nurse/verify-batch', { method: 'POST', data: { patient_id: pid } }).then(function (res) {
