@@ -9,4 +9,5 @@ return [
     'redo' => '<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>',
     'import' => '<path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 19h16"/>',
     'export' => '<path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M4 19h16"/>',
+    'document' => '<path d="M14 2.5H6.5A1.5 1.5 0 0 0 5 4v16a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 20V7.5z"/><path d="M14 2.5v5h5"/><path d="M8.5 13h7"/><path d="M8.5 16.5h7"/>',
 ];

@@ -12,14 +12,8 @@
 /* ===== 移动端: 病历站左栏抽屉化 + 编辑区全宽 ===== */
 @media (max-width: 768px) {
     .emr-station { min-height: 0; }
-    /* 病历空态: 纵向排列 (提示文案在上, 打开病历树按钮在下), 摆脱桌面端同行挤在一起的观感 */
-    .emr-editor-empty {
-        flex-direction: column;
-        gap: 14px;
-        padding: 0 24px;
-        text-align: center;
-    }
-    .emr-editor-empty p { margin: 0; line-height: 1.9; }
+    /* 病历空态: 移动端按钮加大触控区 */
+    .emr-editor-empty { gap: 12px; }
     .emr-editor-empty .emr-tree-openbtn { padding: 10px 22px; font-size: 14px; }
     .emr-tree {
         position: absolute;
@@ -195,11 +189,19 @@
 .emr-editor-empty {
     flex: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 10px;
+    padding: 0 24px;
     color: #909399;
     font-size: 14px;
+    text-align: center;
 }
+.emr-empty-icon { color: #c3ccd9; }
+.emr-empty-title { margin: 0; font-size: 16px; font-weight: 600; color: #606266; }
+.emr-editor-empty p { margin: 0; line-height: 1.9; }
+.emr-editor-empty .emr-tree-openbtn { padding: 9px 20px; font-size: 13px; }
 .emr-editor {
     flex: 1;
     display: flex;

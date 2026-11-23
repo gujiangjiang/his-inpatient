@@ -66,6 +66,8 @@
     <!-- 二级主视图: 字处理病历编辑区 (类 Word 整页画布) -->
     <div class="emr-editor-pane">
         <div id="emr-editor-empty" class="emr-editor-empty">
+            <div class="emr-empty-icon"><?= icon('common/editor', 'document', 52) ?></div>
+            <p class="emr-empty-title">病历文书</p>
             <p id="emr-empty-hint">请从左侧选择病历文书，或点击分类后的 <b>＋</b> 从模板新建</p>
             <button type="button" class="btn btn-small btn-primary emr-tree-openbtn" id="emr-tree-openbtn" onclick="emr_treeOpen()" style="display:none">打开病历树</button>
         </div>
