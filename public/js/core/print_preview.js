@@ -50,6 +50,21 @@
         });
     };
 
+    /* 防御纵深: 预览文档不执行任何脚本。预览 iframe 沙箱刻意不含 allow-scripts,
+       历史快照可能残留的内联事件 (on*) 或未配对脚本节点一旦在沙箱内尝试执行,
+       浏览器会记录 "Blocked script execution in 'about:srcdoc'..." 报错;
+       在父文档侧统一摘除, 既阻止执行, 也消除控制台噪音。 */
+    const sanitizeFrame = function (doc) {
+        try {
+            doc.querySelectorAll('script').forEach(function (el) { el.remove(); });
+            doc.querySelectorAll('*').forEach(function (el) {
+                Array.from(el.attributes).forEach(function (attr) {
+                    if (/^on/i.test(attr.name)) el.removeAttribute(attr.name);
+                });
+            });
+        } catch (e) { /* 文档替换间隙访问失败时忽略, 等待下一次 load 再清理 */ }
+    };
+
     const closeCurrent = function () {
         if (!current) return;
         if (!current.overlay || !current.overlay.parentNode) {
@@ -98,9 +113,13 @@
         PP._html = printableHtml;
 
         const fit = function () {
-            if (current !== state || !frame.contentDocument) return;
             state.raf = 0;
+            if (current !== state) return;
             const doc = frame.contentDocument;
+            /* about:blank → about:srcdoc 文档替换的解析间隙 body 可能尚未生成,
+               此时跳过本次布局, 由后续 load / ResizeObserver / fonts.ready 再次调度,
+               否则 doc.body.scrollHeight 间歇性抛 TypeError (预览偶发报错的根因之一) */
+            if (!doc || !doc.body || !doc.documentElement) return;
             const pages = Array.from(doc.querySelectorAll(PAGE_SELECTOR));
             const paperWidth = pages.length
                 ? pages.reduce(function (width, page) { return Math.max(width, page.offsetWidth); }, 1)
@@ -121,8 +140,9 @@
         };
         frame.addEventListener('load', function () {
             const doc = frame.contentDocument;
-            if (!doc) return;
+            if (!doc || !doc.body) return;
             guardEvents(doc);
+            sanitizeFrame(doc);
             fit();
             if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(scheduleFit);
             if (window.ResizeObserver) {
