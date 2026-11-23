@@ -189,7 +189,7 @@ header('Cache-Control: no-store');
                 <!-- 患者上下文切换浮动面板 -->
                 <div id="patient-switcher" class="patient-switcher" style="display:none">
                     <div id="patient-switcher-trigger" class="patient-switcher-trigger">
-                        <span id="current-patient-summary">请选择患者</span>
+                        <span id="current-patient-summary">选择患者</span>
                         <?= icon('common/arrows', 'caret-down', 10, 'switcher-arrow') ?>
                     </div>
                     <div id="patient-switcher-panel" class="patient-switcher-panel" style="display:none">
@@ -215,7 +215,7 @@ header('Cache-Control: no-store');
                         <div class="notify-list" id="notify-list"></div>
                     </div>
                 </div>
-                <button class="btn btn-small" onclick="Auth.logout()">退出</button>
+                <button type="button" class="topbar-logout" title="退出登录" onclick="Auth.logout()"><?= icon('common/actions', 'logout', 17) ?></button>
             </div>
         </div>
 

@@ -18,6 +18,22 @@
 .hospital-name { font-weight: 700; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hospital-name2 { margin-top: 3px; font-size: 10px; font-weight: 400; opacity: .72; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #user-info { font-size: 13px; white-space: nowrap; }
+/* 退出登录: 顶栏图标按钮 (SVG 渲染, 替代文字按钮) */
+.topbar-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .15s;
+}
+.topbar-logout:hover { background: rgba(255, 255, 255, 0.3); }
 
 /* 患者上下文切换器 */
 .patient-switcher {
