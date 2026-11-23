@@ -68,7 +68,9 @@ function print_snapshot_brand() {
     foreach (DB::select("SELECT config_key, config_value FROM system_config WHERE config_key IN ('hospital_name','hospital_name2')") as $row) {
         $values[$row['config_key']] = (string)$row['config_value'];
     }
-    if ($values['hospital_name'] === '') $values['hospital_name'] = '开源通用医院信息系统';
+    /* 站点未配置医院名时不再把占位名固化进快照: 保留空值,
+       展示层 (HospitalBranding.normalize) 会回退为当前设置的医院名称,
+       避免快照把「开源通用医院信息系统」永久印在单据抬头。 */
     return $values;
 }
 

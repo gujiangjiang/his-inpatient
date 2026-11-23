@@ -2,14 +2,22 @@
 const HospitalBranding = (() => {
     const fallback = '开源通用医院信息系统';
     const clean = v => String(v == null ? '' : v).trim();
+    const isNamed = v => { const s = clean(v); return !!s && s !== fallback; };
+    let current = { hospital_name: '', hospital_name2: '' };
     const normalize = source => {
         source = source || {};
-        return {
-            hospital_name: clean(source.hospital_name != null ? source.hospital_name : source.hospital) || fallback,
-            hospital_name2: clean(source.hospital_name2 != null ? source.hospital_name2 : source.hospital2)
-        };
+        const rawName = clean(source.hospital_name != null ? source.hospital_name : source.hospital);
+        const rawName2 = clean(source.hospital_name2 != null ? source.hospital_name2 : source.hospital2);
+        /* 来源带真实名称时原样使用 (保住快照固化语义); 历史单据可能无快照/快照未固化
+           医院名甚至固化了占位名, 此时成对回退为「当前设置的医院名称」。 */
+        if (isNamed(rawName)) return { hospital_name: rawName, hospital_name2: rawName2 };
+        const currentName = clean(current.hospital_name);
+        if (isNamed(currentName)) {
+            return { hospital_name: currentName, hospital_name2: rawName2 || clean(current.hospital_name2) };
+        }
+        return { hospital_name: rawName || fallback, hospital_name2: rawName2 };
     };
-    let current = Object.assign({}, window.HIS_BRAND || {}, normalize(window.HIS_BRAND));
+    current = Object.assign({}, current, window.HIS_BRAND || {}, normalize(window.HIS_BRAND));
 
     function setCurrent(source) {
         current = Object.assign({}, current, source || {}, normalize(source || current));
