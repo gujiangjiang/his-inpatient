@@ -19,6 +19,7 @@ foreach ($required as $file) {
 
 $rules = [
     '/\bwindow\s*\.\s*print\s*\(/' => '业务代码不得直接调用 window.print()',
+    '/\bcontentWindow\s*\.\s*print\s*\(/' => '浏览器打印能力收敛于 PrintPreview, 业务代码不得直接调起系统打印',
     '/\bdocument\s*\.\s*write\s*\(/' => '业务代码不得直接调用 document.write()',
     '/\bPrintHelper\s*\.\s*(?:print|printHtml|printDocument)\s*\(/' => '旧 PrintHelper 打印入口已移除',
     '/\bPrintHelper\s*\.\s*barcodeSvg\s*\(/' => '条形码必须统一使用 PrintBarcode.svg()',
@@ -41,11 +42,15 @@ foreach ($iterator as $file) {
 
 if ($runtime && is_file($runtime)) {
     $code = file_get_contents($runtime);
-    if (preg_match_all('/\bwindow\s*\.\s*print\s*\(/', $code) !== 1) {
-        $errors[] = 'print_preview.js 必须且只能保留一个 window.print() 调用';
+    /* 打印统一由隐藏/预览 iframe 的 contentWindow 调起, 不再新开打印窗口 */
+    if (preg_match_all('/\bwindow\s*\.\s*print\s*\(/', $code) !== 0) {
+        $errors[] = 'print_preview.js 不得使用 window.print() (统一经 contentWindow 调起)';
     }
-    if (preg_match_all('/\bdocument\s*\.\s*write\s*\(/', $code) !== 1) {
-        $errors[] = 'print_preview.js 必须且只能保留一个 document.write() 调用';
+    if (preg_match_all('/\bdocument\s*\.\s*write\s*\(/', $code) !== 0) {
+        $errors[] = 'print_preview.js 不得使用 document.write() (统一经 srcdoc 渲染)';
+    }
+    if (preg_match_all('/\bcontentWindow\s*\.\s*print\s*\(/', $code) !== 1) {
+        $errors[] = 'print_preview.js 必须且只能保留一个 contentWindow.print() 调用';
     }
 }
 

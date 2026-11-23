@@ -65,6 +65,17 @@
         } catch (e) { /* 文档替换间隙访问失败时忽略, 等待下一次 load 再清理 */ }
     };
 
+    /* 统一打印出口: 对承载打印文档的 iframe 直接调起系统打印组件。
+       预览内打印复用可见 iframe (所见即所得), 独立打印用隐藏承载 iframe,
+       均不再新开窗口二次预览。 */
+    const printContentWindow = function (frame) {
+        const doc = frame && frame.contentDocument;
+        if (!frame || !frame.contentWindow || !doc || !doc.body) return false;
+        frame.contentWindow.focus(); /* Safari 需先聚焦 iframe 窗口, 否则可能打印父页面 */
+        frame.contentWindow.print();
+        return true;
+    };
+
     const closeCurrent = function () {
         if (!current) return;
         if (!current.overlay || !current.overlay.parentNode) {
@@ -83,7 +94,19 @@
         const buttons = [];
         if (o.canPrint !== false) {
             buttons.push({ text: '打印', type: 'primary', onclick: function () {
-                PP.print(printableHtml, { beforePrint: o.onPrint }); return false;
+                /* 预览已是所见即所得: 直接对预览 iframe 调起系统打印组件, 不再新开窗口二次预览 */
+                const doPrint = function () {
+                    if (!printContentWindow(overlay.querySelector('.pp-frame'))) {
+                        Dom.toast('打印内容未就绪，请稍候重试', 'error');
+                    }
+                };
+                if (typeof o.onPrint === 'function') {
+                    /* 打印前置钩子 (如条码打印留痕): 与原 beforePrint 语义一致, 返回 false 或失败则放弃打印 */
+                    Promise.resolve().then(o.onPrint).then(function (result) {
+                        if (result !== false) doPrint();
+                    }).catch(function () { /* 前置失败不打印 */ });
+                } else doPrint();
+                return false;
             } });
         }
         buttons.push({ text: '关闭', type: 'default' });
@@ -98,7 +121,10 @@
         };
         state.dispose = dispose;
         const overlay = Dom.modal(title || '打印预览',
-            '<div class="pp-viewport"><div class="pp-stage"><iframe class="pp-frame" title="打印内容" scrolling="no" sandbox="allow-same-origin"></iframe></div></div>',
+            /* allow-same-origin: 父页面读取文档测量排版; allow-modals: 浏览器把 print()
+               归入沙箱 modals 门控, 缺失会导致"打印"被静默忽略 (Ignored call to 'print()')。
+               内容经 stripScripts + sanitizeFrame 清理, 无脚本不会触发任何弹窗。 */
+            '<div class="pp-viewport"><div class="pp-stage"><iframe class="pp-frame" title="打印内容" scrolling="no" sandbox="allow-same-origin allow-modals"></iframe></div></div>',
             buttons, { onClose: dispose });
         const modal = overlay.querySelector('.modal');
         const viewport = overlay.querySelector('.pp-viewport');
@@ -163,30 +189,49 @@
         return overlay;
     };
 
-    /* 独立打印页复用相同文档与纸张间距；打印介质下自动去掉灰底、阴影和页间距。 */
+    /* 独立打印 API: 隐藏承载 iframe 直接调起系统打印组件 (不新开窗口)。
+       文档与预览走同一 prepareDocument, 打印介质样式由文档自身 @media print 与 @page 保证。 */
     PP.print = function (html, opts) {
-        const win = window.open('', '_blank', 'width=900,height=900');
-        if (!win) { Dom.toast('浏览器拦截了打印窗口，请允许弹出窗口', 'error'); return null; }
         const options = opts || {};
-        let doc = prepareDocument(html);
-        const autoPrint = `<script>(function(){window.addEventListener('load',function(){
-document.documentElement.classList.add('pp-standalone-root');
-var p=document.querySelector('${PAGE_SELECTOR}');
-if(p){try{var cw=Math.max(0,outerWidth-innerWidth),ch=Math.max(0,outerHeight-innerHeight);
-resizeTo(Math.min(screen.availWidth,p.offsetWidth+${GAP * 2}+cw),Math.min(screen.availHeight,p.offsetHeight+${GAP * 2}+ch));}catch(e){}}
-setTimeout(function(){window.print();},180);});})();<\/script>`;
-        doc = /<\/body>/i.test(doc) ? doc.replace(/<\/body>/i, autoPrint + '</body>') : doc + autoPrint;
-        const render = function () {
-            if (win.closed) return;
-            win.document.write(doc);
-            win.document.close();
+        const startPrint = function () {
+            /* 串行化: 上一次隐藏承载框未清理前先移除, 避免连点堆叠多个打印任务 */
+            if (PP._printFrame && PP._printFrame.parentNode) PP._printFrame.parentNode.removeChild(PP._printFrame);
+            PP._printFrame = null;
+            const doc = prepareDocument(html);
+            const paper = PrintDocument.paper(doc, options);
+            const frame = document.createElement('iframe');
+            frame.title = '打印内容';
+            frame.setAttribute('aria-hidden', 'true');
+            /* 沙箱与预览一致: allow-same-origin 供父页面访问, allow-modals 放行 print() */
+            frame.setAttribute('sandbox', 'allow-same-origin allow-modals');
+            frame.style.cssText = 'position:fixed;left:-10000px;top:0;border:0;'
+                + 'width:' + (paper.width + GAP * 2) + 'px;height:' + (paper.height + GAP * 2) + 'px;';
+            let printed = false;
+            const cleanup = function () {
+                if (PP._printFrame === frame) PP._printFrame = null;
+                if (frame.parentNode) frame.parentNode.removeChild(frame);
+            };
+            frame.addEventListener('load', function () {
+                /* 文档未就绪 (body 空/无内容) 时跳过, 等待 srcdoc 就绪的 load 再打印,
+                   避免打出空白页 (与预览 fit 守卫同理) */
+                const d = frame.contentDocument;
+                if (printed || !d || !d.body || !d.body.firstElementChild) return;
+                if (!printContentWindow(frame)) { cleanup(); return; }
+                printed = true;
+                if (frame.contentWindow) frame.contentWindow.addEventListener('afterprint', cleanup);
+                setTimeout(cleanup, 5 * 60 * 1000); /* 兜底: 个别浏览器不派发 afterprint */
+            });
+            frame.srcdoc = doc; /* 插入前设好 srcdoc, 首个 load 即目标文档, 无 about:blank 竞态 */
+            document.body.appendChild(frame);
+            PP._printFrame = frame;
+            return frame;
         };
         if (typeof options.beforePrint === 'function') {
             Promise.resolve().then(options.beforePrint).then(function (result) {
-                if (result === false) { if (!win.closed) win.close(); return; }
-                render();
-            }).catch(function () { if (!win.closed) win.close(); });
-        } else render();
-        return win;
+                if (result !== false) startPrint();
+            }).catch(function () { /* 前置失败不打印 */ });
+            return null;
+        }
+        return startPrint();
     };
 })();
