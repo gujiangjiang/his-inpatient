@@ -24,6 +24,45 @@
 - 数据库迁移使用 PHP Migration 类 (`api/migrations/php/0xx_*.php`)
 - 接口与页面分离
 
+## 目录组织铁律（多级目录化，每次维护代码必须遵守）
+
+> 2026-11 目录重构确立。任何新增/移动代码必须放入下述对应层级子目录；
+> **禁止在既有目录根部堆放跨功能文件，禁止新建"大杂烩"目录**。
+
+### 后端 api/（按「技术分层 → 业务域 → 功能特性」三级组织）
+- `api/core/` 框架核心按技术分层子目录，根级只保留装配器 `bootstrap.php`：
+  `http/`(响应/校验) `auth/`(会话认证) `db/`(连接/基础设施配置库/字典库) `cache/`
+  `schema/`(迁移/守卫) `site/`(品牌) `dict/` `emr/`(模板定义/守卫) `print/`(条码/快照)。
+- `api/core/helpers/` 按业务域子目录：`time/ string/ id/ patient/ org/(科室/数据范围)
+  fee/ order/ pharmacy/ emr/ notify/ audit/ cache/ opd/(门诊互通, 内含 client/ 为 FHIR
+  客户端栈)`。新增 helper 必须归入对应域；无合适域则**新建域目录**并在
+  `bootstrap.php` 对应分组登记，禁止直接丢在 helpers/ 根部。
+- `api/modules/{module}/{feature}/` 业务模块二级目录化：模块目录下按功能特性建
+  子目录（如 `nurse/` 下 `admission/ bed/ patient/ order/ vitals/ docs/ print/ charge/`），
+  特性目录内文件名去掉模块/特性冗余前缀（如 `nurse/vitals/save.php`）。
+  单一功能的小模块（如 `consult/`）可保持扁平，但文件间必须是同一功能。
+- `api/routes.php` 的 handler 路径必须与文件实际位置一致；route key（对外 URL）
+  已发布不得随意变更；新增接口 = 路由表注册 + 对应 `{module}/{feature}/` 文件。
+- `api/scripts/` 按用途子目录：`schema/`(安装/迁移/时区) `seed/`(演示数据)
+  `dictionary/`(字典/模板导入导出) `jobs/`(定时/推送任务) `diag/`(网络诊断)。
+- `api/migrations/php/` **保持平铺编号**（迁移器按文件名排序执行，禁止子目录化）。
+- 新建任何文件前先确认归属目录；目录结构变更必须同步 `routes.php`、`bootstrap.php`
+  与所有 `require` 相对路径。
+
+### 前端 public/（页面入口扁平 + 组件归类子目录）
+- `public/js/{module}/` 根级只放 SPA 页面入口 `{page}.php`（`AjaxLoader.loadPage`
+  契约 `/js/{module}/{page}.php`，页面 id 同时决定 `window.{module}_{page}_init`
+  初始化函数名与 hash 路由，不得随意改名）；页面的局部片段、组件放入
+  `{module}/{feature}/`（如 `nurse/station/bed_panel.php`、`emr/station/init/`），
+  模块内多页面共用的小工具放入 `{module}/lib/`。
+- `public/js/core/` 公共前端库分层：根级只保留应用外壳（`app/ajax/auth/dom/format/
+  notify/branding/pwa/scroll_load/components`），其余按职责子目录：
+  `ui/`(通用交互组件) `picker/`(业务选择器) `patient/`(患者上下文) `print/`(打印体系)
+  `pdf/` `dict/`。新增公共模块必须归入对应子目录，禁止丢在 core/ 根部。
+- `public/css/` 按角色/工作台分目录；`public/icons/` 按 `{分类}/{功能}.php` 组织。
+- 静态资源一律在 `public/assets.php` 注册（自动防缓存），禁止页面散写 `<script src>`。
+- 打印能力只存在于 `public/js/core/print/print_preview.js`（`tools/lint/print-architecture.php` 强制校验）。
+
 ## 运行模式与本地测试服务器（可选）
 - 本项目以**在线服务器部署为主**，本地不强制安装 PHP / FrankenPHP；是否启用本地
   PHP 测试服务器由「首次询问」决定，并记录在本机标记文件 `.agent-local-server.conf`
@@ -52,7 +91,7 @@
 
 - **存储一律标准 UTC**：写入唯一来源 `TimeHelper::now()` / `DateHelper::now()`
   （模式感知；`config.db` `time.storage`，local 仅存量兼容过渡）；全套助手在
-  `api/core/helpers/time_helper.php`。
+  `api/core/helpers/time/time_helper.php`。
 - **显示按站点时区**：内部 API 响应经 `Response` 输出漏斗
   `TimeHelper::localize()` 自动换算 `*_at/_time` 键（业务日期 `*_date` 不转换；
   `planned_at` 等业务本地时间豁免）；前端零改动。
@@ -65,7 +104,7 @@
   存 `config.db`（独立于业务库）；业务日期列与快照类单据不受影响。
 - **禁止**：`NOW()`/`CURRENT_TIMESTAMP`/`date()` 直写存储时间列；新增表时间列
   不设数据库默认时间（插入显式传 `DateHelper::now()`）。
-- **存量库 UTC 化**：`php api/scripts/tz_migrate.php plan|convert|rollback`
+- **存量库 UTC 化**：`php api/scripts/schema/tz_migrate.php plan|convert|rollback`
   （整库自动备份 + JSON 清单 + `--db=` 副本演练）；升级后自检对照见 CHANGELOG。
 
 ## 数据库迁移规范
@@ -77,7 +116,7 @@
 
 ## 新接口约定
 1. 在 `api/routes.php` 路由表注册 (getRoutes 数组) →
-2. 实现文件放 `api/modules/{module}/` →
+2. 实现文件放 `api/modules/{module}/{feature}/`（见「目录组织铁律」）→
 3. 前端页放 `public/js/{module}/{page}.php` 并在对应 sidebar 加入入口
    (页面片段统一使用 `.php` 扩展名, 首行 `<?php header("Content-Type: text/html; charset=utf-8"); ?>`)
 

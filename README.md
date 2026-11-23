@@ -70,26 +70,36 @@ npm run lint            # 或: ~/.local/bin/frankenphp php-cli tools/lint/php-li
 ├── router.php              # 路由入口 (SPA fallback + API 代理)
 ├── start.sh                # 启动脚本
 ├── package.json            # npm 脚本
-├── AGENT.md                # 开发规范
-├── docs/                   # 文档 (CHANGELOG 变更日志 / DEPLOY 部署指南 / nginx.conf.example 配置示例)
+├── AGENT.md                # 开发规范 (含目录组织铁律)
+├── docs/                   # 文档 (CHANGELOG 变更日志 / DEPLOY 部署指南 / PRINTING 打印 / emr_templates 内置模板)
 ├── data/                   # 运行时数据 (hospital.sqlite, icd10.sqlite) [.gitignore]
+├── tools/                  # 工具 (build_dicts 字典构建 / lint 语法与架构检查 / server.sh)
 ├── api/                    # 后端 API
 │   ├── index.php           # 统一路由入口
+│   ├── routes.php          # 路由表 (187 条, action → handler)
 │   ├── config.php          # 配置 (APP_VERSION, DB 驱动, Cookie 策略)
-│   ├── core/               # 核心类 (DB, Auth, Response, Validator, SetupGuard)
-│   ├── migrations/         # 三方言迁移 (sqlite/mysql/postgresql)
-│   ├── modules/            # 接口实现 (9 个模块)
-│   └── scripts/            # CLI 脚本 (setup, import_icd10, seed, migrate)
+│   ├── core/               # 框架核心 (按技术分层)
+│   │   ├── bootstrap.php   #   装配器 (全量 require 清单)
+│   │   ├── http/ auth/ db/ cache/ schema/ site/ dict/ emr/ print/
+│   │   └── helpers/        #   业务助手 (按域: time/ patient/ org/ order/ pharmacy/ emr/ opd/ ...)
+│   ├── migrations/         # 三方言迁移 (sqlite/mysql/postgresql + php/ 平铺编号迁移)
+│   ├── modules/            # 接口实现 ({module}/{feature}/ 二级目录化)
+│   │   ├── admin/ audit/ auth/ case_front_page/ consult/ dict/ doctors/ emr/
+│   │   ├── exam/ lab/ notify/ nurse/ orders/ outpatient/ patients/
+│   │   ├── pharmacy/ rx/ setup/ surgery/
+│   │   └── ...             #   如 nurse/{admission,bed,patient,order,vitals,docs,print,charge}
+│   └── scripts/            # CLI 脚本 (schema/安装迁移 seed/演示数据 dictionary/导入导出 jobs/任务 diag/诊断)
 └── public/                 # 前端 (Web 根目录)
     ├── index.php           # 唯一入口 (SPA 壳 + /api/ 路由)
-    ├── css/                # 样式 (core, login, doctor)
-    ├── js/                 # JS + PHP 页面片段
-    │   ├── core/           # 公共单例 (Format/AjaxLoader/Auth/Dom/PrintDocument/PrintPreview/...)
-    │   ├── login/          # 登录逻辑
-    │   ├── shared/         # 各角色 sidebar (PHP)
-    │   ├── emr_editor/     # 病历字处理编辑器 (模型/历史/操作/渲染/分页/打印/光标/控制器)
-    │   ├── orders/         # 医嘱工作站 (order_station/order_editor/drug_search/order_sets)
-    │   └── {module}/       # 各工作站页面片段 (PHP)
+    ├── assets.php          # 静态资源注册表 (JS/CSS 统一防缓存输出)
+    ├── css/                # 样式 (core/login/admin/clinic/doctor/emr/nurse)
+    ├── icons/              # 自绘 SVG 图标 ({分类}/{功能}.php)
+    └── js/                 # JS + PHP 页面片段
+        ├── core/           # 公共前端库 (根级应用外壳 + ui/ picker/ patient/ print/ pdf/ dict/)
+        ├── login/          # 登录逻辑
+        ├── shared/         # 各角色 sidebar (PHP)
+        ├── emr_editor/     # 病历字处理编辑器 (外壳 + doc/ 文档引擎)
+        └── {module}/       # 各工作站: 根级页面入口 {page}.php + {feature}/ 组件子目录
 ```
 
 ## 角色
