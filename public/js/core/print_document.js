@@ -72,7 +72,7 @@ body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12p
 .brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0,1fr); width: max-content; max-width: 100%; min-width: 0; }
 .brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }
 .print-brand-lockup { display: grid; margin: 0 auto 8px; }
-.print-hospital { font-size: 18pt; font-weight: 700; letter-spacing: 2px; line-height: 1.35; }
+.print-hospital { font-size: 20pt; font-weight: 700; letter-spacing: 4px; line-height: 1.4; }
 .print-hospital2 { font-size: 11pt; font-weight: 400; line-height: 1.35; }
 h2.doc-title { text-align: center; font-size: 16pt; margin: 0 0 4px; letter-spacing: 2px; }
 .doc-sub { text-align: center; font-size: 9pt; color: #666; margin-bottom: 16px; }
@@ -93,8 +93,8 @@ table.doc-table th { background: #f2f2f2; }
 .sheet-foot { margin-top: auto; display: flex; justify-content: space-between; font-size: 10pt; }
 .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
 .sheet-brand { text-align: center; flex: 1; }
-.sheet-brand .print-hospital { font-size: 16pt; }
-.sheet-docname { font-size: 15pt; font-weight: 700; letter-spacing: 2px; margin-top: 2px; }
+/* 抬头字号对齐电子病历 (emr-hos 20pt / emr-docname 16pt), 单据头不再单独缩小 */
+.sheet-docname { font-size: 16pt; font-weight: 700; letter-spacing: 3px; line-height: 1.5; margin-top: 2px; }
 .sheet-barcode { position: absolute; top: 0; right: 0; text-align: right; }
 .sheet-barcode svg { width: 150px; height: auto; }
 .sheet-barcode .barcode-no { font-size: 8.5pt; letter-spacing: 1px; margin-top: 2px; }
