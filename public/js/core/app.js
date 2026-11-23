@@ -97,6 +97,10 @@ const App = {
             const wrap = document.querySelector('.emr-editor-scroll');
             const page = wrap && wrap.querySelector('.emr-editor-page');
             if (!wrap || !page) return;
+            /* 容器不可见 (编辑器未打开/隐藏) 时 clientWidth 为 0:
+               此时计算会得到 0 甚至负缩放并残留, 文书打开后内容"消失"。
+               跳过本次, 由 emr_fitEditorZoom 在编辑器可见后再适配。 */
+            if (wrap.clientWidth <= 24) return;
             const avail = wrap.clientWidth - 20;
             const scale = Math.min(1, avail / 794);
             page.style.transform = 'scale(' + scale + ')';
@@ -130,6 +134,8 @@ const App = {
         const wrap = document.querySelector('.emr-editor-scroll');
         const page = wrap && wrap.querySelector('.emr-editor-page');
         if (!wrap || !page) return;
+        /* 容器不可见 (clientWidth 0) 时跳过, 防止负缩放残留 (见 bindEmrPageZoom 注释) */
+        if (wrap.clientWidth <= 24) return;
         const avail = wrap.clientWidth - 20;
         const scale = Math.min(1, avail / 794);
         page.style.transform = 'scale(' + scale + ')';

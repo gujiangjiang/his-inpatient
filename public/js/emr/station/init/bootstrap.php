@@ -47,6 +47,14 @@ function emr_treeFitMobile() {
     }
 }
 
+/** 编辑器可见后重算窄屏画布缩放 (打开文书/进入设计模式时调用; 页面加载时编辑器隐藏, 之前的缩放不可信) */
+function emr_fitEditorZoom() {
+    if (window.App && typeof App.emrPageZoomNow === 'function'
+        && window.matchMedia && window.matchMedia('(max-width: 900px)').matches) {
+        setTimeout(function () { App.emrPageZoomNow(); }, 30);
+    }
+}
+
 /* ================= 初始化 / 树 ================= */
 async function emr_station_init() {
     _emrPatient = PatientContext.current();

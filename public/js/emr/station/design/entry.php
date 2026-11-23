@@ -17,6 +17,7 @@ async function emr_enterTemplateDesign(tid, opts) {
     if (_emrEditor) { _emrEditor.destroy(); _emrEditor = null; }
     document.getElementById('emr-editor-empty').style.display = 'none';
     document.getElementById('emr-editor').style.display = 'flex';
+    emr_fitEditorZoom(); /* 窄屏: 编辑器可见后重算画布缩放 */
     /* 设计模式保留格式工具条 (加粗/对齐等), 仅隐藏文档操作按钮 */
     document.getElementById('emr-toolbar').style.display = '';
     document.getElementById('emr-editor').classList.add('emr-design-on');

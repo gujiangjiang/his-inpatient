@@ -20,6 +20,7 @@ async function emr_openDocument(docId) {
 
     document.getElementById('emr-editor-empty').style.display = 'none';
     document.getElementById('emr-editor').style.display = 'flex';
+    emr_fitEditorZoom(); /* 窄屏: 编辑器可见后重算画布缩放 (加载期隐藏时的缩放不可信) */
 
     // 兜底: 旧数据未转换时 (迁移 038 正常已处理), 客户端转换后按字处理打开, 保存时落库
     if (!doc.doc_json) {
