@@ -260,7 +260,8 @@ var NurseBedPanel = {
         }).catch(() => {});
     },
 
-    /* 执行单打印: 弹窗选择已核对药品医嘱 (含子医嘱), 记录打印留痕, 已打印灰显 */
+    /* 执行单打印: 弹窗选择已核对药品医嘱 (含子医嘱), 记录打印留痕, 已打印灰显
+       打印复用医嘱执行贴模板 (PrintLabels.medicationExecution, 60×60mm 正方形) 批量组合 */
     execSheetPrint() {
         const pid = this.patient.id;
         const p = this.patient;
@@ -299,10 +300,10 @@ var NurseBedPanel = {
                 { text: '一键打印执行单', type: 'primary', onclick: async function () {
                     const ids = [...document.querySelectorAll('.nbp-exec-check:checked')].map(c => Number(c.value));
                     if (!ids.length) { Dom.toast('请勾选要打印的医嘱', 'error'); return; }
-                    /* 先留痕, 再组装打印文档 */
+                    /* 先留痕, 再组装执行贴预览 */
                     try {
                         await AjaxLoader.api('nurse/execution-sheet-print', { method: 'POST', data: { patient_id: pid, ids } });
-                        self.execSheetDoc(items.filter(o => ids.indexOf(Number(o.id)) >= 0), p);
+                        self.execSheetLabels(items.filter(o => ids.indexOf(Number(o.id)) >= 0));
                         overlay.remove();
                     } catch (e) { /* 已提示 */ }
                 } },
@@ -311,55 +312,27 @@ var NurseBedPanel = {
         }).catch(() => { Dom.toast('执行单数据加载失败', 'error'); });
     },
 
-    /* 组装执行单 A4 打印文档 (选择的多组医嘱, 每组根+子; 序号连续) */
-    execSheetDoc(selected, patient) {
-        const info = {
-            name: patient.patient_name || patient.name || '', gender: Format.gender(patient.gender),
-            age: Format.ageClinical(patient.birth_date) || patient.age || '', department: patient.department_name || '',
-            ward: patient.ward_name || '', bed: patient.bed_no || '', admission_no: patient.admission_no || '',
-            hospital: ''
-        };
-        let seq = 0;
-        const rows = [];
+    /* 组装执行单标签预览: 选中医嘱逐条走执行贴模板, 页面展平合并为一份标签集 */
+    execSheetLabels(selected) {
+        const pages = [], css = [];
+        let hasAny = false;
         selected.forEach(function (o) {
-            const add = function (r, isMain) {
-                seq++;
-                rows.push({
-                    seq: seq, content: r.content, dosage: r.dosage, dosage_unit: r.dosage_unit,
-                    usage_name: isMain ? r.usage_name : '', usage_rate: isMain ? r.usage_rate : '',
-                    freq_code: isMain ? r.freq_code : '', freq_detail: isMain ? r.freq_detail : ''
-                });
-            };
-            add(o, true);
-            (o.sub_orders || []).forEach(function (s) { add(s, false); });
+            const template = PrintLabels.medicationExecution(o);
+            if (!template) return;
+            hasAny = true;
+            if (template.css && css.indexOf(template.css) < 0) css.push(template.css);
+            (template.pages || [template.html]).forEach(function (page) {
+                if (page && String(page).trim()) pages.push(page);
+            });
         });
-        if (!rows.length) { Dom.toast('暂无可打印的执行单内容', 'info'); return; }
-        const html = NurseBedPanel.buildExecSheetHtml('执行单', rows, info);
-        PrintPreview.open('执行单 · 打印预览', html, { canPrint: true });
-    },
-
-    buildExecSheetHtml(title, rows, patient) {
-        const esc = function (s) { return Format.escape(String(s == null ? '' : s)); };
-        const info = PrintPreview.patientInfo(patient, title);
-        const header = PrintPreview.sheetHeader(info);
-        const body = rows.map(function (r) {
-            const content = esc(r.content) + (r.dosage ? ' ' + esc(r.dosage) + (r.dosage_unit ? esc(r.dosage_unit) : '') : '');
-            const usage = r.usage_name ? esc([r.usage_name, r.usage_rate].filter(Boolean).join(' ')) : '';
-            const freq = r.freq_code ? esc([r.freq_code, r.freq_detail].filter(Boolean).join(' ')) : '';
-            return '<tr>'
-                + '<td class="os-time">' + esc(String(r.seq)) + '</td>'
-                + '<td class="os-content">' + content + '</td>'
-                + '<td class="os-usage">' + usage + '</td>'
-                + '<td class="os-freq">' + freq + '</td></tr>';
-        }).join('');
-        const headCells = '<th style="width:6%">序号</th><th style="width:58%">医嘱内容</th><th style="width:14%">用法</th><th style="width:14%">频次</th>';
-        const sheet = '<div class="page">' + header
-            + '<div class="pg-body"><table class="os-table">'
-            + '<thead><tr>' + headCells + '</tr></thead>'
-            + '<tbody>' + body + '</tbody></table></div>'
-            + '<div class="pg-foot"><span class="emr-fp-left"></span><span class="emr-fp-page">第 1 页 / 共 1 页</span></div></div>';
-        return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(title) + '</title>'
-            + '<style>' + NurseBedPanel.orderSheetCss() + '</style></head><body>' + sheet + '</body></html>';
+        if (!hasAny || !pages.length) { Dom.toast('暂无可打印的执行单内容', 'info'); return; }
+        PrintLabels.open({
+            title: '医嘱执行单打印',
+            previewTitle: '医嘱执行单 · 打印预览',
+            paper: 'MED_LABEL',
+            css: css.join('\n'),
+            pages: pages
+        });
     },
 
     /* 医嘱单打印: 长期/临时两份独立 A4 文档 (各自计算页码, 忽略作废医嘱) */
