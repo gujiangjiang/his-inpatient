@@ -118,6 +118,10 @@
 .nbp-sub-wrap { margin-top: 2px; padding-left: 14px; border-left: 2px solid #d8dee8; }
 .nbp-sub-order { font-size: 12px; color: #606266; line-height: 1.7; }
 
+/* 执行单打印弹窗: 已打印的医嘱灰显 */
+.nbp-exec-printed { color: #a8abb2; }
+.nbp-exec-printed .nbp-sub-order { color: #a8abb2; }
+
 /* ===== 体温单 ===== */
 .temp-date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .temp-date-nav .td-date { font-size: 14px; font-weight: 600; color: #303133; }

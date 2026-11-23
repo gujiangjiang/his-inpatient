@@ -113,6 +113,8 @@ function getRoutes() {
         'nurse/verify-batch' => ['nurse/verify_batch.php', ['admin', 'nurse']],
         'nurse/order-sheet' => ['nurse/order_sheet.php', ['admin', 'nurse']],
         'nurse/execution-label' => ['nurse/execution_label.php', ['admin', 'nurse']],
+        'nurse/execution-sheet-list' => ['nurse/execution_sheet_list.php', ['admin', 'nurse']],
+        'nurse/execution-sheet-print' => ['nurse/execution_sheet_print.php', ['admin', 'nurse']],
         'nurse/nursing-link' => ['nurse/nursing_link.php', ['admin', 'nurse', 'doctor']],
         'nurse/charges' => ['nurse/charges.php', ['admin', 'nurse']],
         'nurse/patient-info' => ['nurse/patient_info.php', ['admin', 'nurse']],

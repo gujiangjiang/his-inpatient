@@ -231,9 +231,10 @@ var NurseBedPanel = {
             const body = groups.length
                 ? groups.map(groupHtml).join('')
                 : '<tr><td colspan="7"><div class="empty-state">暂无医嘱</div></td></tr>';
-            /* 底部按钮栏: 一键核对常显 (数量角标), 医嘱单打印 */
+            /* 底部按钮栏: 一键核对常显 (数量角标), 执行单打印, 医嘱单打印 */
             this.setBottomBar(`
                 <button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对${pendingN > 0 ? `<span class="nbp-badge">${pendingN}</span>` : ''}</button>
+                <button class="btn" onclick="NurseBedPanel.execSheetPrint()">执行单打印</button>
                 <button class="btn" onclick="NurseBedPanel.printOrderSheets()">医嘱单打印</button>`);
             box.innerHTML = `<div style="overflow-x:auto"><table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>开嘱医生</th><th>停嘱医生</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table></div>`;
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
@@ -257,6 +258,108 @@ var NurseBedPanel = {
                 }).catch(function (e) { return e; });
             }, { okText: '一键核对' });
         }).catch(() => {});
+    },
+
+    /* 执行单打印: 弹窗选择已核对药品医嘱 (含子医嘱), 记录打印留痕, 已打印灰显 */
+    execSheetPrint() {
+        const pid = this.patient.id;
+        const p = this.patient;
+        const self = this;
+        AjaxLoader.api('nurse/execution-sheet-list?patient_id=' + pid, { silent: true }).then(r => {
+            const items = (r.data || []).filter(x => x.dispensed);
+            if (!items.length) { Dom.toast('暂无已发药的药品医嘱可打印执行单', 'info'); return; }
+            /* 行: 复选框 + 医嘱内容(含子医嘱) + 打印状态; 已打印灰显 */
+            const rows = items.map(o => {
+                const subs = (o.sub_orders || []).map(s =>
+                    `<div class="nbp-sub-order">${Format.escape(s.content)}${s.dosage ? ' ' + Format.escape(s.dosage) : ''}</div>`).join('');
+                const content = `${Format.escape(o.content)}${o.dosage ? ' ' + Format.escape(o.dosage) : ''}${subs ? `<div class="nbp-sub-wrap">${subs}</div>` : ''}`;
+                const checked = o.printed ? '' : 'checked';
+                const status = o.printed
+                    ? `<span class="fs-12 text-muted" title="${Format.escape((o.printed_name || '') + ' ' + (o.printed_at || ''))}">已打印</span>`
+                    : '<span class="badge badge-warning">未打印</span>';
+                return `<tr class="${o.printed ? 'nbp-exec-printed' : ''}">
+                    <td><input type="checkbox" class="nbp-exec-check" value="${o.id}" ${checked}></td>
+                    <td>${content}</td>
+                    <td>${Format.escape([o.usage_name, o.freq_code].filter(Boolean).join(' · '))}</td>
+                    <td>${Format.escape(o.order_period === 'temp' ? '临时' : '长期')}</td>
+                    <td>${status}</td>
+                </tr>`;
+            }).join('');
+            const content = `<div class="nbp-exec-sheet">
+                <div style="overflow-x:auto;max-height:42vh">
+                    <table class="table"><thead><tr><th></th><th>医嘱</th><th>途径 · 频次</th><th>类型</th><th>打印</th></tr></thead>
+                    <tbody>${rows}</tbody></table>
+                </div>
+                <p class="fs-12 text-muted" style="margin-top:8px">默认勾选未打印的医嘱；已打印的可手动勾选补打。打印后自动记录留痕。</p>
+            </div>`;
+            const overlay = Dom.modal('执行单打印 - ' + Format.escape(p.patient_name || ''), content, [
+                { text: '全部勾选', type: 'default', onclick: function () {
+                    document.querySelectorAll('.nbp-exec-check').forEach(c => c.checked = true);
+                } },
+                { text: '一键打印执行单', type: 'primary', onclick: async function () {
+                    const ids = [...document.querySelectorAll('.nbp-exec-check:checked')].map(c => Number(c.value));
+                    if (!ids.length) { Dom.toast('请勾选要打印的医嘱', 'error'); return; }
+                    /* 先留痕, 再组装打印文档 */
+                    try {
+                        await AjaxLoader.api('nurse/execution-sheet-print', { method: 'POST', data: { patient_id: pid, ids } });
+                        self.execSheetDoc(items.filter(o => ids.indexOf(Number(o.id)) >= 0), p);
+                        overlay.remove();
+                    } catch (e) { /* 已提示 */ }
+                } },
+                { text: '取消', type: 'default' }
+            ], { large: true });
+        }).catch(() => { Dom.toast('执行单数据加载失败', 'error'); });
+    },
+
+    /* 组装执行单 A4 打印文档 (选择的多组医嘱, 每组根+子; 序号连续) */
+    execSheetDoc(selected, patient) {
+        const info = {
+            name: patient.patient_name || patient.name || '', gender: Format.gender(patient.gender),
+            age: Format.ageClinical(patient.birth_date) || patient.age || '', department: patient.department_name || '',
+            ward: patient.ward_name || '', bed: patient.bed_no || '', admission_no: patient.admission_no || '',
+            hospital: ''
+        };
+        let seq = 0;
+        const rows = [];
+        selected.forEach(function (o) {
+            const add = function (r, isMain) {
+                seq++;
+                rows.push({
+                    seq: seq, content: r.content, dosage: r.dosage, dosage_unit: r.dosage_unit,
+                    usage_name: isMain ? r.usage_name : '', usage_rate: isMain ? r.usage_rate : '',
+                    freq_code: isMain ? r.freq_code : '', freq_detail: isMain ? r.freq_detail : ''
+                });
+            };
+            add(o, true);
+            (o.sub_orders || []).forEach(function (s) { add(s, false); });
+        });
+        if (!rows.length) { Dom.toast('暂无可打印的执行单内容', 'info'); return; }
+        const html = NurseBedPanel.buildExecSheetHtml('执行单', rows, info);
+        PrintPreview.open('执行单 · 打印预览', html, { canPrint: true });
+    },
+
+    buildExecSheetHtml(title, rows, patient) {
+        const esc = function (s) { return Format.escape(String(s == null ? '' : s)); };
+        const info = PrintPreview.patientInfo(patient, title);
+        const header = PrintPreview.sheetHeader(info);
+        const body = rows.map(function (r) {
+            const content = esc(r.content) + (r.dosage ? ' ' + esc(r.dosage) + (r.dosage_unit ? esc(r.dosage_unit) : '') : '');
+            const usage = r.usage_name ? esc([r.usage_name, r.usage_rate].filter(Boolean).join(' ')) : '';
+            const freq = r.freq_code ? esc([r.freq_code, r.freq_detail].filter(Boolean).join(' ')) : '';
+            return '<tr>'
+                + '<td class="os-time">' + esc(String(r.seq)) + '</td>'
+                + '<td class="os-content">' + content + '</td>'
+                + '<td class="os-usage">' + usage + '</td>'
+                + '<td class="os-freq">' + freq + '</td></tr>';
+        }).join('');
+        const headCells = '<th style="width:6%">序号</th><th style="width:58%">医嘱内容</th><th style="width:14%">用法</th><th style="width:14%">频次</th>';
+        const sheet = '<div class="page">' + header
+            + '<div class="pg-body"><table class="os-table">'
+            + '<thead><tr>' + headCells + '</tr></thead>'
+            + '<tbody>' + body + '</tbody></table></div>'
+            + '<div class="pg-foot"><span class="emr-fp-left"></span><span class="emr-fp-page">第 1 页 / 共 1 页</span></div></div>';
+        return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + esc(title) + '</title>'
+            + '<style>' + NurseBedPanel.orderSheetCss() + '</style></head><body>' + sheet + '</body></html>';
     },
 
     /* 医嘱单打印: 长期/临时两份独立 A4 文档 (各自计算页码, 忽略作废医嘱) */
