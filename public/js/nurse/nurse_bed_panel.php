@@ -37,7 +37,8 @@ var NurseBedPanel = {
                 <button type="button" class="nurse-op-tab active" data-tab="info" onclick="NurseBedPanel.switch('info')">患者信息</button>
                 <button type="button" class="nurse-op-tab" data-tab="orders" onclick="NurseBedPanel.switch('orders')">医嘱</button>
                 <button type="button" class="nurse-op-tab" data-tab="records" onclick="NurseBedPanel.switch('records')">病历</button>
-                <button type="button" class="nurse-op-tab" data-tab="lab" onclick="NurseBedPanel.switch('lab')">检验检查</button>
+                <button type="button" class="nurse-op-tab" data-tab="lab" onclick="NurseBedPanel.switch('lab')">检验</button>
+                <button type="button" class="nurse-op-tab" data-tab="exam" onclick="NurseBedPanel.switch('exam')">检查</button>
                 <button type="button" class="nurse-op-tab" data-tab="medicine" onclick="NurseBedPanel.switch('medicine')">摆药</button>
                 <button type="button" class="nurse-op-tab" data-tab="temperature" onclick="NurseBedPanel.switch('temperature')">体温单</button>
                 <button type="button" class="nurse-op-tab" data-tab="notes" onclick="NurseBedPanel.switch('notes')">护理记录</button>
@@ -74,7 +75,8 @@ var NurseBedPanel = {
         if (tab === 'info') this.loadInfo(box);
         else if (tab === 'orders') this.loadOrders(box);
         else if (tab === 'records') { this.setBottomBar(''); this.loadRecords(box); }
-        else if (tab === 'lab') { this.setBottomBar(''); this.loadLabExam(box); }
+        else if (tab === 'lab') this.loadLab(box);
+        else if (tab === 'exam') this.loadExam(box);
         else if (tab === 'medicine') this.loadMedicine(box);
         else if (tab === 'temperature') this.loadTemperature(box);
         else if (tab === 'notes') this.loadNotes(box);
@@ -522,19 +524,14 @@ var NurseBedPanel = {
         }).catch(() => {});
     },
 
-    /* ================= 检验检查 ================= */
-    loadLabExam(box) {
+    /* ================= 检验 (独立 tab, 左下角批量打印条码) ================= */
+    loadLab(box) {
         const pid = this.patient.id;
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         this.setBottomBar(`<button class="btn" onclick="NurseBedPanel.batchLabBarcodePrint()">检验条码打印</button>`);
-        Promise.all([
-            AjaxLoader.api('lab/list?patient_id=' + pid, { silent: true }).catch(() => ({ data: [] })),
-            AjaxLoader.api('exam/list?patient_id=' + pid, { silent: true }).catch(() => ({ data: [] }))
-        ]).then(([lr, er]) => {
-            const labs = lr.data || [];
-            const exams = er.data || [];
+        AjaxLoader.api('lab/list?patient_id=' + pid, { silent: true }).then(r => {
+            const labs = r.data || [];
             const LAB = { pending: '待采集', collected: '已采集', reported: '已报告' };
-            const EXM = { pending: '待执行', reported: '已报告' };
             const labRows = labs.length ? labs.map(x => `<tr>
                 <td>${Format.escape(x.report_no)}</td><td>${Format.escape(x.exam_name)}</td>
                 <td>${Format.escape(x.specimen_type || '')}</td>
@@ -544,6 +541,18 @@ var NurseBedPanel = {
                     ${x.status === 'pending' ? `<button class="btn btn-small btn-success" onclick="NurseBedPanel.collectLab(${x.id})">采集</button>` : ''}</td>
             </tr>`).join('')
                 : '<tr><td colspan="6"><div class="empty-state">暂无检验</div></td></tr>';
+            box.innerHTML = `<div style="overflow-x:auto"><table class="table"><thead><tr><th>单号</th><th>项目</th><th>标本</th><th>条码</th><th>状态</th><th>操作</th></tr></thead><tbody>${labRows}</tbody></table></div>`;
+        }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
+    },
+
+    /* ================= 检查 (独立 tab, 只读) ================= */
+    loadExam(box) {
+        const pid = this.patient.id;
+        box.innerHTML = '<div class="empty-state">加载中…</div>';
+        this.setBottomBar('');
+        AjaxLoader.api('exam/list?patient_id=' + pid, { silent: true }).then(r => {
+            const exams = r.data || [];
+            const EXM = { pending: '待执行', reported: '已报告' };
             const examRows = exams.length ? exams.map(x => `<tr>
                 <td>${Format.escape(x.exam_no || x.id)}</td><td>${Format.escape(x.exam_type)}</td>
                 <td>${Format.escape(x.exec_dept || '')}</td>
@@ -551,12 +560,8 @@ var NurseBedPanel = {
                 <td>${x.status === 'reported' ? '<button class="btn btn-small" onclick="NurseBedPanel.viewExam(' + x.id + ')">详情</button>' : '<span class="fs-12 text-muted">-</span>'}</td>
             </tr>`).join('')
                 : '<tr><td colspan="5"><div class="empty-state">暂无检查</div></td></tr>';
-            box.innerHTML = `
-                <div class="card-header" style="border-bottom:1px solid #eef2f7">检验申请</div>
-                <div style="overflow-x:auto"><table class="table"><thead><tr><th>单号</th><th>项目</th><th>标本</th><th>条码</th><th>状态</th><th>操作</th></tr></thead><tbody>${labRows}</tbody></table></div>
-                <div class="card-header" style="border-bottom:1px solid #eef2f7;margin-top:14px">检查申请</div>
-                <div style="overflow-x:auto"><table class="table"><thead><tr><th>单号</th><th>项目</th><th>执行科室</th><th>状态</th><th>操作</th></tr></thead><tbody>${examRows}</tbody></table></div>`;
-        });
+            box.innerHTML = `<div style="overflow-x:auto"><table class="table"><thead><tr><th>单号</th><th>项目</th><th>执行科室</th><th>状态</th><th>操作</th></tr></thead><tbody>${examRows}</tbody></table></div>`;
+        }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
     async collectLab(id) {
