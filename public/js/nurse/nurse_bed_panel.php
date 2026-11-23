@@ -102,8 +102,8 @@ var NurseBedPanel = {
         const p = this.patient;
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         this.setBottomBar(`
-            <button class="btn btn-small" onclick="NurseBedPanel.infoEdit()">修改个人信息</button>
-            <button class="btn btn-small" onclick="NurseBedPanel.wristbandPreview()">腕带打印</button>`);
+            <button class="btn" onclick="NurseBedPanel.infoEdit()">修改个人信息</button>
+            <button class="btn" onclick="NurseBedPanel.wristbandPreview()">腕带打印</button>`);
         AjaxLoader.api('nurse/patient-info?action=get&patient_id=' + pid, { silent: true }).then(r => {
             const d = r.data || {};
             const age = Format.ageClinical(d.birth_date);
