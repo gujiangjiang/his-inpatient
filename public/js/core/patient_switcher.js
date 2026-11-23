@@ -231,18 +231,13 @@ const PatientSwitcher = {
     },
 
     /**
-     * 更新顶部触发按钮的摘要信息
+     * 更新顶部触发按钮文案: 固定「选择患者」
+     * (选中患者的详细信息由正文顶部患者信息栏承载, 顶栏不再随患者切换变长,
+     *  避免移动端顶栏溢出与桌面端换行)
      */
     updateTrigger() {
         const summary = document.getElementById('current-patient-summary');
-        if (!summary) return;
-        const p = PatientContext.current();
-        if (p) {
-            const age = Format.ageClinical(p.birth_date);
-            summary.textContent = '患者: ' + p.name + ' (' + Format.gender(p.gender) + '/' + age + ') 床 ' + (p.bed_no || '-');
-        } else {
-            summary.textContent = '请选择患者';
-        }
+        if (summary) summary.textContent = '选择患者';
     }
 };
 
