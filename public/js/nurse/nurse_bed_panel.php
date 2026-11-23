@@ -45,10 +45,18 @@ var NurseBedPanel = {
                 <button type="button" class="nurse-op-tab" data-tab="ward" onclick="NurseBedPanel.switch('ward')">出科出院</button>
             </div>
             <div class="nurse-op-body" id="nbp-body"><div class="empty-state">加载中…</div></div>`;
-        const overlay = Dom.modal('床位操作 - ' + (p.patient_name || p.name || ''), head, [
-            { text: '关闭', type: 'default' }
-        ]);
-        overlay.querySelector('.modal').classList.add('modal-lg');
+        const overlay = Dom.modal('床位操作 - ' + (p.patient_name || p.name || ''), head, []);
+        const modal = overlay.querySelector('.modal');
+        modal.classList.add('modal-lg');
+        /* 底部按钮栏: 左侧为各 tab 操作按钮, 右侧固定关闭; 由 Dom.modal footer 结构承载 */
+        const footer = overlay.querySelector('.modal-footer') || document.createElement('div');
+        if (!overlay.querySelector('.modal-footer')) {
+            footer.className = 'modal-footer';
+            modal.appendChild(footer);
+        }
+        footer.className += ' nbp-footer';
+        footer.innerHTML = '<div class="nbp-bar-left" id="nbp-bar-left"></div>'
+            + '<div class="nbp-bar-right"><button type="button" class="btn" onclick="NurseBedPanel.close()">关闭</button></div>';
         this._overlay = overlay;
         this.loadTab('info');
     },
@@ -65,8 +73,8 @@ var NurseBedPanel = {
         if (!box) return;
         if (tab === 'info') this.loadInfo(box);
         else if (tab === 'orders') this.loadOrders(box);
-        else if (tab === 'records') this.loadRecords(box);
-        else if (tab === 'lab') this.loadLabExam(box);
+        else if (tab === 'records') { this.setBottomBar(''); this.loadRecords(box); }
+        else if (tab === 'lab') { this.setBottomBar(''); this.loadLabExam(box); }
         else if (tab === 'medicine') this.loadMedicine(box);
         else if (tab === 'temperature') this.loadTemperature(box);
         else if (tab === 'notes') this.loadNotes(box);
@@ -78,6 +86,12 @@ var NurseBedPanel = {
         if (this._overlay && this._overlay.parentNode) this._overlay.remove();
     },
 
+    /* 底部按钮栏: 左侧各 tab 操作按钮 (统一收敛到 modal footer 左区, 右侧固定关闭) */
+    setBottomBar(html) {
+        const bar = document.getElementById('nbp-bar-left');
+        if (bar) bar.innerHTML = html || '';
+    },
+
     refresh() {
         this.loadTab(this.activeTab);
     },
@@ -87,15 +101,14 @@ var NurseBedPanel = {
         const pid = this.patient.id;
         const p = this.patient;
         box.innerHTML = '<div class="empty-state">加载中…</div>';
+        this.setBottomBar(`
+            <button class="btn btn-small" onclick="NurseBedPanel.infoEdit()">修改个人信息</button>
+            <button class="btn btn-small" onclick="NurseBedPanel.wristbandPreview()">腕带打印</button>`);
         AjaxLoader.api('nurse/patient-info?action=get&patient_id=' + pid, { silent: true }).then(r => {
             const d = r.data || {};
             const age = Format.ageClinical(d.birth_date);
             const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[String(d.nursing_level || '3')] || 'Ⅲ';
-            const infoHtml = `<div class="nurse-op-actions">
-                <button class="btn btn-small" onclick="NurseBedPanel.infoEdit()">修改个人信息</button>
-                <button class="btn btn-small" onclick="NurseBedPanel.wristbandPreview()">腕带打印</button>
-            </div>
-            <div class="kv-grid">
+            const infoHtml = `<div class="kv-grid">
                 <div class="kv-item"><b>姓名</b><span>${Format.escape(d.name || '')}</span></div>
                 <div class="kv-item"><b>性别</b><span>${Format.gender(d.gender)}</span></div>
                 <div class="kv-item"><b>年龄</b><span>${age || '-'}</span></div>
@@ -202,25 +215,29 @@ var NurseBedPanel = {
                     <td><span class="badge ${Format.orderStatusClass(o.status)}">${Format.orderStatus(o.status)}</span></td>
                     <td>${actHtml(o)}</td></tr>`).join('')
                 : '<tr><td colspan="7"><div class="empty-state">暂无医嘱</div></td></tr>';
-            const toolbar = `<div class="nurse-op-actions">
-                    ${pendingN > 0 ? `<button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对（${pendingN} 条）</button>` : ''}
-                    <button class="btn" onclick="NurseBedPanel.printOrderSheets()">医嘱单打印</button>
-                  </div>`;
-            box.innerHTML = toolbar + `<div style="overflow-x:auto"><table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>开嘱医生</th><th>停嘱医生</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table></div>`;
+            /* 底部按钮栏: 一键核对常显 (数量角标), 医嘱单打印 */
+            this.setBottomBar(`
+                <button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对${pendingN > 0 ? `<span class="nbp-badge">${pendingN}</span>` : ''}</button>
+                <button class="btn" onclick="NurseBedPanel.printOrderSheets()">医嘱单打印</button>`);
+            box.innerHTML = `<div style="overflow-x:auto"><table class="table"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>开嘱医生</th><th>停嘱医生</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table></div>`;
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
     /* 一键核对: 批量核查该患者全部待核查医嘱 */
-    async verifyAll() {
+    verifyAll() {
         const pid = this.patient.id;
-        Dom.confirm('一键核对', '将核查该患者全部待核查医嘱，确认继续？', async function () {
-                try {
-                    const r = await AjaxLoader.api('nurse/verify-batch', { method: 'POST', data: { patient_id: pid } });
-                    Dom.toast(r.message || '已核对', 'success');
+        AjaxLoader.api('nurse/order-list?patient_id=' + pid, { silent: true }).then(r => {
+            const pendingN = (r.data || []).filter(o => o.status === 'pending').length;
+            if (!pendingN) { Dom.toast('没有待核医嘱', 'info'); return; }
+            Dom.confirm('一键核对', `将核查该患者全部待核查医嘱（${pendingN} 条），确认继续？`, function () {
+                return AjaxLoader.api('nurse/verify-batch', { method: 'POST', data: { patient_id: pid } }).then(function (res) {
+                    Dom.toast(res.message || '已核对', 'success');
                     NurseBedPanel.refresh();
                     if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
-                } catch (e) { /* 已提示 */ }
+                    return res;
+                }).catch(function (e) { return e; });
             }, { okText: '一键核对' });
+        }).catch(() => {});
     },
 
     /* 医嘱单打印: 长期/临时两份独立 A4 文档 (各自计算页码, 忽略作废医嘱) */
@@ -457,6 +474,7 @@ var NurseBedPanel = {
     loadMedicine(box) {
         const pid = this.patient.id;
         box.innerHTML = '<div class="empty-state">加载中…</div>';
+        this.setBottomBar(`<button class="btn btn-primary" onclick="NurseBedPanel.batchPrepare()">申请预摆药<span class="nbp-badge" id="nbp-prepare-badge" style="display:none">0</span></button>`);
         AjaxLoader.api('nurse/prepare?action=list', { silent: true }).then(r => {
             const rows = (r.data || []).filter(x => String(x.patient_id) === String(pid));
             if (!rows.length) { box.innerHTML = '<div class="empty-state">该患者暂无待摆药药品医嘱</div>'; return; }
@@ -467,11 +485,22 @@ var NurseBedPanel = {
                 <td>${o.dispense_status === 'prepared' ? '<span class="badge badge-warning">已预摆</span>' : '<span class="badge badge-default">未预摆</span>'}</td>
                 <td>${o.dispense_status === 'prepared' ? '<button class="btn btn-small" onclick="NurseBedPanel.cancelPrepare(' + o.id + ')">取消</button>' : ''}</td>
             </tr>`).join('');
-            box.innerHTML = `<div class="nurse-op-actions">
-                <button class="btn btn-primary" onclick="NurseBedPanel.batchPrepare()">申请预摆药（勾选）</button>
-            </div>
-            <table class="table"><thead><tr><th></th><th>医嘱</th><th>频次</th><th>预摆</th><th>操作</th></tr></thead><tbody>${trs}</tbody></table>`;
+            box.innerHTML = `<table class="table"><thead><tr><th></th><th>医嘱</th><th>频次</th><th>预摆</th><th>操作</th></tr></thead><tbody>${trs}</tbody></table>`;
+            /* 勾选变化实时更新底部按钮角标 */
+            box.querySelectorAll('.nbp-med-check').forEach(function (c) {
+                c.addEventListener('change', NurseBedPanel.updatePrepareBadge);
+            });
+            this.updatePrepareBadge();
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
+    },
+
+    /* 底部按钮角标: 已勾选待预摆医嘱数量 */
+    updatePrepareBadge() {
+        const badge = document.getElementById('nbp-prepare-badge');
+        if (!badge) return;
+        const n = document.querySelectorAll('.nbp-med-check:checked').length;
+        badge.textContent = n;
+        badge.style.display = n > 0 ? '' : 'none';
     },
 
     batchPrepare() {
@@ -494,10 +523,8 @@ var NurseBedPanel = {
     /* ================= 体温单 (从护理记录单派生, 只读) ================= */
     loadTemperature(box) {
         const pid = this.patient.id;
-        box.innerHTML = `<div class="temp-date-nav">
-            <span class="td-date">体温单</span>
-            <button class="btn btn-small btn-primary" onclick="NurseBedPanel.tempPreview()">打印预览</button>
-        </div><div class="empty-state">加载中…</div>`;
+        this.setBottomBar(`<button class="btn" onclick="NurseBedPanel.tempPreview()">打印预览</button>`);
+        box.innerHTML = `<div class="temp-date-nav"><span class="td-date">体温单</span></div><div class="empty-state">加载中…</div>`;
         AjaxLoader.api('nurse/temperature?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
             const e = box.querySelector('.empty-state');
@@ -543,10 +570,10 @@ var NurseBedPanel = {
     /* ================= 护理记录单 (扩展字段: 生命体征/管路/引流/意识/血糖/瞳孔/GCS) ================= */
     loadNotes(box) {
         const pid = this.patient.id;
-        box.innerHTML = `<div class="nurse-op-actions">
+        this.setBottomBar(`
             <button class="btn btn-primary" onclick="NurseBedPanel.noteAdd()">新增记录</button>
-            <button class="btn" onclick="NurseBedPanel.notePreview()">打印预览</button>
-        </div><div class="empty-state">加载中…</div>`;
+            <button class="btn" onclick="NurseBedPanel.notePreview()">打印预览</button>`);
+        box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/nursing-notes?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
             const e = box.querySelector('.empty-state');
@@ -659,9 +686,8 @@ var NurseBedPanel = {
     /* ================= 常规护理文书 ================= */
     loadDocs(box) {
         const pid = this.patient.id;
-        box.innerHTML = `<div class="nurse-op-actions">
-            <button class="btn btn-primary" onclick="NurseBedPanel.docAdd()">新建文书</button>
-        </div><div class="empty-state">加载中…</div>`;
+        this.setBottomBar(`<button class="btn btn-primary" onclick="NurseBedPanel.docAdd()">新建文书</button>`);
+        box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
             const e = box.querySelector('.empty-state');
@@ -740,14 +766,13 @@ var NurseBedPanel = {
     /* ================= 出科出院 ================= */
     loadWard(box) {
         const p = this.patient;
-        box.innerHTML = `<div class="nurse-op-actions">
+        this.setBottomBar(`
             <button class="btn btn-primary" onclick="NurseBedPanel.transferWard()">转科</button>
             <button class="btn btn-danger" onclick="NurseBedPanel.doDischarge()">办理出院</button>
             <button class="btn" onclick="NurseBedPanel.changeBed()">迁床</button>
             <button class="btn" onclick="NurseBedPanel.chargeCheck()">费用核对</button>
-            <button class="btn" onclick="NurseBedPanel.chargeAdd()">费用补录</button>
-        </div>
-        <div class="kv-grid">
+            <button class="btn" onclick="NurseBedPanel.chargeAdd()">费用补录</button>`);
+        box.innerHTML = `<div class="kv-grid">
             <div class="kv-item"><b>当前床位</b><span>${Format.escape((p.bed_no || '') + ' 床')}</span></div>
             <div class="kv-item"><b>病区</b><span>${Format.escape(p.ward_name || '-')}</span></div>
             <div class="kv-item"><b>入院时间</b><span>${Format.escape((p.admission_date || '').slice(0, 10))}</span></div>

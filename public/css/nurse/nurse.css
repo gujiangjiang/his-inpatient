@@ -102,6 +102,18 @@
 .nurse-op-action:hover { border-color: var(--primary); color: var(--primary); }
 .nurse-op-action svg { color: var(--primary); }
 
+/* 床位操作弹窗底部按钮栏: 左区为各 tab 操作按钮, 右区固定关闭 */
+.nbp-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.nbp-bar-left { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.nbp-bar-right { margin-left: auto; flex-shrink: 0; }
+.nbp-bar-left .btn { position: relative; }
+/* 数量角标 (一键核对/申请预摆药): 按钮右上角小圆标 */
+.nbp-badge {
+    position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px;
+    padding: 0 4px; border-radius: 8px; background: #e5484d; color: #fff;
+    font-size: 10px; line-height: 16px; text-align: center; font-weight: 600;
+}
+
 /* ===== 体温单 ===== */
 .temp-date-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
 .temp-date-nav .td-date { font-size: 14px; font-weight: 600; color: #303133; }
