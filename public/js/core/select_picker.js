@@ -21,6 +21,10 @@ const SelectPicker = {
     attach(select, opts) {
         if (select.classList.contains('spicker-native')) return;
         opts = opts || {};
+        /* 必须在隐藏 (spicker-native) 之前读取尺寸: display:none 下 computed width
+           会退回样式表原值 (如 form-control 的 "100%"), parseFloat 误判为 100px,
+           导致包裹层被错误钉死成 100px 宽 (打印选项等模态框下拉被压扁的根因) */
+        const cs = getComputedStyle(select);
         select.classList.add('spicker-native');
         select.removeAttribute('required');
 
@@ -30,20 +34,20 @@ const SelectPicker = {
         // 规则: ① 内联 width 原样继承; ② 纯 CSS 中的固定像素宽 (如 .diag-cat-select) 复制像素值;
         //       ③ 百分比/自适应宽 (form-control 100%): 弹性容器内转 auto 防换行 (由 flex 定尺寸),
         //          普通容器内保持默认 100% (与原行为一致)
-        const cs = getComputedStyle(select);
         const parent = select.parentNode;
         if (select.style.width) {
             wrap.style.width = select.style.width;
             if (cs.minWidth && cs.minWidth !== 'auto' && cs.minWidth !== '0px') wrap.style.minWidth = cs.minWidth;
             if (cs.maxWidth && cs.maxWidth !== 'none') wrap.style.maxWidth = cs.maxWidth;
         } else {
-            const pxWidth = parseFloat(cs.width) || 0;
+            const rawWidth = String(cs.width || '');
+            const pxWidth = parseFloat(rawWidth) || 0;
             const parentStyle = parent ? getComputedStyle(parent) : null;
             const parentInner = parent ? parent.getBoundingClientRect().width
                 - (parseFloat(parentStyle.paddingLeft) || 0)
                 - (parseFloat(parentStyle.paddingRight) || 0) : 0;
             const isPercentage = parentInner > 0 && pxWidth >= parentInner - 1;
-            if (!isPercentage && pxWidth > 0) {
+            if (!isPercentage && pxWidth > 0 && rawWidth.indexOf('%') === -1) {
                 // CSS 固定宽度 (如诊断分类下拉 190px): 包裹层同宽
                 wrap.style.width = pxWidth + 'px';
             } else if (parentStyle && (parentStyle.display === 'flex' || parentStyle.display === 'inline-flex')) {
