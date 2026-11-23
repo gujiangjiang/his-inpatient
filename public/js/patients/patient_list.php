@@ -20,7 +20,7 @@ require_once __DIR__ . '/../../icons/icon.php';
                 <span id="wall-count" style="font-size:13px;color:#909399"></span>
             </div>
             <div>
-                <button class="btn btn-primary btn-small" onclick="patients_new()">入院登记</button>
+                <button class="btn btn-primary btn-small" id="wall-admit-btn" onclick="patients_new()">入院登记</button>
                 <button class="btn btn-small" onclick="patients_wall_load()">刷新</button>
             </div>
         </div>
@@ -52,6 +52,12 @@ async function patients_patient_list_init() {
     document.getElementById('login-container').style.display = 'none';
     var user = Auth.user;
     await App.loadSidebar(user.role);
+
+    // 医生工作站不提供入院登记 (入科由护士站办理): 医生入口为顶栏「选择患者 → 添加患者」
+    if (window.WorkstationMode === true) {
+        var admitBtn = document.getElementById('wall-admit-btn');
+        if (admitBtn) admitBtn.style.display = 'none';
+    }
 
     // 科室下拉仅展示当前医生权限范围内科室 (admin 全部)
     if (user.role === 'doctor' || user.role === 'admin') {
