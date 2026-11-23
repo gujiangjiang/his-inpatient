@@ -699,10 +699,18 @@
     }
     .os-toolbar .os-tool { flex-shrink: 0; }
     .os-toolbar .os-sep { flex-shrink: 0; }
-    /* 过滤条: 分组换行 */
-    .os-filter { gap: 6px 12px; padding: 7px 10px; }
-    .os-filter-group { flex-wrap: wrap; gap: 6px; }
-    .os-filter .os-date-input { width: auto; flex: 1; min-width: 90px; }
+    /* 过滤条: 单行横向滑动 (不换行), 完整展示 全部/长期/临时/日期/状态 各组 */
+    .os-filter {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 6px 12px;
+        padding: 7px 10px;
+    }
+    .os-filter-group { flex-wrap: nowrap; flex-shrink: 0; gap: 6px; }
+    .os-filter .os-sep { flex-shrink: 0; }
+    .os-filter .os-filter-radio { flex-shrink: 0; white-space: nowrap; }
+    .os-filter .os-date-input { width: 96px; flex: none; }
     /* 医嘱表: 保持列宽, 容器横向滚动 */
     .os-table { min-width: 820px; }
     /* 悬浮面板: 窄屏全宽贴边 (保证可读可点) */
