@@ -188,6 +188,7 @@ function getRoutes() {
         'lab/detail' => ['lab/order/lab_detail.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
         'lab/collect' => ['lab/order/lab_collect.php', ['admin', 'nurse']],
         'lab/barcode-print' => ['lab/order/lab_barcode_print.php', ['admin', 'nurse', 'lab_tech']],
+        'lab/barcode-print-batch' => ['lab/order/lab_barcode_print_batch.php', ['admin', 'nurse', 'lab_tech']],
         'lab/result' => ['lab/order/lab_result.php', ['admin', 'lab_tech']],
         'lab/catalog' => ['lab/catalog/lab_catalog.php', ['admin', 'doctor', 'nurse', 'lab_tech']],
         'lab/panel-list' => ['lab/catalog/lab_panel_list.php', ['admin', 'doctor']],

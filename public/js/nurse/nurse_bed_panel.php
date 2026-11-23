@@ -526,6 +526,7 @@ var NurseBedPanel = {
     loadLabExam(box) {
         const pid = this.patient.id;
         box.innerHTML = '<div class="empty-state">加载中…</div>';
+        this.setBottomBar(`<button class="btn" onclick="NurseBedPanel.batchLabBarcodePrint()">检验条码打印</button>`);
         Promise.all([
             AjaxLoader.api('lab/list?patient_id=' + pid, { silent: true }).catch(() => ({ data: [] })),
             AjaxLoader.api('exam/list?patient_id=' + pid, { silent: true }).catch(() => ({ data: [] }))
@@ -584,6 +585,77 @@ var NurseBedPanel = {
                 <div class="ndoc-content-view">${Format.escape(d.report || '')}</div>`,
                 [{ text: '关闭', type: 'default' }]);
         }).catch(() => {});
+    },
+
+    /* 检验条码批量打印: 弹窗选择检验项目, 已打印灰显, 一键打印组合预览 */
+    batchLabBarcodePrint() {
+        const pid = this.patient.id;
+        const p = this.patient;
+        const self = this;
+        AjaxLoader.api('lab/list?patient_id=' + pid, { silent: true }).then(r => {
+            const labs = r.data || [];
+            if (!labs.length) { Dom.toast('暂无检验申请可打印条码', 'info'); return; }
+            const rows = labs.map(x => {
+                const printed = LabBarcode.printCount(x) > 0;
+                const checked = printed ? '' : 'checked';
+                const status = printed
+                    ? `<span class="fs-12 text-muted" title="${Format.escape([x.barcode_printed_name, x.barcode_printed_at].filter(Boolean).join(' · '))}">已打印</span>`
+                    : '<span class="badge badge-warning">未打印</span>';
+                return `<tr class="${printed ? 'nbp-exec-printed' : ''}">
+                    <td><input type="checkbox" class="nbp-lab-check" value="${x.id}" ${checked}></td>
+                    <td>${Format.escape(x.report_no || '')}</td>
+                    <td>${Format.escape(x.exam_name || '')}</td>
+                    <td>${Format.escape(x.specimen_type || '')}</td>
+                    <td>${status}</td>
+                </tr>`;
+            }).join('');
+            const content = `<div class="nbp-exec-sheet">
+                <div style="overflow-x:auto;max-height:42vh">
+                    <table class="table"><thead><tr><th></th><th>单号</th><th>项目</th><th>标本</th><th>打印</th></tr></thead>
+                    <tbody>${rows}</tbody></table>
+                </div>
+                <p class="fs-12 text-muted" style="margin-top:8px">默认勾选未打印的检验单；已打印的可手动勾选补打。打印后自动记录留痕。</p>
+            </div>`;
+            const overlay = Dom.modal('检验条码打印 - ' + Format.escape(p.patient_name || ''), content, [
+                { text: '全部勾选', type: 'default', onclick: function () {
+                    document.querySelectorAll('.nbp-lab-check').forEach(c => c.checked = true);
+                } },
+                { text: '一键打印条码', type: 'primary', onclick: async function () {
+                    const ids = [...document.querySelectorAll('.nbp-lab-check:checked')].map(c => Number(c.value));
+                    if (!ids.length) { Dom.toast('请勾选要打印的检验单', 'error'); return; }
+                    try {
+                        await AjaxLoader.api('lab/barcode-print-batch', { method: 'POST', data: { ids } });
+                        self.batchLabBarcodeLabels(labs.filter(x => ids.indexOf(Number(x.id)) >= 0));
+                        overlay.remove();
+                        self.refresh();
+                    } catch (e) { /* 已提示 */ }
+                } },
+                { text: '取消', type: 'default' }
+            ], { large: true });
+        }).catch(() => { Dom.toast('检验数据加载失败', 'error'); });
+    },
+
+    /* 组装检验条码标签预览: 选中的检验单逐条走模板, 页面展平合并为一份标签集 */
+    batchLabBarcodeLabels(selected) {
+        const pages = [], css = [];
+        let hasAny = false;
+        selected.forEach(function (x) {
+            const template = PrintLabels.labBarcode(x);
+            if (!template) return;
+            hasAny = true;
+            if (template.css && css.indexOf(template.css) < 0) css.push(template.css);
+            (template.pages || [template.html]).forEach(function (page) {
+                if (page && String(page).trim()) pages.push(page);
+            });
+        });
+        if (!hasAny || !pages.length) { Dom.toast('暂无可打印的检验条码', 'info'); return; }
+        PrintLabels.open({
+            title: '检验条码打印',
+            previewTitle: '检验条码 · 打印预览',
+            paper: 'LAB_LABEL',
+            css: css.join('\n'),
+            pages: pages
+        });
     },
 
     /* ================= 摆药 (该患者已核对未发药 → 申请预摆药) ================= */
