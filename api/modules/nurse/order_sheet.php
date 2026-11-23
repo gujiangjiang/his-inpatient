@@ -49,6 +49,9 @@ $long = []; $temp = [];
 foreach ($rows as $r) {
     $item = [
         'id' => $r['id'],
+        'parent_id' => $r['parent_id'],
+        'is_group_main' => $r['is_group_main'],
+        'group_seq' => $r['group_seq'],
         'content' => $r['content'],
         'category' => $r['category'],
         'dosage' => $r['dosage'],

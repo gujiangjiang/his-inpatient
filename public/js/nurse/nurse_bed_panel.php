@@ -362,30 +362,49 @@ var NurseBedPanel = {
         }).catch(() => { Dom.toast('医嘱单数据加载失败', 'error'); });
     },
 
-    /* 组装医嘱单 A4 文档 (抬头与电子病历一致; hasStop: 长期单含停止时间列, 临时单无) */
+    /* 组装医嘱单 A4 文档 (抬头与电子病历一致; hasStop: 长期单含停止时间列, 临时单无)
+       组合医嘱整组显示: 根医嘱行 + 子医嘱缩进于内容列下方, 时间/用法/频次等共享根医嘱 */
     buildOrderSheetHtml(title, rows, patient, hasStop) {
         const esc = function (s) { return Format.escape(String(s == null ? '' : s)); };
         const info = PrintPreview.patientInfo(patient, title);
         const header = PrintPreview.sheetHeader(info);
-        const body = rows.map(function (o) {
-            const content = esc(o.content) + (o.dosage ? ' ' + esc(o.dosage) + (o.dosage_unit ? esc(o.dosage_unit) : '') : '');
-            const usage = [o.usage_name, o.usage_rate].filter(Boolean).join(' ');
-            const freq = [o.freq_code, o.freq_detail].filter(Boolean).join(' ');
-            const start = o.start_date ? esc(String(o.start_date).slice(0, 16)) : '';
-            const status = o.status === 'stopped' ? '（已停）' : '';
+        /* 按后端排序 (组根在前, 组内 group_seq) 扫描分组 */
+        const groups = [];
+        let cur = null;
+        rows.forEach(function (o) {
+            if (!o.parent_id || o.is_group_main == 1) {
+                cur = { root: o, subs: [] };
+                groups.push(cur);
+            } else if (cur) {
+                cur.subs.push(o);
+            }
+        });
+        const groupBody = function (g) {
+            const root = g.root;
+            const subsHtml = g.subs.map(function (s) {
+                return '<div class="os-sub">' + esc(s.content) + (s.dosage ? ' ' + esc(s.dosage) + (s.dosage_unit ? esc(s.dosage_unit) : '') : '') + '</div>';
+            }).join('');
+            const content = esc(root.content) + (root.dosage ? ' ' + esc(root.dosage) + (root.dosage_unit ? esc(root.dosage_unit) : '') : '')
+                + (root.status === 'stopped' ? '（已停）' : '')
+                + (subsHtml ? '<div class="os-sub-wrap">' + subsHtml + '</div>' : '');
+            const usage = [root.usage_name, root.usage_rate].filter(Boolean).join(' ');
+            const freq = [root.freq_code, root.freq_detail].filter(Boolean).join(' ');
+            const start = root.start_date ? esc(String(root.start_date).slice(0, 16)) : '';
+            const stop = esc(root.stop_date ? String(root.stop_date).slice(0, 16) : (root.end_date ? String(root.end_date).slice(0, 16) : ''));
             const cells = hasStop
-                ? '<td class="os-time">' + start + '</td><td class="os-time">' + esc(o.stop_date ? String(o.stop_date).slice(0, 16) : (o.end_date ? String(o.end_date).slice(0, 16) : '')) + '</td>'
+                ? '<td class="os-time">' + start + '</td><td class="os-time">' + stop + '</td>'
                 : '<td class="os-time">' + start + '</td>';
             return '<tr>' + cells
-                + '<td class="os-content">' + content + status + '</td>'
+                + '<td class="os-content">' + content + '</td>'
                 + '<td class="os-usage">' + esc(usage) + '</td>'
                 + '<td class="os-freq">' + esc(freq) + '</td>'
-                + '<td class="os-sign">' + esc(o.doctor_name || '') + '</td>'
-                + (hasStop ? '<td class="os-sign">' + esc(o.stopped_name || '') + '</td>' : '')
-                + '<td class="os-sign">' + esc(o.verified_name || '') + '</td>'
-                + '<td class="os-sign">' + esc(o.exec_name || '') + '</td>'
+                + '<td class="os-sign">' + esc(root.doctor_name || '') + '</td>'
+                + (hasStop ? '<td class="os-sign">' + esc(root.stopped_name || '') + '</td>' : '')
+                + '<td class="os-sign">' + esc(root.verified_name || '') + '</td>'
+                + '<td class="os-sign">' + esc(root.exec_name || '') + '</td>'
                 + '</tr>';
-        }).join('');
+        };
+        const body = groups.map(groupBody).join('');
         const headCells = hasStop
             ? '<th style="width:10%">开始时间</th><th style="width:10%">停止时间</th><th style="width:26%">医嘱内容</th><th style="width:10%">用法</th><th style="width:8%">频次</th><th style="width:9%">开嘱医生</th><th style="width:9%">停嘱医生</th><th style="width:9%">核对护士</th><th style="width:9%">执行护士</th>'
             : '<th style="width:14%">开始时间</th><th style="width:36%">医嘱内容</th><th style="width:13%">用法</th><th style="width:10%">频次</th><th style="width:9%">开嘱医生</th><th style="width:10%">核对护士</th><th style="width:8%">执行护士</th>';
@@ -418,6 +437,8 @@ var NurseBedPanel = {
             '.os-table th, .os-table td { border: 0.5pt solid #000; padding: 4px 5px; vertical-align: top; text-align: left; overflow-wrap: anywhere; word-break: break-all; }',
             '.os-table th { background: #f2f2f2; text-align: center; font-weight: 600; }',
             '.os-content { font-size: 10pt; line-height: 1.5; }',
+            '.os-sub-wrap { margin-top: 3px; padding-left: 12px; border-left: 1.5px solid #999; }',
+            '.os-sub { font-size: 9.5pt; line-height: 1.5; }',
             '.os-usage, .os-freq { font-size: 9.5pt; }',
             '.os-time { font-size: 9.5pt; line-height: 1.5; }',
             '.os-sign { text-align: center; font-size: 9.5pt; }',
