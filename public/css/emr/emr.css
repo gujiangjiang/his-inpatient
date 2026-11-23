@@ -97,6 +97,11 @@
 .emr-qc-item { display: flex; gap: 8px; padding: 8px 4px; border-bottom: 1px solid #f0f2f5; font-size: 13px; color: #303133; align-items: flex-start; }
 .emr-qc-tag { flex: none; background: #fdecec; color: #f56c6c; font-size: 11px; padding: 1px 6px; border-radius: 4px; }
 .emr-qc-hint { color: #909399; font-size: 12px; margin-top: 8px; }
+/* 打印选项: 页码范围行内布局 (紧凑单行, 窄视口也不塌成堆叠) */
+.emr-print-range { display: flex; align-items: center; gap: 8px; }
+.emr-print-range-name { font-size: 13px; color: #607086; white-space: nowrap; }
+.emr-print-range .form-control { width: 88px; padding: 6px 8px; text-align: center; }
+.emr-print-range-sep { color: #909399; }
 .emr-dc { min-width: 520px; }
 .emr-dc-modes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
 .emr-dc-mode { font-size: 14px; color: #303133; cursor: pointer; }

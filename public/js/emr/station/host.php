@@ -42,14 +42,20 @@ function emr_signDoc() {
 function emr_printDoc() {
     if (!_emrCurrentDoc) return;
     // 打印选项：页码范围 + 内容（完整病历头/仅正文）
+    // 布局紧凑化: 下拉整行, 页码范围行内排布 (.emr-print-range, 不随窄视口塌成堆叠)
     const doc = _emrCurrentDoc;
     const optsHtml = '<div class="form-group"><label class="form-label">打印内容</label>' +
         '<select id="emr-print-mode" class="form-control"><option value="full">完整（病历头 + 正文 + 页码）</option>' +
         '<option value="body">仅正文（无病历头）</option></select></div>' +
-        '<div class="form-grid"><div class="form-group"><label class="form-label">起始页</label>' +
-        '<input type="number" id="emr-print-from" class="form-control" min="1" value="1"></div>' +
-        '<div class="form-group"><label class="form-label">结束页（留空=全部）</label>' +
-        '<input type="number" id="emr-print-to" class="form-control" min="1" placeholder="全部"></div></div>';
+        '<div class="form-group"><label class="form-label">页码范围</label>' +
+        '<div class="emr-print-range">' +
+        '<span class="emr-print-range-name">起始页</span>' +
+        '<input type="number" id="emr-print-from" class="form-control" min="1" value="1">' +
+        '<span class="emr-print-range-sep">—</span>' +
+        '<span class="emr-print-range-name">结束页</span>' +
+        '<input type="number" id="emr-print-to" class="form-control" min="1" placeholder="末页">' +
+        '</div>' +
+        '<p class="hint">结束页留空则打印到最后一页</p></div>';
     Dom.modal('打印选项', optsHtml, [
         { text: '打印', type: 'primary', onclick: function () {
             const mode = document.getElementById('emr-print-mode').value;
