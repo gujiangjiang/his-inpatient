@@ -4,6 +4,14 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.63.1] - 2026-11-24
+
+### 新增
+- **CI 自动自检（GitHub Actions）**：`.github/workflows/ci.yml` 在 push (main) / PR / 手动触发时运行
+  - PHP 语法自检五版本矩阵（8.1 / 8.2 / 8.3 / 8.4 / 8.5）：`token_get_all` 全量扫描，`php-lint.php` 新增 `--ci` 模式输出机器可读结果行
+  - 打印架构检查：浏览器打印能力收敛于 PrintPreview 的强制校验纳入 CI
+  - **汇总报告**：运行结束在 Run Summary 输出 Markdown 报告（触发信息 + 各版本结果矩阵 + 总体结论），各任务同步输出检查文件数/错误数/明细
+
 ## [0.63.0] - 2026-11-24
 
 ### 重构
