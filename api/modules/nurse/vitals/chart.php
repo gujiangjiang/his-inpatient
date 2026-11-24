@@ -74,13 +74,83 @@ function temperature_chart_day_no($admissionDate, $date) {
     return $d >= 1 ? (int)$d : '';
 }
 
+/* ==================== 手术自动识别 (术后天数 + 手术事件) ==================== */
+/* 只计未取消且关联手术医嘱有效 (未作废) 的手术; 择期次日为术后第 1 天, 急诊/日间当天为第 1 天 */
+
+function temperature_chart_roman($n) {
+    $map = [1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI', 7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X'];
+    return $map[(int)$n] ?? (string)$n;
+}
+
+/** 术后天数串: 1 次在效 → "5"/"II-5"; ≥2 次在效 → 分式 "II-2/4" (分子=最近一次术后天数, 分母=最早一次) */
+function temperature_chart_surgery_days(array $active) {
+    if (!$active) return '';
+    if (count($active) === 1) {
+        $a = $active[0];
+        return $a['idx'] > 1 ? temperature_chart_roman($a['idx']) . '-' . $a['days'] : (string)$a['days'];
+    }
+    $newest = $active[count($active) - 1];
+    $oldest = $active[0];
+    $num = $newest['idx'] > 1 ? temperature_chart_roman($newest['idx']) . '-' . $newest['days'] : (string)$newest['days'];
+    return $num . '/' . $oldest['days'];
+}
+
+/* 时间汉字化: 11:40 → 十一时四十分; 08:00 → 零八时零零分 */
+function temperature_chart_cn_num($n) {
+    $c = ['零', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+    $n = (int)$n;
+    if ($n < 10) return '零' . $c[$n];
+    if ($n === 10) return '十';
+    if ($n < 20) return '十' . ($n % 10 ? $c[$n % 10] : '');
+    return $c[intdiv($n, 10)] . '十' . ($n % 10 ? $c[$n % 10] : '');
+}
+function temperature_chart_cn_time($timeStr) {
+    if (strlen($timeStr) < 16) return '';
+    return temperature_chart_cn_num(substr($timeStr, 11, 2)) . '时' . temperature_chart_cn_num(substr($timeStr, 14, 2)) . '分';
+}
+
+/** 事件写入: 按本地墙钟时间定位日期列×时点列, 红字竖排 */
+function temperature_chart_set_event(&$days, $start, $localTimeStr, $text) {
+    if (strlen($localTimeStr) < 10) return;
+    $idx = (int)floor((strtotime(substr($localTimeStr, 0, 10)) - strtotime($start)) / 86400);
+    if ($idx < 0 || $idx > 6) return;
+    $hour = (int)substr($localTimeStr, 11, 2);
+    $days[$idx]['slots'][temperature_chart_slot_index($hour)]['event'] = $text;
+}
+
+/* 手术列表: 未取消且关联手术医嘱有效 (未作废); planned_at/surgery_date 为本地墙钟业务字段 */
+$surgeryRows = DB::select(
+    "SELECT s.category, COALESCE(NULLIF(s.planned_at, ''), NULLIF(s.surgery_date, '')) AS surgery_time
+     FROM surgeries s
+     LEFT JOIN orders o ON o.id = s.order_id
+     WHERE s.patient_id = ? AND s.status = 'requested'
+       AND (s.order_id IS NULL OR s.order_id = 0 OR COALESCE(o.status, '') NOT IN ('invalid', 'invalid_pending'))
+     ORDER BY COALESCE(NULLIF(s.planned_at, ''), NULLIF(s.surgery_date, '')) ASC, s.id ASC",
+    [$patientId]);
+$surgeryList = [];
+foreach ($surgeryRows as $sr) {
+    $t = trim((string)$sr['surgery_time']);
+    if ($t === '') continue;
+    /* 择期: 手术次日为术后第 1 天; 急诊/日间: 手术当天为第 1 天 */
+    $startDate = $sr['category'] === 'elective'
+        ? date('Y-m-d', strtotime(substr($t, 0, 10) . ' +1 day'))
+        : substr($t, 0, 10);
+    $surgeryList[] = ['idx' => count($surgeryList) + 1, 'start' => strtotime($startDate), 'time' => $t];
+}
+
 $days = [];
 for ($i = 0; $i < 7; $i++) {
     $date = date('Y-m-d', strtotime($start . " +$i days"));
+    $dayTs = strtotime($date);
+    $active = [];
+    foreach ($surgeryList as $sg) {
+        $diff = (int)floor(($dayTs - $sg['start']) / 86400) + 1;
+        if ($diff >= 1 && $diff <= 14) $active[] = ['idx' => $sg['idx'], 'days' => $diff];
+    }
     $days[] = [
         'date' => $date,
-        'day_no' => temperature_chart_day_no($patient['admission_date'], $date),
-        'surgery_days' => '',
+        'day_no' => temperature_chart_day_no(TimeHelper::localDate($patient['admission_date']), $date),
+        'surgery_days' => temperature_chart_surgery_days($active),
         'slots' => array_map('temperature_chart_empty_slot', array_fill(0, 6, null)),
         'daily' => ['stool' => '', 'bp_am' => '', 'bp_pm' => '', 'intake' => '', 'output' => '', 'urine' => '',
             'height' => '', 'weight' => '', 'skin_test' => '', 'allergy_drugs' => '',
@@ -118,6 +188,18 @@ foreach ($notes as $n) {
 foreach ($days as $i => $d) {
     if ($intake[$i] > 0) $days[$i]['daily']['intake'] = rtrim(rtrim(number_format($intake[$i], 1), '0'), '.');
     if ($output[$i] > 0) $days[$i]['daily']['output'] = rtrim(rtrim(number_format($output[$i], 1), '0'), '.');
+}
+
+/* ==================== 特殊事件自动标注 (红字竖排, 全部汉字) ==================== */
+/* 入院: 入科时间 (患者拉入病区时刻, admission_date 为存储时间 → 本地换算); 手术: 手术时间 (本地墙钟) */
+if (!empty($patient['admission_date'])) {
+    $admitLocal = TimeHelper::local($patient['admission_date']);
+    $admitText = temperature_chart_cn_time($admitLocal);
+    if ($admitText !== '') temperature_chart_set_event($days, $start, $admitLocal, '入院时间' . $admitText);
+}
+foreach ($surgeryList as $sg) {
+    $surgeryText = temperature_chart_cn_time($sg['time']);
+    if ($surgeryText !== '') temperature_chart_set_event($days, $start, $sg['time'], '手术时间' . $surgeryText);
 }
 
 /* 翻页可用性: 窗口外是否存在更早/更晚体征记录 */
