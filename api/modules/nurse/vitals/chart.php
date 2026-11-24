@@ -48,7 +48,7 @@ $notes = DB::select(
             OR bp_systolic IS NOT NULL OR intake_ml IS NOT NULL OR output_ml IS NOT NULL
             OR height IS NOT NULL OR weight IS NOT NULL)
      ORDER BY record_time ASC, id ASC",
-    [$patientId, $start . ' 00:00:00', $end . ' 00:00:00']);
+    [$patientId, TimeHelper::fromLocal($start . ' 00:00:00'), TimeHelper::fromLocal($end . ' 00:00:00')]);
 
 /** 空槽位模板 */
 function temperature_chart_empty_slot() {
@@ -88,24 +88,26 @@ for ($i = 0; $i < 7; $i++) {
     ];
 }
 
-/* 逐条护理记录 → 时点槽位 (同槽位同字段取首条; 血压按午前/午后分列; 出入量按日累计) */
-$intake = [0 => 0.0]; $output = [0 => 0.0];
+/* 逐条护理记录 → 时点槽位: 存储时间按站点时区换算后定位 (修复 UTC 存储模式跨日/跨时点偏移);
+   同槽位同字段取最新一次 (多次测量以最新为准, 历史明细看护理记录单); 血压按午前/午后取最新; 出入量按日累计 */
+$intake = []; $output = [];
 foreach ($notes as $n) {
-    $idx = (int)floor((strtotime(substr($n['record_time'], 0, 10)) - strtotime($start)) / 86400);
+    $lt = TimeHelper::local($n['record_time']);
+    if (strlen($lt) < 10) continue;
+    $idx = (int)floor((strtotime(substr($lt, 0, 10)) - strtotime($start)) / 86400);
     if ($idx < 0 || $idx > 6) continue;
     $day = &$days[$idx];
-    $hour = (int)substr($n['record_time'], 11, 2);
+    $hour = (int)substr($lt, 11, 2);
     $s = &$day['slots'][temperature_chart_slot_index($hour)];
-    if ($n['temperature'] !== null && $s['temp'] === null) {
+    if ($n['temperature'] !== null) {
         $s['temp'] = ['v' => round((float)$n['temperature'], 1), 'type' => 'axillary',
             'verified' => false, 'cooling' => null, 'no_rise' => false];
     }
-    if ($n['pulse'] !== null && $s['pulse'] === null) $s['pulse'] = (int)$n['pulse'];
-    if ($n['respiratory_rate'] !== null && $s['breath'] === null) $s['breath'] = (int)$n['respiratory_rate'];
+    if ($n['pulse'] !== null) $s['pulse'] = (int)$n['pulse'];
+    if ($n['respiratory_rate'] !== null) $s['breath'] = (int)$n['respiratory_rate'];
     if ($n['bp_systolic'] !== null && $n['bp_diastolic'] !== null) {
         $bp = (int)$n['bp_systolic'] . '/' . (int)$n['bp_diastolic'];
-        if ($hour < 12) { if ($day['daily']['bp_am'] === '') $day['daily']['bp_am'] = $bp; }
-        elseif ($day['daily']['bp_pm'] === '') $day['daily']['bp_pm'] = $bp;
+        if ($hour < 12) $day['daily']['bp_am'] = $bp; else $day['daily']['bp_pm'] = $bp;
     }
     if ($n['intake_ml'] !== null) $intake[$idx] = ($intake[$idx] ?? 0) + (float)$n['intake_ml'];
     if ($n['output_ml'] !== null) $output[$idx] = ($output[$idx] ?? 0) + (float)$n['output_ml'];
@@ -120,9 +122,9 @@ foreach ($days as $i => $d) {
 
 /* 翻页可用性: 窗口外是否存在更早/更晚体征记录 */
 $hasOlder = (bool)DB::selectOne("SELECT id FROM nursing_notes WHERE patient_id = ? AND record_time < ? LIMIT 1",
-    [$patientId, $start . ' 00:00:00']);
+    [$patientId, TimeHelper::fromLocal($start . ' 00:00:00')]);
 $hasNewer = (bool)DB::selectOne("SELECT id FROM nursing_notes WHERE patient_id = ? AND record_time >= ? LIMIT 1",
-    [$patientId, $end . ' 00:00:00']);
+    [$patientId, TimeHelper::fromLocal($end . ' 00:00:00')]);
 
 Response::success([
     'mode' => 'real',

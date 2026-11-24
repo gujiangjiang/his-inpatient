@@ -30,6 +30,9 @@ if ($action === 'save') {
 
     $recordTime = trim((string)Validator::get('record_time', ''));
     if ($recordTime === '') Response::error('请选择记录时间');
+    /* 记录时间为站点时区墙钟输入 → 按存储模式换算落库 (时间铁律; 体温单/列表按本地时区统一读出) */
+    $recordTime = TimeHelper::fromLocal($recordTime);
+    if ($recordTime === '') Response::error('记录时间格式错误');
 
     $id = (int)Validator::get('id', 0);
     $isFirst = (int)Validator::get('is_first', 0) ? 1 : 0;
