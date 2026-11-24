@@ -4,6 +4,15 @@
 
 格式参照 [语义化版本](https://semver.org/)。
 
+## [0.63.3] - 2026-11-24
+
+### 修复
+- **固定表头滚动缝隙**：`border-collapse: collapse` 下表头吸附后顶边塌陷边框不随背景绘制，滚动内容从约 1px 缝隙漏出；`.fix-head` 表头新增同色盖片（`th::before` 上越界 1px）补住，同时覆盖缝隙在框外/框内两种渲染
+
+### 变更
+- **固定表头解耦为通用构件 `Dom.scrollTable(head, body, opts)`**（js/core/dom.js）：一处调用输出统一模式（默认自带 `.table-scroll` 限高滚动区；`wrap:false` 用于面板 tab 由外层容器滚动；`maxHeight` 覆盖限高；`tableClass` 替换表格类）
+- 床位操作面板 7 个 tab 表格 + 执行单打印/检验条码打印/费用核对弹窗 + 批量预摆药弹窗全部迁移到通用构件；手写模板保留 `.fix-head` + `.table-scroll` 原语用法（规范见 AGENT.md）
+
 ## [0.63.2] - 2026-11-24
 
 ### 变更

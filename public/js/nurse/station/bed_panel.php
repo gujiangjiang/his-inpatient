@@ -238,7 +238,7 @@ var NurseBedPanel = {
                 <button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对${pendingN > 0 ? `<span class="nbp-badge">${pendingN}</span>` : ''}</button>
                 <button class="btn" onclick="NurseBedPanel.execSheetPrint()">执行单打印</button>
                 <button class="btn" onclick="NurseBedPanel.printOrderSheets()">医嘱单打印</button>`);
-            box.innerHTML = `<table class="table fix-head"><thead><tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>开嘱医生</th><th>停嘱医生</th><th>状态</th><th>操作</th></tr></thead><tbody>${body}</tbody></table>`;
+            box.innerHTML = Dom.scrollTable('<tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>开嘱医生</th><th>停嘱医生</th><th>状态</th><th>操作</th></tr>', body, { wrap: false });
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
@@ -289,10 +289,7 @@ var NurseBedPanel = {
                 </tr>`;
             }).join('');
             const content = `<div class="nbp-exec-sheet">
-                <div class="table-scroll">
-                    <table class="table fix-head"><thead><tr><th></th><th>医嘱</th><th>途径 · 频次</th><th>类型</th><th>打印</th></tr></thead>
-                    <tbody>${rows}</tbody></table>
-                </div>
+                ${Dom.scrollTable('<tr><th></th><th>医嘱</th><th>途径 · 频次</th><th>类型</th><th>打印</th></tr>', rows)}
                 <p class="fs-12 text-muted" style="margin-top:8px">默认勾选未打印的医嘱；已打印的可手动勾选补打。打印后自动记录留痕。</p>
             </div>`;
             const overlay = Dom.modal('执行单打印 - ' + Format.escape(p.patient_name || ''), content, [
@@ -489,7 +486,7 @@ var NurseBedPanel = {
                     <td><button class="btn btn-small" onclick="NurseBedPanel.viewRecord(${d.id})">查看</button></td>
                 </tr>`;
             }).join('');
-            box.innerHTML = `<table class="table fix-head"><thead><tr><th>文书</th><th>分类</th><th>更新时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table>`;
+            box.innerHTML = Dom.scrollTable('<tr><th>文书</th><th>分类</th><th>更新时间</th><th>状态</th><th>操作</th></tr>', rows, { wrap: false });
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
@@ -541,7 +538,7 @@ var NurseBedPanel = {
                     ${x.status === 'pending' ? `<button class="btn btn-small btn-success" onclick="NurseBedPanel.collectLab(${x.id})">采集</button>` : ''}</td>
             </tr>`).join('')
                 : '<tr><td colspan="6"><div class="empty-state">暂无检验</div></td></tr>';
-            box.innerHTML = `<table class="table fix-head"><thead><tr><th>单号</th><th>项目</th><th>标本</th><th>条码</th><th>状态</th><th>操作</th></tr></thead><tbody>${labRows}</tbody></table>`;
+            box.innerHTML = Dom.scrollTable('<tr><th>单号</th><th>项目</th><th>标本</th><th>条码</th><th>状态</th><th>操作</th></tr>', labRows, { wrap: false });
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
@@ -560,7 +557,7 @@ var NurseBedPanel = {
                 <td>${x.status === 'reported' ? '<button class="btn btn-small" onclick="NurseBedPanel.viewExam(' + x.id + ')">详情</button>' : '<span class="fs-12 text-muted">-</span>'}</td>
             </tr>`).join('')
                 : '<tr><td colspan="5"><div class="empty-state">暂无检查</div></td></tr>';
-            box.innerHTML = `<table class="table fix-head"><thead><tr><th>单号</th><th>项目</th><th>执行科室</th><th>状态</th><th>操作</th></tr></thead><tbody>${examRows}</tbody></table>`;
+            box.innerHTML = Dom.scrollTable('<tr><th>单号</th><th>项目</th><th>执行科室</th><th>状态</th><th>操作</th></tr>', examRows, { wrap: false });
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
@@ -615,10 +612,7 @@ var NurseBedPanel = {
                 </tr>`;
             }).join('');
             const content = `<div class="nbp-exec-sheet">
-                <div class="table-scroll">
-                    <table class="table fix-head"><thead><tr><th></th><th>单号</th><th>项目</th><th>标本</th><th>打印</th></tr></thead>
-                    <tbody>${rows}</tbody></table>
-                </div>
+                ${Dom.scrollTable('<tr><th></th><th>单号</th><th>项目</th><th>标本</th><th>打印</th></tr>', rows)}
                 <p class="fs-12 text-muted" style="margin-top:8px">默认勾选未打印的检验单；已打印的可手动勾选补打。打印后自动记录留痕。</p>
             </div>`;
             const overlay = Dom.modal('检验条码打印 - ' + Format.escape(p.patient_name || ''), content, [
@@ -678,7 +672,7 @@ var NurseBedPanel = {
                 <td>${o.dispense_status === 'prepared' ? '<span class="badge badge-warning">已预摆</span>' : '<span class="badge badge-default">未预摆</span>'}</td>
                 <td>${o.dispense_status === 'prepared' ? '<button class="btn btn-small" onclick="NurseBedPanel.cancelPrepare(' + o.id + ')">取消</button>' : ''}</td>
             </tr>`).join('');
-            box.innerHTML = `<table class="table fix-head"><thead><tr><th></th><th>医嘱</th><th>频次</th><th>预摆</th><th>操作</th></tr></thead><tbody>${trs}</tbody></table>`;
+            box.innerHTML = Dom.scrollTable('<tr><th></th><th>医嘱</th><th>频次</th><th>预摆</th><th>操作</th></tr>', trs, { wrap: false });
             /* 勾选变化实时更新底部按钮角标 */
             box.querySelectorAll('.nbp-med-check').forEach(function (c) {
                 c.addEventListener('change', NurseBedPanel.updatePrepareBadge);
@@ -742,9 +736,7 @@ var NurseBedPanel = {
                 }).join('');
                 return `<tr><td class="td-time">${Format.escape(d)}</td>${cells}</tr>`;
             }).join('');
-            box.insertAdjacentHTML('beforeend', `<table class="temp-grid fix-head">
-                    <thead><tr><th>日期</th><th>06:00</th><th>10:00</th><th>14:00</th><th>18:00</th><th>22:00</th></tr></thead>
-                    <tbody>${html}</tbody></table>`);
+            box.insertAdjacentHTML('beforeend', Dom.scrollTable('<tr><th>日期</th><th>06:00</th><th>10:00</th><th>14:00</th><th>18:00</th><th>22:00</th></tr>', html, { wrap: false, tableClass: 'temp-grid' }));
         }).catch(() => { const e2 = box.querySelector('.empty-state'); if (e2) e2.textContent = '加载失败'; });
     },
 
@@ -1090,7 +1082,7 @@ var NurseBedPanel = {
                     </tr>`;
                 }).join('');
                 PANES.push(`<div class="charge-pane${ti === 0 ? '' : ' hidden'}" data-cpane="${tk}">
-                    <div class="table-scroll"><table class="table fix-head"><thead><tr><th>项目</th><th>数量</th><th>单价</th><th>金额</th><th>来源</th><th>操作</th></tr></thead><tbody>${rows || '<tr><td colspan="6"><div class="empty-state">暂无费用</div></td></tr>'}</tbody></table></div>
+                    ${Dom.scrollTable('<tr><th>项目</th><th>数量</th><th>单价</th><th>金额</th><th>来源</th><th>操作</th></tr>', rows || '<tr><td colspan="6"><div class="empty-state">暂无费用</div></td></tr>')}
                 </div>`);
             });
             const content = `<div class="charge-check">

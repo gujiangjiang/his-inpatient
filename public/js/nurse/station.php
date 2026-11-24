@@ -127,17 +127,14 @@ var NurseStation = {
         // 打开批量选择弹窗
         const rows = all.filter(x => x.dispense_status !== 'prepared');
         if (!rows.length) { Dom.toast('当前病区待摆药医嘱均已预摆', 'info'); return; }
-        const content = `<div class="nnote-list" style="max-height:40vh">
-            <table class="table fix-head">
-                <thead><tr><th></th><th>患者</th><th>床号</th><th>医嘱</th><th>频次</th></tr></thead>
-                <tbody>${rows.map(o => `<tr>
+        const content = `${Dom.scrollTable('<tr><th></th><th>患者</th><th>床号</th><th>医嘱</th><th>频次</th></tr>',
+            rows.map(o => `<tr>
                     <td><input type="checkbox" class="nbb-check" value="${o.id}" checked></td>
                     <td>${Format.escape(o.patient_name || '')}</td>
                     <td>${Format.escape(o.bed_no || '')}</td>
                     <td>${Format.escape(o.content)}${o.dosage ? ' ' + Format.escape(o.dosage) : ''}</td>
                     <td>${Format.escape(o.freq_code || '')}</td>
-                </tr>`).join('')}</tbody>
-            </table></div>
+                </tr>`).join(''), { maxHeight: '40vh' })}
             <div class="flex-between mt-10">
                 <span class="text-muted">计划时间：<input type="datetime-local" id="nb-batch-plan" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px"></span>
             </div>`;

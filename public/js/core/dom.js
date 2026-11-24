@@ -115,6 +115,22 @@ const Dom = {
     },
 
     /**
+     * 固定表头长表格统一构件 (弹窗/面板内长列表直接调用, 表头吸附 + 行内容滚动)。
+     * head: <thead> 内部 (一行 <tr><th>…); body: <tbody> 内部 (空列表先自行处理空态)。
+     * opts: {
+     *   wrap: false      → 不包滚动区, 输出裸表格, 由外层滚动容器滚动 (床位面板 tab 等);
+     *                      默认包 .table-scroll (52vh 限高 + 双向滚动, 弹窗内选择列表)
+     *   maxHeight: '40vh' → 覆盖 .table-scroll 默认限高
+     *   tableClass: '…'   → 替换默认 .table (如 'temp-grid')
+     * }
+     */
+    scrollTable(head, body, opts = {}) {
+        const table = `<table class="fix-head ${opts.tableClass || 'table'}"><thead>${head}</thead><tbody>${body || ''}</tbody></table>`;
+        if (opts.wrap === false) return table;
+        return `<div class="table-scroll"${opts.maxHeight ? ` style="max-height:${opts.maxHeight}"` : ''}>${table}</div>`;
+    },
+
+    /**
      * 容器内 <script> 手动提取执行 (innerHTML 注入不会自动跑 script)。
      * 收敛 loadPage 与 系统设置懒加载面板的两份同实现。
      */

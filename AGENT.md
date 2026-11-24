@@ -127,8 +127,11 @@
 ## 前端页面约定
 - 唯一入口: `public/index.php` (SPA 壳 + /api/ 路由)
 - **静态资源统一管理**: 所有 JS/CSS 在 `public/assets.php` 的 `Asset::$css` / `Asset::$js` 注册, 页面用 `Asset::css()` / `Asset::js()` 输出 (自动带 APP_VERSION 防缓存); 新增/移除资源只改 assets.php, 禁止在页面里散写 `<script src>` / `<link>`
-- **弹窗/面板内长表格统一固定表头**: 表格加 `.fix-head` 类 (表头 sticky 吸附于最近滚动容器顶部, 行内容滚动);
-  需要独立限高滚动区时外包一层 `.table-scroll` (默认限高 52vh + 双向滚动)。
+- **弹窗/面板内长表格统一固定表头组件**: 优先调用 `Dom.scrollTable(head, body, opts)` (js/core/dom.js) ——
+  默认输出 `<div class="table-scroll"><table class="table fix-head">` (自带 52vh 限高滚动区, 弹窗内列表用);
+  `opts.wrap === false` 输出裸表格由外层滚动容器滚动 (床位面板 tab 等); `opts.maxHeight` 覆盖限高;
+  `opts.tableClass` 替换表格类 (如 `'temp-grid'`)。
+  手写模板时的等价原语: 表格加 `.fix-head` (表头 sticky 吸附于最近滚动容器顶部) + 外层 `.table-scroll`。
   **禁止**再写内联 `overflow-x:auto` / `max-height` 滚动包装 —— 它会形成新的滚动容器, 使表头吸附失效;
   页面级滚动容器 (如护士站面板 `.nurse-op-body`) 保持双向 `overflow: auto`, 表格直接作为其子元素
 - 页面片段: `public/js/{module}/{page}.php`, 通过 `AjaxLoader.loadPage()` 动态加载
