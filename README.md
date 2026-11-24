@@ -2,7 +2,8 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.63.0-blue)
+![version](https://img.shields.io/badge/version-0.63.1-blue)
+![CI](https://github.com/gujiangjiang/his-inpatient/actions/workflows/ci.yml/badge.svg)
 
 ## 技术栈
 
@@ -10,6 +11,16 @@
 - **数据库**: SQLite（默认） / MySQL / PostgreSQL
 - **前端**: 原生 JS/CSS SPA
 - **病历编辑器**: 自研字处理编辑器（借鉴 Quire/Word 模型：纯 JSON 文档模型 + 固定抬头/固定标签/填写槽 + 自动分页打印），**全站零第三方前端库**
+
+## CI（GitHub Actions）
+
+`.github/workflows/ci.yml` 在 push (main) / PR / 手动触发时运行：
+
+- **PHP 语法自检**: 8.1 / 8.2 / 8.3 / 8.4 / 8.5 五版本矩阵，`token_get_all` 全量扫描 430+ 文件
+- **打印架构检查**: 浏览器打印能力仅允许存在于 `PrintPreview`
+- **汇总报告**: 运行结束后在 Run Summary 输出 Markdown 汇总（各版本结果矩阵 + 总体结论），每次任务亦单独输出检查文件数/错误数/结论
+
+本地等效命令：`npm run lint`（PHP 语法 + 打印架构，经 FrankenPHP 运行）。
 - **PDF**: 浏览器打印（打印对话框可选「另存为 PDF」，分页与打印件完全一致）
 - **数据存储**: 主业务库 `data/hospital.sqlite` + 系统配置库 `data/config.db` + **独立基础字典库 `data/dicts.sqlite`**（省市县+邮编 3104 条 / 职业分类大典2022 全量 / 院级字典；**固定字典库 `data/dicts.sqlite` 随仓库提交远程**（种子与构建工具在 `tools/dict_data/` 与 `tools/build_dicts.php`，数据不在 PHP 中），运行时直接使用；管理员「字典管理」维护、修改即时生效）
 - **消息推送**: SSE 长连接（非轮询）——审核/维护/待核医嘱等业务事件定向推送（顶栏铃铛 + 未读角标），处理完成自动消失

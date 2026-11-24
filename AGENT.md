@@ -86,6 +86,10 @@
 - 语法检查（任何模式均可用，不依赖本地服务器）：系统 php 在位时
   `php tools/lint/php-lint.php`；否则 `~/.local/bin/frankenphp php-cli tools/lint/php-lint.php`
   （即 `npm run lint`）
+- **CI 自动自检（GitHub Actions）**：`.github/workflows/ci.yml` 在 push (main) / PR /
+  手动触发时执行 —— PHP 8.1~8.5 五版本矩阵语法自检（`php tools/lint/php-lint.php --ci`）
+  + 打印架构检查，运行结束在 Run Summary 输出多版本汇总报告；推送前必须先本地
+  `npm run lint` 通过，CI 红灯禁止合入
 
 ## 时间与时区铁律（三系统统一契约：HIS / 门诊 / PACS）
 
