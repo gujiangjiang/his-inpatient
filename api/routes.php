@@ -116,6 +116,7 @@ function getRoutes() {
         'nurse/execution-sheet-list' => ['nurse/print/sheet_list.php', ['admin', 'nurse']],
         'nurse/execution-sheet-print' => ['nurse/print/sheet_print.php', ['admin', 'nurse']],
         'nurse/nursing-link' => ['nurse/docs/link.php', ['admin', 'nurse', 'doctor']],
+        'nurse/temperature-chart' => ['nurse/vitals/chart.php', ['admin', 'nurse', 'doctor']],
         'nurse/charges' => ['nurse/charge/charges.php', ['admin', 'nurse']],
         'nurse/patient-info' => ['nurse/patient/info.php', ['admin', 'nurse']],
 

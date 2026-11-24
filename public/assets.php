@@ -56,6 +56,7 @@ class Asset {
         '/js/lab/lib/lab_barcode.js',
         '/js/nurse/print/nurse_print.js',
         '/js/nurse/print/medication_label.js',
+        '/js/nurse/print/temperature_chart.js',
         '/js/emr_editor/doc/emr_doc_model.js',
         '/js/emr_editor/emr_nursing_link.js',
         '/js/emr_editor/doc/emr_doc_calc.js',

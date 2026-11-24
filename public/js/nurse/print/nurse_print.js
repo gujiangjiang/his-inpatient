@@ -44,38 +44,7 @@
       + '<tbody>' + body + '</tbody></table>');
   };
 
-  /* 体温单 A4: 日期×时点网格 (体温/脉搏/呼吸/血压/血氧) */
-  NP.tempHtml = function (rows, patient) {
-    const info = PrintPreview.patientInfo(patient, '体温单');
-    const header = PrintPreview.sheetHeader(info);
-    const SLOTS = ['06:00', '10:00', '14:00', '18:00', '22:00'];
-    const byDate = {};
-    rows.forEach(function (r) {
-      const d = (r.record_time || '').slice(0, 10);
-      if (!byDate[d]) byDate[d] = [];
-      byDate[d].push(r);
-    });
-    const dates = Object.keys(byDate).sort();
-    const body = dates.map(function (d) {
-      const day = byDate[d];
-      const cells = SLOTS.map(function (s) {
-        const hit = day.find(function (x) { return (x.record_time || '').slice(11, 16) === s; });
-        if (!hit) return '<td class="np-td-empty">-</td>';
-        const lines = [];
-        if (hit.temperature != null) lines.push(nv(hit.temperature) + '℃');
-        if (hit.pulse != null) lines.push('脉 ' + nv(hit.pulse));
-        if (hit.respiratory_rate != null) lines.push('呼 ' + nv(hit.respiratory_rate));
-        if (hit.bp_systolic != null) lines.push(nv(hit.bp_systolic) + '/' + nv(hit.bp_diastolic));
-        if (hit.oxygen_saturation != null) lines.push('SpO2 ' + nv(hit.oxygen_saturation));
-        return '<td class="np-td">' + lines.join('<br>') + '</td>';
-      }).join('');
-      return '<tr><td class="np-date">' + esc(d) + '</td>' + cells + '</tr>';
-    }).join('');
-    return NP.docHtml(info, header,
-      '<table class="np-table np-temp">'
-      + '<thead><tr><th style="width:14%">日期</th><th>06:00</th><th>10:00</th><th>14:00</th><th>18:00</th><th>22:00</th></tr></thead>'
-      + '<tbody>' + body + '</tbody></table>');
-  };
+  /* 体温单 A4 打印已升级为标准三测单 (TempChart, js/nurse/print/temperature_chart.js) */
 
   /* 组装完整 A4 文档 (页眉+正文+页脚页码) */
   NP.docHtml = function (info, headerHtml, bodyHtml) {

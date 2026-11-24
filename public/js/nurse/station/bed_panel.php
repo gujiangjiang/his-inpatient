@@ -19,6 +19,9 @@ var NurseBedPanel = {
         if (this._overlay && this._overlay.parentNode) this._overlay.remove();
         this.patient = patient;
         this.activeTab = 'info';
+        this._tempStart = '';
+        this._tempDemo = false;
+        this._tempData = null;
         const p = patient;
         const level = String(p.nursing_level || '3');
         const roman = { special: '特', '1': 'Ⅰ', '2': 'Ⅱ', '3': 'Ⅲ' }[level] || 'Ⅲ';
@@ -833,47 +836,59 @@ var NurseBedPanel = {
     },
 
     /* ================= 体温单 (从护理记录单派生, 只读) ================= */
+    /* ================= 体温单 (三测单: 标准网格曲线, 数据源护理记录单; demo=1 全场景演示) ================= */
     loadTemperature(box) {
         const pid = this.patient.id;
         this.setBottomBar(`<button class="btn" onclick="NurseBedPanel.tempPreview()">打印预览</button>`);
-        box.innerHTML = `<div class="temp-date-nav"><span class="td-date">体温单</span></div><div class="empty-state">加载中…</div>`;
-        AjaxLoader.api('nurse/temperature?action=list&patient_id=' + pid, { silent: true }).then(r => {
-            const rows = r.data || [];
-            const e = box.querySelector('.empty-state');
-            if (!rows.length) { if (e) e.textContent = '暂无体温记录（护理记录单中填写生命体征后自动显示）'; return; }
-            if (e) e.outerHTML = '';
-            const byDate = {};
-            rows.forEach(x => { (byDate[(x.record_time || '').slice(0, 10)] = byDate[(x.record_time || '').slice(0, 10)] || []).push(x); });
-            const dates = Object.keys(byDate).sort().reverse();
-            const SLOTS = ['06:00', '10:00', '14:00', '18:00', '22:00'];
-            const html = dates.map(d => {
-                const day = byDate[d];
-                const cells = SLOTS.map(s => {
-                    const hit = day.find(x => (x.record_time || '').slice(11, 16) === s);
-                    return hit
-                        ? `<td class="td-val">
-                             ${hit.temperature != null ? Format.escape(String(hit.temperature)) + '°' : ''}
-                             ${hit.pulse != null ? '<br><span class="fs-11">脉 ' + Format.escape(String(hit.pulse)) + '</span>' : ''}
-                             ${hit.bp_systolic != null ? '<br><span class="fs-11">' + Format.escape(String(hit.bp_systolic)) + '/' + Format.escape(String(hit.bp_diastolic)) + '</span>' : ''}
-                             ${hit.oxygen_saturation != null ? '<br><span class="fs-11">SpO2 ' + Format.escape(String(hit.oxygen_saturation)) + '</span>' : ''}
-                           </td>`
-                        : `<td class="td-empty">-</td>`;
-                }).join('');
-                return `<tr><td class="td-time">${Format.escape(d)}</td>${cells}</tr>`;
-            }).join('');
-            box.insertAdjacentHTML('beforeend', Dom.scrollTable('<tr><th>日期</th><th>06:00</th><th>10:00</th><th>14:00</th><th>18:00</th><th>22:00</th></tr>', html, { wrap: false, tableClass: 'temp-grid' }));
-        }).catch(() => { const e2 = box.querySelector('.empty-state'); if (e2) e2.textContent = '加载失败'; });
+        box.innerHTML = '<div class="empty-state">加载中…</div>';
+        const url = this._tempDemo
+            ? 'nurse/temperature-chart?demo=1'
+            : 'nurse/temperature-chart?patient_id=' + pid + (this._tempStart ? '&start=' + this._tempStart : '');
+        AjaxLoader.api(url, { silent: true }).then(r => {
+            /* 请求返回期间若已切换患者，丢弃旧响应 */
+            if (!this.patient || String(this.patient.id) !== String(pid) || !box.isConnected) return;
+            const d = r.data || {};
+            this._tempData = d;
+            const hasVitals = (d.days || []).some(day => day.slots.some(s => s.temp || s.pulse != null || s.breath != null));
+            const range = (d.start && d.end) ? Format.escape(d.start.slice(5) + ' ~ ' + d.end.slice(5)) : '';
+            box.innerHTML = `<div class="temp-date-nav">
+                <button class="btn btn-small" onclick="NurseBedPanel.tempPage(-1)" ${d.mode === 'demo' || !d.has_older ? 'disabled' : ''}>‹ 上一周</button>
+                <span class="td-date">体温单 ${range}</span>
+                <button class="btn btn-small" onclick="NurseBedPanel.tempPage(1)" ${d.mode === 'demo' || !d.has_newer ? 'disabled' : ''}>下一周 ›</button>
+                ${d.mode === 'demo'
+                    ? '<span class="badge badge-info">演示数据</span><button class="btn btn-small" onclick="NurseBedPanel.tempExitDemo()">返回患者数据</button>'
+                    : '<button class="btn btn-small" onclick="NurseBedPanel.tempDemo()">查看演示数据</button>'}
+            </div><div class="temp-chart-host"></div>`;
+            if (!hasVitals && d.mode !== 'demo') {
+                box.querySelector('.temp-chart-host').innerHTML = '<div class="empty-state">该患者此周无体征记录（护理记录单填写生命体征后自动生成）</div>';
+                return;
+            }
+            TempChart.render(box.querySelector('.temp-chart-host'), d);
+        }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
+    /* 体温单按周翻页 */
+    tempPage(delta) {
+        const d = this._tempData;
+        if (!d || d.mode === 'demo' || !d.start) return;
+        const dt = new Date(d.start + 'T00:00:00');
+        dt.setDate(dt.getDate() + delta * 7);
+        const y = dt.getFullYear(), m = ('0' + (dt.getMonth() + 1)).slice(-2), dd = ('0' + dt.getDate()).slice(-2);
+        this._tempStart = y + '-' + m + '-' + dd;
+        this.loadTab('temperature');
+    },
+
+    tempDemo() { this._tempDemo = true; this.loadTab('temperature'); },
+    tempExitDemo() { this._tempDemo = false; this._tempStart = ''; this.loadTab('temperature'); },
+
+    /* 打印预览: A4 纵向每页 7 天, 患者抬头占位 + HTML 表格框架 + SVG 曲线 (打印色彩保真) */
     tempPreview() {
-        const pid = this.patient.id;
-        const p = this.patient;
-        AjaxLoader.api('nurse/temperature?action=list&patient_id=' + pid, { silent: true }).then(r => {
-            const rows = r.data || [];
-            if (!rows.length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
-            const html = NursePrint.tempHtml(rows, { patient_name: p.patient_name || p.name || '' });
-            PrintPreview.open('体温单 · 打印预览', html, { canPrint: true });
-        }).catch(() => {});
+        const d = this._tempData;
+        if (!d || !(d.days || []).length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
+        const patient = d.mode === 'demo' ? d.patient : (this.patient || d.patient);
+        const pages = TempChart.buildPrintPages(d, patient);
+        if (!pages.length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
+        PrintPreview.combine('体温单 · 打印预览', pages, { canPrint: true });
     },
 
     /* ================= 护理记录单 (扩展字段: 生命体征/管路/引流/意识/血糖/瞳孔/GCS) ================= */
