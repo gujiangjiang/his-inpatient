@@ -920,7 +920,9 @@ var NurseBedPanel = {
         const m = [];
         if (x.temperature != null) m.push('体温 ' + Format.escape(String(x.temperature)) + '°');
         if (x.pulse != null) m.push('脉搏 ' + Format.escape(String(x.pulse)));
+        if (x.heart_rate != null) m.push('心率 ' + Format.escape(String(x.heart_rate)));
         if (x.respiratory_rate != null) m.push('呼吸 ' + Format.escape(String(x.respiratory_rate)));
+        if (x.pain_score != null) m.push('疼痛 ' + Format.escape(String(x.pain_score)) + '分');
         if (x.bp_systolic != null) m.push('血压 ' + Format.escape(String(x.bp_systolic)) + '/' + Format.escape(String(x.bp_diastolic)));
         if (x.oxygen_saturation != null) m.push('血氧 ' + Format.escape(String(x.oxygen_saturation)) + '%');
         if (x.intake_ml != null) m.push('入量 ' + Format.escape(String(x.intake_ml)) + 'ml');
@@ -959,12 +961,26 @@ var NurseBedPanel = {
                     <option value="transfer">转科</option><option value="other">其他</option>
                 </select></div>
             <div class="form-group"><label class="form-label">体温(℃)</label><input name="temperature" class="form-control"></div>
+            <div class="form-group"><label class="form-label">体温途径</label>
+                <select name="temp_type" class="form-control">
+                    <option value="axillary">腋表</option><option value="oral">口表</option>
+                    <option value="rectal">肛表</option><option value="ear">耳表</option>
+                </select></div>
+            <div class="form-group"><label class="form-label">降温后复测(℃)</label><input name="cooling_temp" class="form-control" placeholder="降温半小时后复测"></div>
             <div class="form-group"><label class="form-label">脉搏(次/分)</label><input name="pulse" class="form-control"></div>
+            <div class="form-group"><label class="form-label">心率(次/分)</label><input name="heart_rate" class="form-control" placeholder="并存且更快时绘短绌"></div>
             <div class="form-group"><label class="form-label">呼吸(次/分)</label><input name="respiratory_rate" class="form-control"></div>
+            <div class="form-group"><label class="form-label">疼痛评分(0-10)</label><input name="pain_score" type="number" min="0" max="10" class="form-control"></div>
+            <div class="form-group"><label class="form-label">呼吸机</label>
+                <select name="ventilator" class="form-control"><option value="">未使用</option><option value="1">使用中</option></select></div>
+            <div class="form-group"><label class="form-label">起搏器</label>
+                <select name="pacemaker" class="form-control"><option value="">无</option><option value="1">有</option></select></div>
             <div class="form-group"><label class="form-label">血压</label><span class="bp-pair"><input name="bp_systolic" class="form-control" placeholder="收缩压" style="width:60%"><span class="fs-12 text-muted">/</span><input name="bp_diastolic" class="form-control" placeholder="舒张压" style="width:35%"></span></div>
             <div class="form-group"><label class="form-label">血氧(%)</label><input name="oxygen_saturation" class="form-control"></div>
             <div class="form-group"><label class="form-label">入量(ml)</label><input name="intake_ml" class="form-control"></div>
             <div class="form-group"><label class="form-label">出量(ml)</label><input name="output_ml" class="form-control"></div>
+            <div class="form-group"><label class="form-label">小便量(ml)</label><input name="urine_ml" class="form-control"></div>
+            <div class="form-group"><label class="form-label">大便次数</label><input name="stool" class="form-control" placeholder="如 0/E·3/2E·※·☆"></div>
             <div class="form-group"><label class="form-label">意识情况</label>
                 <select name="consciousness" class="form-control"><option value="">选填</option><option>清醒</option><option>嗜睡</option><option>昏睡</option><option>昏迷</option><option>模糊</option></select></div>
             <div class="form-group"><label class="form-label">管路</label>
@@ -973,9 +989,14 @@ var NurseBedPanel = {
             <div class="form-group"><label class="form-label">引流量(ml)</label><input name="drainage_ml" class="form-control"></div>
             <div class="form-group"><label class="form-label">血糖(mmol/L)</label><input name="blood_glucose" class="form-control"></div>
             <div class="form-group"><label class="form-label">瞳孔情况</label><input name="pupil" class="form-control" placeholder="如: 等大等圆 对光反射灵敏"></div>
+            <div class="form-group"><label class="form-label">皮试结果</label>
+                <select name="skin_test" class="form-control"><option value="">未做</option><option>阴性</option><option>阳性</option></select></div>
+            <div class="form-group"><label class="form-label">过敏药物</label><input name="allergy_drugs" class="form-control" placeholder="如: 青霉素"></div>
+            <div class="form-group"><label class="form-label">特殊药物</label><input name="special_drugs" class="form-control" placeholder="如: 12/30接种100"></div>
             <div class="form-group"><label class="form-label">GCS 睁眼</label><select name="gcs_eye" class="form-control"><option value="">-</option><option value="4">4 自发</option><option value="3">3 呼唤</option><option value="2">2 疼痛</option><option value="1">1 无</option></select></div>
             <div class="form-group"><label class="form-label">GCS 语言</label><select name="gcs_verbal" class="form-control"><option value="">-</option><option value="5">5 正常</option><option value="4">4 混乱</option><option value="3">3 词语</option><option value="2">2 声音</option><option value="1">1 无</option></select></div>
             <div class="form-group"><label class="form-label">GCS 运动</label><select name="gcs_motor" class="form-control"><option value="">-</option><option value="6">6 遵嘱</option><option value="5">5 定位</option><option value="4">4 回缩</option><option value="3">3 屈曲</option><option value="2">2 过伸</option><option value="1">1 无</option></select></div>
+            <div class="form-group colspan-2"><label class="form-label">其他备注</label><input name="other_remark" class="form-control" placeholder="选填"></div>
             <div class="form-group colspan-2"><label class="form-label">护理记录 <span class="text-danger">*</span></label>
                 <textarea name="note" class="form-control" rows="3" required></textarea></div>
             <input type="hidden" name="patient_id" value="${pid}">

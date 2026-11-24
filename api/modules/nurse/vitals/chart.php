@@ -40,13 +40,16 @@ $patient = DB::selectOne(
 if (!$patient) Response::error('患者不存在');
 
 $notes = DB::select(
-    "SELECT record_time, temperature, pulse, respiratory_rate, bp_systolic, bp_diastolic,
-            intake_ml, output_ml, height, weight
+    "SELECT record_time, temperature, temp_type, cooling_temp, pulse, heart_rate, pacemaker, ventilator,
+            respiratory_rate, pain_score, bp_systolic, bp_diastolic,
+            intake_ml, output_ml, urine_ml, stool, skin_test, allergy_drugs, special_drugs, other_remark,
+            height, weight
      FROM nursing_notes
      WHERE patient_id = ? AND record_time >= ? AND record_time < ?
        AND (temperature IS NOT NULL OR pulse IS NOT NULL OR respiratory_rate IS NOT NULL
             OR bp_systolic IS NOT NULL OR intake_ml IS NOT NULL OR output_ml IS NOT NULL
-            OR height IS NOT NULL OR weight IS NOT NULL)
+            OR pain_score IS NOT NULL OR urine_ml IS NOT NULL OR stool IS NOT NULL
+            OR skin_test IS NOT NULL OR height IS NOT NULL OR weight IS NOT NULL)
      ORDER BY record_time ASC, id ASC",
     [$patientId, TimeHelper::fromLocal($start . ' 00:00:00'), TimeHelper::fromLocal($end . ' 00:00:00')]);
 
@@ -160,7 +163,7 @@ for ($i = 0; $i < 7; $i++) {
 
 /* 逐条护理记录 → 时点槽位: 存储时间按站点时区换算后定位 (修复 UTC 存储模式跨日/跨时点偏移);
    同槽位同字段取最新一次 (多次测量以最新为准, 历史明细看护理记录单); 血压按午前/午后取最新; 出入量按日累计 */
-$intake = []; $output = [];
+$intake = []; $output = []; $urine = [];
 foreach ($notes as $n) {
     $lt = TimeHelper::local($n['record_time']);
     if (strlen($lt) < 10) continue;
@@ -170,17 +173,29 @@ foreach ($notes as $n) {
     $hour = (int)substr($lt, 11, 2);
     $s = &$day['slots'][temperature_chart_slot_index($hour)];
     if ($n['temperature'] !== null) {
-        $s['temp'] = ['v' => round((float)$n['temperature'], 1), 'type' => 'axillary',
+        $s['temp'] = ['v' => round((float)$n['temperature'], 1),
+            'type' => ($n['temp_type'] !== null && $n['temp_type'] !== '') ? $n['temp_type'] : 'axillary',
             'verified' => false, 'cooling' => null, 'no_rise' => false];
     }
     if ($n['pulse'] !== null) $s['pulse'] = (int)$n['pulse'];
     if ($n['respiratory_rate'] !== null) $s['breath'] = (int)$n['respiratory_rate'];
+    if ($n['heart_rate'] !== null) $s['hr'] = (int)$n['heart_rate'];
+    if ((int)($n['pacemaker'] ?? 0) === 1) $s['pacemaker'] = true;
+    if ((int)($n['ventilator'] ?? 0) === 1) $s['ventilator'] = true;
+    if ($n['pain_score'] !== null) $s['pain'] = (int)$n['pain_score'];
+    if ($n['cooling_temp'] !== null && $s['temp'] !== null) $s['temp']['cooling'] = round((float)$n['cooling_temp'], 1);
     if ($n['bp_systolic'] !== null && $n['bp_diastolic'] !== null) {
         $bp = (int)$n['bp_systolic'] . '/' . (int)$n['bp_diastolic'];
         if ($hour < 12) $day['daily']['bp_am'] = $bp; else $day['daily']['bp_pm'] = $bp;
     }
     if ($n['intake_ml'] !== null) $intake[$idx] = ($intake[$idx] ?? 0) + (float)$n['intake_ml'];
     if ($n['output_ml'] !== null) $output[$idx] = ($output[$idx] ?? 0) + (float)$n['output_ml'];
+    if ($n['urine_ml'] !== null) $urine[$idx] = ($urine[$idx] ?? 0) + (float)$n['urine_ml'];
+    if (!empty($n['stool'])) $day['daily']['stool'] = (string)$n['stool'];
+    if (!empty($n['skin_test'])) $day['daily']['skin_test'] = (string)$n['skin_test'];
+    if (!empty($n['allergy_drugs'])) $day['daily']['allergy_drugs'] = (string)$n['allergy_drugs'];
+    if (!empty($n['special_drugs'])) $day['daily']['special_drugs'] = (string)$n['special_drugs'];
+    if (!empty($n['other_remark'])) $day['daily']['other'] = (string)$n['other_remark'];
     if ($n['height'] !== null && $day['daily']['height'] === '') $day['daily']['height'] = rtrim(rtrim(number_format((float)$n['height'], 1), '0'), '.');
     if ($n['weight'] !== null && $day['daily']['weight'] === '') $day['daily']['weight'] = rtrim(rtrim(number_format((float)$n['weight'], 1), '0'), '.');
     unset($day, $s);
@@ -188,6 +203,7 @@ foreach ($notes as $n) {
 foreach ($days as $i => $d) {
     if ($intake[$i] > 0) $days[$i]['daily']['intake'] = rtrim(rtrim(number_format($intake[$i], 1), '0'), '.');
     if ($output[$i] > 0) $days[$i]['daily']['output'] = rtrim(rtrim(number_format($output[$i], 1), '0'), '.');
+    if ($urine[$i] > 0) $days[$i]['daily']['urine'] = rtrim(rtrim(number_format($urine[$i], 1), '0'), '.');
 }
 
 /* ==================== 特殊事件自动标注 (红字竖排, 全部汉字) ==================== */

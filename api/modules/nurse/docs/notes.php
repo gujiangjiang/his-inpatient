@@ -52,11 +52,13 @@ if ($action === 'save') {
         if ($existFirst) Response::error('该患者已存在首次护理记录');
     }
 
-    // 选填数值/文本字段
+    // 选填数值/文本字段 (含体温单三测单所需: 疼痛/降温复测/心率/起搏器/呼吸机/小便量)
     $numFields = ['temperature', 'pulse', 'respiratory_rate', 'bp_systolic', 'bp_diastolic',
         'intake_ml', 'output_ml', 'oxygen_saturation', 'drainage_ml', 'blood_glucose',
-        'gcs_eye', 'gcs_verbal', 'gcs_motor'];
-    $txtFields = ['has_pipeline', 'pipeline_desc', 'consciousness', 'pupil'];
+        'gcs_eye', 'gcs_verbal', 'gcs_motor',
+        'pain_score', 'cooling_temp', 'heart_rate', 'urine_ml', 'pacemaker', 'ventilator'];
+    $txtFields = ['has_pipeline', 'pipeline_desc', 'consciousness', 'pupil',
+        'temp_type', 'stool', 'skin_test', 'allergy_drugs', 'special_drugs', 'other_remark'];
     $vals = [];
     foreach ($numFields as $f) {
         $v = Validator::get($f);
