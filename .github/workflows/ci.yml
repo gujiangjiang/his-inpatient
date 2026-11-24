@@ -1,0 +1,176 @@
+name: CI
+
+# PHP 多版本语法自检 + 打印架构检查 + 汇总报告
+# - php-lint:  PHP 8.1~8.5 矩阵, 逐版本 token_get_all 全量语法检查
+# - arch-lint: 打印架构检查 (浏览器打印能力仅允许存在于 PrintPreview)
+# - report:    聚合所有任务结论, 在 Run Summary 输出 Markdown 汇总报告
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  php-lint:
+    name: PHP ${{ matrix.php }} 语法自检
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.1', '8.2', '8.3', '8.4', '8.5']
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: 语法自检 (token_get_all 全量扫描)
+        id: lint
+        run: |
+          php tools/lint/php-lint.php --ci > lint-output.txt 2>&1; code=$?
+          cat lint-output.txt
+          files=$(sed -n 's/^LINT RESULT files=\([0-9]*\) errors=.*/\1/p' lint-output.txt | tail -1)
+          errors=$(sed -n 's/^LINT RESULT files=[0-9]* errors=\([0-9]*\)$/\1/p' lint-output.txt | tail -1)
+          {
+            echo "code=$code"
+            echo "files=${files:-0}"
+            echo "errors=${errors:-0}"
+          } >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      - name: 写入本版本汇总
+        if: always()
+        run: |
+          if [ "${{ steps.lint.outputs.code }}" = "0" ]; then
+            verdict='✅ 通过'
+          else
+            verdict='❌ 失败'
+          fi
+          {
+            echo "## PHP ${{ matrix.php }} 语法自检"
+            echo ""
+            echo "| 检查项 | 结果 |"
+            echo "| --- | --- |"
+            echo "| PHP 版本 | ${{ matrix.php }} |"
+            echo "| 检查文件数 | ${{ steps.lint.outputs.files }} |"
+            echo "| 语法错误数 | ${{ steps.lint.outputs.errors }} |"
+            echo "| 结论 | $verdict |"
+            if [ "${{ steps.lint.outputs.code }}" != "0" ]; then
+              echo ""
+              echo "错误明细:"
+              echo '```text'
+              grep -A 60 '发现.*个语法错误' lint-output.txt || cat lint-output.txt
+              echo '```'
+            fi
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  arch-lint:
+    name: 打印架构检查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: 打印架构检查 (window.print 收敛校验)
+        id: arch
+        run: |
+          php tools/lint/print-architecture.php > arch-output.txt 2>&1; code=$?
+          cat arch-output.txt
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      - name: 写入本任务汇总
+        if: always()
+        run: |
+          if [ "${{ steps.arch.outputs.code }}" = "0" ]; then
+            verdict='✅ 通过'
+          else
+            verdict='❌ 失败'
+          fi
+          {
+            echo "## 打印架构检查"
+            echo ""
+            echo "| 检查项 | 结果 |"
+            echo "| --- | --- |"
+            echo "| 浏览器打印能力收敛 (PrintPreview) | $verdict |"
+            if [ "${{ steps.arch.outputs.code }}" != "0" ]; then
+              echo ""
+              echo '```text'
+              cat arch-output.txt
+              echo '```'
+            fi
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  report:
+    name: 汇总报告
+    needs: [php-lint, arch-lint]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: 聚合多版本检查结论
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs?per_page=100" --paginate \
+            | jq -r '.jobs[] | select(.name != "汇总报告") | "\(.name)\t\(.conclusion // .status)"' > jobs.tsv
+
+          overall=0
+          rows=""
+          while IFS=$'\t' read -r name conclusion; do
+            [ -z "$name" ] && continue
+            case "$conclusion" in
+              success)  icon='✅ 通过';;
+              failure)  icon='❌ 失败'; overall=1;;
+              cancelled) icon='🚫 取消'; overall=1;;
+              skipped)  icon='⏭️ 跳过';;
+              *)        icon="⏳ ${conclusion:-unknown}";;
+            esac
+            rows+="| ${name} | ${icon} |"$'\n'
+          done < jobs.tsv
+
+          if [ "$overall" = "0" ]; then
+            conclusion='**全部通过 ✅**'
+          else
+            conclusion='**存在失败项 ❌**'
+          fi
+
+          {
+            echo "# 📋 CI 汇总报告"
+            echo ""
+            echo "| 项目 | 内容 |"
+            echo "| --- | --- |"
+            echo "| 触发方式 | ${{ github.event_name }} |"
+            echo "| 分支 | \`${{ github.ref_name }}\` |"
+            echo "| 提交 | \`${{ github.sha }}\` |"
+            echo "| 提交说明 | ${{ github.event.head_commit.message }} |"
+            echo ""
+            echo "## 检查矩阵"
+            echo ""
+            echo "| 检查任务 | 结论 |"
+            echo "| --- | --- |"
+            printf '%s' "$rows"
+            echo ""
+            echo "## 总体结论"
+            echo ""
+            echo "$conclusion"
+            echo ""
+            echo "> PHP 多版本语法自检范围: 8.1 / 8.2 / 8.3 / 8.4 / 8.5 全量 token_get_all 扫描"
+          } >> "$GITHUB_STEP_SUMMARY"
