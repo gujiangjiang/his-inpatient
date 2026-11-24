@@ -92,7 +92,8 @@
 }
 .nurse-op-tab:hover { color: var(--primary); }
 .nurse-op-tab.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
-.nurse-op-body { min-height: 240px; max-height: 56vh; overflow-y: auto; }
+/* 面板统一滚动容器: 双向滚动 (移动端窄表格横向滚动; 桌面长列表纵向滚动 + .fix-head 表头吸附) */
+.nurse-op-body { min-height: 240px; max-height: 56vh; overflow: auto; }
 .nurse-op-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .nurse-op-action {
     display: inline-flex; align-items: center; gap: 5px;

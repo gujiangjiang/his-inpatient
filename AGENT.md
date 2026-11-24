@@ -127,6 +127,10 @@
 ## 前端页面约定
 - 唯一入口: `public/index.php` (SPA 壳 + /api/ 路由)
 - **静态资源统一管理**: 所有 JS/CSS 在 `public/assets.php` 的 `Asset::$css` / `Asset::$js` 注册, 页面用 `Asset::css()` / `Asset::js()` 输出 (自动带 APP_VERSION 防缓存); 新增/移除资源只改 assets.php, 禁止在页面里散写 `<script src>` / `<link>`
+- **弹窗/面板内长表格统一固定表头**: 表格加 `.fix-head` 类 (表头 sticky 吸附于最近滚动容器顶部, 行内容滚动);
+  需要独立限高滚动区时外包一层 `.table-scroll` (默认限高 52vh + 双向滚动)。
+  **禁止**再写内联 `overflow-x:auto` / `max-height` 滚动包装 —— 它会形成新的滚动容器, 使表头吸附失效;
+  页面级滚动容器 (如护士站面板 `.nurse-op-body`) 保持双向 `overflow: auto`, 表格直接作为其子元素
 - 页面片段: `public/js/{module}/{page}.php`, 通过 `AjaxLoader.loadPage()` 动态加载
 - 侧边栏: `public/js/shared/sidebar_{role}.php`
 - 无独立 HTML 文件, 全部统一为 PHP

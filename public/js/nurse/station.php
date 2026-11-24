@@ -128,7 +128,7 @@ var NurseStation = {
         const rows = all.filter(x => x.dispense_status !== 'prepared');
         if (!rows.length) { Dom.toast('当前病区待摆药医嘱均已预摆', 'info'); return; }
         const content = `<div class="nnote-list" style="max-height:40vh">
-            <table class="table">
+            <table class="table fix-head">
                 <thead><tr><th></th><th>患者</th><th>床号</th><th>医嘱</th><th>频次</th></tr></thead>
                 <tbody>${rows.map(o => `<tr>
                     <td><input type="checkbox" class="nbb-check" value="${o.id}" checked></td>

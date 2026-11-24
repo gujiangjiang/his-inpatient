@@ -134,7 +134,7 @@ async function surgery_showList() {
     const r = await AjaxLoader.api('surgery/list?patient_id=' + p.id + '&include=cancelled', { silent: true });
     const rows = r.data || [];
     const catLabel = { elective: '择期', emergency: '急诊', day: '日间' };
-    const body = rows.length ? ('<table class="table"><thead><tr><th>类别</th><th>手术名称</th><th>手术时间</th><th>麻醉/体位</th><th>术者</th><th>状态</th><th>操作</th></tr></thead><tbody>'
+    const body = rows.length ? ('<table class="table fix-head"><thead><tr><th>类别</th><th>手术名称</th><th>手术时间</th><th>麻醉/体位</th><th>术者</th><th>状态</th><th>操作</th></tr></thead><tbody>'
         + rows.map(function (s) {
             const cancelled = s.status === 'cancelled';
             const st = cancelled

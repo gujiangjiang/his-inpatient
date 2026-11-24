@@ -91,6 +91,21 @@
 }
 .table th { background: #f8fafc; font-weight: 600; color: #475569; }
 .table tr:hover { background: #f4fafa; }
+/* 固定表头长列表 (统一模式): 表格加 .fix-head, 表头吸附于最近滚动容器顶部, 行内容滚动
+   滚动容器 = .table-scroll / .modal-body / .nurse-op-body 等 overflow 容器;
+   注意: 表格外再包一层 overflow 滚动包装会形成新的滚动容器, 表头将吸附到包装层而非外层 */
+.fix-head > thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    /* border-collapse: collapse 下 th 底边框随滚动"消失", 用内阴影补分隔线 */
+    box-shadow: inset 0 -1px 0 #eef2f7;
+}
+/* 长表格独立滚动区: 限高 + 双向滚动, 配合 .fix-head 使用 (弹窗内选择列表等) */
+.table-scroll {
+    max-height: 52vh;
+    overflow: auto;
+}
 /* Form */
 .form-group {
     margin-bottom: 15px;

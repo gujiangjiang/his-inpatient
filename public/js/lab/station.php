@@ -103,7 +103,7 @@ async function lab_result(id) {
             <input type="hidden" name="id" value="${id}">
             <div class="form-group"><label>患者：${Format.escape(detail.data.patient_name||'')}</label></div>
             <div class="form-group"><label>标本类型：<input type="text" name="specimen_type" class="form-control" value="${Format.escape(detail.data.specimen_type||'')}"></label></div>
-            <table class="table">
+            <table class="table fix-head">
                 <thead><tr><th>项目</th><th>结果</th><th>单位</th><th>参考范围</th><th>标记</th></tr></thead>
                 <tbody id="lab-result-items">
         ${detail.data.items.map(item => `
