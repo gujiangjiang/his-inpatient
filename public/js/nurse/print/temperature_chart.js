@@ -12,8 +12,8 @@
     /* ==================== 尺寸与配色常量 ==================== */
     var SLOT_W = 16, GRID_W = 42 * SLOT_W;      // 672px
     var RAIL_W = 50;                            // 左侧三轴刻度栏
-    var ROWS = 40, SH = 11, GRID_H = ROWS * SH; // 主网格 40 小格 × 11px
-    var PAIN_SH = 12, PAIN_H = 5 * PAIN_SH;     // 疼痛区 5 行 × 12px
+    var ROWS = 40, SH = 13, GRID_H = ROWS * SH; // 主网格 40 小格 × 13px (A4 满页高度)
+    var PAIN_SH = 14, PAIN_H = 5 * PAIN_SH;     // 疼痛区 5 行 × 14px
     var SLOTS = [2, 6, 10, 14, 18, 22];
     var COL = {
         temp: '#1d5bd8', pulse: '#dc2626', breath: '#1d5bd8', pain: '#1d5bd8',
@@ -107,6 +107,8 @@
         for (d = 1; d < 7; d++) s += line(d * 6 * SLOT_W, 0, d * 6 * SLOT_W, GRID_H, COL.red, 2, true);
         return s;
     }
+    /* 刻度数字基线收敛在栏内 (防止顶/底两端被单元格裁切) */
+    function labelY(y, h) { return Math.max(8, Math.min(h - 3, y)); }
     /* 左侧三轴刻度栏: 体温(蓝)/呼吸(蓝)/脉搏(红) 三列数字 + 大小刻度 */
     function railSvg() {
         var s = '', r, t, b, p;
@@ -115,9 +117,9 @@
             s += line(46, y, RAIL_W - 1, y, big ? COL.gridBig : COL.grid, big ? 1 : 0.6, true);
             if (big) s += line(2, y, RAIL_W - 1, y, COL.grid, 0.5, true);
         }
-        for (t = 34; t <= 42; t++) s += text(12, yTemp(t) + 2.6, t, { size: 7.5, fill: COL.temp, anchor: 'end' });
-        for (b = 0; b <= 70; b += 10) s += text(28, yBreath(b) + 2.6, b, { size: 7.5, fill: COL.breath, anchor: 'end' });
-        for (p = 20; p <= 180; p += 20) s += text(43, yPulse(p) + 2.6, p, { size: 7.5, fill: COL.pulse, anchor: 'end' });
+        for (t = 34; t <= 42; t++) s += text(12, labelY(yTemp(t) + 2.6, GRID_H), t, { size: 7.5, fill: COL.temp, anchor: 'end' });
+        for (b = 0; b <= 70; b += 10) s += text(28, labelY(yBreath(b) + 2.6, GRID_H), b, { size: 7.5, fill: COL.breath, anchor: 'end' });
+        for (p = 20; p <= 180; p += 20) s += text(43, labelY(yPulse(p) + 2.6, GRID_H), p, { size: 7.5, fill: COL.pulse, anchor: 'end' });
         return svg(RAIL_W, GRID_H, s, 'tc-rail-svg');
     }
 
@@ -280,7 +282,7 @@
     /* ==================== 疼痛评分区 (0~10 分, 5 行) ==================== */
     function painRailSvg() {
         var s = vtext(14, PAIN_H / 2, '疼痛评分', COL.text, 8.5);
-        for (var v = 0; v <= 10; v += 2) s += text(46, yPain(v) + 2.6, v, { size: 7.5, fill: COL.text, anchor: 'end' });
+        for (var v = 0; v <= 10; v += 2) s += text(46, labelY(yPain(v) + 2.6, PAIN_H), v, { size: 7.5, fill: COL.text, anchor: 'end' });
         return svg(RAIL_W, PAIN_H, s, 'tc-rail-svg');
     }
     function painSvg(days) {
@@ -326,16 +328,17 @@
             h += '<td colspan="6" class="tc-date-cell' + (i > 0 ? ' tc-day-edge' : '') + '">' + esc(dateCellText(days, i, sheetFirst)) + '</td>';
         });
         h += '</tr>';
-        /* 住院天数 / 手术(分娩)后天数 (红) */
-        h += '<tr><td class="tc-rail tc-hlabel">住院天数</td>';
-        days.forEach(function (d, i) { h += '<td colspan="6" class="' + (i > 0 ? 'tc-day-edge' : '') + '">' + esc(d.day_no) + '</td>'; });
-        h += '</tr><tr><td class="tc-rail tc-hlabel">术后天数</td>';
+        /* 手术(分娩)后天数 (红, 参考规范置于住院天数上方) / 住院天数 */
+        h += '<tr class="tc-daynum-row"><td class="tc-rail tc-hlabel">术后天数</td>';
         days.forEach(function (d, i) { h += '<td colspan="6" class="tc-surgery' + (i > 0 ? ' tc-day-edge' : '') + '">' + esc(d.surgery_days) + '</td>'; });
+        h += '</tr><tr class="tc-daynum-row"><td class="tc-rail tc-hlabel">住院天数</td>';
+        days.forEach(function (d, i) { h += '<td colspan="6" class="' + (i > 0 ? 'tc-day-edge' : '') + '">' + esc(d.day_no) + '</td>'; });
         h += '</tr>';
         /* 时间分组 (早2,6/中10,14/晚18,22) + 时点数字 (2,18,22 红) */
         h += '<tr><td class="tc-rail tc-hlabel">时间</td>';
-        days.forEach(function () {
-            h += '<td colspan="2" class="tc-tgroup">早</td><td colspan="2" class="tc-tgroup">中</td><td colspan="2" class="tc-tgroup">晚</td>';
+        days.forEach(function (d, i) {
+            h += '<td colspan="2" class="tc-tgroup' + (i > 0 ? ' tc-day-edge' : '') + '">早</td>'
+                + '<td colspan="2" class="tc-tgroup">中</td><td colspan="2" class="tc-tgroup">晚</td>';
         });
         h += '</tr><tr><td class="tc-rail tc-hlabel"></td>';
         for (var i = 0; i < 42; i++) {
@@ -343,6 +346,13 @@
             h += '<td class="tc-slotnum' + ((slot === 2 || slot === 18 || slot === 22) ? ' tc-red' : '') + (i % 6 === 0 && i > 0 ? ' tc-day-edge' : '') + '">' + slot + '</td>';
         }
         h += '</tr>';
+        /* 符号图例 (参考规范样式) */
+        h += '<tr><td class="tc-rail tc-hlabel">符号</td><td colspan="42" class="tc-legend">'
+            + '<span class="tc-lg"><b style="color:' + COL.temp + '">●</b>口表 <b style="color:' + COL.temp + '">×</b>腋表 <b style="color:' + COL.temp + '">○</b>肛表 <b style="color:' + COL.temp + '">△</b>耳表</span>'
+            + '<span class="tc-lg"><b style="color:' + COL.pulse + '">●</b>脉搏 <b style="color:' + COL.pulse + '">○</b>心率</span>'
+            + '<span class="tc-lg"><b style="color:' + COL.breath + '">●</b>呼吸</span>'
+            + '<span class="tc-lg"><b style="color:' + COL.red + '">◎</b>降温复测 <b style="color:' + COL.red + '">▨</b>短绌</span>'
+            + '</td></tr>';
         /* 主网格 + 疼痛评分区 (SVG 覆盖层) */
         h += '<tr><td class="tc-rail tc-rail-main">' + railSvg() + '</td>'
             + '<td colspan="42" class="tc-main-cell">' + mainSvg(days) + '</td></tr>';
@@ -350,11 +360,11 @@
             + '<td colspan="42" class="tc-pain-cell">' + painSvg(days) + '</td></tr>';
         /* 底部特殊项目栏 (按天) */
         h += itemRow('大便次数', days, function (d) { return esc(d.daily.stool); });
-        /* 血压: 每天上午/下午两小列, 收缩压/舒张压 */
-        h += '<tr><td class="tc-rail tc-ilabel">血压mmHg</td>';
-        days.forEach(function (d) {
-            h += '<td colspan="3" class="tc-item-cell tc-bp-cell">' + esc(d.daily.bp_am) + '</td>'
-                + '<td colspan="3" class="tc-item-cell tc-bp-cell tc-day-edge' + '">' + esc(d.daily.bp_pm) + '</td>';
+        /* 血压: 每天上午/下午两小列 (日界红线在日首, 上/下午分隔为灰线, 保证与主网格对齐) */
+        h += '<tr><td class="tc-rail tc-ilabel">血压<br><span class="tc-unit">mmHg</span></td>';
+        days.forEach(function (d, i) {
+            h += '<td colspan="3" class="tc-item-cell tc-bp-cell' + (i > 0 ? ' tc-day-edge' : '') + '">' + esc(d.daily.bp_am) + '</td>'
+                + '<td colspan="3" class="tc-item-cell tc-bp-cell">' + esc(d.daily.bp_pm) + '</td>';
         });
         h += '</tr>';
         h += itemRow('入量ml', days, function (d) { return esc(d.daily.intake); });
@@ -389,15 +399,20 @@
         '.tc-table td { border: 1px solid #c9d4e0; padding: 0 2px; font-size: 10px; text-align: center; color: #303133; overflow: hidden; word-break: break-all; }',
         '.tc-rail { font-size: 9px; color: #475569; background: #fbfcfe; }',
         '.tc-hlabel, .tc-ilabel { font-size: 9px; line-height: 1.25; color: #475569; }',
-        '.tc-date-cell { height: 20px; font-size: 10.5px; font-weight: 600; }',
+        '.tc-unit { font-size: 7px; color: #64748b; }',
+        '.tc-date-cell { height: 24px; font-size: 10.5px; font-weight: 600; }',
+        '.tc-daynum-row td { height: 22px; }',
         '.tc-surgery { color: #dc2626; font-weight: 600; }',
-        '.tc-tgroup { height: 16px; font-size: 9px; background: #f4f7fb; letter-spacing: 8px; padding-left: 8px !important; color: #475569; }',
-        '.tc-slotnum { height: 16px; font-size: 9.5px; font-weight: 600; }',
+        '.tc-tgroup { height: 19px; font-size: 9px; background: #f4f7fb; letter-spacing: 8px; padding-left: 8px !important; color: #475569; }',
+        '.tc-slotnum { height: 19px; font-size: 9px; font-weight: 600; white-space: nowrap; padding: 0 !important; }',
         '.tc-red { color: #dc2626; }',
         '.tc-day-edge { border-left: 2px solid #dc2626 !important; }',
+        '.tc-legend { height: 16px; text-align: left !important; padding-left: 6px !important; font-size: 8.5px; color: #475569; }',
+        '.tc-lg { margin-right: 12px; white-space: nowrap; }',
+        '.tc-lg b { font-weight: 700; }',
         '.tc-main-cell, .tc-pain-cell { padding: 0 !important; line-height: 0; }',
         '.tc-main-cell svg, .tc-pain-cell svg, .tc-rail svg { display: block; }',
-        '.tc-item-cell { height: 19px; font-size: 10px; }',
+        '.tc-item-cell { height: 23px; font-size: 10px; }',
         '.tc-bp-cell { font-size: 9.5px; }',
         '.tc-skin-pos { color: #dc2626; font-weight: 700; }',
         '.tc-skin-neg { color: #303133; }',
@@ -413,8 +428,9 @@
         '@page { size: A4 portrait; margin: 0; }',
         'html, body { margin: 0; padding: 0; background: #fff; }',
         '* { box-sizing: border-box; print-color-adjust: exact; -webkit-print-color-adjust: exact; }',
-        '.page { position: relative; width: 794px; height: 1123px; margin: 0 auto; background: #fff; padding: 22px 36px 26px; overflow: hidden; }',
-        '#patient-header-slot { margin-bottom: 8px; }',
+        '.page { position: relative; width: 794px; height: 1123px; margin: 0 auto; background: #fff; padding: 20px 36px 24px; overflow: hidden; }',
+        '#patient-header-slot { margin-bottom: 6px; text-align: center; }',
+        '.pg-head { text-align: center; }',
         '.brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0,1fr); width: max-content; max-width: 100%; min-width: 0; }',
         '.brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }',
         '.emr-brand-lockup { display: grid; margin: 0 auto; }',
@@ -425,7 +441,7 @@
         '.emr-hf { display: inline-flex; gap: 4px; }',
         '.emr-hf b { font-weight: 600; }',
         '.emr-hf-val { min-width: 34px; text-align: center; }',
-        '.tc-page-foot { position: absolute; bottom: 12px; left: 0; right: 0; text-align: center; font-size: 10pt; color: #303133; }'
+        '.tc-page-foot { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 10pt; color: #303133; }'
     ].join('\n');
 
     var cssInjected = false, hatchSeq = 0;
