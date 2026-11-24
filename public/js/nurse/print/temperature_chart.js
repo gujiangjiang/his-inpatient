@@ -12,8 +12,8 @@
     /* ==================== 尺寸与配色常量 ==================== */
     var SLOT_W = 16, GRID_W = 42 * SLOT_W;      // 672px
     var RAIL_W = 50;                            // 左侧三轴刻度栏
-    var ROWS = 40, SH = 13, GRID_H = ROWS * SH; // 主网格 40 小格 × 13px (A4 满页高度)
-    var PAIN_SH = 14, PAIN_H = 5 * PAIN_SH;     // 疼痛区 5 行 × 14px
+    var ROWS = 40, SH = 12.5, GRID_H = ROWS * SH; // 主网格 40 小格 × 12.5px (A4 满页, 底部留页脚间距)
+    var PAIN_SH = 13, PAIN_H = 5 * PAIN_SH;       // 疼痛区 5 行 × 13px
     var SLOTS = [2, 6, 10, 14, 18, 22];
     var COL = {
         temp: '#1d5bd8', pulse: '#dc2626', breath: '#1d5bd8', pain: '#1d5bd8',
@@ -400,19 +400,19 @@
         '.tc-rail { font-size: 9px; color: #475569; background: #fbfcfe; }',
         '.tc-hlabel, .tc-ilabel { font-size: 9px; line-height: 1.25; color: #475569; }',
         '.tc-unit { font-size: 7px; color: #64748b; }',
-        '.tc-date-cell { height: 24px; font-size: 10.5px; font-weight: 600; }',
-        '.tc-daynum-row td { height: 22px; }',
+        '.tc-date-cell { height: 23px; font-size: 10.5px; font-weight: 600; }',
+        '.tc-daynum-row td { height: 21px; }',
         '.tc-surgery { color: #dc2626; font-weight: 600; }',
-        '.tc-tgroup { height: 19px; font-size: 9px; background: #f4f7fb; letter-spacing: 8px; padding-left: 8px !important; color: #475569; }',
-        '.tc-slotnum { height: 19px; font-size: 9px; font-weight: 600; white-space: nowrap; padding: 0 !important; }',
+        '.tc-tgroup { height: 18px; font-size: 9px; background: #f4f7fb; letter-spacing: 8px; padding-left: 8px !important; color: #475569; }',
+        '.tc-slotnum { height: 18px; font-size: 9px; font-weight: 600; white-space: nowrap; padding: 0 !important; }',
         '.tc-red { color: #dc2626; }',
         '.tc-day-edge { border-left: 2px solid #dc2626 !important; }',
-        '.tc-legend { height: 16px; text-align: left !important; padding-left: 6px !important; font-size: 8.5px; color: #475569; }',
+        '.tc-legend { height: 15px; text-align: left !important; padding-left: 6px !important; font-size: 8.5px; color: #475569; }',
         '.tc-lg { margin-right: 12px; white-space: nowrap; }',
         '.tc-lg b { font-weight: 700; }',
         '.tc-main-cell, .tc-pain-cell { padding: 0 !important; line-height: 0; }',
         '.tc-main-cell svg, .tc-pain-cell svg, .tc-rail svg { display: block; }',
-        '.tc-item-cell { height: 23px; font-size: 10px; }',
+        '.tc-item-cell { height: 22px; font-size: 10px; }',
         '.tc-bp-cell { font-size: 9.5px; }',
         '.tc-skin-pos { color: #dc2626; font-weight: 700; }',
         '.tc-skin-neg { color: #303133; }',
