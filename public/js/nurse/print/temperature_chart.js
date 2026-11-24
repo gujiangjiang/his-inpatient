@@ -315,7 +315,7 @@
     }
     function itemRow(label, days, value) {
         var h = '<tr><td class="tc-rail tc-ilabel">' + esc(label) + '</td>';
-        days.forEach(function (d) { h += '<td colspan="6" class="tc-item-cell tc-day-edge">' + value(d) + '</td>'; });
+        days.forEach(function (d, i) { h += '<td colspan="6" class="tc-item-cell' + (i > 0 ? ' tc-day-edge' : '') + '">' + value(d) + '</td>'; });
         return h + '</tr>';
     }
     function chartTable(days, sheetFirst) {
@@ -328,19 +328,19 @@
             h += '<td colspan="6" class="tc-date-cell' + (i > 0 ? ' tc-day-edge' : '') + '">' + esc(dateCellText(days, i, sheetFirst)) + '</td>';
         });
         h += '</tr>';
-        /* 手术(分娩)后天数 (红, 参考规范置于住院天数上方) / 住院天数 */
-        h += '<tr class="tc-daynum-row"><td class="tc-rail tc-hlabel">术后天数</td>';
-        days.forEach(function (d, i) { h += '<td colspan="6" class="tc-surgery' + (i > 0 ? ' tc-day-edge' : '') + '">' + esc(d.surgery_days) + '</td>'; });
-        h += '</tr><tr class="tc-daynum-row"><td class="tc-rail tc-hlabel">住院天数</td>';
+        /* 住院天数 / 手术(分娩)后天数 (红) */
+        h += '<tr class="tc-daynum-row"><td class="tc-rail tc-hlabel">住院天数</td>';
         days.forEach(function (d, i) { h += '<td colspan="6" class="' + (i > 0 ? 'tc-day-edge' : '') + '">' + esc(d.day_no) + '</td>'; });
+        h += '</tr><tr class="tc-daynum-row"><td class="tc-rail tc-hlabel">术后天数</td>';
+        days.forEach(function (d, i) { h += '<td colspan="6" class="tc-surgery' + (i > 0 ? ' tc-day-edge' : '') + '">' + esc(d.surgery_days) + '</td>'; });
         h += '</tr>';
-        /* 时间分组 (早2,6/中10,14/晚18,22) + 时点数字 (2,18,22 红) */
-        h += '<tr><td class="tc-rail tc-hlabel">时间</td>';
+        /* 时间分组 (早2,6/中10,14/晚18,22) + 时点数字 (2,18,22 红); 左侧"时间"纵向合并两栏 */
+        h += '<tr><td rowspan="2" class="tc-rail tc-hlabel">时间</td>';
         days.forEach(function (d, i) {
             h += '<td colspan="2" class="tc-tgroup' + (i > 0 ? ' tc-day-edge' : '') + '">早</td>'
                 + '<td colspan="2" class="tc-tgroup">中</td><td colspan="2" class="tc-tgroup">晚</td>';
         });
-        h += '</tr><tr><td class="tc-rail tc-hlabel"></td>';
+        h += '</tr><tr>';
         for (var i = 0; i < 42; i++) {
             var slot = SLOTS[i % 6];
             h += '<td class="tc-slotnum' + ((slot === 2 || slot === 18 || slot === 22) ? ' tc-red' : '') + (i % 6 === 0 && i > 0 ? ' tc-day-edge' : '') + '">' + slot + '</td>';
