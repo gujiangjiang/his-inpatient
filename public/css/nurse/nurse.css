@@ -119,6 +119,17 @@
 .nbp-sub-wrap { margin-top: 2px; padding-left: 14px; border-left: 2px solid #d8dee8; }
 .nbp-sub-order { font-size: 12px; color: #606266; line-height: 1.7; }
 
+/* 摆药列表: 子医嘱独立成行, 名称前制表符缩进 (频次/预摆状态按行显示, 操作列整组合并) */
+.nbp-sub-name { padding-left: 18px; color: #606266; }
+
+/* 批量核对/批量预摆药弹窗: 表头全选复选框列 */
+.nbp-check-all { width: 36px; text-align: center; }
+.nbp-check-all input { cursor: pointer; }
+
+/* 预摆药失败原因列表 (欠费/具体药品库存不足, 逐条明确展示) */
+.nbp-fail-list { margin-top: 10px; display: grid; gap: 6px; }
+.nbp-fail-item { padding: 8px 10px; background: #fef0f0; color: #c45656; border-radius: 6px; font-size: 13px; line-height: 1.6; }
+
 /* 执行单打印弹窗: 已打印的医嘱灰显 */
 .nbp-exec-printed { color: #a8abb2; }
 .nbp-exec-printed .nbp-sub-order { color: #a8abb2; }

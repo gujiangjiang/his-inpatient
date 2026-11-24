@@ -1,5 +1,5 @@
 <?php
-// api/modules/nurse/order/verify_batch.php - 护士一键核对: 批量核查该患者的全部待核查医嘱
+// api/modules/nurse/order/verify_batch.php - 护士批量核对: 按选中医嘱批量核查 (缺省=该患者全部待核查)
 // 仅处理 status=pending 的根医嘱; 子医嘱级联; 并发变更的行跳过
 Auth::requireRole(['admin', 'nurse']);
 $patientId = (int)Validator::get('patient_id', 0);
@@ -7,9 +7,20 @@ if (!$patientId) Response::error('请输入患者ID');
 if (!can_access_patient(Auth::user(), $patientId)) Response::error('无权操作该患者', 403);
 
 $pdo = DB::getPDO();
-$orders = DB::select("SELECT id FROM orders
-    WHERE patient_id = ? AND status = 'pending' AND parent_id IS NULL
-    ORDER BY id", [$patientId]);
+$ids = Validator::get('ids');
+if (is_array($ids) && $ids) {
+    /* 指定医嘱: 仅核对选中的根医嘱 (必须属于该患者且仍为待核对) */
+    $idList = array_values(array_unique(array_map('intval', $ids)));
+    $ph = implode(',', array_fill(0, count($idList), '?'));
+    $orders = DB::select("SELECT id FROM orders
+        WHERE id IN ($ph) AND patient_id = ? AND status = 'pending' AND parent_id IS NULL
+        ORDER BY id", array_merge($idList, [$patientId]));
+} else {
+    /* 缺省: 该患者全部待核查医嘱 (护士站批量入口) */
+    $orders = DB::select("SELECT id FROM orders
+        WHERE patient_id = ? AND status = 'pending' AND parent_id IS NULL
+        ORDER BY id", [$patientId]);
+}
 $ok = 0; $fail = 0;
 $pdo->beginTransaction();
 try {

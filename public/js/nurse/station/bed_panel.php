@@ -36,10 +36,10 @@ var NurseBedPanel = {
             <div class="nurse-op-tabs" id="nbp-tabs">
                 <button type="button" class="nurse-op-tab active" data-tab="info" onclick="NurseBedPanel.switch('info')">患者信息</button>
                 <button type="button" class="nurse-op-tab" data-tab="orders" onclick="NurseBedPanel.switch('orders')">医嘱</button>
-                <button type="button" class="nurse-op-tab" data-tab="records" onclick="NurseBedPanel.switch('records')">病历</button>
+                <button type="button" class="nurse-op-tab" data-tab="medicine" onclick="NurseBedPanel.switch('medicine')">摆药</button>
                 <button type="button" class="nurse-op-tab" data-tab="lab" onclick="NurseBedPanel.switch('lab')">检验</button>
                 <button type="button" class="nurse-op-tab" data-tab="exam" onclick="NurseBedPanel.switch('exam')">检查</button>
-                <button type="button" class="nurse-op-tab" data-tab="medicine" onclick="NurseBedPanel.switch('medicine')">摆药</button>
+                <button type="button" class="nurse-op-tab" data-tab="records" onclick="NurseBedPanel.switch('records')">病历</button>
                 <button type="button" class="nurse-op-tab" data-tab="temperature" onclick="NurseBedPanel.switch('temperature')">体温单</button>
                 <button type="button" class="nurse-op-tab" data-tab="notes" onclick="NurseBedPanel.switch('notes')">护理记录</button>
                 <button type="button" class="nurse-op-tab" data-tab="docs" onclick="NurseBedPanel.switch('docs')">护理文书</button>
@@ -233,33 +233,60 @@ var NurseBedPanel = {
             const body = groups.length
                 ? groups.map(groupHtml).join('')
                 : '<tr><td colspan="7"><div class="empty-state">暂无医嘱</div></td></tr>';
-            /* 底部按钮栏: 一键核对常显 (数量角标), 执行单打印, 医嘱单打印 */
+            /* 底部按钮栏: 批量核对常显 (待核对组数角标), 执行单打印, 医嘱单打印 */
             this.setBottomBar(`
-                <button class="btn btn-primary" onclick="NurseBedPanel.verifyAll()">一键核对${pendingN > 0 ? `<span class="nbp-badge">${pendingN}</span>` : ''}</button>
+                <button class="btn btn-primary" onclick="NurseBedPanel.batchVerify()">批量核对${pendingN > 0 ? `<span class="nbp-badge">${pendingN}</span>` : ''}</button>
                 <button class="btn" onclick="NurseBedPanel.execSheetPrint()">执行单打印</button>
                 <button class="btn" onclick="NurseBedPanel.printOrderSheets()">医嘱单打印</button>`);
             box.innerHTML = Dom.scrollTable('<tr><th>医嘱</th><th>类型</th><th>途径 · 频次</th><th>开嘱医生</th><th>停嘱医生</th><th>状态</th><th>操作</th></tr>', body, { wrap: false });
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
-    /* 一键核对: 批量核查该患者全部待核查医嘱(按组) */
-    verifyAll() {
+    /* 批量核对: 弹窗列出待核对医嘱 (组合医嘱整组一行), 复选框 + 表头全选, 确认后子医嘱级联核对 */
+    batchVerify() {
         const pid = this.patient.id;
+        const p = this.patient;
+        const self = this;
         AjaxLoader.api('nurse/order-list?patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
             const subsByParent = {};
             rows.forEach(o => { if (o.parent_id) (subsByParent[o.parent_id] = subsByParent[o.parent_id] || []).push(o); });
-            const pendingN = rows.filter(o => !o.parent_id && o.status === 'pending').length;
-            if (!pendingN) { Dom.toast('没有待核医嘱', 'info'); return; }
-            Dom.confirm('一键核对', `将核查该患者全部待核查医嘱（${pendingN} 条），确认继续？`, function () {
-                return AjaxLoader.api('nurse/verify-batch', { method: 'POST', data: { patient_id: pid } }).then(function (res) {
-                    Dom.toast(res.message || '已核对', 'success');
-                    NurseBedPanel.refresh();
-                    if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
-                    return res;
-                }).catch(function (e) { return e; });
-            }, { okText: '一键核对' });
-        }).catch(() => {});
+            const pending = rows.filter(o => !o.parent_id && o.status === 'pending');
+            if (!pending.length) { Dom.toast('没有待核对的医嘱', 'info'); return; }
+            const trs = pending.map(o => {
+                const subs = (subsByParent[o.id] || []).map(s => `<div class="nbp-sub-order">${Format.escape(s.content)}${s.dosage ? ' ' + Format.escape(s.dosage) : ''}</div>`).join('');
+                const content = `${Format.escape(o.content)}${o.dosage ? ' ' + Format.escape(o.dosage) : ''}${subs ? `<div class="nbp-sub-wrap">${subs}</div>` : ''}`;
+                return `<tr>
+                    <td><input type="checkbox" class="nbp-verify-check" value="${o.id}" checked></td>
+                    <td>${content}</td>
+                    <td>${Format.escape([o.usage_name, o.freq_code].filter(Boolean).join(' · '))}</td>
+                    <td>${Format.escape(o.doctor_name || '-')}</td>
+                </tr>`;
+            }).join('');
+            const content = `<div class="nbp-exec-sheet">
+                ${Dom.scrollTable('<tr><th class="nbp-check-all"><input type="checkbox" id="nbp-verify-all" checked title="全选/全不选"></th><th>医嘱</th><th>途径 · 频次</th><th>开嘱医生</th></tr>', trs)}
+                <p class="fs-12 text-muted" style="margin-top:8px">共 ${pending.length} 组待核对；组合医嘱整组核对，子医嘱随根医嘱级联。</p>
+            </div>`;
+            const overlay = Dom.modal('批量核对 - ' + Format.escape(p.patient_name || ''), content, [
+                { text: '批量核对', type: 'primary', onclick: async function () {
+                    const ids = [...document.querySelectorAll('.nbp-verify-check:checked')].map(c => Number(c.value));
+                    if (!ids.length) { Dom.toast('请先勾选要核对的医嘱', 'error'); return; }
+                    try {
+                        const res = await AjaxLoader.api('nurse/verify-batch', { method: 'POST', data: { patient_id: pid, ids } });
+                        Dom.toast(res.message || '已核对', 'success');
+                        overlay.remove();
+                        self.refresh();
+                        if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+                    } catch (e) { /* 已提示 */ }
+                } },
+                { text: '取消', type: 'default' }
+            ], { large: true });
+            /* 表头复选框: 全选/全不选 */
+            const all = overlay.querySelector('#nbp-verify-all');
+            if (all) all.addEventListener('change', function () {
+                overlay.querySelectorAll('.nbp-verify-check').forEach(c => { c.checked = all.checked; });
+            });
+        }).catch(() => { Dom.toast('待核对医嘱加载失败', 'error'); });
     },
 
     /* 执行单打印: 弹窗选择已核对药品医嘱 (含子医嘱), 记录打印留痕, 已打印灰显
@@ -474,7 +501,11 @@ var NurseBedPanel = {
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('emr/document-list?patient_id=' + pid, { silent: true }).then(r => {
             const docs = r.data || [];
-            if (!docs.length) { box.innerHTML = '<div class="empty-state">暂无病历文书</div>'; return; }
+            if (!docs.length) {
+                box.innerHTML = Dom.scrollTable('<tr><th>文书</th><th>分类</th><th>更新时间</th><th>状态</th><th>操作</th></tr>',
+                    '<tr><td colspan="5"><div class="empty-state">暂无病历文书</div></td></tr>', { wrap: false });
+                return;
+            }
             const rows = docs.map(d => {
                 const tag = d.status === 'signed' ? '<span class="badge badge-success">已签名</span>'
                     : '<span class="badge badge-warning">草稿</span>';
@@ -657,54 +688,148 @@ var NurseBedPanel = {
         });
     },
 
-    /* ================= 摆药 (该患者已核对未发药 → 申请预摆药) ================= */
+    /* ================= 摆药 (已核对待摆药药品医嘱; 组合医嘱整组预摆) ================= */
     loadMedicine(box) {
         const pid = this.patient.id;
         box.innerHTML = '<div class="empty-state">加载中…</div>';
-        this.setBottomBar(`<button class="btn btn-primary" onclick="NurseBedPanel.batchPrepare()">申请预摆药<span class="nbp-badge" id="nbp-prepare-badge" style="display:none">0</span></button>`);
+        this.setBottomBar(`<button class="btn btn-primary" onclick="NurseBedPanel.batchPrepareModal()">批量预摆药<span class="nbp-badge" id="nbp-prepare-badge" style="display:none">0</span></button>`);
         AjaxLoader.api('nurse/prepare?action=list', { silent: true }).then(r => {
             const rows = (r.data || []).filter(x => String(x.patient_id) === String(pid));
-            if (!rows.length) { box.innerHTML = '<div class="empty-state">该患者暂无待摆药药品医嘱</div>'; return; }
-            const trs = rows.map(o => `<tr>
-                <td><input type="checkbox" class="nbp-med-check" value="${o.id}" ${o.dispense_status === 'prepared' ? 'disabled' : ''}></td>
-                <td>${Format.escape(o.content)}${o.dosage ? ' ' + Format.escape(o.dosage) : ''}</td>
-                <td>${Format.escape(o.freq_code || '')}</td>
-                <td>${o.dispense_status === 'prepared' ? '<span class="badge badge-warning">已预摆</span>' : '<span class="badge badge-default">未预摆</span>'}</td>
-                <td>${o.dispense_status === 'prepared' ? '<button class="btn btn-small" onclick="NurseBedPanel.cancelPrepare(' + o.id + ')">取消</button>' : ''}</td>
-            </tr>`).join('');
-            box.innerHTML = Dom.scrollTable('<tr><th></th><th>医嘱</th><th>频次</th><th>预摆</th><th>操作</th></tr>', trs, { wrap: false });
-            /* 勾选变化实时更新底部按钮角标 */
-            box.querySelectorAll('.nbp-med-check').forEach(function (c) {
-                c.addEventListener('change', NurseBedPanel.updatePrepareBadge);
+            /* 请求返回期间若已切换患者，丢弃旧响应，不能写入当前患者面板 */
+            if (!this.patient || String(this.patient.id) !== String(pid) || !box.isConnected) return;
+            if (!rows.length) {
+                box.innerHTML = Dom.scrollTable('<tr><th>医嘱</th><th>频次</th><th>预摆</th><th>操作</th></tr>',
+                    '<tr><td colspan="4"><div class="empty-state">该患者暂无待摆药药品医嘱</div></td></tr>', { wrap: false });
+                this.updatePrepareBadge();
+                return;
+            }
+            /* 组合医嘱按组展示: 每个药品一行, 子医嘱名称前制表符缩进;
+               频次/预摆状态按行显示, 操作列整组合并为一个单元格一个按钮 (整组一起预摆/取消) */
+            const subsByParent = {};
+            const roots = [];
+            rows.forEach(o => {
+                if (o.parent_id) (subsByParent[o.parent_id] = subsByParent[o.parent_id] || []).push(o);
+                else roots.push(o);
             });
+            const statusBadge = s => s === 'prepared'
+                ? '<span class="badge badge-warning">已预摆</span>'
+                : (s === 'none' ? '<span class="badge badge-default">未预摆</span>' : '<span class="badge badge-success">已发药</span>');
+            const trs = roots.map(o => {
+                const subs = subsByParent[o.id] || [];
+                const group = [o].concat(subs);
+                const allPrepared = group.every(x => x.dispense_status !== 'none');
+                const actCell = allPrepared
+                    ? `<td rowspan="${group.length}"><button class="btn btn-small" onclick="NurseBedPanel.cancelPrepareGroup(${o.id})">取消预摆</button></td>`
+                    : `<td rowspan="${group.length}" class="nbp-prepare-pending"><button class="btn btn-small btn-success" onclick="NurseBedPanel.prepareGroup(${o.id})">申请预摆</button></td>`;
+                let html = `<tr>
+                    <td>${Format.escape(o.content)}${o.dosage ? ' ' + Format.escape(o.dosage) : ''}</td>
+                    <td>${Format.escape(o.freq_code || '')}</td>
+                    <td>${statusBadge(o.dispense_status)}</td>
+                    ${actCell}</tr>`;
+                subs.forEach(s => {
+                    html += `<tr>
+                        <td class="nbp-sub-name">└ ${Format.escape(s.content)}${s.dosage ? ' ' + Format.escape(s.dosage) : ''}</td>
+                        <td>${Format.escape(s.freq_code || '')}</td>
+                        <td>${statusBadge(s.dispense_status)}</td></tr>`;
+                });
+                return html;
+            }).join('');
+            box.innerHTML = Dom.scrollTable('<tr><th>医嘱</th><th>频次</th><th>预摆</th><th>操作</th></tr>', trs, { wrap: false });
             this.updatePrepareBadge();
         }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
-    /* 底部按钮角标: 已勾选待预摆医嘱数量 */
+    /* 底部按钮角标: 待预摆药组数 (未预摆的组) */
     updatePrepareBadge() {
         const badge = document.getElementById('nbp-prepare-badge');
         if (!badge) return;
-        const n = document.querySelectorAll('.nbp-med-check:checked').length;
+        const n = document.querySelectorAll('#nbp-body .nbp-prepare-pending').length;
         badge.textContent = n;
         badge.style.display = n > 0 ? '' : 'none';
     },
 
-    batchPrepare() {
-        const ids = [...document.querySelectorAll('.nbp-med-check:checked')].map(c => Number(c.value));
-        if (!ids.length) { Dom.toast('请先勾选要预摆药的医嘱', 'error'); return; }
-        const plan = document.getElementById('nbp-plan-time');
-        AjaxLoader.api('nurse/prepare', { method: 'POST', data: { action: 'apply', ids, plan_time: plan ? plan.value : '' } }).then(() => {
-            Dom.toast('已申请预摆药', 'success');
+    /* 单组申请预摆 (组合医嘱整组): 后端做欠费/库存前置校验, 失败逐条给出明确原因 */
+    async prepareGroup(rootId) {
+        try {
+            const r = await AjaxLoader.api('nurse/prepare', { method: 'POST', data: { action: 'apply', ids: [rootId], plan_time: '' } });
+            this.showPrepareResult(r);
             this.refresh();
             if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
-        }).catch(() => {});
+        } catch (e) { /* 已提示 */ }
     },
 
-    async cancelPrepare(id) {
-        await AjaxLoader.api('nurse/prepare', { method: 'POST', data: { action: 'cancel', id } });
-        Dom.toast('已取消预摆', 'success');
-        this.refresh();
+    /* 单组取消预摆 (组合医嘱整组撤回) */
+    cancelPrepareGroup(rootId) {
+        Dom.confirm('取消预摆药', '确认取消该组预摆药申请？组合医嘱将整组撤回。', async function () {
+            await AjaxLoader.api('nurse/prepare', { method: 'POST', data: { action: 'cancel', id: rootId } });
+            Dom.toast('已取消预摆', 'success');
+            NurseBedPanel.refresh();
+        });
+    },
+
+    /* 批量预摆药: 弹窗列出该患者尚未摆药的药品医嘱 (组合医嘱整组一行), 复选框 + 表头全选;
+       确认后后端做欠费/库存前置校验, 失败逐组给出明确原因 (欠费金额 / 具体哪个药没货) */
+    batchPrepareModal() {
+        const pid = this.patient.id;
+        const p = this.patient;
+        const self = this;
+        AjaxLoader.api('nurse/prepare?action=list', { silent: true }).then(r => {
+            const rows = (r.data || []).filter(x => String(x.patient_id) === String(pid) && x.dispense_status === 'none');
+            if (!rows.length) { Dom.toast('该患者暂无待预摆药的药品医嘱', 'info'); return; }
+            const subsByParent = {};
+            const roots = [];
+            rows.forEach(o => {
+                if (o.parent_id) (subsByParent[o.parent_id] = subsByParent[o.parent_id] || []).push(o);
+                else roots.push(o);
+            });
+            const trs = roots.map(o => {
+                const subs = (subsByParent[o.id] || []).map(s => `<div class="nbp-sub-order">${Format.escape(s.content)}${s.dosage ? ' ' + Format.escape(s.dosage) : ''}</div>`).join('');
+                const content = `${Format.escape(o.content)}${o.dosage ? ' ' + Format.escape(o.dosage) : ''}${subs ? `<div class="nbp-sub-wrap">${subs}</div>` : ''}`;
+                return `<tr>
+                    <td><input type="checkbox" class="nbp-med-check" value="${o.id}" checked></td>
+                    <td>${content}</td>
+                    <td>${Format.escape(o.freq_code || '')}</td>
+                    <td>${o.order_period === 'temp' ? '临时' : '长期'}</td>
+                </tr>`;
+            }).join('');
+            const content = `<div class="nbp-exec-sheet">
+                ${Dom.scrollTable('<tr><th class="nbp-check-all"><input type="checkbox" id="nbp-med-all" checked title="全选/全不选"></th><th>医嘱</th><th>频次</th><th>类型</th></tr>', trs)}
+                <div class="flex-between mt-10">
+                    <span class="text-muted">计划时间：<input type="datetime-local" id="nbp-plan-time" class="form-control" style="width:200px;padding:3px 8px"></span>
+                    <span class="fs-12 text-muted">共 ${roots.length} 组；组合医嘱整组预摆，预摆时校验欠费与药房库存</span>
+                </div>
+            </div>`;
+            const overlay = Dom.modal('批量预摆药 - ' + Format.escape(p.patient_name || ''), content, [
+                { text: '批量预摆药', type: 'primary', onclick: async function () {
+                    const ids = [...document.querySelectorAll('.nbp-med-check:checked')].map(c => Number(c.value));
+                    if (!ids.length) { Dom.toast('请先勾选要预摆药的医嘱', 'error'); return; }
+                    const plan = document.getElementById('nbp-plan-time');
+                    try {
+                        const res = await AjaxLoader.api('nurse/prepare', { method: 'POST', data: { action: 'apply', ids, plan_time: plan ? plan.value : '' } });
+                        self.showPrepareResult(res);
+                        overlay.remove();
+                        self.refresh();
+                        if (typeof NurseStation.refresh === 'function') NurseStation.refresh();
+                    } catch (e) { /* 已提示 */ }
+                } },
+                { text: '取消', type: 'default' }
+            ], { large: true });
+            /* 表头复选框: 全选/全不选 */
+            const all = overlay.querySelector('#nbp-med-all');
+            if (all) all.addEventListener('change', function () {
+                overlay.querySelectorAll('.nbp-med-check').forEach(c => { c.checked = all.checked; });
+            });
+        }).catch(() => { Dom.toast('待摆药数据加载失败', 'error'); });
+    },
+
+    /* 预摆药结果: 全部成功轻提示; 有失败时弹窗逐条展示明确原因 (欠费金额 / 具体药品库存不足) */
+    showPrepareResult(r) {
+        const fails = (r.data && r.data.fail) || [];
+        if (!fails.length) { Dom.toast(r.message || '预摆药申请完成', 'success'); return; }
+        Dom.modal('预摆药结果', `
+            <p>${Format.escape(r.message || '部分医嘱预摆失败')}</p>
+            <div class="nbp-fail-list">${fails.map(f => `<div class="nbp-fail-item">${Format.escape(f)}</div>`).join('')}</div>`,
+            [{ text: '知道了', type: 'default' }]);
     },
 
     /* ================= 体温单 (从护理记录单派生, 只读) ================= */
