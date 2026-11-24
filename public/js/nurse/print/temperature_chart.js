@@ -12,8 +12,8 @@
     /* ==================== 尺寸与配色常量 ==================== */
     var SLOT_W = 16, GRID_W = 42 * SLOT_W;      // 672px
     var RAIL_W = 50;                            // 左侧三轴刻度栏
-    var ROWS = 40, SH = 12.5, GRID_H = ROWS * SH; // 主网格 40 小格 × 12.5px (A4 满页, 底部留页脚间距)
-    var PAIN_SH = 13, PAIN_H = 5 * PAIN_SH;       // 疼痛区 5 行 × 13px
+    var ROWS = 40, SH = 13, GRID_H = ROWS * SH; // 主网格 40 小格 × 13px (A4 满页, 底部留页脚间距)
+    var PAIN_SH = 13, PAIN_H = 5 * PAIN_SH;     // 疼痛区 5 行 × 13px
     var SLOTS = [2, 6, 10, 14, 18, 22];
     var COL = {
         temp: '#1d5bd8', pulse: '#dc2626', breath: '#1d5bd8', pain: '#1d5bd8',
@@ -26,7 +26,7 @@
     function yPulse(v) { return (ROWS - (v - 20) / 4) * SH; }         // 20→底, 180→顶
     function yBreath(v) { return (ROWS - v / 2) * SH; }               // 0→底, 70→35 格
     function yPain(v) { return (5 - v / 2) * PAIN_SH; }               // 0→底, 10→顶
-    function xSlot(i) { return i * SLOT_W + SLOT_W / 2; }             // 槽位列中心
+    function xSlot(g) { return g * SLOT_W + SLOT_W / 2; }             // 全局槽位 (天序号×6+时点序号) 列中心
     function clampY(v) { return Math.max(1, Math.min(GRID_H - 1, v)); }
 
     /* ==================== 基础元件 ==================== */
@@ -126,10 +126,10 @@
     /* ==================== 折线分段: 相邻有效点相连; 拒测/外出槽位截断 ==================== */
     function curveSegments(days, getPoint) {
         var segs = [], cur = null;
-        days.forEach(function (day) {
+        days.forEach(function (day, di) {
             day.slots.forEach(function (s, i) {
                 if (s.unmeasured) { if (cur && cur.length > 1) segs.push(cur); cur = null; return; }
-                var pt = getPoint(s, i, day);
+                var pt = getPoint(s, di * 6 + i, day);
                 if (!pt) return;
                 if (!cur) cur = [];
                 cur.push(pt);
@@ -173,11 +173,11 @@
             }
             run = [];
         };
-        days.forEach(function (day) {
+        days.forEach(function (day, di) {
             day.slots.forEach(function (s, i) {
                 if (s.unmeasured) { flush(); return; }
                 if (s.hr != null && s.pulse != null && s.hr > s.pulse) {
-                    run.push({ x: xSlot(i), yh: yPulse(Math.min(s.hr, 180)), yp: yPulse(Math.min(s.pulse, 180)) });
+                    run.push({ x: xSlot(di * 6 + i), yh: yPulse(Math.min(s.hr, 180)), yp: yPulse(Math.min(s.pulse, 180)) });
                 } else flush();
             });
         });
@@ -188,10 +188,10 @@
     /* ==================== 槽位符号绘制 (含重叠规则) ==================== */
     function slotSymbols(days) {
         var out = [];
-        days.forEach(function (day) {
+        days.forEach(function (day, di) {
             day.slots.forEach(function (s, i) {
                 if (s.unmeasured) return;
-                var x = xSlot(i);
+                var x = xSlot(di * 6 + i);
                 var when = tipDateOf(day.date, i);
                 var temp = s.temp && s.temp.v != null ? s.temp : null;
                 var pulse = s.pulse != null ? Math.min(s.pulse, 180) : null;
@@ -270,10 +270,10 @@
         var out = [];
         var topY = yTemp(40) / 2;                      // 40~42 区中心
         var botY = (yTemp(35) + GRID_H) / 2;           // 34~35 区中心
-        days.forEach(function (day) {
+        days.forEach(function (day, di) {
             day.slots.forEach(function (s, i) {
-                if (s.event) out.push(vtext(xSlot(i), topY, s.event, COL.red, 9));
-                if (s.unmeasured) out.push(vtext(xSlot(i), botY, s.unmeasured, s.unmeasured === '拒测' ? COL.blue : COL.red, 9));
+                if (s.event) out.push(vtext(xSlot(di * 6 + i), topY, s.event, COL.red, 9));
+                if (s.unmeasured) out.push(vtext(xSlot(di * 6 + i), botY, s.unmeasured, s.unmeasured === '拒测' ? COL.blue : COL.red, 9));
             });
         });
         return out.join('');
@@ -294,9 +294,9 @@
         for (r = 0; r <= 5; r++) s += line(0, r * PAIN_SH, GRID_W, r * PAIN_SH, COL.grid, 0.8, true);
         for (d = 1; d < 7; d++) s += line(d * 6 * SLOT_W, 0, d * 6 * SLOT_W, PAIN_H, COL.red, 2, true);
         var pts = [];
-        days.forEach(function (day) {
+        days.forEach(function (day, di) {
             day.slots.forEach(function (sl, i2) {
-                if (sl.pain != null) pts.push({ x: xSlot(i2), y: yPain(sl.pain), tip: tipDateOf(day.date, i2) + '｜疼痛 ' + sl.pain + ' 分' });
+                if (sl.pain != null) pts.push({ x: xSlot(di * 6 + i2), y: yPain(sl.pain), tip: tipDateOf(day.date, i2) + '｜疼痛 ' + sl.pain + ' 分' });
             });
         });
         for (var k = 1; k < pts.length; k++) s += line(pts[k - 1].x, pts[k - 1].y, pts[k].x, pts[k].y, COL.pain, 1.2, false);
