@@ -218,7 +218,7 @@ class Migration {
     public static function runAll($dir = null) {
         $m = new self();
         $m->enableForeignKeys();
-        $dir = $dir !== null ? $dir : dirname(__DIR__) . '/migrations/php';
+        $dir = $dir !== null ? $dir : dirname(__DIR__, 2) . '/migrations/php';   // 本文件位于 api/core/schema/ → api/migrations/php
         $files = glob($dir . '/*.php');
         if (!$files) return 0;
         sort($files);

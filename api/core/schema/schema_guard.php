@@ -11,9 +11,12 @@ class SchemaGuard {
         self::$checked = true;
         try {
             if (!SetupGuard::check()) return;          // 未初始化: 交给初始化向导
-            $dir = dirname(__DIR__) . '/migrations/php';
+            $dir = dirname(__DIR__, 2) . '/migrations/php';   // 本文件位于 api/core/schema/ → api/migrations/php
             $files = glob($dir . '/*.php');
-            if (!$files) return;
+            if (!$files) {
+                error_log('[SchemaGuard] 迁移目录不存在或为空: ' . $dir . ' (部署不完整?)');
+                return;
+            }
             $target = 0;
             foreach ($files as $f) {
                 if (preg_match('/^(\d+)_/', basename($f), $m)) $target = max($target, (int)$m[1]);
