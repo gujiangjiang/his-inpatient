@@ -33,10 +33,13 @@ foreach ($wards as $w) {
     $beds = DB::select(
         "SELECT b.*, p.name AS patient_name, p.gender, p.birth_date, p.admission_no,
                 p.admission_diagnosis, p.nursing_level, p.is_critical, p.allergy_history,
-                p.fee_type, p.admission_date, p.status AS patient_status, w.name AS ward_name
+                p.fee_type, p.admission_date, p.status AS patient_status, w.name AS ward_name,
+                COALESCE(d.name, pd.name) AS department_name
          FROM beds b
          LEFT JOIN patients p ON b.patient_id = p.id
          LEFT JOIN wards w ON b.ward_id = w.id
+         LEFT JOIN departments d ON w.department_id = d.id
+         LEFT JOIN departments pd ON p.department_id = pd.id
          WHERE b.ward_id = ?
          ORDER BY CAST(b.bed_no AS INTEGER), b.bed_no", [$w['id']]);
 

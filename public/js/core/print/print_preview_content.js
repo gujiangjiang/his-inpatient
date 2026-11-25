@@ -104,7 +104,7 @@
         const fields = [
             ['姓名', data.name], ['性别', data.gender], ['年龄', data.age], ['科别', data.department],
             ['病区', data.ward], ['床号', data.bed], ['住院号', data.admission_no]
-        ].filter(function (field) { return field[1] !== undefined && field[1] !== null; });
+        ].filter(function (field) { return field[1] !== undefined && field[1] !== null && String(field[1]) !== ''; });
         const bar = fields.map(function (field) {
             return '<span class="emr-hf"><b>' + esc(field[0]) + '</b><span class="emr-hf-val">' + esc(field[1]) + '</span></span>';
         }).join('');
