@@ -1206,17 +1206,17 @@ var NurseBedPanel = {
             const sel = window.getSelection();
             if (!sel.rangeCount) return;
             const node = sel.anchorNode ? (sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode) : null;
-            const td = node ? node.closest('td') : null;
-            if (!td) { Dom.toast('请先把光标放入表格单元格', 'info'); return; }
-            const tr = td.parentNode;
-            const table = tr.parentNode && tr.parentNode.tagName === 'TABLE' ? tr.parentNode : (tr.closest ? tr.closest('table') : null);
-            if (!table) return;
+            const cell = node ? node.closest('.tpl-cell, .tpl-label, .tpl-th') : null;
+            if (!cell) { Dom.toast('请先把光标放入表格行', 'info'); return; }
+            const row = cell.closest('.tpl-row');
+            const main = row ? row.closest('.tpl-main') : null;
+            if (!main) return;
             if (cmd === 'insertRow') {
-                const ntr = tr.cloneNode(true);
-                ntr.querySelectorAll('td, th').forEach(c => { c.textContent = ''; });
-                tr.parentNode.insertBefore(ntr, tr.nextSibling);
-            } else if (table.querySelectorAll('tr').length > 2) {
-                tr.parentNode.removeChild(tr);
+                const nrow = row.cloneNode(true);
+                nrow.querySelectorAll('.tpl-cell, .tpl-label, .tpl-th').forEach(c => { c.textContent = ''; });
+                row.parentNode.insertBefore(nrow, row.nextSibling);
+            } else if (main.querySelectorAll('.tpl-row').length > 2) {
+                row.parentNode.removeChild(row);
             } else { Dom.toast('至少保留一行', 'info'); }
             return;
         }

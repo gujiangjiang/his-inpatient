@@ -6,58 +6,49 @@
 .tpl-editor-scroll .sheet { box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12); }
 .tpl-editor-scroll .sheet[contenteditable="true"] { outline: none; }
 .tpl-editor-scroll .sheet:focus { box-shadow: 0 2px 12px rgba(20, 154, 154, 0.35); }
-/* 编辑器画布: 抬头固定区不可编辑 (医院名/文书名/患者栏为打印固定内容) */
 .tpl-editor-scroll .tpl-editor-fixed { flex-shrink: 0; }
 .tpl-editor-scroll .tpl-editor-body { flex: 1; overflow: hidden; }
-/* 模板表格填写格: 编辑时浅色提示, 光标进入显边框 */
-.tpl-editor-scroll .sheet-table td { position: relative; }
-.tpl-editor-scroll .sheet-table td:empty { background: repeating-linear-gradient(180deg, transparent, transparent 21px, #f0f4f8 21px, #f0f4f8 22px); }
-.tpl-editor-scroll .sheet-table td:focus { outline: 2px solid rgba(20, 154, 154, 0.55); outline-offset: -2px; }
-.tpl-editor-scroll .tpl-sec { background: #f2f4f8; letter-spacing: 2px; }
-.tpl-editor-scroll .tpl-seq { text-align: center; color: #909399; }
 .tpl-editor-tip { font-size: 12px; color: #909399; margin: 6px 0 8px; }
 
-/* ===== 编辑器画布 A4 纸张与表格样式 (与 PrintDocument.baseCss 同源子集) ===== */
-.tpl-editor-scroll .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 10mm 12mm 14mm; position: relative; display: flex; flex-direction: column; overflow: hidden; background: #fff; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; }
-.tpl-editor-scroll .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
+/* ===== 编辑器画布 A4 纸张与抬头样式 ===== */
+.tpl-editor-scroll .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 10mm 13mm 14mm; position: relative; display: flex; flex-direction: column; overflow: hidden; background: #fff; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; }
+.tpl-editor-scroll .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 6px; }
 .tpl-editor-scroll .sheet-brand { text-align: center; flex: 1; }
-.tpl-editor-scroll .print-brand-lockup { display: grid; justify-items: center; margin: 0 auto 4px; }
+.tpl-editor-scroll .print-brand-lockup { display: grid; justify-items: center; margin: 0 auto 2px; }
 .tpl-editor-scroll .brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0, 1fr); width: max-content; max-width: 100%; min-width: 0; }
 .tpl-editor-scroll .brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }
-.tpl-editor-scroll .print-hospital { font-size: 20pt; font-weight: 700; letter-spacing: 4px; line-height: 1.4; }
-.tpl-editor-scroll .print-hospital2 { font-size: 11pt; font-weight: 400; line-height: 1.35; }
-.tpl-editor-scroll .sheet-docname { font-size: 16pt; font-weight: 700; letter-spacing: 3px; line-height: 1.4; }
-.tpl-editor-scroll .patient-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 10pt; padding: 5px 0; margin-bottom: 8px; }
+.tpl-editor-scroll .print-hospital { font-size: 18pt; font-weight: 700; letter-spacing: 4px; line-height: 1.3; }
+.tpl-editor-scroll .print-hospital2 { font-size: 10.5pt; font-weight: 400; line-height: 1.3; }
+.tpl-editor-scroll .sheet-docname { font-size: 15pt; font-weight: 700; letter-spacing: 3px; line-height: 1.35; }
+.tpl-editor-scroll .patient-bar { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 10pt; padding: 4px 0; margin-bottom: 6px; border-bottom: 1px solid #c8ccd4; }
 .tpl-editor-scroll .patient-bar span { white-space: nowrap; }
 .tpl-editor-scroll .patient-bar b { font-weight: 600; }
-.tpl-editor-scroll .sheet-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
-.tpl-editor-scroll .sheet-table th, .tpl-editor-scroll .sheet-table td { border: 1px solid #333; padding: 6px 8px; text-align: left; vertical-align: top; }
-.tpl-editor-scroll .sheet-table th { background: #f2f2f2; font-weight: 600; }
-.tpl-editor-scroll .tpl-sec { background: #f2f4f8 !important; font-weight: 600; letter-spacing: 2px; }
-.tpl-editor-scroll .tpl-seq { text-align: center; color: #909399; }
-.tpl-editor-scroll .tpl-gen { vertical-align: top; }
 
-/* ===== 模板控件: 编辑器画布与打印共用 (见 tpl-ctl 等) ===== */
-.tpl-card { border: 1px solid #c3cad3; margin-bottom: 6px; }
-.tpl-card-h { background: #eef2f6; font-weight: 600; font-size: 11pt; letter-spacing: 1px; padding: 5px 8px; border-bottom: 1px solid #c3cad3; }
-.tpl-card-r { display: flex; align-items: center; padding: 5px 8px; border-bottom: 1px solid #eef0f3; }
-.tpl-card-r:last-child { border-bottom: none; }
-.tpl-card-r2 { display: flex; padding: 5px 8px; border-bottom: 1px solid #eef0f3; }
-.tpl-card-r2:last-child { border-bottom: none; }
-.tpl-card-l { flex: 0 0 86px; font-size: 10pt; color: #444; }
-.tpl-card-f { flex: 1; min-width: 0; font-size: 10pt; }
-.tpl-ctl { border: 1px solid #8a919c; background: #fff; font-size: 10pt; padding: 1px 4px; border-radius: 2px; max-width: 100%; }
+/* ===== 大表格 div 网格版式 (整页一张表, 行高固定, 填满 A4) ===== */
+.tpl-main { width: 100%; font-size: 10pt; border-top: 1px solid #333; border-left: 1px solid #333; }
+.tpl-main .tpl-row { display: flex; overflow: hidden; border-bottom: 1px solid #333; }
+.tpl-main .tpl-cell, .tpl-main .tpl-label, .tpl-main .tpl-th { border-right: 1px solid #333; padding: 0 6px; display: flex; align-items: center; min-width: 0; }
+.tpl-main .tpl-hdr { background: #eef2f6 !important; font-weight: 600; letter-spacing: 2px; text-align: left; }
+.tpl-main .tpl-hdr .tpl-cell { flex: 1; }
+.tpl-main .tpl-label { background: #f7f9fb; text-align: center; font-weight: 600; font-size: 9.5pt; white-space: nowrap; justify-content: center; flex-shrink: 0; }
+.tpl-main .tpl-th { background: #f2f2f2; font-weight: 600; text-align: center; justify-content: center; flex-shrink: 0; }
+.tpl-main .tpl-cell { flex: 1; }
+.tpl-main .tpl-seq { text-align: center; color: #909399; font-weight: 600; justify-content: center; flex-shrink: 0; }
+
+/* ===== 模板控件: 编辑器画布与打印共用 ===== */
+.tpl-ctl { border: 1px solid #8a919c; background: #fff; font-size: 10pt; padding: 1px 4px; border-radius: 2px; max-width: 100%; box-sizing: border-box; }
 .tpl-ctl-num { border: none; border-bottom: 1px solid #555; background: transparent; width: 60px; text-align: center; font-size: 10pt; }
-.tpl-ctl-radio, .tpl-ctl-chk { display: inline-flex; align-items: center; gap: 3px; margin-right: 9px; font-size: 10pt; }
+.tpl-ctl-radio, .tpl-ctl-chk { display: inline-flex; align-items: center; gap: 3px; margin-right: 9px; font-size: 10pt; white-space: nowrap; }
 .tpl-ctl input { accent-color: #0e7c86; vertical-align: middle; }
-.tpl-card-f textarea { resize: vertical; }
-.tpl-plan td { padding: 3px 4px; }
+.tpl-editor-scroll textarea.tpl-ctl { resize: none; }
 
 /* ===== 查看弹窗: HTML 文书渲染 ===== */
-.ndoc-content-html { white-space: normal; }
-.ndoc-content-html table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.ndoc-content-html table th, .ndoc-content-html table td { border: 1px solid #c8ccd4; padding: 5px 8px; text-align: left; vertical-align: top; }
-.ndoc-content-html table th { background: #f5f7fa; font-weight: 600; }
+.ndoc-content-html { white-space: normal; max-height: 60vh; overflow: auto; }
+.ndoc-content-html .tpl-main { width: 100%; font-size: 12px; }
+.ndoc-content-html .tpl-main .tpl-row { display: flex; }
+.ndoc-content-html .tpl-main .tpl-cell, .ndoc-content-html .tpl-main .tpl-label, .ndoc-content-html .tpl-main .tpl-th { border: 1px solid #c8ccd4; padding: 3px 6px; }
+.ndoc-content-html .tpl-main .tpl-label { background: #f7f9fb; font-weight: 600; }
+.ndoc-content-html .tpl-main .tpl-th { background: #f5f7fa; font-weight: 600; text-align: center; }
 
 /* ===== 模板选择面板 ===== */
 .tpl-pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
