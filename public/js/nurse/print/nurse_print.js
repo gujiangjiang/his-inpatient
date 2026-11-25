@@ -103,7 +103,7 @@
   }
   function renderSumRow(day) {
     const fmt = function (v) { return v > 0 ? String(Math.round(v * 10) / 10).replace(/\.0$/, '') : ''; };
-    let h = '<tr class="npr-sum"><td class="npr-date"></td><td class="npr-time">本日合计</td>';
+    let h = '<tr class="npr-sum"><td colspan="2" class="npr-date">本日合计</td>';
     for (let i = 0; i < 8; i++) h += '<td class="npr-v"></td>';
     h += '<td class="npr-v">' + fmt(day.intake) + '</td>';
     h += '<td class="npr-v">' + fmt(day.output) + '</td>';
