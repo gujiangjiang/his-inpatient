@@ -2,7 +2,7 @@
 
 医院住院一体化系统，覆盖入院 → 病历 → 医嘱 → 摆药发药 → 护士执行 → 检验检查 → 出院/病案首页全闭环。
 
-![version](https://img.shields.io/badge/version-0.67.0-blue)
+![version](https://img.shields.io/badge/version-0.68.0-blue)
 ![CI](https://github.com/gujiangjiang/his-inpatient/actions/workflows/ci.yml/badge.svg)
 
 ## 技术栈
