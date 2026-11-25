@@ -74,11 +74,12 @@ var NurseTempPage = {
         if (!this.patientId) { Dom.toast('请先选择患者', 'error'); return; }
         const sel = document.getElementById('ntemp-patient');
         const pname = sel && sel.selectedOptions.length ? sel.selectedOptions[0].textContent : '';
-        AjaxLoader.api('nurse/temperature?action=list&patient_id=' + this.patientId, { silent: true }).then(r => {
-            const rows = r.data || [];
-            if (!rows.length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
-            const html = NursePrint.tempHtml(rows, { patient_name: pname });
-            PrintPreview.open('体温单 · 打印预览', html, { canPrint: true });
+        AjaxLoader.api('nurse/temperature-chart?patient_id=' + this.patientId, { silent: true }).then(r => {
+            const d = r.data || {};
+            if (!d || !(d.days || []).length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
+            const pages = TempChart.buildPrintPages(d, d.patient || { patient_name: pname });
+            if (!pages.length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
+            PrintPreview.combine('体温单 · 打印预览', pages, { canPrint: true });
         }).catch(() => {});
     }
 };

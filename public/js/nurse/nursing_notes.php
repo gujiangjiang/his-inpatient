@@ -86,8 +86,9 @@ var NurseNotePage = {
         AjaxLoader.api('nurse/nursing-notes?action=list&patient_id=' + this.patientId, { silent: true }).then(r => {
             const rows = r.data || [];
             if (!rows.length) { Dom.toast('暂无护理记录可预览', 'info'); return; }
-            const html = NursePrint.notesHtml(rows, { patient_name: pname });
-            PrintPreview.open('护理记录单 · 打印预览', html, { canPrint: true });
+            const pages = NursePrint.notesLandscapePages(rows, { patient_name: pname });
+            if (!pages.length) { Dom.toast('暂无护理记录可预览', 'info'); return; }
+            PrintPreview.combine('护理记录单 · 打印预览', pages, { canPrint: true });
         }).catch(() => {});
     },
 

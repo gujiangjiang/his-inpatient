@@ -14,6 +14,7 @@
 - **护理记录单「本日合计」挤在时间列**：改为 colspan=2 合并日期+时间两列居中显示
 - **体温单/护理记录单打印页眉「科别」空白**：bedboard 床位查询未查科室名，补查 `COALESCE(病区科室, 患者登记科室) AS department_name`；页眉信息栏空值字段不再渲染裸标签
 - **护理记录单多页页码全部显示 1/1（严重）**：`PrintPreview.combine` 的编页循环写在单文档遍历内部，每页文档只含一个 `.page` 元素导致每页都被重编为“第 1 页 / 共 1 页”，覆盖业务端生成的正确页码；改为先合并全部文档为实时 DOM 再跨文档全局编页后一次性序列化，占位页码单据同样正确编号
+- **医生端护理页体温单仍是旧版折线图、两个打印按钮点击无反应**：`doctor/nursing` 体温单换为与护士站同源的三测单（`nurse/temperature-chart` + `TempChart`，按周翻页）；打印预览调用的 `NursePrint.notesHtml/tempHtml` 已在 0.67.0 打印重构时删除（异常被 catch 吞掉表现为“无反应”），分别改用 `notesLandscapePages` / `TempChart.buildPrintPages` + `PrintPreview.combine`（医生只读 `canPrint:false`）；同步修复两个已下线独立页（`nurse/nursing_notes.php`、`nurse/temperature.php`）中残留的同源失效调用
 
 ## [0.67.0] - 2026-11-25
 

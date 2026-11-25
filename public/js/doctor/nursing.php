@@ -15,13 +15,9 @@
 
 <div id="nursing-pane-temp">
     <div class="card">
-        <div class="card-header flex-between">体温单折线图 <span class="fs-12 text-muted">体温（红）· 脉搏（蓝）· 呼吸（绿）</span>
+        <div class="card-header flex-between">体温单（三测单） <span class="fs-12 text-muted">数据源：护理记录单 · 曲线/网格与护士站同源</span>
             <button class="btn btn-small btn-primary" onclick="DoctorNursing.tempPreview()">打印预览</button></div>
-        <div id="nursing-temp-chart" class="temp-chart-wrap"><div class="empty-state">暂无体温数据</div></div>
-    </div>
-    <div class="card">
-        <div class="card-header">体温单明细</div>
-        <div id="nursing-temp-grid" class="temp-grid-wrap"><div class="empty-state">暂无体温数据</div></div>
+        <div id="nursing-temp-body"><div class="empty-state">加载中…</div></div>
     </div>
 </div>
 
@@ -42,6 +38,8 @@
 <script>
 var DoctorNursing = {
     activeTab: 'temp',
+    _tempStart: '',
+    _tempData: null,
 
     async init() {
         await App.mountShell('doctor');
@@ -67,93 +65,44 @@ var DoctorNursing = {
 
     refresh() { this.switch(this.activeTab); },
 
-    /* ================= 体温单 ================= */
+    /* ================= 体温单 (三测单, 与护士站同源: nurse/temperature-chart + TempChart) ================= */
     loadTemp() {
         const p = PatientContext.current();
         if (!p) return;
-        AjaxLoader.api('nurse/temperature?action=list&patient_id=' + p.id, { silent: true }).then(r => {
-            const rows = r.data || [];
-            this.renderChart(rows);
-            this.renderGrid(rows);
-        }).catch(() => {});
+        const box = document.getElementById('nursing-temp-body');
+        box.innerHTML = '<div class="empty-state">加载中…</div>';
+        const url = 'nurse/temperature-chart?patient_id=' + p.id + (this._tempStart ? '&start=' + this._tempStart : '');
+        AjaxLoader.api(url, { silent: true }).then(r => {
+            /* 请求返回期间若已切换患者，丢弃旧响应 */
+            const cur = PatientContext.current();
+            if (!cur || String(cur.id) !== String(p.id) || !box.isConnected) return;
+            const d = r.data || {};
+            this._tempData = d;
+            this._tempStart = d.start || this._tempStart;
+            const hasVitals = (d.days || []).some(day => day.slots.some(s => s.temp || s.pulse != null || s.breath != null));
+            const range = (d.start && d.end) ? Format.escape(d.start.slice(5) + ' ~ ' + d.end.slice(5)) : '';
+            box.innerHTML = `<div class="temp-date-nav">
+                <button class="btn btn-small" onclick="DoctorNursing.tempPage(-1)" ${!d.has_older ? 'disabled' : ''}>‹ 上一周</button>
+                <span class="td-date">体温单 ${range}</span>
+                <button class="btn btn-small" onclick="DoctorNursing.tempPage(1)" ${!d.has_newer ? 'disabled' : ''}>下一周 ›</button>
+            </div><div class="temp-chart-host"></div>`;
+            if (!hasVitals) {
+                box.querySelector('.temp-chart-host').innerHTML = '<div class="empty-state">该患者此周无体征记录（护理记录单填写生命体征后自动生成）</div>';
+                return;
+            }
+            TempChart.render(box.querySelector('.temp-chart-host'), d);
+        }).catch(() => { box.innerHTML = '<div class="empty-state">加载失败</div>'; });
     },
 
-    /* SVG 折线图: 横轴日期时点, 纵轴体温刻度 35-42℃ + 脉搏 40-120 + 呼吸 10-40 */
-    renderChart(rows) {
-        const box = document.getElementById('nursing-temp-chart');
-        if (!rows.length) { box.innerHTML = '<div class="empty-state">暂无体温数据</div>'; return; }
-        const SLOTS = ['06:00', '10:00', '14:00', '18:00', '22:00'];
-        // 按日期+时点排序的测量序列 (折线点)
-        const seq = rows.slice().sort((a, b) =>
-            (a.record_time || '').localeCompare(b.record_time || ''));
-        const dates = [...new Set(rows.map(x => (x.record_time || '').slice(0, 10)))].sort();
-        const W = Math.max(680, dates.length * 64);
-        const H = 300;
-        const padL = 40, padR = 20, padT = 20, padB = 44;
-        const plotW = W - padL - padR;
-        const plotH = H - padT - padB | 0;
-        // 坐标映射
-        const xAt = i => padL + (i / Math.max(1, seq.length - 1)) * plotW;
-        const yTemp = v => padT + plotH - ((Math.min(42, Math.max(35, v)) - 35) / 7) * plotH;
-        const yPulse = v => padT + plotH - ((Math.min(120, Math.max(40, v)) - 40) / 80) * plotH;
-        const yResp = v => padT + plotH - ((Math.min(40, Math.max(10, v)) - 10) / 30) * plotH;
-
-        // 纵轴刻度 (体温)
-        let gridV = '';
-        for (let t = 35; t <= 42; t++) {
-            const y = yTemp(t);
-            gridV += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="#eef2f7" stroke-width="1"/>`;
-            gridV += `<text x="${padL - 4}" y="${y + 3}" text-anchor="end" font-size="10" fill="#909399">${t}</text>`;
-        }
-        // 横轴日期
-        let gridH = '';
-        seq.forEach((s, i) => {
-            const x = xAt(i);
-            gridH += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${padT + plotH}" stroke="#f5f7fa" stroke-width="1"/>`;
-            gridH += `<text x="${x}" y="${H - padB + 14}" text-anchor="middle" font-size="10" fill="#606266">${(s.record_time || '').slice(5, 16)}</text>`;
-        });
-
-        // 折线生成
-        const poly = (vals, yFn, color) => {
-            const pts = vals.map((v, i) => (v == null ? null : `${xAt(i).toFixed(1)},${yFn(Number(v)).toFixed(1)}`));
-            const clean = pts.filter(Boolean);
-            return `<polyline fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" points="${clean.join(' ')}"/>` +
-                vals.map((v, i) => v == null ? '' :
-                    `<circle cx="${xAt(i).toFixed(1)}" cy="${yFn(Number(v)).toFixed(1)}" r="2.5" fill="${color}"/>`).join('');
-        };
-        const tempPts = seq.map(s => s.temperature);
-        const pulsePts = seq.map(s => s.pulse);
-        const respPts = seq.map(s => s.respiratory_rate);
-        box.innerHTML = `<svg class="temp-chart-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMinYMin meet" style="width:100%;height:auto">
-            <rect x="0" y="0" width="${W}" height="${H}" fill="#fff"/>
-            ${gridV}${gridH}
-            ${poly(respPts, yResp, '#2fb344')}
-            ${poly(pulsePts, yPulse, '#409eff')}
-            ${poly(tempPts, yTemp, '#e5484d')}
-        </svg>`;
-    },
-
-    /* 体温单明细网格 */
-    renderGrid(rows) {
-        const box = document.getElementById('nursing-temp-grid');
-        if (!rows.length) { box.innerHTML = '<div class="empty-state">暂无体温数据</div>'; return; }
-        const SLOTS = ['06:00', '10:00', '14:00', '18:00', '22:00'];
-        const byDate = {};
-        rows.forEach(x => { (byDate[(x.record_time || '').slice(0, 10)] = byDate[(x.record_time || '').slice(0, 10)] || []).push(x); });
-        const dates = Object.keys(byDate).sort().reverse();
-        const html = dates.map(d => {
-            const day = byDate[d];
-            const cells = SLOTS.map(s => {
-                const hit = day.find(x => (x.record_time || '').slice(11, 16) === s);
-                return hit
-                    ? `<td class="td-val">${hit.temperature != null ? Format.escape(String(hit.temperature)) + '°' : ''}${hit.pulse != null ? '<br><span class="fs-11">脉' + Format.escape(String(hit.pulse)) + '</span>' : ''}${hit.bp_systolic != null ? '<br><span class="fs-11">' + Format.escape(String(hit.bp_systolic)) + '/' + Format.escape(String(hit.bp_diastolic)) + '</span>' : ''}${hit.oxygen_saturation != null ? '<br><span class="fs-11">SpO2' + Format.escape(String(hit.oxygen_saturation)) + '</span>' : ''}</td>`
-                    : '<td class="td-empty">-</td>';
-            }).join('');
-            return `<tr><td class="td-time">${Format.escape(d)}</td>${cells}</tr>`;
-        }).join('');
-        box.innerHTML = `<table class="temp-grid">
-            <thead><tr><th>日期</th><th>06:00</th><th>10:00</th><th>14:00</th><th>18:00</th><th>22:00</th></tr></thead>
-            <tbody>${html}</tbody></table>`;
+    /* 体温单按周翻页 */
+    tempPage(delta) {
+        const d = this._tempData;
+        if (!d || !d.start) return;
+        const dt = new Date(d.start + 'T00:00:00');
+        dt.setDate(dt.getDate() + delta * 7);
+        const y = dt.getFullYear(), m = ('0' + (dt.getMonth() + 1)).slice(-2), dd = ('0' + dt.getDate()).slice(-2);
+        this._tempStart = y + '-' + m + '-' + dd;
+        this.loadTemp();
     },
 
     /* ================= 护理记录单 ================= */
@@ -213,28 +162,28 @@ var DoctorNursing = {
         return m.length ? m.join('　') + '　' : '';
     },
 
-    /* 护理记录单打印预览 (医生只读, 隐藏打印按钮) */
+    /* 护理记录单打印预览 (医生只读, 隐藏打印按钮) — 横板 A4 表格式, 与护士站同源 */
     notePreview() {
         const p = PatientContext.current();
         if (!p) return;
         AjaxLoader.api('nurse/nursing-notes?action=list&patient_id=' + p.id, { silent: true }).then(r => {
             const rows = r.data || [];
             if (!rows.length) { Dom.toast('暂无护理记录可预览', 'info'); return; }
-            const html = NursePrint.notesHtml(rows, { patient_name: p.name || '', admission_no: p.admission_no || '' });
-            PrintPreview.open('护理记录单 · 打印预览', html, { canPrint: false });
+            const pages = NursePrint.notesLandscapePages(rows, p);
+            if (!pages.length) { Dom.toast('暂无护理记录可预览', 'info'); return; }
+            PrintPreview.combine('护理记录单 · 打印预览', pages, { canPrint: false });
         }).catch(() => {});
     },
 
-    /* 体温单打印预览 (医生只读, 隐藏打印按钮) */
+    /* 体温单打印预览 (医生只读, 隐藏打印按钮) — A4 三测单, 与护士站同源 */
     tempPreview() {
         const p = PatientContext.current();
         if (!p) return;
-        AjaxLoader.api('nurse/temperature?action=list&patient_id=' + p.id, { silent: true }).then(r => {
-            const rows = r.data || [];
-            if (!rows.length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
-            const html = NursePrint.tempHtml(rows, { patient_name: p.name || '', admission_no: p.admission_no || '' });
-            PrintPreview.open('体温单 · 打印预览', html, { canPrint: false });
-        }).catch(() => {});
+        const d = this._tempData;
+        if (!d || !(d.days || []).length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
+        const pages = TempChart.buildPrintPages(d, p);
+        if (!pages.length) { Dom.toast('暂无体温数据可预览', 'info'); return; }
+        PrintPreview.combine('体温单 · 打印预览', pages, { canPrint: false });
     },
 
     viewDoc(id) {
