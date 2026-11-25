@@ -85,8 +85,12 @@
 .nbc-days b { color: #f56c6c; }
 
 /* 床位卡片操作面板 */
-.nurse-op-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #e4e7ed; margin-bottom: 12px; }
+/* tab 栏: 始终单行, 窄屏横向滑动 (不换行, 节省纵向空间) */
+.nurse-op-tabs { display: flex; flex-wrap: nowrap; gap: 4px; border-bottom: 1px solid #e4e7ed; margin-bottom: 12px; overflow-x: auto; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.nurse-op-tabs::-webkit-scrollbar { height: 4px; }
+.nurse-op-tabs::-webkit-scrollbar-thumb { background: #d7dee8; border-radius: 2px; }
 .nurse-op-tab {
+    flex: 0 0 auto; white-space: nowrap;
     padding: 8px 16px; border: none; background: transparent; font-size: 13px;
     color: #606266; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
