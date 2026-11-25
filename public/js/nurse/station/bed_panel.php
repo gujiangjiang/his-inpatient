@@ -1144,13 +1144,13 @@ var NurseBedPanel = {
         }).catch(() => {});
     },
 
-    /* 所见即所得编辑器: A4 画布, 内置模板预填; 保存内容为 HTML (打印/查看原样渲染) */
+    /* 所见即所得编辑器: A4 画布, 抬头锁定不可编辑, 正文可编辑; 保存只存正文 HTML */
     docEditor(key, existing) {
         const self = this;
         const tpl = NursingDocTemplates.build(key, this.patient);
         const oldContent = existing && existing.content ? existing.content : '';
         const isHtml = /<[a-z][\s\S]*>/i.test(oldContent) && !/<textarea/i.test(oldContent);
-        const bodyHtml = existing && isHtml ? oldContent
+        const bodyHtml = existing && isHtml ? NursingDocTemplates.stripHead(oldContent)
             : (existing ? '<div style="white-space:pre-wrap;line-height:2;min-height:600px">' + Format.escape(oldContent) + '</div>' : tpl.body);
         const overlay = Dom.modal((existing ? '编辑 - ' : '新建 - ') + tpl.title, `
             <div class="tpl-editor-toolbar">
@@ -1159,21 +1159,32 @@ var NurseBedPanel = {
                 <button type="button" onclick="NurseBedPanel.docCmd('underline')">下划线</button>
                 <button type="button" onclick="NurseBedPanel.docCmd('insertRow')">表格加行</button>
                 <button type="button" onclick="NurseBedPanel.docCmd('deleteRow')">表格删行</button>
-                <span class="tpl-editor-tip">点击表格空白格直接书写 · 保存后 A4 打印自适应</span>
+                <span class="tpl-editor-tip">抬头为打印固定内容；在下方表格/卡片内填写</span>
             </div>
-            <div class="tpl-editor-scroll"><div class="sheet" id="doc-editor" contenteditable="true">${tpl.head}${bodyHtml}</div></div>
+            <div class="tpl-editor-scroll"><div class="sheet" id="doc-editor">
+                <div class="tpl-editor-fixed" contenteditable="false">${tpl.head}</div>
+                <div class="tpl-editor-body" id="doc-editor-body" contenteditable="true">${bodyHtml}</div>
+            </div></div>
             <input type="hidden" id="doc-editor-title" value="${Format.escape(existing ? existing.title : tpl.title)}">
             <input type="hidden" id="doc-editor-type" value="${key}">`, [
             { text: '保存', type: 'primary', onclick: async function () {
-                const el = document.getElementById('doc-editor');
-                if (!el) return false;
+                const bodyEl = document.getElementById('doc-editor-body');
+                if (!bodyEl) return false;
                 const title = document.getElementById('doc-editor-title').value.trim();
                 if (!title) { Dom.toast('请填写文书标题', 'error'); return false; }
-                if (!el.textContent.trim()) { Dom.toast('请填写文书内容', 'error'); return false; }
+                if (!bodyEl.textContent.trim()) { Dom.toast('请填写文书内容', 'error'); return false; }
+                /* 控件状态序列化: checked/value 是 property, innerHTML 不保留 → 保存前归一化为 attribute */
+                bodyEl.querySelectorAll('input[type=radio], input[type=checkbox]').forEach(i => {
+                    if (i.checked) i.setAttribute('checked', 'checked'); else i.removeAttribute('checked');
+                });
+                bodyEl.querySelectorAll('input:not([type=radio]):not([type=checkbox])').forEach(i => {
+                    if (i.value) i.setAttribute('value', i.value); else i.removeAttribute('value');
+                });
+                bodyEl.querySelectorAll('textarea').forEach(t => { t.textContent = t.value; });
                 try {
                     await AjaxLoader.api('nurse/nursing-docs', { method: 'POST', data: {
                         action: 'save', patient_id: self.patient.id, doc_type: key,
-                        title: title, content: el.innerHTML,
+                        title: title, content: bodyEl.innerHTML,
                         id: existing ? existing.id : 0
                     } });
                     Dom.toast('已保存', 'success');
@@ -1188,7 +1199,7 @@ var NurseBedPanel = {
 
     /* 编辑器工具 (contenteditable) */
     docCmd(cmd) {
-        const el = document.getElementById('doc-editor');
+        const el = document.getElementById('doc-editor-body');
         if (!el) return;
         el.focus();
         if (cmd === 'insertRow' || cmd === 'deleteRow') {
@@ -1226,7 +1237,7 @@ var NurseBedPanel = {
                     <div class="kv-item"><b>记录人</b><span>${Format.escape(d.recorder_name || '')}</span></div>
                     <div class="kv-item"><b>时间</b><span>${Format.escape((d.created_at || '').slice(0, 16))}</span></div>
                 </div>
-                <div class="ndoc-content-view ndoc-content-html">${isHtml ? content : Format.escape(content)}</div>`,
+                <div class="ndoc-content-view ndoc-content-html">${isHtml ? NursingDocTemplates.stripHead(content) : Format.escape(content)}</div>`,
                 [{ text: '关闭', type: 'default' }]);
         }).catch(() => {});
     },
@@ -1241,9 +1252,9 @@ var NurseBedPanel = {
             const content = d.content || '';
             const isHtml = /<[a-z][\s\S]*>/i.test(content) && !/<textarea/i.test(content);
             const body = '<div class="sheet">' + tpl.head
-                + (isHtml ? content : '<div style="white-space:pre-wrap;line-height:2">' + Format.escape(content) + '</div>')
+                + (isHtml ? NursingDocTemplates.stripHead(content) : '<div style="white-space:pre-wrap;line-height:2">' + Format.escape(content) + '</div>')
                 + '</div>';
-            PrintPreview.openBody(d.title || tpl.title, body, { canPrint: true, pageNumbers: false });
+            PrintPreview.openBody(d.title || tpl.title, body, { canPrint: true, pageNumbers: false, css: NursingDocTemplates.printCss });
         }).catch(() => {});
     },
 
