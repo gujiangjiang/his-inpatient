@@ -71,7 +71,8 @@
         const docs = (htmlList || []).filter(function (html) { return html && String(html).trim(); });
         if (!docs.length) { Dom.toast('暂无可预览的打印内容', 'info'); return null; }
         if (docs.length === 1) return PP.open(title, docs[0], opts);
-        const styles = [], fragments = [];
+        const styles = [];
+        const finalHolder = document.createElement('div');
         docs.forEach(function (html) {
             const parsed = new DOMParser().parseFromString(html, 'text/html');
             parsed.querySelectorAll('script').forEach(function (script) { script.remove(); });
@@ -80,19 +81,20 @@
             });
             const holder = document.createElement('div');
             holder.innerHTML = parsed.body.innerHTML;
-            const pages = holder.querySelectorAll('.page, .sheet, .cf-page, .print-page');
-            pages.forEach(function (page, index) {
-                const pageNo = page.querySelector('.emr-fp-page, .sheet-page-no');
-                if (pageNo) pageNo.textContent = '第 ' + (index + 1) + ' 页 / 共 ' + pages.length + ' 页';
-            });
             Array.from(holder.childNodes).forEach(function (node) {
-                if (node.nodeType === 1) fragments.push(node.outerHTML);
-                else if (node.nodeType === 3 && node.textContent.trim()) fragments.push(node.textContent);
+                if (node.nodeType === 1) finalHolder.appendChild(node);
+                else if (node.nodeType === 3 && node.textContent.trim()) finalHolder.appendChild(document.createTextNode(node.textContent));
             });
+        });
+        /* 跨文档全局编页: 此前编号循环在单文档遍历内, 每页文档只有一个 .page 导致全部显示 1/1 */
+        const pageEls = finalHolder.querySelectorAll('.page, .sheet, .cf-page, .print-page');
+        pageEls.forEach(function (page, index) {
+            const pageNo = page.querySelector('.emr-fp-page, .sheet-page-no');
+            if (pageNo) pageNo.textContent = '第 ' + (index + 1) + ' 页 / 共 ' + pageEls.length + ' 页';
         });
         const safeTitle = Format.escape(title || '打印文档');
         const html = '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>' + safeTitle + '</title>'
-            + '<style>' + styles.join('\n') + '</style></head><body>' + fragments.join('') + '</body></html>';
+            + '<style>' + styles.join('\n') + '</style></head><body>' + finalHolder.innerHTML + '</body></html>';
         return PP.open(title, html, opts);
     };
 
