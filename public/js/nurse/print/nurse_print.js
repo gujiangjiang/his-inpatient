@@ -217,7 +217,7 @@
       '.emr-hf-val { min-width: 30px; text-align: center; }',
       '.npr-table { width: 100%; border-collapse: collapse; table-layout: fixed; }',
       '.npr-table th, .npr-table td { border: 0.5pt solid #000; padding: 3px 4px; vertical-align: top; text-align: left; font-size: 9pt; line-height: 1.4; overflow: hidden; word-break: break-all; }',
-      '.npr-h { background: #f0f2f5; text-align: center; font-weight: 600; vertical-align: middle; font-size: 9pt; line-height: 1.3; }',
+      '.npr-table th.npr-h { background: #f0f2f5; text-align: center; font-weight: 600; vertical-align: middle; font-size: 9pt; line-height: 1.3; }',
       '.npr-group { letter-spacing: 8px; padding-left: 8px; }',
       '.npr-date, .npr-time { text-align: center; white-space: nowrap; font-size: 9pt; }',
       '.npr-v { text-align: center; font-size: 9pt; }',
