@@ -192,14 +192,21 @@ var DoctorNursing = {
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + p.id, { silent: true }).then(r => {
             const d = (r.data || []).find(x => Number(x.id) === Number(id));
             if (!d) return;
-            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他' };
+            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
+            const content = d.content || '';
+            /* 新文书内容为模板 HTML: 原样渲染 (表格样式内联, 不依赖全局 CSS) */
+            const isHtml = /<[a-z][\s\S]*>/i.test(content) && !/<textarea/i.test(content);
+            const contentHtml = isHtml
+                ? '<div class="ndoc-content-view ndoc-content-html">' + content + '</div>'
+                : '<div class="ndoc-content-view">' + Format.escape(content) + '</div>';
             Dom.modal(Format.escape(d.title || ''), `
                 <div class="kv-grid mb-10">
                     <div class="kv-item"><b>类型</b><span>${Format.escape(TYPE[d.doc_type] || d.doc_type)}</span></div>
                     <div class="kv-item"><b>记录人</b><span>${Format.escape(d.recorder_name || '')}</span></div>
                     <div class="kv-item"><b>时间</b><span>${Format.escape((d.created_at || '').slice(0, 16))}</span></div>
                 </div>
-                <div class="ndoc-content-view">${Format.escape(d.content || '')}</div>`,
+                ${contentHtml}
+                <style>.ndoc-content-html { max-height: 60vh; overflow: auto; } .ndoc-content-html table { border-collapse: collapse; width: 100%; font-size: 12px; } .ndoc-content-html th, .ndoc-content-html td { border: 1px solid #c8ccd4; padding: 5px 8px; text-align: left; vertical-align: top; } .ndoc-content-html th { background: #f5f7fa; font-weight: 600; }</style>`,
                 [{ text: '关闭', type: 'default' }]);
         }).catch(() => {});
     }

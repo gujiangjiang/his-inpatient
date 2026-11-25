@@ -139,9 +139,7 @@ var NurseStation = {
                 <span class="text-muted">计划时间：<input type="datetime-local" id="nb-batch-plan" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px"></span>
             </div>`;
         const overlay = Dom.modal('批量预摆药 - ' + (wardName || ''), content, [
-            { text: '全部勾选', type: 'default', onclick: function () {
-                document.querySelectorAll('.nbb-check').forEach(c => c.checked = true);
-            } },
+            Dom.checkAllButton('.nbb-check'),
             { text: '申请预摆药', type: 'primary', onclick: async function () {
                 const ids = [...document.querySelectorAll('.nbb-check:checked')].map(c => Number(c.value));
                 if (!ids.length) { Dom.toast('请勾选要预摆药的医嘱', 'error'); return; }

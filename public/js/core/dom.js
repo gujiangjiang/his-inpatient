@@ -29,7 +29,8 @@ const Dom = {
 
     /**
      * 通用弹窗。契约: title/content 为 HTML 串, 含动态数据时调用方须先 Format.escape。
-     * buttons: [{text, type, onclick}] — onclick 返回 false (同步) 或解析为 false 的 Promise 时保留弹窗。
+     * buttons: [{text, type, onclick, init}] — onclick(按钮元素) 返回 false (同步) 或解析为 false 的 Promise 时保留弹窗;
+     *          init(按钮元素) 在弹窗插入后执行一次 (如按当前勾选状态同步按钮文字)。
      * opts.large: 弹窗加 modal-lg 宽样式 (原 overlay.querySelector('.modal').classList.add('modal-lg') 样板收敛)。
      */
     modal(title, content, buttons = [], opts = {}) {
@@ -38,6 +39,7 @@ const Dom = {
         overlay.className = 'modal-overlay';
         const stack = document.querySelectorAll('.modal-overlay').length;
         if (stack > 0) overlay.style.zIndex = 1000 + stack * 10;
+        const initQueue = [];   /* [btn配置, 按钮元素] — 挂载后统一执行 init */
 
         const modal = document.createElement('div');
         modal.className = 'modal' + (opts.large ? ' modal-lg' : '');
@@ -64,7 +66,7 @@ const Dom = {
                 b.textContent = btn.text;
                 if (btn.onclick) {
                     b.addEventListener('click', () => {
-                        const r = btn.onclick();
+                        const r = btn.onclick(b);
                         /* 校验语义: onclick 返回 false (同步) 或 Promise 解析为 false → 保留弹窗 */
                         if (r === false) return;
                         if (r && typeof r.then === 'function') {
@@ -77,12 +79,15 @@ const Dom = {
                     b.addEventListener('click', () => closeOverlay());
                 }
                 footer.appendChild(b);
+                if (typeof btn.init === 'function') initQueue.push([btn, b]);
             });
             modal.appendChild(footer);
         }
 
         overlay.appendChild(modal);
         document.body.appendChild(overlay);
+        /* init 在挂载到 document 后执行 (勾选状态同步等需要查询弹窗内元素) */
+        initQueue.forEach(([btn, b]) => { if (typeof btn.init === 'function') btn.init(b); });
         if (window.SelectPicker) SelectPicker.initInputs(overlay);
 
         // 关闭交互: X 按钮 / 点击遮罩空白处 / Esc (仅最上层) — 全部走 closeOverlay 统一摘除监听
@@ -100,6 +105,37 @@ const Dom = {
         document.addEventListener('keydown', onKey);
 
         return overlay;
+    },
+
+    /**
+     * 「全部勾选/取消勾选」切换按钮 (Dom.modal buttons 项)。
+     * 点击在 全选↔全不选 间切换并同步按钮文字; 无任何可勾选项时给出提示 (弹窗保留)。
+     * selector: 复选框选择器 (document 范围查询, 弹窗内复选框类名需唯一)。
+     * opts: { emptyTip: 无项提示文案, onText: 全选文案, offText: 取消文案 }
+     */
+    checkAllButton(selector, opts = {}) {
+        const onText = opts.onText || '全部勾选';
+        const offText = opts.offText || '取消勾选';
+        const emptyTip = opts.emptyTip || '暂无可勾选的记录';
+        const boxes = () => Array.from(document.querySelectorAll(selector));
+        const allChecked = () => {
+            const cbs = boxes();
+            return cbs.length > 0 && cbs.every(c => c.checked);
+        };
+        const syncLabel = (el) => { el.textContent = allChecked() ? offText : onText; };
+        return {
+            text: onText,
+            type: 'default',
+            init: function (el) { syncLabel(el); },
+            onclick: function (el) {
+                const cbs = boxes();
+                if (!cbs.length) { Dom.toast(emptyTip, 'info'); return false; }
+                const target = !allChecked();
+                cbs.forEach(c => { c.checked = target; });
+                syncLabel(el);
+                return false;   /* 保留弹窗 */
+            }
+        };
     },
 
     /**

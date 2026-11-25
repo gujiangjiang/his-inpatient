@@ -15,6 +15,8 @@
 - **体温单/护理记录单打印页眉「科别」空白**：bedboard 床位查询未查科室名，补查 `COALESCE(病区科室, 患者登记科室) AS department_name`；页眉信息栏空值字段不再渲染裸标签
 - **护理记录单多页页码全部显示 1/1（严重）**：`PrintPreview.combine` 的编页循环写在单文档遍历内部，每页文档只含一个 `.page` 元素导致每页都被重编为“第 1 页 / 共 1 页”，覆盖业务端生成的正确页码；改为先合并全部文档为实时 DOM 再跨文档全局编页后一次性序列化，占位页码单据同样正确编号
 - **医生端护理页体温单仍是旧版折线图、两个打印按钮点击无反应**：`doctor/nursing` 体温单换为与护士站同源的三测单（`nurse/temperature-chart` + `TempChart`，按周翻页）；打印预览调用的 `NursePrint.notesHtml/tempHtml` 已在 0.67.0 打印重构时删除（异常被 catch 吞掉表现为“无反应”），分别改用 `notesLandscapePages` / `TempChart.buildPrintPages` + `PrintPreview.combine`（医生只读 `canPrint:false`）；同步修复两个已下线独立页（`nurse/nursing_notes.php`、`nurse/temperature.php`）中残留的同源失效调用
+- **执行单打印/检验条码打印/批量预摆药弹窗点「全部勾选」后弹窗立即消失**：`Dom.modal` 按钮契约要求 onclick 返回 `false` 才保留弹窗，三个「全部勾选」按钮未返回导致勾选完成即被关闭；补 `return false` 保留弹窗
+- **「全部勾选」升级为共享切换按钮 `Dom.checkAllButton`**：一键在 全选↔全不选 间切换并同步按钮文字（全部勾选↔取消勾选，初始文字按弹窗打开时的实际勾选状态显示）；无任何可勾选项时点击给出「暂无可勾选的记录」提示；为此 `Dom.modal` 按钮契约小幅扩展 — onclick 可接收按钮元素、新增可选 `init(el)` 钩子（弹窗挂载到 document 后执行，供按初始状态同步文字）
 
 ## [0.67.0] - 2026-11-25
 

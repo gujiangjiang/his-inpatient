@@ -1098,68 +1098,152 @@ var NurseBedPanel = {
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
+            this._docsCache = rows;   /* 编辑预填数据源 */
             const e = box.querySelector('.empty-state');
             if (!rows.length) { if (e) e.textContent = '暂无护理文书'; return; }
             if (e) e.outerHTML = '';
-            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他' };
+            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
             const html = rows.map(x => `<div class="ndoc-item">
                 <span class="ndoc-type-tag">${Format.escape(TYPE[x.doc_type] || x.doc_type)}</span>
                 <span class="ndoc-title" title="${Format.escape(x.content)}">${Format.escape(x.title)}</span>
                 <span class="ndoc-meta">${Format.escape((x.created_at || '').slice(0, 16))} · ${Format.escape(x.recorder_name || '')}</span>
                 <button class="btn btn-small" onclick="NurseBedPanel.docView(${x.id})">查看</button>
+                <button class="btn btn-small" onclick="NurseBedPanel.docEdit(${x.id})">编辑</button>
+                <button class="btn btn-small" onclick="NurseBedPanel.docPreview(${x.id})">打印预览</button>
                 <button class="btn btn-small btn-danger" onclick="NurseBedPanel.docDel(${x.id})">删除</button>
             </div>`).join('');
             box.insertAdjacentHTML('beforeend', '<div class="ndoc-list">' + html + '</div>');
         }).catch(() => { const e = box.querySelector('.empty-state'); if (e) e.textContent = '加载失败'; });
     },
 
-    docAdd() { this.docForm(null); },
-    docForm(id) {
-        const pid = this.patient.id;
-        const content = `<form id="doc-form" class="form-grid">
-            <div class="form-group"><label class="form-label">文书类型</label>
-                <select name="doc_type" class="form-control">
-                    <option value="admission_assessment">入院评估</option><option value="nursing_plan">护理计划</option>
-                    <option value="health_edu">健康宣教</option><option value="transfer_record">转科记录</option>
-                    <option value="other">其他</option>
-                </select></div>
-            <div class="form-group"><label class="form-label">标题 <span class="text-danger">*</span></label>
-                <input name="title" class="form-control" required></div>
-            <div class="form-group colspan-2"><label class="form-label">内容 <span class="text-danger">*</span></label>
-                <textarea name="content" class="form-control" rows="8" required></textarea></div>
-            <input type="hidden" name="patient_id" value="${pid}">
-            ${id ? '<input type="hidden" name="id" value="' + id + '">' : ''}
-        </form>`;
-        const overlay = Dom.modal('常规护理文书', content, [
+    docAdd() { this.docPick(); },
+
+    /* 模板选择: 内置 5 套文书 (点击进所见即所得编辑器) */
+    docPick() {
+        const cards = NursingDocTemplates.list.map(t => `<div class="tpl-pick-item" onclick="NurseBedPanel.docEditByTemplate('${t.key}')">
+            <div class="tpl-pick-name">${Format.escape(t.name)}</div>
+            <div class="tpl-pick-desc">${Format.escape(t.desc)}</div>
+        </div>`).join('');
+        this._docPickOverlay = Dom.modal('新建护理文书 - 选择模板', '<div class="tpl-pick-grid">' + cards + '</div>',
+            [{ text: '取消', type: 'default' }]);
+    },
+
+    docEditByTemplate(key) {
+        const ov = this._docPickOverlay;
+        if (ov && ov.parentNode) ov.parentNode.removeChild(ov);
+        this.docEditor(key, null);
+    },
+
+    docEdit(id) {
+        const hit = (this._docsCache || []).find(x => Number(x.id) === Number(id));
+        if (hit) { this.docEditor(hit.doc_type || 'generic', hit); return; }
+        AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + this.patient.id, { silent: true }).then(r => {
+            this._docsCache = r.data || [];
+            const d = (this._docsCache || []).find(x => Number(x.id) === Number(id));
+            if (d) this.docEditor(d.doc_type || 'generic', d);
+        }).catch(() => {});
+    },
+
+    /* 所见即所得编辑器: A4 画布, 内置模板预填; 保存内容为 HTML (打印/查看原样渲染) */
+    docEditor(key, existing) {
+        const self = this;
+        const tpl = NursingDocTemplates.build(key, this.patient);
+        const oldContent = existing && existing.content ? existing.content : '';
+        const isHtml = /<[a-z][\s\S]*>/i.test(oldContent) && !/<textarea/i.test(oldContent);
+        const bodyHtml = existing && isHtml ? oldContent
+            : (existing ? '<div style="white-space:pre-wrap;line-height:2;min-height:600px">' + Format.escape(oldContent) + '</div>' : tpl.body);
+        const overlay = Dom.modal((existing ? '编辑 - ' : '新建 - ') + tpl.title, `
+            <div class="tpl-editor-toolbar">
+                <button type="button" onclick="NurseBedPanel.docCmd('bold')">加粗</button>
+                <button type="button" onclick="NurseBedPanel.docCmd('italic')">斜体</button>
+                <button type="button" onclick="NurseBedPanel.docCmd('underline')">下划线</button>
+                <button type="button" onclick="NurseBedPanel.docCmd('insertRow')">表格加行</button>
+                <button type="button" onclick="NurseBedPanel.docCmd('deleteRow')">表格删行</button>
+                <span class="tpl-editor-tip">点击表格空白格直接书写 · 保存后 A4 打印自适应</span>
+            </div>
+            <div class="tpl-editor-scroll"><div class="sheet" id="doc-editor" contenteditable="true">${tpl.head}${bodyHtml}</div></div>
+            <input type="hidden" id="doc-editor-title" value="${Format.escape(existing ? existing.title : tpl.title)}">
+            <input type="hidden" id="doc-editor-type" value="${key}">`, [
             { text: '保存', type: 'primary', onclick: async function () {
-                const form = document.getElementById('doc-form');
-                const data = {};
-                new FormData(form).forEach((v, k) => data[k] = v);
-                if (!data.title.trim() || !data.content.trim()) { Dom.toast('请填写标题与内容', 'error'); return; }
+                const el = document.getElementById('doc-editor');
+                if (!el) return false;
+                const title = document.getElementById('doc-editor-title').value.trim();
+                if (!title) { Dom.toast('请填写文书标题', 'error'); return false; }
+                if (!el.textContent.trim()) { Dom.toast('请填写文书内容', 'error'); return false; }
                 try {
-                    await AjaxLoader.api('nurse/nursing-docs', { method: 'POST', data: Object.assign(data, { action: 'save' }) });
+                    await AjaxLoader.api('nurse/nursing-docs', { method: 'POST', data: {
+                        action: 'save', patient_id: self.patient.id, doc_type: key,
+                        title: title, content: el.innerHTML,
+                        id: existing ? existing.id : 0
+                    } });
                     Dom.toast('已保存', 'success');
                     overlay.remove();
                     NurseBedPanel.refresh();
                 } catch (e) { /* 已提示 */ }
+                return false;
             } },
             { text: '取消', type: 'default' }
-        ]);
+        ], { large: true });
     },
 
+    /* 编辑器工具 (contenteditable) */
+    docCmd(cmd) {
+        const el = document.getElementById('doc-editor');
+        if (!el) return;
+        el.focus();
+        if (cmd === 'insertRow' || cmd === 'deleteRow') {
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            const node = sel.anchorNode ? (sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentNode : sel.anchorNode) : null;
+            const td = node ? node.closest('td') : null;
+            if (!td) { Dom.toast('请先把光标放入表格单元格', 'info'); return; }
+            const tr = td.parentNode;
+            const table = tr.parentNode && tr.parentNode.tagName === 'TABLE' ? tr.parentNode : (tr.closest ? tr.closest('table') : null);
+            if (!table) return;
+            if (cmd === 'insertRow') {
+                const ntr = tr.cloneNode(true);
+                ntr.querySelectorAll('td, th').forEach(c => { c.textContent = ''; });
+                tr.parentNode.insertBefore(ntr, tr.nextSibling);
+            } else if (table.querySelectorAll('tr').length > 2) {
+                tr.parentNode.removeChild(tr);
+            } else { Dom.toast('至少保留一行', 'info'); }
+            return;
+        }
+        document.execCommand(cmd, false, null);
+    },
+
+    /* 查看: 已有 HTML 原样渲染, 旧纯文本转义展示 */
     docView(id) {
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + this.patient.id, { silent: true }).then(r => {
             const d = (r.data || []).find(x => Number(x.id) === Number(id));
             if (!d) return;
-            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他' };
+            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
+            const content = d.content || '';
+            const isHtml = /<[a-z][\s\S]*>/i.test(content) && !/<textarea/i.test(content);
             Dom.modal(Format.escape(d.title || ''), `
                 <div class="kv-grid mb-10">
                     <div class="kv-item"><b>类型</b><span>${Format.escape(TYPE[d.doc_type] || d.doc_type)}</span></div>
                     <div class="kv-item"><b>记录人</b><span>${Format.escape(d.recorder_name || '')}</span></div>
                     <div class="kv-item"><b>时间</b><span>${Format.escape((d.created_at || '').slice(0, 16))}</span></div>
                 </div>
-                <div class="ndoc-content-view">${Format.escape(d.content || '')}</div>`,
+                <div class="ndoc-content-view ndoc-content-html">${isHtml ? content : Format.escape(content)}</div>`,
                 [{ text: '关闭', type: 'default' }]);
+        }).catch(() => {});
+    },
+
+    /* 打印预览: A4 单页, 与编辑器同源样式 */
+    docPreview(id) {
+        const self = this;
+        AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + this.patient.id, { silent: true }).then(r => {
+            const d = (r.data || []).find(x => Number(x.id) === Number(id));
+            if (!d) return;
+            const tpl = NursingDocTemplates.build(d.doc_type || 'generic', self.patient);
+            const content = d.content || '';
+            const isHtml = /<[a-z][\s\S]*>/i.test(content) && !/<textarea/i.test(content);
+            const body = '<div class="sheet">' + tpl.head
+                + (isHtml ? content : '<div style="white-space:pre-wrap;line-height:2">' + Format.escape(content) + '</div>')
+                + '</div>';
+            PrintPreview.openBody(d.title || tpl.title, body, { canPrint: true, pageNumbers: false });
         }).catch(() => {});
     },
 

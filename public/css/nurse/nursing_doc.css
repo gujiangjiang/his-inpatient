@@ -1,0 +1,49 @@
+/* ===== 常规护理文书: 所见即所得编辑器 + A4 打印 (护士站床位面板调用) ===== */
+.tpl-editor-scroll { max-height: 62vh; overflow: auto; border: 1px solid #e4e7ed; border-radius: 8px; background: #f5f7fa; padding: 14px 10px; }
+.tpl-editor-toolbar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.tpl-editor-toolbar button { padding: 3px 9px; border: 1px solid #d8dee8; background: #fff; border-radius: 5px; font-size: 12px; cursor: pointer; color: #303133; }
+.tpl-editor-toolbar button:hover { border-color: var(--primary); color: var(--primary); }
+.tpl-editor-scroll .sheet { box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12); }
+.tpl-editor-scroll .sheet[contenteditable="true"] { outline: none; }
+.tpl-editor-scroll .sheet:focus { box-shadow: 0 2px 12px rgba(20, 154, 154, 0.35); }
+/* 模板表格填写格: 编辑时浅色提示, 光标进入显边框 */
+.tpl-editor-scroll .sheet-table td { position: relative; }
+.tpl-editor-scroll .sheet-table td:empty { background: repeating-linear-gradient(180deg, transparent, transparent 21px, #f0f4f8 21px, #f0f4f8 22px); }
+.tpl-editor-scroll .sheet-table td:focus { outline: 2px solid rgba(20, 154, 154, 0.55); outline-offset: -2px; }
+.tpl-editor-scroll .tpl-sec { background: #f2f4f8; letter-spacing: 2px; }
+.tpl-editor-scroll .tpl-seq { text-align: center; color: #909399; }
+.tpl-editor-tip { font-size: 12px; color: #909399; margin: 6px 0 8px; }
+
+/* ===== 编辑器画布 A4 纸张与表格样式 (与 PrintDocument.baseCss 同源子集) ===== */
+.tpl-editor-scroll .sheet { width: 210mm; height: 297mm; margin: 0 auto; padding: 10mm 12mm 14mm; position: relative; display: flex; flex-direction: column; overflow: hidden; background: #fff; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 12pt; color: #111; }
+.tpl-editor-scroll .sheet-head { position: relative; display: flex; justify-content: center; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 8px; }
+.tpl-editor-scroll .sheet-brand { text-align: center; flex: 1; }
+.tpl-editor-scroll .print-brand-lockup { display: grid; margin: 0 auto 4px; }
+.tpl-editor-scroll .brand-name-lockup { display: inline-grid; grid-template-columns: minmax(0, 1fr); width: max-content; max-width: 100%; min-width: 0; }
+.tpl-editor-scroll .brand-name-line { width: 100%; min-width: 0; text-align: justify; text-align-last: justify; text-justify: inter-character; }
+.tpl-editor-scroll .print-hospital { font-size: 20pt; font-weight: 700; letter-spacing: 4px; line-height: 1.4; }
+.tpl-editor-scroll .print-hospital2 { font-size: 11pt; font-weight: 400; line-height: 1.35; }
+.tpl-editor-scroll .sheet-docname { font-size: 16pt; font-weight: 700; letter-spacing: 3px; line-height: 1.4; }
+.tpl-editor-scroll .patient-bar { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 10pt; padding: 5px 0; margin-bottom: 8px; }
+.tpl-editor-scroll .patient-bar span { white-space: nowrap; }
+.tpl-editor-scroll .patient-bar b { font-weight: 600; }
+.tpl-editor-scroll .sheet-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+.tpl-editor-scroll .sheet-table th, .tpl-editor-scroll .sheet-table td { border: 1px solid #333; padding: 6px 8px; text-align: left; vertical-align: top; }
+.tpl-editor-scroll .sheet-table th { background: #f2f2f2; font-weight: 600; }
+.tpl-editor-scroll .tpl-sec { background: #f2f4f8 !important; font-weight: 600; letter-spacing: 2px; }
+.tpl-editor-scroll .tpl-seq { text-align: center; color: #909399; }
+.tpl-editor-scroll .tpl-gen { vertical-align: top; }
+
+/* ===== 查看弹窗: HTML 文书渲染 ===== */
+.ndoc-content-html { white-space: normal; }
+.ndoc-content-html table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ndoc-content-html table th, .ndoc-content-html table td { border: 1px solid #c8ccd4; padding: 5px 8px; text-align: left; vertical-align: top; }
+.ndoc-content-html table th { background: #f5f7fa; font-weight: 600; }
+
+/* ===== 模板选择面板 ===== */
+.tpl-pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.tpl-pick-item { border: 1px solid #e4e7ed; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color .15s, box-shadow .15s; background: #fff; }
+.tpl-pick-item:hover { border-color: var(--primary); box-shadow: 0 1px 6px rgba(20, 154, 154, 0.2); }
+.tpl-pick-name { font-size: 14px; font-weight: 600; color: #303133; }
+.tpl-pick-desc { font-size: 12px; color: #909399; margin-top: 4px; }
+@media (max-width: 768px) { .tpl-pick-grid { grid-template-columns: 1fr; } }

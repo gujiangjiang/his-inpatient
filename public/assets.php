@@ -24,6 +24,7 @@ class Asset {
         '/css/admin/admin.css',
         '/css/clinic/clinic.css',
         '/css/nurse/nurse.css',
+        '/css/nurse/nursing_doc.css',
     ];
 
     /** 脚本 (按顺序加载: 公共单例 → 图标桥 → 组件 → 登录; 无第三方库, 全部自研) */
@@ -57,6 +58,7 @@ class Asset {
         '/js/nurse/print/nurse_print.js',
         '/js/nurse/print/medication_label.js',
         '/js/nurse/print/temperature_chart.js',
+        '/js/nurse/nursing_doc_templates.js',
         '/js/emr_editor/doc/emr_doc_model.js',
         '/js/emr_editor/emr_nursing_link.js',
         '/js/emr_editor/doc/emr_doc_calc.js',
