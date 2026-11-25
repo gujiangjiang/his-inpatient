@@ -323,9 +323,7 @@ var NurseBedPanel = {
                 <p class="fs-12 text-muted" style="margin-top:8px">默认勾选未打印的医嘱；已打印的可手动勾选补打。打印后自动记录留痕。</p>
             </div>`;
             const overlay = Dom.modal('执行单打印 - ' + Format.escape(p.patient_name || ''), content, [
-                { text: '全部勾选', type: 'default', onclick: function () {
-                    document.querySelectorAll('.nbp-exec-check').forEach(c => c.checked = true);
-                } },
+                Dom.checkAllButton('.nbp-exec-check'),
                 { text: '一键打印执行单', type: 'primary', onclick: async function () {
                     const ids = [...document.querySelectorAll('.nbp-exec-check:checked')].map(c => Number(c.value));
                     if (!ids.length) { Dom.toast('请勾选要打印的医嘱', 'error'); return; }
@@ -650,9 +648,7 @@ var NurseBedPanel = {
                 <p class="fs-12 text-muted" style="margin-top:8px">默认勾选未打印的检验单；已打印的可手动勾选补打。打印后自动记录留痕。</p>
             </div>`;
             const overlay = Dom.modal('检验条码打印 - ' + Format.escape(p.patient_name || ''), content, [
-                { text: '全部勾选', type: 'default', onclick: function () {
-                    document.querySelectorAll('.nbp-lab-check').forEach(c => c.checked = true);
-                } },
+                Dom.checkAllButton('.nbp-lab-check'),
                 { text: '一键打印条码', type: 'primary', onclick: async function () {
                     const ids = [...document.querySelectorAll('.nbp-lab-check:checked')].map(c => Number(c.value));
                     if (!ids.length) { Dom.toast('请勾选要打印的检验单', 'error'); return; }
@@ -900,6 +896,7 @@ var NurseBedPanel = {
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/nursing-notes?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
+            this._notesCache = rows;   /* 编辑预填数据源 */
             const e = box.querySelector('.empty-state');
             if (!rows.length) { if (e) e.textContent = '暂无护理记录'; return; }
             if (e) e.outerHTML = '';
@@ -910,6 +907,7 @@ var NurseBedPanel = {
                 <span class="nnote-content">${Format.escape(x.note || x.content || '')}
                     <div class="nnote-meta">${NurseBedPanel.noteMeta(x)}记录人：${Format.escape(x.recorder_name || '')}</div>
                 </span>
+                <button type="button" class="nnote-edit" title="编辑" onclick="NurseBedPanel.noteForm(${x.id})">编辑</button>
                 <button type="button" class="nnote-del" title="删除" onclick="NurseBedPanel.noteDel(${x.id})">×</button>
             </div>`).join('');
             box.insertAdjacentHTML('beforeend', '<div class="nnote-list">' + html + '</div>');
@@ -952,73 +950,137 @@ var NurseBedPanel = {
     noteAdd() { this.noteForm(null); },
     noteForm(id) {
         const pid = this.patient.id;
-        const content = `<form id="note-form" class="nnote-form">
-            <div class="form-group"><label class="form-label">记录时间 <span class="text-danger">*</span></label>
-                <input type="text" name="record_time" class="form-control" data-dtpicker="datetime" value="${Format.nowStamp()}"></div>
-            <div class="form-group"><label class="form-label">类别</label>
-                <select name="category" class="form-control">
-                    <option value="observation">病情观察</option><option value="measure">测量</option>
-                    <option value="care">护理措施</option><option value="medication">给药</option>
-                    <option value="transfer">转科</option><option value="other">其他</option>
-                </select></div>
-            <div class="form-group"><label class="form-label">体温(℃)</label><input name="temperature" class="form-control"></div>
-            <div class="form-group"><label class="form-label">体温途径</label>
-                <select name="temp_type" class="form-control">
-                    <option value="axillary">腋表</option><option value="oral">口表</option>
-                    <option value="rectal">肛表</option><option value="ear">耳表</option>
-                </select></div>
-            <div class="form-group"><label class="form-label">降温后复测(℃)</label><input name="cooling_temp" class="form-control" placeholder="降温半小时后复测"></div>
-            <div class="form-group"><label class="form-label">脉搏(次/分)</label><input name="pulse" class="form-control"></div>
-            <div class="form-group"><label class="form-label">心率(次/分)</label><input name="heart_rate" class="form-control" placeholder="并存且更快时绘短绌"></div>
-            <div class="form-group"><label class="form-label">呼吸(次/分)</label><input name="respiratory_rate" class="form-control"></div>
-            <div class="form-group"><label class="form-label">疼痛评分(0-10)</label><input name="pain_score" type="number" min="0" max="10" class="form-control"></div>
-            <div class="form-group"><label class="form-label">呼吸机</label>
-                <select name="ventilator" class="form-control"><option value="">未使用</option><option value="1">使用中</option></select></div>
-            <div class="form-group"><label class="form-label">起搏器</label>
-                <select name="pacemaker" class="form-control"><option value="">无</option><option value="1">有</option></select></div>
-            <div class="form-group"><label class="form-label">血压</label><span class="bp-pair"><input name="bp_systolic" class="form-control" placeholder="收缩压" style="width:60%"><span class="fs-12 text-muted">/</span><input name="bp_diastolic" class="form-control" placeholder="舒张压" style="width:35%"></span></div>
-            <div class="form-group"><label class="form-label">血氧(%)</label><input name="oxygen_saturation" class="form-control"></div>
-            <div class="form-group"><label class="form-label">入量(ml)</label><input name="intake_ml" class="form-control"></div>
-            <div class="form-group"><label class="form-label">出量(ml)</label><input name="output_ml" class="form-control"></div>
-            <div class="form-group"><label class="form-label">小便量(ml)</label><input name="urine_ml" class="form-control"></div>
-            <div class="form-group"><label class="form-label">大便次数</label><input name="stool" class="form-control" placeholder="如 0/E·3/2E·※·☆"></div>
-            <div class="form-group"><label class="form-label">意识情况</label>
-                <select name="consciousness" class="form-control"><option value="">选填</option><option>清醒</option><option>嗜睡</option><option>昏睡</option><option>昏迷</option><option>模糊</option></select></div>
-            <div class="form-group"><label class="form-label">管路</label>
-                <select name="has_pipeline" class="form-control"><option value="">无</option><option>胃管</option><option>尿管</option><option>深静脉</option><option>引流管</option><option>其他</option></select></div>
-            <div class="form-group"><label class="form-label">管路描述</label><input name="pipeline_desc" class="form-control" placeholder="如: 胃管留置中"></div>
-            <div class="form-group"><label class="form-label">引流量(ml)</label><input name="drainage_ml" class="form-control"></div>
-            <div class="form-group"><label class="form-label">血糖(mmol/L)</label><input name="blood_glucose" class="form-control"></div>
-            <div class="form-group"><label class="form-label">瞳孔情况</label><input name="pupil" class="form-control" placeholder="如: 等大等圆 对光反射灵敏"></div>
-            <div class="form-group"><label class="form-label">皮试结果</label>
-                <select name="skin_test" class="form-control"><option value="">未做</option><option>阴性</option><option>阳性</option></select></div>
-            <div class="form-group"><label class="form-label">过敏药物</label><input name="allergy_drugs" class="form-control" placeholder="如: 青霉素"></div>
-            <div class="form-group"><label class="form-label">特殊药物</label><input name="special_drugs" class="form-control" placeholder="如: 12/30接种100"></div>
-            <div class="form-group"><label class="form-label">GCS 睁眼</label><select name="gcs_eye" class="form-control"><option value="">-</option><option value="4">4 自发</option><option value="3">3 呼唤</option><option value="2">2 疼痛</option><option value="1">1 无</option></select></div>
-            <div class="form-group"><label class="form-label">GCS 语言</label><select name="gcs_verbal" class="form-control"><option value="">-</option><option value="5">5 正常</option><option value="4">4 混乱</option><option value="3">3 词语</option><option value="2">2 声音</option><option value="1">1 无</option></select></div>
-            <div class="form-group"><label class="form-label">GCS 运动</label><select name="gcs_motor" class="form-control"><option value="">-</option><option value="6">6 遵嘱</option><option value="5">5 定位</option><option value="4">4 回缩</option><option value="3">3 屈曲</option><option value="2">2 过伸</option><option value="1">1 无</option></select></div>
-            <div class="form-group colspan-2"><label class="form-label">其他备注</label><input name="other_remark" class="form-control" placeholder="选填"></div>
-            <div class="form-group colspan-2"><label class="form-label">护理记录 <span class="text-danger">*</span></label>
-                <textarea name="note" class="form-control" rows="3" required></textarea></div>
-            <input type="hidden" name="patient_id" value="${pid}">
-            ${id ? '<input type="hidden" name="id" value="' + id + '">' : ''}
-        </form>`;
-        const overlay = Dom.modal('护理记录单', content, [
-            { text: '保存', type: 'primary', onclick: async function () {
-                const form = document.getElementById('note-form');
-                const data = {};
-                new FormData(form).forEach((v, k) => data[k] = v);
-                if (!data.note.trim()) { Dom.toast('请输入护理记录内容', 'error'); return; }
-                try {
-                    await AjaxLoader.api('nurse/nursing-notes', { method: 'POST', data: Object.assign(data, { action: 'save' }) });
-                    Dom.toast('已保存', 'success');
-                    overlay.remove();
-                    NurseBedPanel.refresh();
-                } catch (e) { /* 已提示 */ }
-            } },
-            { text: '取消', type: 'default' }
-        ]);
-        if (window.DateTimePicker) DateTimePicker.initInputs(overlay);
+        const open = (row) => {
+            const v = (k) => (row && row[k] != null && row[k] !== '') ? String(row[k]) : '';
+            const sel = (k, cur) => (v(k) === String(cur) ? ' selected' : '');
+            const isFirst = !!(row && (row.is_first == 1 || row.category === 'first'));
+            const pipeVal = v('has_pipeline');
+            const pipeExtra = (pipeVal && ['胃管', '尿管', '深静脉', '引流管', '其他'].indexOf(pipeVal) < 0)
+                ? `<option selected>${Format.escape(pipeVal)}</option>` : '';
+            const fg = (label, field) => `<div class="nn-fg"><label class="form-label">${label}</label>${field}</div>`;
+            const pane = (key, inner) => `<div class="nn-pane${key === 'base' ? '' : ' hidden'}" data-nn-pane="${key}">${inner}</div>`;
+            const content = `<form id="note-form" class="nn-form">
+                <div class="nn-subtabs">
+                    <button type="button" class="nn-subtab active" data-nn-tab="base" onclick="NurseBedPanel.nnSwitch('base')">常规</button>
+                    <button type="button" class="nn-subtab" data-nn-tab="vitals" onclick="NurseBedPanel.nnSwitch('vitals')">生命体征</button>
+                    <button type="button" class="nn-subtab" data-nn-tab="neuro" onclick="NurseBedPanel.nnSwitch('neuro')">意识·神经</button>
+                    <button type="button" class="nn-subtab" data-nn-tab="io" onclick="NurseBedPanel.nnSwitch('io')">管路·出入量</button>
+                    <button type="button" class="nn-subtab" data-nn-tab="med" onclick="NurseBedPanel.nnSwitch('med')">用药·皮试</button>
+                </div>
+                ${pane('base', `
+                    <div class="nn-grid">
+                        ${fg('记录时间 <span class="text-danger">*</span>', `<input name="record_time" class="form-control" data-dtpicker="datetime" value="${Format.escape((v('record_time') || Format.nowStamp()).slice(0, 16))}">`)}
+                        ${fg('类别', `<select name="category" class="form-control">
+                            ${isFirst ? '<option value="first" selected>首次</option>' : ''}
+                            <option value="observation"${sel('category', 'observation')}>病情观察</option><option value="measure"${sel('category', 'measure')}>测量</option>
+                            <option value="care"${sel('category', 'care')}>护理措施</option><option value="medication"${sel('category', 'medication')}>给药</option>
+                            <option value="transfer"${sel('category', 'transfer')}>转科</option><option value="other"${sel('category', 'other')}>其他</option>
+                        </select>`)}
+                        ${fg('其他备注', `<input name="other_remark" class="form-control" placeholder="选填" value="${Format.escape(v('other_remark'))}">`)}
+                    </div>
+                    <div class="nn-fg nn-block"><label class="form-label">护理记录 <span class="text-danger">*</span></label>
+                        <textarea name="note" class="form-control" rows="4" required>${Format.escape(v('note') || v('content'))}</textarea></div>
+                    ${isFirst ? '<input type="hidden" name="is_first" value="1">' : ''}
+                `)}
+                ${pane('vitals', `<div class="nn-grid">
+                    ${fg('体温(℃)', `<input name="temperature" class="form-control" inputmode="decimal" value="${Format.escape(v('temperature'))}">`)}
+                    ${fg('体温途径', `<select name="temp_type" class="form-control">
+                        <option value="axillary"${sel('temp_type', 'axillary')}>腋表</option><option value="oral"${sel('temp_type', 'oral')}>口表</option>
+                        <option value="rectal"${sel('temp_type', 'rectal')}>肛表</option><option value="ear"${sel('temp_type', 'ear')}>耳表</option>
+                    </select>`)}
+                    ${fg('降温后复测(℃)', `<input name="cooling_temp" class="form-control" inputmode="decimal" placeholder="半小时后" value="${Format.escape(v('cooling_temp'))}">`)}
+                    ${fg('脉搏(次/分)', `<input name="pulse" class="form-control" inputmode="numeric" value="${Format.escape(v('pulse'))}">`)}
+                    ${fg('心率(次/分)', `<input name="heart_rate" class="form-control" inputmode="numeric" placeholder="更快时绘短绌" value="${Format.escape(v('heart_rate'))}">`)}
+                    ${fg('呼吸(次/分)', `<input name="respiratory_rate" class="form-control" inputmode="numeric" value="${Format.escape(v('respiratory_rate'))}">`)}
+                    ${fg('血压(mmHg)', `<span class="bp-pair"><input name="bp_systolic" class="form-control" inputmode="numeric" placeholder="收缩压" value="${Format.escape(v('bp_systolic'))}"><span class="fs-12 text-muted">/</span><input name="bp_diastolic" class="form-control" inputmode="numeric" placeholder="舒张压" value="${Format.escape(v('bp_diastolic'))}"></span>`)}
+                    ${fg('血氧(%)', `<input name="oxygen_saturation" class="form-control" inputmode="decimal" value="${Format.escape(v('oxygen_saturation'))}">`)}
+                    ${fg('疼痛评分(0-10)', `<input name="pain_score" type="number" min="0" max="10" class="form-control" value="${Format.escape(v('pain_score'))}">`)}
+                </div>`)}
+                ${pane('neuro', `<div class="nn-grid">
+                    ${fg('意识情况', `<select name="consciousness" class="form-control">
+                        <option value="">选填</option>
+                        <option${sel('consciousness', '清醒')}>清醒</option><option${sel('consciousness', '嗜睡')}>嗜睡</option>
+                        <option${sel('consciousness', '昏睡')}>昏睡</option><option${sel('consciousness', '昏迷')}>昏迷</option>
+                        <option${sel('consciousness', '模糊')}>模糊</option>
+                    </select>`)}
+                    ${fg('瞳孔情况', `<input name="pupil" class="form-control" placeholder="如: 等大等圆 对光反射灵敏" value="${Format.escape(v('pupil'))}">`)}
+                    ${fg('GCS 睁眼', `<select name="gcs_eye" class="form-control">
+                        <option value="">-</option>
+                        <option value="4"${sel('gcs_eye', 4)}>4 自发</option><option value="3"${sel('gcs_eye', 3)}>3 呼唤</option>
+                        <option value="2"${sel('gcs_eye', 2)}>2 疼痛</option><option value="1"${sel('gcs_eye', 1)}>1 无</option>
+                    </select>`)}
+                    ${fg('GCS 语言', `<select name="gcs_verbal" class="form-control">
+                        <option value="">-</option>
+                        <option value="5"${sel('gcs_verbal', 5)}>5 正常</option><option value="4"${sel('gcs_verbal', 4)}>4 混乱</option>
+                        <option value="3"${sel('gcs_verbal', 3)}>3 词语</option><option value="2"${sel('gcs_verbal', 2)}>2 声音</option>
+                        <option value="1"${sel('gcs_verbal', 1)}>1 无</option>
+                    </select>`)}
+                    ${fg('GCS 运动', `<select name="gcs_motor" class="form-control">
+                        <option value="">-</option>
+                        <option value="6"${sel('gcs_motor', 6)}>6 遵嘱</option><option value="5"${sel('gcs_motor', 5)}>5 定位</option>
+                        <option value="4"${sel('gcs_motor', 4)}>4 回缩</option><option value="3"${sel('gcs_motor', 3)}>3 屈曲</option>
+                        <option value="2"${sel('gcs_motor', 2)}>2 过伸</option><option value="1"${sel('gcs_motor', 1)}>1 无</option>
+                    </select>`)}
+                </div>`)}
+                ${pane('io', `<div class="nn-grid">
+                    ${fg('管路', `<select name="has_pipeline" class="form-control">
+                        <option value="">无</option>
+                        ${pipeExtra}
+                        <option${sel('has_pipeline', '胃管')}>胃管</option><option${sel('has_pipeline', '尿管')}>尿管</option>
+                        <option${sel('has_pipeline', '深静脉')}>深静脉</option><option${sel('has_pipeline', '引流管')}>引流管</option>
+                        <option${sel('has_pipeline', '其他')}>其他</option>
+                    </select>`)}
+                    ${fg('管路描述', `<input name="pipeline_desc" class="form-control" placeholder="如: 胃管留置中" value="${Format.escape(v('pipeline_desc'))}">`)}
+                    ${fg('引流量(ml)', `<input name="drainage_ml" class="form-control" inputmode="decimal" value="${Format.escape(v('drainage_ml'))}">`)}
+                    ${fg('入量(ml)', `<input name="intake_ml" class="form-control" inputmode="decimal" value="${Format.escape(v('intake_ml'))}">`)}
+                    ${fg('出量(ml)', `<input name="output_ml" class="form-control" inputmode="decimal" value="${Format.escape(v('output_ml'))}">`)}
+                    ${fg('小便量(ml)', `<input name="urine_ml" class="form-control" inputmode="decimal" value="${Format.escape(v('urine_ml'))}">`)}
+                    ${fg('大便次数', `<input name="stool" class="form-control" placeholder="如 0/E·3/2E·※·☆" value="${Format.escape(v('stool'))}">`)}
+                </div>`)}
+                ${pane('med', `<div class="nn-grid">
+                    ${fg('皮试结果', `<select name="skin_test" class="form-control">
+                        <option value="">未做</option>
+                        <option${sel('skin_test', '阴性')}>阴性</option><option${sel('skin_test', '阳性')}>阳性</option>
+                    </select>`)}
+                    ${fg('过敏药物', `<input name="allergy_drugs" class="form-control" placeholder="如: 青霉素" value="${Format.escape(v('allergy_drugs'))}">`)}
+                    ${fg('特殊药物', `<input name="special_drugs" class="form-control" placeholder="如: 12/30接种100" value="${Format.escape(v('special_drugs'))}">`)}
+                </div>`)}
+                <input type="hidden" name="patient_id" value="${pid}">
+                ${id ? '<input type="hidden" name="id" value="' + id + '">' : ''}
+            </form>`;
+            const overlay = Dom.modal(row ? '编辑护理记录' : '护理记录单', content, [
+                { text: '保存', type: 'primary', onclick: async function () {
+                    const form = document.getElementById('note-form');
+                    const data = {};
+                    new FormData(form).forEach((v2, k) => data[k] = v2);
+                    if (!data.note.trim()) { Dom.toast('请输入护理记录内容', 'error'); return; }
+                    try {
+                        await AjaxLoader.api('nurse/nursing-notes', { method: 'POST', data: Object.assign(data, { action: 'save' }) });
+                        Dom.toast('已保存', 'success');
+                        overlay.remove();
+                        NurseBedPanel.refresh();
+                    } catch (e) { /* 已提示 */ }
+                } },
+                { text: '取消', type: 'default' }
+            ], { large: true });
+            if (window.DateTimePicker) DateTimePicker.initInputs(overlay);
+        };
+        if (id) {
+            const cached = (this._notesCache || []).find(x => Number(x.id) === Number(id));
+            if (cached) open(cached);
+            else AjaxLoader.api('nurse/nursing-notes?action=list&patient_id=' + pid, { silent: true }).then(r => {
+                this._notesCache = r.data || [];
+                open((this._notesCache || []).find(x => Number(x.id) === Number(id)));
+            }).catch(() => {});
+        } else open(null);
+    },
+
+    /* 护理记录表单子 tab 切换 (单页内轻量切换, 不重建表单保留已填内容) */
+    nnSwitch(key) {
+        const form = document.getElementById('note-form');
+        if (!form) return;
+        form.querySelectorAll('[data-nn-tab]').forEach(t => t.classList.toggle('active', t.dataset.nnTab === key));
+        form.querySelectorAll('[data-nn-pane]').forEach(p => p.classList.toggle('hidden', p.dataset.nnPane !== key));
     },
 
     async noteDel(id) {

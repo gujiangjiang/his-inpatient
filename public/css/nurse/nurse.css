@@ -176,6 +176,23 @@
 .nnote-meta { color: #a8abb2; font-size: 11px; margin-top: 3px; }
 .nnote-row .nnote-del { color: #c0c4cc; cursor: pointer; align-self: flex-start; border: none; background: none; }
 .nnote-row .nnote-del:hover { color: #f56c6c; }
+.nnote-row .nnote-edit { color: var(--primary); cursor: pointer; align-self: flex-start; border: none; background: none; font-size: 12px; flex-shrink: 0; }
+.nnote-row .nnote-edit:hover { text-decoration: underline; }
+
+/* 护理记录表单: 子 tab 分类 + 紧凑栅格 (纯数字输入框不再横跨整行) */
+.nn-form .nn-subtabs { display: flex; flex-wrap: nowrap; gap: 2px; border-bottom: 1px solid #e4e7ed; margin-bottom: 12px; overflow-x: auto; scrollbar-width: thin; }
+.nn-form .nn-subtabs::-webkit-scrollbar { height: 4px; }
+.nn-form .nn-subtab { flex: 0 0 auto; white-space: nowrap; padding: 6px 14px; border: none; background: transparent; font-size: 13px; color: #606266; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.nn-form .nn-subtab:hover { color: var(--primary); }
+.nn-form .nn-subtab.active { color: var(--primary); font-weight: 600; border-bottom-color: var(--primary); }
+.nn-pane.hidden { display: none; }
+.nn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 12px; }
+.nn-fg { margin-bottom: 9px; min-width: 0; }
+.nn-fg .form-label { margin-bottom: 3px; font-size: 12px; }
+.nn-fg .form-control { padding: 5px 8px; font-size: 13px; }
+.nn-fg .bp-pair { display: flex; align-items: center; gap: 4px; }
+.nn-fg .bp-pair .form-control { width: auto; flex: 1; min-width: 0; }
+.nn-form textarea.form-control { resize: vertical; }
 
 /* ===== 常规护理文书 ===== */
 .ndoc-list { max-height: 42vh; overflow-y: auto; }
@@ -198,4 +215,5 @@
     .nurse-ward-tab { flex-shrink: 0; }
     .nnote-form { grid-template-columns: 1fr; }
     .nnote-form .colspan-2 { grid-column: span 1; }
+    .nn-grid { grid-template-columns: 1fr 1fr; }
 }
