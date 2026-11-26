@@ -58,6 +58,8 @@
     '.tpl-ctl-radio, .tpl-ctl-chk { display: inline-flex; align-items: center; gap: 3px; margin-right: 6px; font-size: 10pt; white-space: nowrap; }',
     '.tpl-ctl input { accent-color: #333; vertical-align: middle; }',
     '.tpl-ctl-sel, .tpl-ctl-dt { border: 1px solid #555; background: #fff; font-size: 10pt; padding: 1px 4px; border-radius: 2px; box-sizing: border-box; max-width: 100%; width: 100%; height: 24px; font-family: inherit; color: #111; }',
+    '.tpl-main .tpl-cell .tpl-write { height: 100%; box-sizing: border-box; align-self: stretch; border: none; padding: 2px 0; font-size: 10pt; line-height: 1.7; min-width: 0; white-space: pre-wrap; }',
+    '.tpl-main .tpl-cell .tpl-write:empty::before { content: attr(data-placeholder); color: #a8abb2; }',
     '.tpl-label { background: #f7f9fb; text-align: center; font-weight: 600; white-space: normal; line-height: 1.3; }',
     '.tpl-hdr { background: #eef2f6 !important; font-weight: 600; letter-spacing: 2px; }',
     '.tpl-label { flex-shrink: 0; }',
@@ -278,8 +280,8 @@
     const body = layout([
       { h: 28, cells: [TD('<b>文书记录</b>', '', 'tpl-hdr')] },
       { h: 44, cells: [LBLR('标题/主题'), CTRL(CTL('文书主题', '100%'))] },
-      { h: null, cells: [LBLR('正文内容'), CTRL(TA(6))] },
-      { h: null, cells: [LBLR('续页记录'), CTRL('')] },
+      { h: null, cells: [LBLR('正文内容'), CTRL('<div class="tpl-write" data-placeholder="在此书写正文内容"></div>')] },
+      { h: null, cells: [LBLR('续页记录'), CTRL('<div class="tpl-write" data-placeholder="续页书写区"></div>')] },
       SIGR([['记录护士', SELN()], ['记录时间', DT()], ['护士长审核', SELN()]])
     ]);
     return page('通用护理文书', p, body);

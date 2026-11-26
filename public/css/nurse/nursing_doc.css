@@ -45,6 +45,9 @@
 .tpl-main .tpl-ctl-sel, .tpl-main .tpl-ctl-dt { border: 1px solid #8a919c; background: #fff; font-size: 10pt; padding: 1px 4px; border-radius: 2px; box-sizing: border-box; max-width: 100%; width: 100%; height: 24px; font-family: inherit; color: #111; }
 .tpl-main .tpl-ctl-dt[readonly] { background: #fff; color: #111; cursor: pointer; }
 .tpl-main .tpl-ctl-sel option { color: #111; }
+/* 大书写区: 占满整格 (通用文书正文/续页等) — 单元格行高固定, height:100% 撑满 */
+.tpl-main .tpl-cell .tpl-write { height: 100%; box-sizing: border-box; align-self: stretch; border: none; outline: none; padding: 2px 0; font-size: 10pt; line-height: 1.7; min-width: 0; white-space: pre-wrap; overflow-y: auto; }
+.tpl-main .tpl-cell .tpl-write:empty::before { content: attr(data-placeholder); color: #a8abb2; }
 .tpl-editor-scroll textarea.tpl-ctl { resize: none; }
 
 /* ===== 查看弹窗: HTML 文书渲染 ===== */
