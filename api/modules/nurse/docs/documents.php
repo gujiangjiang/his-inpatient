@@ -18,6 +18,27 @@ if ($action === 'list') {
     Response::success($rows);
 }
 
+/* 批量打印留痕: print_count 累加 + printed_at, 返回 id → 最新次数映射 (弹窗即时刷新显示) */
+if ($action === 'mark_printed') {
+    Auth::requireRole(['admin', 'nurse']);
+    $ids = Validator::get('ids');
+    if (!$ids || !is_array($ids)) Response::error('请选择文书');
+    $ids = array_values(array_unique(array_map('intval', $ids)));
+    if (!$ids) Response::error('请选择文书');
+    $ph = implode(',', array_fill(0, count($ids), '?'));
+    $rows = DB::select("SELECT id, patient_id FROM nursing_docs WHERE id IN ($ph)", $ids);
+    foreach ($rows as $row) {
+        if (!can_access_patient($user, (int)$row['patient_id'])) Response::error('无权操作该患者', 403);
+    }
+    DB::execute("UPDATE nursing_docs SET print_count = print_count + 1, printed_at = ? WHERE id IN ($ph)",
+        array_merge([DateHelper::now()], $ids));
+    $counts = [];
+    foreach (DB::select("SELECT id, print_count FROM nursing_docs WHERE id IN ($ph)", $ids) as $c) {
+        $counts[(int)$c['id']] = (int)$c['print_count'];
+    }
+    Response::success(['counts' => $counts], '打印已记录');
+}
+
 if ($action === 'save' || $action === 'delete') {
     Auth::requireRole(['admin', 'nurse']);
 }

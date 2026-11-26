@@ -133,7 +133,7 @@ var DoctorNursing = {
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + p.id, { silent: true }).then(r => {
             const rows = r.data || [];
             if (!rows.length) { box.innerHTML = '<div class="empty-state">暂无护理文书</div>'; return; }
-            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他' };
+            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他文书', generic: '其他文书' };
             box.innerHTML = rows.map(x => `<div class="ndoc-item">
                 <span class="ndoc-type-tag">${Format.escape(TYPE[x.doc_type] || x.doc_type)}</span>
                 <span class="ndoc-title" title="${Format.escape(x.content)}">${Format.escape(x.title)}</span>
@@ -192,7 +192,7 @@ var DoctorNursing = {
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + p.id, { silent: true }).then(r => {
             const d = (r.data || []).find(x => Number(x.id) === Number(id));
             if (!d) return;
-            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
+            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他文书', generic: '其他文书' };
             const content = d.content || '';
             /* 新文书内容为模板 HTML: 原样渲染 (表格样式内联, 不依赖全局 CSS);
                HTML 判定以标签开头为准 (含 textarea 的模板文书也是 HTML) */

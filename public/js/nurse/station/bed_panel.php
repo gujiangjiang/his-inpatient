@@ -1094,7 +1094,8 @@ var NurseBedPanel = {
     /* ================= 常规护理文书 ================= */
     loadDocs(box) {
         const pid = this.patient.id;
-        this.setBottomBar(`<button class="btn btn-primary" onclick="NurseBedPanel.docAdd()">新建文书</button>`);
+        this.setBottomBar(`<button class="btn btn-primary" onclick="NurseBedPanel.docAdd()">新建文书</button>
+            <button class="btn" onclick="NurseBedPanel.docBatchPrint()">批量打印</button>`);
         box.innerHTML = '<div class="empty-state">加载中…</div>';
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + pid, { silent: true }).then(r => {
             const rows = r.data || [];
@@ -1102,7 +1103,7 @@ var NurseBedPanel = {
             const e = box.querySelector('.empty-state');
             if (!rows.length) { if (e) e.textContent = '暂无护理文书'; return; }
             if (e) e.outerHTML = '';
-            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
+            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他文书', generic: '其他文书' };
             const html = rows.map(x => `<div class="ndoc-item">
                 <span class="ndoc-type-tag">${Format.escape(TYPE[x.doc_type] || x.doc_type)}</span>
                 <span class="ndoc-title" title="${Format.escape(x.content)}">${Format.escape(x.title)}</span>
@@ -1183,6 +1184,10 @@ var NurseBedPanel = {
                     if (i.value) i.setAttribute('value', i.value); else i.removeAttribute('value');
                 });
                 bodyEl.querySelectorAll('textarea').forEach(t => { t.textContent = t.value; });
+                /* 下拉选中态归一化为 selected attribute (innerHTML 序列化保留) */
+                bodyEl.querySelectorAll('select').forEach(s => {
+                    Array.from(s.options).forEach(o => { if (o.selected) o.setAttribute('selected', 'selected'); else o.removeAttribute('selected'); });
+                });
                 try {
                     await AjaxLoader.api('nurse/nursing-docs', { method: 'POST', data: {
                         action: 'save', patient_id: self.patient.id, doc_type: key,
@@ -1216,6 +1221,39 @@ var NurseBedPanel = {
         setTimeout(fitTpl, 300);
         window.addEventListener('resize', fitTpl);
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTpl).catch(() => {});
+        /* 联动数据: 病区/护士下拉选项 + 日期时间选择器。
+           只填充空下拉 (无选项或仅占位项), 已保存文书保留原选项快照。 */
+        (async function () {
+            const bodyEl = document.getElementById('doc-editor-body');
+            if (!bodyEl) return;
+            const needWards = bodyEl.querySelector('select[data-src="wards"] option[value=""]:only-child, select[data-src="wards"]:empty');
+            const needNurses = bodyEl.querySelector('select[data-src="nurses"] option[value=""]:only-child, select[data-src="nurses"]:empty');
+            if (needWards || needNurses) {
+                if (!self._tplRefs) {
+                    try {
+                        const [wr, nr] = await Promise.all([
+                            AjaxLoader.api('admin/ward-list', { silent: true }),
+                            AjaxLoader.api('nurse/nurse-list?ward_id=' + (self.patient.ward_id || ''), { silent: true })
+                        ]);
+                        self._tplRefs = {
+                            wards: (wr.data || []).map(w => ({ v: (w.name || '').trim(), t: (w.name || '').trim() })).filter(x => x.v),
+                            nurses: (nr.data || []).map(n => ({ v: (n.name || '').trim(), t: (n.name || '').trim() })).filter(x => x.v)
+                        };
+                    } catch (e) { self._tplRefs = { wards: [], nurses: [] }; }
+                }
+                const fill = (sel, key) => {
+                    if (!sel || sel.options.length > 1) return;
+                    (self._tplRefs[key] || []).forEach(o => {
+                        const opt = document.createElement('option');
+                        opt.value = o.v; opt.textContent = o.t;
+                        sel.appendChild(opt);
+                    });
+                };
+                bodyEl.querySelectorAll('select[data-src="wards"]').forEach(s => fill(s, 'wards'));
+                bodyEl.querySelectorAll('select[data-src="nurses"]').forEach(s => fill(s, 'nurses'));
+            }
+            if (window.DateTimePicker) DateTimePicker.initInputs(bodyEl);
+        })();
     },
 
     /* 编辑器工具 (contenteditable) */
@@ -1252,7 +1290,7 @@ var NurseBedPanel = {
         AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + this.patient.id, { silent: true }).then(r => {
             const d = (r.data || []).find(x => Number(x.id) === Number(id));
             if (!d) return;
-            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
+            const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他文书', generic: '其他文书' };
             const content = d.content || '';
             const isHtml = /^\s*<[a-z]/i.test(content);
             Dom.modal(Format.escape(d.title || ''), `
@@ -1278,7 +1316,16 @@ var NurseBedPanel = {
             const body = '<div class="sheet">' + tpl.head
                 + (isHtml ? NursingDocTemplates.stripHead(content) : '<div style="white-space:pre-wrap;line-height:2">' + Format.escape(content) + '</div>')
                 + '</div>';
-            const ov = PrintPreview.openBody(d.title || tpl.title, body, { canPrint: true, pageNumbers: false, css: NursingDocTemplates.printCss });
+            const ov = PrintPreview.openBody(d.title || tpl.title, body, {
+                canPrint: true, pageNumbers: true, css: NursingDocTemplates.printCss,
+                /* 打印留痕: 单份打印同样累计次数 */
+                onPrint: async function () {
+                    try {
+                        await AjaxLoader.api('nurse/nursing-docs', { method: 'POST', data: { action: 'mark_printed', ids: [Number(d.id)] } });
+                    } catch (e) { /* 留痕失败不阻断打印 */ }
+                    return true;
+                }
+            });
             /* 预览 iframe 沙箱无脚本: 从父页面侧对加载完成的 sheet 做行高自适应,
                抬头实际高度浮动时仍恰好填满 A4; 尺寸变化由预览自身的 ResizeObserver 跟随。 */
             if (ov) {
@@ -1298,6 +1345,168 @@ var NurseBedPanel = {
                 }
             }
         }).catch(() => {});
+    },
+
+    /* 批量打印: 左右两栏选择器 (左=文书类别, 右=该类文书清单+复选框), 与电子病历批量打印同款。
+       默认勾选全部未打印文书; 同一类别共用一套页码 (第 i 页 / 共 n 页); 打印后累计次数即时刷新。 */
+    async docBatchPrint() {
+        const self = this;
+        if (!this.patient) { Dom.toast('请先选择患者', 'error'); return; }
+        let docs = [];
+        try {
+            const r = await AjaxLoader.api('nurse/nursing-docs?action=list&patient_id=' + this.patient.id, { silent: true });
+            docs = r.data || [];
+        } catch (e) { Dom.toast('文书加载失败', 'error'); return; }
+        const CATS = [
+            { key: 'all', name: '全部' },
+            { key: 'admission_assessment', name: '入院评估' },
+            { key: 'nursing_plan', name: '护理计划' },
+            { key: 'health_edu', name: '健康宣教' },
+            { key: 'transfer_record', name: '转运记录' },
+            { key: 'other', name: '其他文书' }
+        ];
+        const catOf = (d) => NursingDocTemplates.categoryOf(d.doc_type);
+        const catDocs = (key) => key === 'all' ? docs : docs.filter(d => catOf(d) === key);
+        const checked = new Set();
+        /* 默认勾选全部未打印 (print_count == 0) */
+        docs.forEach(d => { if (!Number(d.print_count || 0)) checked.add(Number(d.id)); });
+        let activeCat = 'all';
+
+        const content = '<div class="emr-tpm">'
+            + '<div class="emr-tpm-body">'
+            + '<div class="emr-tpm-cats" id="nbpx-cats"></div>'
+            + '<div class="emr-tpm-main" id="nbpx-main"></div>'
+            + '</div>'
+            + '<div class="emr-tpl-foot"><button type="button" class="btn btn-small" id="nbpx-checkall">全选 / 取消全选</button>'
+            + '<span class="emr-tb-spacer"></span>'
+            + '<span class="fs-12 text-muted" id="nbpx-count">已选 0 份</span>'
+            + '<button type="button" class="btn btn-small btn-primary" id="nbpx-print">打印</button></div>'
+            + '</div>';
+        const overlay = Dom.modal('护理文书批量打印 - ' + Format.escape(self.patient.patient_name || self.patient.name || ''), content, []);
+        overlay.querySelector('.modal').classList.add('modal-lg');
+        const catsEl = overlay.querySelector('#nbpx-cats');
+        const mainEl = overlay.querySelector('#nbpx-main');
+
+        function renderCats() {
+            catsEl.innerHTML = CATS.map(x => {
+                const n = catDocs(x.key).length;
+                return '<div class="emr-tpm-cat' + (x.key === activeCat ? ' active' : '') + '" data-cat="' + x.key + '">'
+                    + '<span class="emr-tpm-cat-name">' + Format.escape(x.name) + '</span>'
+                    + '<span class="emr-tpm-cat-count">' + n + '</span></div>';
+            }).join('');
+            catsEl.querySelectorAll('.emr-tpm-cat').forEach(el => {
+                el.addEventListener('click', () => { activeCat = el.dataset.cat; renderCats(); renderMain(); });
+            });
+        }
+
+        function renderMain() {
+            const list = catDocs(activeCat);
+            const catName = (CATS.find(c => c.key === activeCat) || {}).name || '';
+            const head = '<div class="emr-tpm-mhead"><span class="emr-tpm-mtitle">' + Format.escape(catName) + '</span>'
+                + '<span class="emr-tpm-mcount">' + list.length + ' 份文书</span>'
+                + '<span style="margin-left:auto;font-size:12px;color:#909399">未打印默认已勾选，可手动补选已打印文书</span></div>';
+            let bodyHtml;
+            if (!list.length) {
+                bodyHtml = '<div class="emr-tpl-empty">该分类暂无文书</div>';
+            } else {
+                bodyHtml = list.map(d => {
+                    const cnt = Number(d.print_count || 0);
+                    const cntTag = cnt
+                        ? '<span class="emr-bp-count" title="该文书累计打印次数">已打印 ' + cnt + ' 次</span>'
+                        : '<span class="emr-bp-count" style="color:#149a9a;background:#149a9a1a">未打印</span>';
+                    return '<label class="emr-tpm-row emr-bp-row" data-id="' + d.id + '">'
+                        + '<input type="checkbox" class="emr-bp-chk" value="' + d.id + '"' + (checked.has(Number(d.id)) ? ' checked' : '') + '>'
+                        + '<span class="emr-tpm-rname" title="' + Format.escape(d.title || '') + '">' + Format.escape(d.title || '未命名文书') + '</span>'
+                        + '<span class="emr-tpm-rdept">' + Format.escape(NursingDocTemplates.categoryName(d.doc_type)) + '</span>'
+                        + '<span class="emr-bp-meta">' + Format.escape((d.created_at || '').slice(0, 16)) + '</span>'
+                        + cntTag + '</label>';
+                }).join('');
+            }
+            mainEl.innerHTML = head + bodyHtml;
+            mainEl.querySelectorAll('.emr-bp-chk').forEach(chk => {
+                chk.addEventListener('change', function () {
+                    const id = Number(this.value);
+                    if (this.checked) checked.add(id); else checked.delete(id);
+                    updateCount();
+                });
+            });
+            updateCount();
+        }
+
+        function updateCount() {
+            const el = overlay.querySelector('#nbpx-count');
+            if (el) el.textContent = '已选 ' + checked.size + ' 份';
+        }
+
+        overlay.querySelector('#nbpx-checkall').addEventListener('click', function () {
+            const list = catDocs(activeCat);
+            const allChecked = list.length > 0 && list.every(d => checked.has(Number(d.id)));
+            list.forEach(d => { if (allChecked) checked.delete(Number(d.id)); else checked.add(Number(d.id)); });
+            renderMain();
+        });
+
+        overlay.querySelector('#nbpx-print').addEventListener('click', async function () {
+            const ids = Array.from(checked);
+            if (!ids.length) { Dom.toast('请勾选要打印的文书', 'error'); return; }
+            const btn = overlay.querySelector('#nbpx-print');
+            btn.disabled = true;
+            try {
+                /* 按类别归并 + 类别内按时间排序; 同一类别共用一套页码 */
+                const ORDER = ['admission_assessment', 'nursing_plan', 'health_edu', 'transfer_record', 'other'];
+                const sel = docs.filter(d => ids.includes(Number(d.id)))
+                    .sort((a, b) => ORDER.indexOf(catOf(a)) - ORDER.indexOf(catOf(b))
+                        || String(a.created_at || '').localeCompare(String(b.created_at || '')));
+                const groups = [];
+                sel.forEach(d => {
+                    const c = catOf(d);
+                    let g = groups.find(x => x.cat === c);
+                    if (!g) { g = { cat: c, items: [] }; groups.push(g); }
+                    g.items.push(d);
+                });
+                let html = '';
+                groups.forEach(g => {
+                    const n = g.items.length;
+                    g.items.forEach((d, i) => {
+                        const t = NursingDocTemplates.build(d.doc_type || 'generic', self.patient);
+                        const c = d.content || '';
+                        const isHtml = /^\s*<[a-z]/i.test(c);
+                        /* 剥离旧抬头与历史页码, 避免重复 */
+                        const inner = (isHtml ? NursingDocTemplates.stripHead(c) : '<div style="white-space:pre-wrap;line-height:2">' + Format.escape(c) + '</div>')
+                            .replace(/<div class="sheet-page-no">[\s\S]*?<\/div>/g, '');
+                        html += '<div class="sheet" data-doc-id="' + d.id + '">' + t.head + inner
+                            + '<div class="sheet-page-no">第 ' + (i + 1) + ' 页 / 共 ' + n + ' 页</div></div>';
+                    });
+                });
+                if (!html) { Dom.toast('未取到可打印文书', 'error'); return; }
+                const catNote = groups.length > 1 ? '（' + groups.length + ' 个类别分别编页）' : '';
+                PrintPreview.openBody('护理文书批量打印' + catNote, html, {
+                    canPrint: true, pageNumbers: false, css: NursingDocTemplates.printCss,
+                    onPrint: async function () {
+                        try {
+                            const r = await AjaxLoader.api('nurse/nursing-docs', { method: 'POST', data: { action: 'mark_printed', ids: ids } });
+                            const counts = (r.data || {}).counts || {};
+                            /* 本地同步 + 弹窗内计数即时刷新 */
+                            docs.forEach(d => { if (counts[Number(d.id)] != null) d.print_count = counts[Number(d.id)]; });
+                            Object.keys(counts).forEach(id => {
+                                const tag = overlay.querySelector('.emr-bp-row[data-id="' + id + '"] .emr-bp-count');
+                                if (tag && counts[id] > 0) {
+                                    tag.textContent = '已打印 ' + counts[id] + ' 次';
+                                    tag.style.color = ''; tag.style.background = '';
+                                }
+                            });
+                        } catch (e) { /* 留痕失败不阻断打印 */ }
+                        return true;
+                    }
+                });
+            } catch (e) {
+                Dom.toast('批量打印失败: ' + (e.message || '未知错误'), 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        renderCats();
+        renderMain();
     },
 
     async docDel(id) {

@@ -107,6 +107,7 @@ function getRoutes() {
         'nurse/temperature' => ['nurse/vitals/temperature.php', ['admin', 'nurse', 'doctor']],
         'nurse/nursing-notes' => ['nurse/docs/notes.php', ['admin', 'nurse', 'doctor']],
         'nurse/nursing-docs' => ['nurse/docs/documents.php', ['admin', 'nurse', 'doctor']],
+        'nurse/nurse-list' => ['nurse/docs/staff.php', ['admin', 'nurse', 'doctor']],
         'nurse/transfer-bed' => ['nurse/bed/transfer_bed.php', ['admin', 'nurse']],
         'nurse/leave-ward' => ['nurse/admission/leave_ward.php', ['admin', 'nurse']],
         'nurse/admit' => ['nurse/admission/admit.php', ['admin', 'nurse']],

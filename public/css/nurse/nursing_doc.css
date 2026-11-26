@@ -41,6 +41,10 @@
 .tpl-ctl-num { border: none; border-bottom: 1px solid #555; background: transparent; width: 60px; text-align: center; font-size: 10pt; }
 .tpl-ctl-radio, .tpl-ctl-chk { display: inline-flex; align-items: center; gap: 3px; margin-right: 6px; font-size: 10pt; white-space: nowrap; }
 .tpl-ctl input { accent-color: #0e7c86; vertical-align: middle; }
+/* 联动控件: 病区/护士下拉 + 日期时间选择输入 (只读, 由 DateTimePicker 填值) */
+.tpl-main .tpl-ctl-sel, .tpl-main .tpl-ctl-dt { border: 1px solid #8a919c; background: #fff; font-size: 10pt; padding: 1px 4px; border-radius: 2px; box-sizing: border-box; max-width: 100%; width: 100%; height: 24px; font-family: inherit; color: #111; }
+.tpl-main .tpl-ctl-dt[readonly] { background: #fff; color: #111; cursor: pointer; }
+.tpl-main .tpl-ctl-sel option { color: #111; }
 .tpl-editor-scroll textarea.tpl-ctl { resize: none; }
 
 /* ===== 查看弹窗: HTML 文书渲染 ===== */
