@@ -27,24 +27,38 @@ if ($action === 'prefill') {
     if (!can_access_patient($user, $patientId)) Response::error('无权访问该患者', 403);
     $out = ['chief_complaint' => '', 'present_illness' => '', 'past_history' => '', 'vital' => []];
 
-    /* EMR 入院记录: 取最早的入院类文书, 解析 doc_json 的 fx 槽位文本 (段落内 fx 标签后跟 txt) */
+    /* EMR 入院记录: 取最新的入院类文书 (有填写内容的优先), 解析 doc_json 的 fx 槽位文本 */
     $emr = DB::selectOne(
         "SELECT d.doc_json FROM emr_documents d
          LEFT JOIN emr_categories c ON d.category_id = c.id
          WHERE d.patient_id = ? AND d.doc_json IS NOT NULL AND d.doc_json != ''
            AND (d.title LIKE '%入院记录%' OR c.name LIKE '%入院记录%')
-         ORDER BY d.created_at ASC, d.id ASC LIMIT 1", [$patientId]);
+         ORDER BY d.created_at DESC, d.id DESC LIMIT 1", [$patientId]);
     $parseFx = function ($doc) {
         $map = [];
-        $lastKey = null;
-        $walk = function ($nodes) use (&$walk, &$map, &$lastKey) {
+        $walk = function ($nodes) use (&$walk, &$map) {
             if (!is_array($nodes)) return;
             foreach ($nodes as $n) {
                 if (!is_array($n)) continue;
                 if (isset($n['runs']) && is_array($n['runs'])) {
-                    foreach ($n['runs'] as $r) {
-                        if (isset($r['t']) && $r['t'] === 'fx') { $lastKey = isset($r['key']) ? $r['key'] : null; $map[$lastKey] = $map[$lastKey] ?? ''; }
-                        elseif (isset($r['t']) && $r['t'] === 'txt' && $lastKey) $map[$lastKey] .= $r['text'];
+                    foreach ($n['runs'] as $i => $r) {
+                        if (isset($r['t']) && $r['t'] === 'fx' && isset($r['key'])) {
+                            $key = $r['key'];
+                            $val = '';
+                            for ($j = $i + 1, $m = count($n['runs']); $j < $m; $j++) {
+                                $it = $n['runs'][$j];
+                                $jt = $it['t'] ?? '';
+                                /* 下一个 fx 标签即本字段结束; slot/dyn/ref 为占位/引用标签, 其后的 txt/text 仍属本字段 */
+                                if ($jt === 'fx') break;
+                                if ($jt === 'txt') { $val .= (string)($it['text'] ?? ''); continue; }
+                                if ($jt === 'text' && empty($it['del'])) {
+                                    $val .= (string)($it['text'] ?? '');
+                                    if (!empty($it['val'])) $val .= (string)($it['val']);
+                                }
+                            }
+                            $val = trim(preg_replace('/\s+/u', ' ', $val));
+                            if ($val !== '') $map[$key] = $val;
+                        }
                     }
                 } else { $walk($n); }
             }
