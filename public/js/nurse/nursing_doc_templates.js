@@ -219,6 +219,7 @@
         { h: 56, cells: [LBLR('体温(℃)'), CTRL(NUM(60, 'data-f="temperature"') + ' 途径 ' + RADIO('tp', [['ax', '腋'], ['oral', '口'], ['an', '肛'], ['ear', '耳']])), LBLR('脉搏(次/分)'), CTRL(NUM(60, 'data-f="pulse"'))] },
         { h: 44, cells: [LBLR('呼吸(次/分)'), CTRL(NUM(60, 'data-f="respiratory_rate"')), LBLR('血压(mmHg)'), CTRL(NUM(50, 'data-f="bp_systolic"') + '/' + NUM(50, 'data-f="bp_diastolic"'))] },
         { h: 44, cells: [LBLR('血氧(%)'), CTRL(NUM(60, 'data-f="oxygen_saturation"')), LBLR('疼痛评分'), CTRL(NUM(60, 'data-f="pain_score"'))] },
+        { h: 44, cells: [LBLR('身高(cm)'), CTRL(NUM(60, 'data-f="height"')), LBLR('体重(kg)'), CTRL(NUM(60, 'data-f="weight"'))] },
         { h: 28, cells: [TD('<b>三、身体状况评估</b>', '', 'tpl-hdr')] },
         { h: 44, cells: [LBLR('意识'), CTRL(RADIO('con', [['1', '清醒'], ['2', '嗜睡'], ['3', '昏睡'], ['4', '昏迷']])), LBLR('瞳孔'), CTRL(CTL('等大等圆 / 对光反射', '100%'))] },
         { h: 56, cells: [LBLR('皮肤'), CTRL(CHK('skin', [['1', '完整'], ['2', '破损'], ['3', '压疮'], ['4', '皮疹'], ['5', '水肿']])), LBLR('过敏史'), CTRL(CTL('药物/食物过敏史', '100%'))] },

@@ -1247,6 +1247,8 @@ var NurseBedPanel = {
                     setNum('bp_diastolic', vt.bp_diastolic);
                     setNum('oxygen_saturation', vt.oxygen_saturation);
                     setNum('pain_score', vt.pain_score);
+                    setNum('height', vt.height);
+                    setNum('weight', vt.weight);
                     setVal('input.tpl-ctl[placeholder="等大等圆 / 对光反射"]', vt.pupil);
                     if (vt.consciousness) {
                         const RADIOS = { 清醒: '1', 嗜睡: '2', 昏睡: '3', 昏迷: '4' };
