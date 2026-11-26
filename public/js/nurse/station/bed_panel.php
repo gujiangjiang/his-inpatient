@@ -1149,7 +1149,9 @@ var NurseBedPanel = {
         const self = this;
         const tpl = NursingDocTemplates.build(key, this.patient);
         const oldContent = existing && existing.content ? existing.content : '';
-        const isHtml = /<[a-z][\s\S]*>/i.test(oldContent) && !/<textarea/i.test(oldContent);
+        /* HTML 文书判定: 以标签开头即 HTML (含 textarea 的模板文书也是 HTML,
+           旧判断排除 textarea 会把新模板文书误当纯文本转义显示) */
+        const isHtml = /^\s*<[a-z]/i.test(oldContent);
         const bodyHtml = existing && isHtml ? NursingDocTemplates.stripHead(oldContent)
             : (existing ? '<div style="white-space:pre-wrap;line-height:2;min-height:600px">' + Format.escape(oldContent) + '</div>' : tpl.body);
         const overlay = Dom.modal((existing ? '编辑 - ' : '新建 - ') + tpl.title, `
@@ -1195,6 +1197,25 @@ var NurseBedPanel = {
             } },
             { text: '取消', type: 'default' }
         ], { large: true });
+        /* 行高运行时自适应: 抬头(医院名/患者栏)实测高度随环境字体与换行浮动,
+           硬编码预算会裁底或留缝; 渲染后微调补齐行, 使表体恰好填满 A4。
+           画布宽度自适应: A4 固定 794px 宽, 弹窗/屏幕窄时整页 CSS zoom 等比缩放,
+           布局占位同步缩小, 消除横向裁切与横向滚动条 (transform 不改布局占位, 故用 zoom)。 */
+        const fitTpl = function () {
+            const sh = document.getElementById('doc-editor');
+            if (!sh || !window.NursingDocTemplates) return;
+            sh.style.zoom = '';                       /* 先还原 100% 再测量, 保证 fitSheet 精度 */
+            NursingDocTemplates.fitSheet(sh);
+            const scroll = sh.closest('.tpl-editor-scroll');
+            if (!scroll) return;
+            const availW = scroll.clientWidth - 24;
+            const k = Math.min(1, availW / sh.offsetWidth);
+            sh.style.zoom = (k < 1 && k > 0) ? k.toFixed(4) : '';
+        };
+        requestAnimationFrame(fitTpl);
+        setTimeout(fitTpl, 300);
+        window.addEventListener('resize', fitTpl);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTpl).catch(() => {});
     },
 
     /* 编辑器工具 (contenteditable) */
@@ -1218,6 +1239,9 @@ var NurseBedPanel = {
             } else if (main.querySelectorAll('.tpl-row').length > 2) {
                 row.parentNode.removeChild(row);
             } else { Dom.toast('至少保留一行', 'info'); }
+            /* 行数变化后重新自适应, 保持表体恰好填满画布 */
+            const sh = document.getElementById('doc-editor');
+            if (sh && window.NursingDocTemplates) NursingDocTemplates.fitSheet(sh);
             return;
         }
         document.execCommand(cmd, false, null);
@@ -1230,7 +1254,7 @@ var NurseBedPanel = {
             if (!d) return;
             const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
             const content = d.content || '';
-            const isHtml = /<[a-z][\s\S]*>/i.test(content) && !/<textarea/i.test(content);
+            const isHtml = /^\s*<[a-z]/i.test(content);
             Dom.modal(Format.escape(d.title || ''), `
                 <div class="kv-grid mb-10">
                     <div class="kv-item"><b>类型</b><span>${Format.escape(TYPE[d.doc_type] || d.doc_type)}</span></div>
@@ -1250,11 +1274,29 @@ var NurseBedPanel = {
             if (!d) return;
             const tpl = NursingDocTemplates.build(d.doc_type || 'generic', self.patient);
             const content = d.content || '';
-            const isHtml = /<[a-z][\s\S]*>/i.test(content) && !/<textarea/i.test(content);
+            const isHtml = /^\s*<[a-z]/i.test(content);
             const body = '<div class="sheet">' + tpl.head
                 + (isHtml ? NursingDocTemplates.stripHead(content) : '<div style="white-space:pre-wrap;line-height:2">' + Format.escape(content) + '</div>')
                 + '</div>';
-            PrintPreview.openBody(d.title || tpl.title, body, { canPrint: true, pageNumbers: false, css: NursingDocTemplates.printCss });
+            const ov = PrintPreview.openBody(d.title || tpl.title, body, { canPrint: true, pageNumbers: false, css: NursingDocTemplates.printCss });
+            /* 预览 iframe 沙箱无脚本: 从父页面侧对加载完成的 sheet 做行高自适应,
+               抬头实际高度浮动时仍恰好填满 A4; 尺寸变化由预览自身的 ResizeObserver 跟随。 */
+            if (ov) {
+                const frame = ov.querySelector('.pp-frame');
+                if (frame) {
+                    const fitInFrame = function () {
+                        try {
+                            const doc = frame.contentDocument;
+                            if (doc && doc.body) {
+                                Array.prototype.forEach.call(doc.querySelectorAll('.sheet'), function (sh) {
+                                    if (window.NursingDocTemplates) NursingDocTemplates.fitSheet(sh);
+                                });
+                            }
+                        } catch (e) { /* 文档未就绪时忽略, 由下一次 load/超时兜底 */ }
+                    };
+                    frame.addEventListener('load', function () { fitInFrame(); setTimeout(fitInFrame, 300); });
+                }
+            }
         }).catch(() => {});
     },
 

@@ -30,15 +30,16 @@
 .tpl-main .tpl-cell, .tpl-main .tpl-label, .tpl-main .tpl-th { border-right: 1px solid #333; padding: 0 6px; display: flex; align-items: center; min-width: 0; }
 .tpl-main .tpl-hdr { background: #eef2f6 !important; font-weight: 600; letter-spacing: 2px; text-align: left; }
 .tpl-main .tpl-hdr .tpl-cell { flex: 1; }
-.tpl-main .tpl-label { background: #f7f9fb; text-align: center; font-weight: 600; font-size: 9.5pt; white-space: nowrap; justify-content: center; flex-shrink: 0; }
+.tpl-main .tpl-label { background: #f7f9fb; text-align: center; font-weight: 600; font-size: 9.5pt; white-space: normal; line-height: 1.3; justify-content: center; flex-shrink: 0; }
 .tpl-main .tpl-th { background: #f2f2f2; font-weight: 600; text-align: center; justify-content: center; flex-shrink: 0; }
-.tpl-main .tpl-cell { flex: 1; }
+/* 控件单元格: 放不下时组内换行而非裁字; 行内多行时垂直居中 */
+.tpl-main .tpl-cell { flex: 1 1 0; flex-wrap: wrap; align-content: center; row-gap: 2px; }
 .tpl-main .tpl-seq { text-align: center; color: #909399; font-weight: 600; justify-content: center; flex-shrink: 0; }
 
 /* ===== 模板控件: 编辑器画布与打印共用 ===== */
 .tpl-ctl { border: 1px solid #8a919c; background: #fff; font-size: 10pt; padding: 1px 4px; border-radius: 2px; max-width: 100%; box-sizing: border-box; }
 .tpl-ctl-num { border: none; border-bottom: 1px solid #555; background: transparent; width: 60px; text-align: center; font-size: 10pt; }
-.tpl-ctl-radio, .tpl-ctl-chk { display: inline-flex; align-items: center; gap: 3px; margin-right: 9px; font-size: 10pt; white-space: nowrap; }
+.tpl-ctl-radio, .tpl-ctl-chk { display: inline-flex; align-items: center; gap: 3px; margin-right: 6px; font-size: 10pt; white-space: nowrap; }
 .tpl-ctl input { accent-color: #0e7c86; vertical-align: middle; }
 .tpl-editor-scroll textarea.tpl-ctl { resize: none; }
 

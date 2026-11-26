@@ -194,8 +194,9 @@ var DoctorNursing = {
             if (!d) return;
             const TYPE = { admission_assessment: '入院评估', nursing_plan: '护理计划', health_edu: '健康宣教', transfer_record: '转科记录', other: '其他', generic: '通用' };
             const content = d.content || '';
-            /* 新文书内容为模板 HTML: 原样渲染 (表格样式内联, 不依赖全局 CSS) */
-            const isHtml = /<[a-z][\s\S]*>/i.test(content) && !/<textarea/i.test(content);
+            /* 新文书内容为模板 HTML: 原样渲染 (表格样式内联, 不依赖全局 CSS);
+               HTML 判定以标签开头为准 (含 textarea 的模板文书也是 HTML) */
+            const isHtml = /^\s*<[a-z]/i.test(content);
             const contentHtml = isHtml
                 ? '<div class="ndoc-content-view ndoc-content-html">' + content + '</div>'
                 : '<div class="ndoc-content-view">' + Format.escape(content) + '</div>';
