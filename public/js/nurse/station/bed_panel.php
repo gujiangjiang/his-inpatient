@@ -1221,6 +1221,41 @@ var NurseBedPanel = {
         setTimeout(fitTpl, 300);
         window.addEventListener('resize', fitTpl);
         if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTpl).catch(() => {});
+        /* 新建入院评估单: 自动从 EMR 入院记录 / 首次护理记录预填 (主诉/现病史/既往史 + 生命体征/身体状况),
+           可修改; 已有文书(编辑模式)不覆盖。 */
+        if (!existing && key === 'admission_assessment') {
+            AjaxLoader.api('nurse/nursing-docs?action=prefill&patient_id=' + self.patient.id, { silent: true })
+                .then(function (r) {
+                    const bodyEl = document.getElementById('doc-editor-body');
+                    if (!bodyEl || !bodyEl.querySelector('.tpl-main')) return;   /* 已关闭则不填 */
+                    const d = r.data || {};
+                    const setVal = function (sel, v) {
+                        const el = bodyEl.querySelector(sel);
+                        if (el && v !== undefined && v !== null && String(v).trim() !== '') el.value = String(v);
+                    };
+                    setVal('input.tpl-ctl[placeholder="主诉"]', d.chief_complaint);
+                    const tas = bodyEl.querySelectorAll('textarea.tpl-ctl');
+                    if (tas[0]) tas[0].value = d.present_illness || '';
+                    if (tas[1]) tas[1].value = d.past_history || '';
+                    const vt = d.vital || {};
+                    setVal('input.tpl-ctl-num:nth-of-type(1)', vt.temperature);
+                    setVal('input.tpl-ctl-num:nth-of-type(2)', vt.pulse);
+                    setVal('input.tpl-ctl-num:nth-of-type(3)', vt.respiratory_rate);
+                    setVal('input.tpl-ctl-num:nth-of-type(4)', vt.bp_systolic);
+                    setVal('input.tpl-ctl-num:nth-of-type(5)', vt.bp_diastolic);
+                    setVal('input.tpl-ctl-num:nth-of-type(6)', vt.oxygen_saturation);
+                    setVal('input.tpl-ctl-num:nth-of-type(7)', vt.pain_score);
+                    setVal('input.tpl-ctl[placeholder="等大等圆 / 对光反射"]', vt.pupil);
+                    if (vt.consciousness) {
+                        const RADIOS = { 清醒: '1', 嗜睡: '2', 昏睡: '3', 昏迷: '4' };
+                        const con = RADIOS[String(vt.consciousness).trim()];
+                        if (con) {
+                            const radio = bodyEl.querySelector('input[name="con"][value="' + con + '"]');
+                            if (radio) radio.checked = true;
+                        }
+                    }
+                }).catch(function () { /* 预填失败不阻断编辑 */ });
+        }
         /* 联动数据: 病区/护士下拉选项 + 日期时间选择器。
            只填充空下拉 (无选项或仅占位项), 已保存文书保留原选项快照。 */
         (async function () {

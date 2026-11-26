@@ -210,7 +210,7 @@
          控件放不下的行 (多选项组) 行高 56, 允许组内换行, 不裁字; 评估意见行均分余量填满整页。 */
       const body = layout([
         { h: 28, cells: [TD('<b>一、主诉与病史</b>', '', 'tpl-hdr')] },
-        { h: 72, cells: [LBLR('主诉'), CTRL(CTL('', '100%'))] },
+        { h: 72, cells: [LBLR('主诉'), CTRL(CTL('主诉', '100%'))] },
         { h: 84, cells: [LBLR('现病史'), CTRL(TA(3))] },
         { h: 84, cells: [LBLR('既往史'), CTRL(TA(3))] },
         { h: 28, cells: [TD('<b>二、生命体征</b>', '', 'tpl-hdr')] },
