@@ -1238,13 +1238,15 @@ var NurseBedPanel = {
                     if (tas[0]) tas[0].value = d.present_illness || '';
                     if (tas[1]) tas[1].value = d.past_history || '';
                     const vt = d.vital || {};
-                    setVal('input.tpl-ctl-num:nth-of-type(1)', vt.temperature);
-                    setVal('input.tpl-ctl-num:nth-of-type(2)', vt.pulse);
-                    setVal('input.tpl-ctl-num:nth-of-type(3)', vt.respiratory_rate);
-                    setVal('input.tpl-ctl-num:nth-of-type(4)', vt.bp_systolic);
-                    setVal('input.tpl-ctl-num:nth-of-type(5)', vt.bp_diastolic);
-                    setVal('input.tpl-ctl-num:nth-of-type(6)', vt.oxygen_saturation);
-                    setVal('input.tpl-ctl-num:nth-of-type(7)', vt.pain_score);
+                    const numOf = function (f) { return bodyEl.querySelector('.tpl-ctl-num[data-f="' + f + '"]'); };
+                    const setNum = function (f, v) { const el = numOf(f); if (el && v !== undefined && v !== null && v !== '') el.value = String(v); };
+                    setNum('temperature', vt.temperature);
+                    setNum('pulse', vt.pulse);
+                    setNum('respiratory_rate', vt.respiratory_rate);
+                    setNum('bp_systolic', vt.bp_systolic);
+                    setNum('bp_diastolic', vt.bp_diastolic);
+                    setNum('oxygen_saturation', vt.oxygen_saturation);
+                    setNum('pain_score', vt.pain_score);
                     setVal('input.tpl-ctl[placeholder="等大等圆 / 对光反射"]', vt.pupil);
                     if (vt.consciousness) {
                         const RADIOS = { 清醒: '1', 嗜睡: '2', 昏睡: '3', 昏迷: '4' };
